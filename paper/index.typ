@@ -1,67 +1,16 @@
-#let nadpis-bez-cisla(text-nadpisu) = heading(numbering: none, outlined: true, bookmarked: false, text-nadpisu)
-
-#set page(paper: "a4", margin: (top: 2.5cm, bottom: 2.5cm, left: 3cm, right: 2.5cm), footer: none)
-#set par(justify: true, leading: 1.5 * 0.65em, spacing: 8pt, first-line-indent: 0pt)
-#set list(indent: 0pt, body-indent: 0.75em, spacing: 4pt)
-#set enum(indent: 0pt, body-indent: 0.75em, spacing: 4pt)
-#show list: it => block(above: 3pt, below: 5pt, breakable: true, it)
-#show enum: it => block(above: 3pt, below: 5pt, breakable: true, it)
-
-#set heading(numbering: "1.1")
-#show heading.where(level: 1): it => {
-  if it.at("label", default: none) != <results-section> {
-    pagebreak(weak: true)
-  }
-  block(above: 21pt, below: 10pt, sticky: true, text(size: 16pt, weight: "bold", it))
-}
-#show heading.where(level: 2): it => {
-  if it.at("label", default: none) not in (<intro-goal>, <theory-first>, <practical-first>, <results-first>) {
-    pagebreak()
-  }
-  block(above: 19pt, below: 9pt, sticky: true, text(size: 14pt, weight: "bold", it))
-}
-#show heading.where(level: 3): it => block(above: 17pt, below: 8pt, sticky: true, text(size: 12pt, weight: "bold", it))
-#show figure.caption: set text(size: 10pt)
-#show figure.caption: set align(left)
-#show raw: set text(font: ("DejaVu Sans Mono",), size: 9.5pt)
-#show raw.where(block: true): it => block(
-  fill: rgb("#f4f4f2"), stroke: 0.35pt + rgb("#9a9a96"), inset: (x: 8pt, y: 6pt), width: 100%,
-  text(fill: rgb("#222222"), it),
-)
-#show raw.where(block: false): it => box(
-  fill: rgb("#f4f4f2"), stroke: 0.25pt + rgb("#b0b0aa"), inset: (x: 2pt, y: 0.5pt),
-  text(fill: rgb("#222222"), it),
-)
-#show link: set text(fill: rgb("#222222"))
-#set table(stroke: 0.5pt, inset: (x: 5pt, y: 4pt))
-#set figure(numbering: "1")
-
-
-//Metadata
-#let PISMO = ("Caladea", "New Computer Modern")
-
-#let meta = (
-  author: "Patrik Marius",
-  class: "4.D",
-  supervisor: "Michal Dočekal",
-  school: "Gymnázium J. K. Tyla",
-  school-short: "GJKT",
-  city: "Hradci Králové",
-  year: 2026,
-
-  title: "AI asistované softwarové inženýrství",
-  practical-title: "DarkFactory",
-
-  annotation-cs: [
-    Práce zkoumá přechod od konverzační asistence k delegovanému agentnímu vývoji a roli harnessu jako běhového a integračního prostředí coding agenta. Cílem je vysvětlit, jak propojení jazykového modelu s nástroji, stavem, verifikací a lidskými kontrolními body umožňuje řízené provádění softwarových úloh v praxi. Agentické inženýrství práce vymezuje jako soubor postupů, které činí AI-asistovaný vývoj účinným, kontrolovaným, opakovatelným a škálovatelným. Teoretická část vychází z odborných publikací a dokumentace nástrojů. Praktická část implementuje jednoduchou produkční pipeline DarkFactory, v níž je GitHub vývojovým prostředím, GitHub Actions výpočetním prostředím, kontejner izolační vrstvou a GitHub Issues stavovým systémem. Je popsáno přijetí a plánování požadavku, lidské schválení, izolovaná implementace na větvi, automatická review smyčka, zpětná vazba, merge a odstranění větve. Výsledky ukazují, že praktická autonomie vzniká především rozdělením odpovědnosti mezi model, harness, GitHub a člověka.
-  ],
-  abstract-en: [
-    This thesis examines the transition from conversational assistance to delegated agentic development and the role of the harness as the runtime and integration environment of a coding agent. Its objective is to explain how connecting a language model to tools, state, verification, and human control points enables the controlled execution of software tasks in practice. Agentic Engineering is defined as a set of practices that make AI-assisted development efficient, controlled, repeatable, and scalable. The theoretical part is based on academic publications and tool documentation. The practical part implements a simple production pipeline, DarkFactory, in which GitHub is the development environment, GitHub Actions is the execution environment, a container provides isolation, and GitHub Issues serves as the state system. It describes request intake and planning, human approval, isolated implementation on a branch, an automatic review loop, feedback, merging, and branch deletion. The findings indicate that practical autonomy arises primarily from the division of responsibility among the model, the harness, GitHub, and the human.
-  ],
-)
+// Styles: typefaces, page geometry, headings, code, figures and the draft marking all
+// live in ./styles. This file is the thesis text.
+//
+// `apply` wraps everything below it, so every `#set`/`#show` rule in ./styles reaches
+// the text. Rules written here at the top level apply too, and win over it — which is
+// how the footer is switched on once the front matter is over.
+#import "styles/main.typ": apply, nadpis-bez-cisla, meta, page-footer, draft
 
 #set document(title: meta.title, author: meta.author, date: none)
-#set text(font: PISMO, size: 12pt, lang: "cs", hyphenate: true)
+
+#show: apply
+
+#set page(footer: none)
 
 // ── title page ──────────────────────────────────────────
 #align(center)[
@@ -112,13 +61,10 @@ V #meta.city dne #box(width: 4.5cm, repeat("…")) #h(1fr) Podpis autora práce:
 
 #outline(title: [Obsah], depth: 3, indent: 1.4em)
 
-#set page(footer: context {
-  align(center, text(font: PISMO, size: 11pt, counter(page).display("1")))
-})
+#set page(footer: page-footer)
 
 
 //intro
-//TODO: add a mention that for the purpose of this thesis the word Agentic is translated to czech as "Agentické" being an anglicism in the czech langauge, but this is not yet established so I am the one coining this the point is that agentni is not the same as agentic, agentic is a property of the system, agentni is a property of the agent. Agentic engineering is about designing systems that are agentic, not about designing agents. The word "agentické" is used to describe the engineering practices that make a system agentic, not to describe the agents themselves or something that belongs to them.
 #heading(level: 1)[Úvod]
 
 Nástroje založené na velkých jazykových modelech prošly rychlým vývojem: od doplňování kódu při psaní v editoru přes konverzační chatboty až po autonomní agenty, kteří pomocí nástrojů samostatně provádějí změny a spouštějí příkazy v běhovém prostředí @github-copilot-completion @github-copilot-chat @github-copilot-agent @openai-codex-2025 @openai-codex-app-2026. S rostoucími schopnostmi modelů roste i jejich adopce, avšak většina uživetelů nemá představu čeho tyto nástroje jsou skutečně schopny. Většina populace se s generativní AI setkává jenom na povrchu prostřednictvím chatbotů a to bezplatným tedy omezeným přístupem. Odhad zdroje klade počet uživatelů chatbotů na 28% populace zatímco pravidelné užití AI coding agents pouze na 0,36~% světové populace@gradually-ai-usage-2026.
@@ -130,13 +76,17 @@ Nástroje založené na velkých jazykových modelech prošly rychlým vývojem:
 
 Aby mohl agent samostatně pracovat na projektu, nestačí pouhé generování odpovědí. Potřebuje kontext z repozitáře, přístup k prostředí, nástroje pro spouštění příkazů, uchování stavu mezi jednotlivými kroky a vymezený bod, v němž člověk rozhodne o přijetí výsledku @anthropic-harness-design @anthropic-managed-agents.
 
+#box[
+  #set par(justify: true)
+  #strong[Poznámka k terminologii.] Anglické #strong[agentic] nemá v češtině ustálený překlad; pro potřeby této práce je mu přiřazeno tvořené přídavné jméno #strong[agentické]. Rozdíl mezi dvěma výrazy, které se v běžném užívání zaměňují, je přitom zásadní. #strong[Agentní] označuje vlastnost agenta, tedy toho, kdo jedná; #strong[agentický] označuje vlastnost systému, tedy toho, kdo je *schopen* jednat. Jazykový základ tomu odpovídá: anglické #strong[agentic] je odvozeno od podstatného jména #strong[agent] příponou #strong[-ic] a znamená mající schopnost, prostředky nebo pravomoc jednat, nikoli samo jednajícího @mw-agentic. V této práci je proto #strong[agentické] užíváno výhradně v druhém smyslu: agentické inženýrství není stavbou agentů, ale návrhem systémů, které se takovým chováním vyznačují.
+]
+
 
 #heading(level: 2)[Cíl a vymezení] <intro-goal>
 
 Cílem práce je ukázat, jak harness dělá z jazykového modelu autonomního agenta a jaké postupy umožňují využívat agenty účinně a kontrolovaně.
 
-Praktická část analyzuje DarkFactory, jednoduchou produkční pipeline pro AI-asistovaný softwarový vývoj. GitHub je v ní vývojovým prostředím, GitHub Actions zajišťuje běhy, Docker kontejner odděluje prostředí, Github Issues slouží jako plánovací/stavový systém a pythonovský řadič ve spolupráci s produkčními harnessy např claude, agy, codex nebo opencode realizuje interpretaci, plánování, implementaci, revizi a integraci změn.
-//mark the harnesses strong put them in brackets and add examples of the actual harness interfaces via screenshot
+Praktická část analyzuje DarkFactory, jednoduchou produkční pipeline pro AI-asistovaný softwarový vývoj. GitHub je v ní vývojovým prostředím, GitHub Actions zajišťuje běhy, Docker kontejner odděluje prostředí, Github Issues slouží jako plánovací/stavový systém a pythonovský řadič ve spolupráci s produkčními harnessy (#strong[`claude`], #strong[`agy`], #strong[`codex`], #strong[`opencode`]) realizuje interpretaci, plánování, implementaci, revizi a integraci změn. Jejich skutečná rozhraní uvádí @architektura.
 
 #heading(level: 1)[Teoretická část]
 
@@ -176,8 +126,7 @@ Základním mechanismem agentického systému je iterativní řídicí smyčka p
 
 #heading(level: 2)[Agentické inženýrství]
 
-Agentické inženýrství (#strong[Agentic Engineering]) se snaží definovat přístup aplikovatelný pro jakékoliv AI-asistované inženýrské práce, označuje jak systematický design systému a přístupu k práci tak samotné AI-asistované inženýrství v jakémkoliv kontextu. //TODO: add correct citation - agentic engineering
-Mezi hlavní oblasti patří: #strong[Prompt Engineering], #strong[Context Engineering], #strong[Harness Engineering], #strong[Loop Engineering] a #strong[Workflow/Graph Engineering] @openai-prompt-engineering @anthropic-context-engineering @anthropic-harness-design @openai-agents-sandbox @openai-agent-orchestration. Cílem je, aby vývojář mohl efektivně a kontrolovaně delegovat dílčí úkoly agentovi, aniž by ztratil přehled o záměru, rozsahu a kvalitě výsledku.
+Agentické inženýrství (#strong[Agentic Engineering]) označuje soubor postupů, jimiž se vývoj softwaru pomocí coding agentů stává účinným, kontrolovaným, opakovatelným a škálovatelným @willison-agentic-engineering. Jeho předmětem není samotný agent ani jeho model, ale systém, v němž agent pracuje: zadání, omezení, nástroje, pravidla integrace a odpovědnost člověka. Odtud také jeho popis jako archetypu #strong[agentického inženýra], jehož přidanou hodnotu už netvoří psaní kódu, ale formulace zadání, řízení agentních běhů a kritické posouzení strojem vytvořených výstupů @alenezi2026agentic. Mezi hlavní oblasti patří: #strong[Prompt Engineering], #strong[Context Engineering], #strong[Harness Engineering], #strong[Loop Engineering] a #strong[Workflow/Graph Engineering] @openai-prompt-engineering @anthropic-context-engineering @anthropic-harness-design @openai-agents-sandbox @openai-agent-orchestration. Cílem je, aby vývojář mohl efektivně a kontrolovaně delegovat dílčí úkoly agentovi, aniž by ztratil přehled o záměru, rozsahu a kvalitě výsledku.
 
 
 #heading(level: 3)[Zadání a kontext]
@@ -218,32 +167,64 @@ Více agentů samo o sobě nezaručuje lepší výsledek. Paralelizace přináš
 Praktická část implementuje záměrně jednoduchou produkční pipeline, v níž je vývojovým prostředím přímo GitHub a harness produkční coding agent. Cílem je ukázat, jak lze spojit události GitHubu, automatizované plánování, izolovanou práci v kontejneru a lidskou integraci do jednoho opakovatelného procesu.
 
 Předmětem analýzy jsou čtyři navazující vrstvy:
-1. *GitHub jako zdroj pravdy:* issue a jeho komentáře uchovávají požadavek, schválení, plán a zpětnou vazbu; větev, commit a pull request uchovávají změnu a její průběžnou revizi.
+1. *GitHub jako zdroj pravdy:* issue a jeho komentáře uchovávají požadavek, schválení, plán a zpětnou vazbu; větev, commit a pull request uchovávají změnu a její průběžnou revizi @github-branches @github-pull-requests.
 2. *GitHub Actions jako výpočetní prostředí:* jednotlivé události spouštějí krátké workflow, která checkoutují repozitář, sestaví obraz, spustí agenta a provedou následnou integraci.
 3. *Python a Docker jako izolační vrstva:* workflow předá událost a pracovní strom pythonovskému runneru v kontejneru; runner volá harness a předává mu nástroje, přihlašovací údaje a stav úlohy.
 4. *Review smyčka jako podmínka integrace:* automatická revize diffu, opravy a další revize se opakují do té doby, než se uzavře poslední nález; teprve poté je pull request předán člověku.
 
-//the methodology should be described as implementing the inital python as simple as possible via production coding agents to make the point of the thesis, not to implement a complex system. The goal is to show how the harness and the agent can be used in a simple production pipeline, not to create a fully-featured system. The focus is on the interaction between the agent, the harness, and the human reviewer, and how this interaction can be structured to achieve effective and controlled software development. we should mention that well use the implemented pipeline itself to add further complexity tothe system over time
+Metodika sama se řídí tvrzením práce. Pythonovský runner, o kterém tato část pojednává, byl napsán co nejjednodušeji pomocí produkčních coding agentů, tedy právě těm nástroji, které následně popisuje. Cílem nebyla stavba co nejucelenějšího systému, ale co nejmenší uzavřená smyčka, na níž lze ukázat, jak se navzájem ovlivňují agent, harness a lidský recenzent. Pozornost je proto soustředěna na tuto interakci a na její členění, nikoli na šíři nabízených funkcí.
 
-#heading(level: 2)[Architektura produkčního běhu]
+Zjednodušení je záměrné a má svou cenu. Systém bez vlastního stavového serveru, bez databáze a bez trvalého běžícího procesu je na první pohled méně schopný než plnohodnotná platforma, oproti níž je však reprodukovatelný, dohledatelný a jehož každé rozhodnutí zůstává vidět v issue, commitu nebo průběhu kontroly. Zároveň umožňuje zvyšovat složitost postupně: každý nový prvek pipeline byl přidán až poté, co bylo na konkrétní úloze zřejmé, že současná podoba nestačí. Samotná pipeline se tak stala nástrojem, kterým byla psána i další její část.
+
+#heading(level: 2)[Architektura produkčního běhu] <architektura>
 
 DarkFactory nepotřebuje pro základní průchod samostatný server, databázi ani běžícího agenta na vlastním počítači. GitHub slouží jako rozhraní i jako trvalý stavový systém, každá práce agenta probíhá jako izolovaný běh v GitHub Actions.
 
 #figure(
   image("img/darkfactory-architecture.svg", width: 92%),
-  caption: [Architektura: GitHub poskytuje události a vývojový stav, Docker odděluje běh a produkční harness `agy` `claude` `codex` či `opencode` nebo později vlastní `df` zajišťují model, nástroje a pozorování @darkfactory-e9c10221.],
+  caption: [Architektura: GitHub poskytuje události a vývojový stav, GitHub Actions výpočet, Docker odděluje běh a pythonovský runner převádí událost na agentní krok. Produkční harnessy `claude`, `codex`, `opencode` a `agy` zajišťují model, nástroje a pozorování @darkfactory-d576ec8f.],
 ) <fig-darkfactory-architecture>
 
 #figure(
   image("img/darkfactory-pipeline.svg", width: 92%),
-  caption: [Průchod požadavku: implementace a plánování jsou odděleny lidskými bránami, implementace probíhá na větvi a review smyčka pokračuje do vyřešení nálezů @darkfactory-e9c10221.],
+  caption: [Průchod požadavku: implementace a plánování jsou odděleny lidskými bránami, implementace probíhá na větvi a review smyčka pokračuje do vyřešení nálezů @darkfactory-d576ec8f.],
 ) <fig-darkfactory-pipeline>
 
 Workflow `agent.yml` reaguje na otevření issue, nový komentář, review komentář, `repository_dispatch` nebo ruční spuštění. Podmínka na úrovni jobu ověřuje, zda je agent pro repozitář povolen, a filtruje automatické komentáře, aby vlastní výstup pipeline nevytvářel nové události. Po volbě cílového repozitáře workflow checkoutuje jeho pracovní kopii, sestaví obraz podle `docker/Dockerfile.agent` a spustí příkaz `dispatch` v kontejneru.
 
-Pythonový runner není náhradou harnessu. Je rozhodovací a integrační vrstvou, která převádí událost GitHubu na konkrétní agentní krok, zpracovává jeho výstup a vyvolává další událost. Modelové kroky jsou přitom stále prováděny harnessem nad explicitně předaným pracovním stromem @darkfactory-e9c10221.
+Pythonový runner není náhradou harnessu. Je rozhodovací a integrační vrstvou, která převádí událost GitHubu na konkrétní agentní krok, zpracovává jeho výstup a vyvolává další událost. Modelové kroky jsou přitom stále prováděny harnessem nad explicitně předaným pracovním stromem @darkfactory-d576ec8f.
 
-Přihlašovací údaje se neukládají do repozitáře. GitHub App nebo jiný autorizovaný token se používá pro checkout, issue, pull requesty a push; přihlašovací údaje modelových providerů jsou předány workflow jako GitHub Secrets a následně prostředím kontejneru. Tím pipeline odděluje své automatizační oprávnění od přihlašovacího materiálu agenta a umožňuje změnit poskytovatele bez změny pracovního stromu @darkfactory-e9c10221.
+Každý harness je tak definován deklarativně: binář, způsob, jak se z promptu sestaví příkazová řádka, a způsob přihlášení. Přidání harnessu je tak změna dat, nikoli kódu. @fig-harness-interfaces uvádí rozhraní skutečně používaná v popisované revizi; `<prompt>` je zadání, `<model>` vybraný model a `<dur>` časový limit.
+
+// The invocation each harness is declared with, verbatim. Kept as a list of lines so
+// the figure can be regenerated from the registry without reformatting by hand.
+#let harness-interfaces = (
+  "antigravity (agy)",
+  "  agy --print <prompt> --model <model> --dangerously-skip-permissions --print-timeout <dur>",
+  "claude (claude)",
+  "  claude --print <prompt> --model <model> --output-format text --dangerously-skip-permissions",
+  "gemini (gemini)",
+  "  gemini -p <prompt> --model <model> --yolo",
+  "codex (codex)",
+  "  codex exec <prompt> --model <model> --dangerously-bypass-approvals-and-sandbox --skip-git-repo-check",
+  "kimi (kimi)",
+  "  kimi --prompt <prompt> --model <model> --output-format text --yolo",
+  "grok (grok)",
+  "  grok --single <prompt> --model <model> --always-approve",
+  "cursor (cursor-agent)",
+  "  cursor-agent --print <prompt> --model <model> --force",
+  "opencode (opencode)",
+  "  opencode run <prompt> --model <model> --auto",
+)
+
+#figure(
+  raw(block: true, harness-interfaces.join("\n")),
+  caption: [Rozhraní produkčních harnessů: harness vlevo a jméno bináře v závorce, příkazová řádka, kterou z něj runner sestavuje @darkfactory-d576ec8f.],
+) <fig-harness-interfaces>
+
+Sleduje se tím vlastní argument práce. Harness není abstraktní pojem, ale konkrétní program s konkrétní volbou přepínačů, a právě tato volba určuje, zda model smí spouštět příkazy bez dotazu a v jakém formátu vrací odpověď. Změna přepínače jednoho CLI je přitom v běžné praxi běžná událost; díky deklarativnímu registru ji pipeline přežije bez přepisu kódu @darkfactory-d576ec8f.
+
+Přihlašovací údaje se neukládají do repozitáře. GitHub App nebo jiný autorizovaný token se používá pro checkout, issue, pull requesty a push; přihlašovací údaje modelových providerů jsou předány workflow jako GitHub Secrets a následně prostředím kontejneru. Tím pipeline odděluje své automatizační oprávnění od přihlašovacího materiálu agenta a umožňuje změnit poskytovatele bez změny pracovního stromu @darkfactory-d576ec8f.
 
 
 #heading(level: 2)[Interpretace a plánování požadavku]
@@ -252,27 +233,31 @@ Výchozím bodem je issue s formulovaným požadavkem. Runner načte jeho titule
 
 Po schválení interpretace je workflow spuštěno znovu. Model nyní dostane schválený požadavek a sestaví implementační plán, ve kterém uvádí očekávané změny, soubory nebo oblasti repozitáře a kroky ověření. Plán se opět zobrazí v issue. Schválení je tak explicitní bránou: samotná schopnost agenta plán vytvořit neznamená oprávnění měnit kód.
 
-Zpětná vazba člověka není součástí nového vývoje od začátku. Komentář se změnou nebo odmítnutím se předá zpět interpretaci nebo plánování, takže se opravuje rozhodnutí před vytvořením pracovní větve. Tento jednoduchý model odděluje porozumění zadání, plánování a vlastní implementaci bez potřeby složitého grafového orchestrátoru @darkfactory-e9c10221.
+Zpětná vazba člověka není součástí nového vývoje od začátku. Komentář se změnou nebo odmítnutím se předá zpět interpretaci nebo plánování, takže se opravuje rozhodnutí před vytvořením pracovní větve. Tento jednoduchý model odděluje porozumění zadání, plánování a vlastní implementaci bez potřeby složitého grafového orchestrátoru @darkfactory-d576ec8f.
 
 
 #heading(level: 2)[Implementace a automatická revize]
 
 Po schválení plánu runner vytvoří nebo načte pracovní větev odvozenou z výchozí větve. Implementační instrukce obsahuje schválený plán, omezení na jeho rozsah a pravidla pro testy a dokumentaci. Harness následně může procházet repozitář, upravovat soubory a používat nástroje nad `/workspace`; změny zůstávají izolované mimo výchozí větev.
 
-Po implementaci runner spustí dostupné formátovací nástroje a deklarované testovací sady. Při neúspěchu předá výstup kontroly agentnímu kroku `fix`, který má opravit chybu bez opuštění schváleného rozsahu. Následně runner vytvoří commit, odešle větev a otevře draft pull request. Tím se oddělí samotná změna od jejího posouzení: implementace může být dokončena, ale pull request ještě není připraven k merge @darkfactory-e9c10221.
+Po implementaci runner spustí dostupné formátovací nástroje a deklarované testovací sady. Při neúspěchu předá výstup kontroly agentnímu kroku `fix`, který má opravit chybu bez opuštění schváleného rozsahu. Následně runner vytvoří commit, odešle větev a otevře draft pull request. Tím se oddělí samotná změna od jejího posouzení: implementace může být dokončena, ale pull request ještě není připraven k merge @darkfactory-d576ec8f.
 
-Na draft pull requestu začíná automatická review smyčka. Každá iterace načte aktuální větev a diff, provede deterministickou kontrolu souborů proti plánu a následně předá diff modelové revizi. Pokud review najde chyby, chybějící testy, nevhodný rozsah nebo jiný problém, runner zveřejní nález a spustí nový GitHub Actions běh s fází opravy. Oprava změní větev a spustí další review. Smyčka pokračuje, dokud review nevrátí žádný akční nález; opakovaný stejný nález bez progresu se naopak označí jako zablokovaný stav @darkfactory-e9c10221.
+Na draft pull requestu začíná automatická review smyčka. Každá iterace načte aktuální větev a diff, provede deterministickou kontrolu souborů proti plánu a následně předá diff modelové revizi. Pokud review najde chyby, chybějící testy, nevhodný rozsah nebo jiný problém, runner zveřejní nález a spustí nový GitHub Actions běh s fází opravy. Oprava změní větev a spustí další review. Smyčka pokračuje, dokud review nevrátí žádný akční nález; opakovaný stejný nález bez progresu se naopak označí jako zablokovaný stav @darkfactory-d576ec8f.
 
 Po čisté review ještě proběhne kontrola souladu výsledného diffu se schváleným plánem. Teprve když jsou čisté obě kontroly, je draft pull request označen jako připravený k lidské revizi. Tento krok je důležitý, protože automatická revize může skončit bez nálezu, aniž by sama zaručila, že implementace odpovídá původnímu zadání.
 
 
 #heading(level: 2)[Zpětná vazba, schválení a úklid]
 
-Po otevření pro lidskou revizi může člověk použít schvalovací workflow nebo zpětnou vazbu na pull requestu. Změnový požadavek zachycuje runner jako opravný běh na stejné větvi. Agent obdrží plán, konkrétní feedback a aktuální kontext větve, provede úpravu, commitne ji a znovu spustí automatickou review smyčku. Tím se zpětná vazba nevrací do schváleného plánu ani nevyžaduje nový počátek celého požadavku; zachovává se pouze řetězec revizí na jednom pull requestu @darkfactory-e9c10221.
+Po otevření pro lidskou revizi může člověk použít schvalovací workflow nebo zpětnou vazbu na pull requestu. Změnový požadavek zachycuje runner jako opravný běh na stejné větvi. Agent obdrží plán, konkrétní feedback a aktuální kontext větve, provede úpravu, commitne ji a znovu spustí automatickou review smyčku. Tím se zpětná vazba nevrací do schváleného plánu ani nevyžaduje nový počátek celého požadavku; zachovává se pouze řetězec revizí na jednom pull requestu @darkfactory-d576ec8f.
 
-Schválení pull requestu zpracovává samostatný workflow. Po ověření, že akci provedl autor issue nebo oprávněný člen repozitáře, převede draft na ready stav, zkontroluje požadované schválení a zapne merge. Při úspěchu se použije `--delete-branch`, takže se pracovní větev po sloučení odstraní. Integrace tedy nekončí pouhým otevřením pull requestu: zahrnuje přechod do ready, splnění ochrany větve, merge a bezpečné odstranění větve @darkfactory-e9c10221.
+Schválení pull requestu zpracovává samostatný workflow. Po ověření, že akci provedl autor issue nebo oprávněný člen repozitáře, převede draft na ready stav, zkontroluje požadované schválení a zapne merge. Při úspěchu se použije `--delete-branch`, takže se pracovní větev po sloučení odstraní. Integrace tedy nekončí pouhým otevřením pull requestu: zahrnuje přechod do ready, splnění ochrany větve, merge a bezpečné odstranění větve @github-pull-requests @darkfactory-d576ec8f.
 
 Tato architektura je záměrně jednoduchá. GitHub poskytuje události, schválení, uložení změn a průběh kontroly. GitHub Actions poskytuje výpočet. Docker odděluje běh, Python koordinuje, harness vykonává agentní práci. Složitější služby, trvalý stavový server a více souběžných agentů jsou záměrně mimo základní návrh. Výhodou je snadná reprodukovatelnost a viditelnost každého rozhodnutí. Výhodou je zároveň závislost na dostupnosti GitHubu a na kvalitě promptu, modelu a pravidel repozitáře, kterou samotná automatizace neodstraňuje.
+
+#draft[
+  Popsaný průchod odpovídá počátečnímu stavu, kdy pythonovský runner volal cizí produkční CLI. Pozdější revize @darkfactory-e9c10221 tuto vrstvu zrušila: veškeré agentní kroby vedou přes vlastní harness `df`, který si sám volí model a přepíná poskytovatele, a externí CLI zůstávají jen jako zapsané, neinstaltované položky registru. Pro práci má to dva důsledky, které ještě nejsou rozhodnuté. Zaprvé se tím argumentace musí opřít o revizi, v níž dané rozhraní ještě existovala, což je slabší místo, než kdyby praktická část popisovala vlastní nástroj. Zadruhé se nabízí otázka, zda vlastní harness není vhodnější předmět praktické části právě proto, že jeho rozhraní lze popsat úplně a jeho změny jsou autorově vlastní. Zatím je tedy tato poznámka návrhem k doplnění, nikoli závěrem.
+]
 
 
 
@@ -281,25 +266,25 @@ Tato architektura je záměrně jednoduchá. GitHub poskytuje události, schvál
 
 #heading(level: 2)[Zjištění] <results-first>
 
-První zjištění se týká volby vývojového prostředí. Požadavek, jeho schválení, plán, zpětná vazba i výsledná revize zůstávají v GitHubu, takže jednotlivé běhy nemusí sdílet vlastní databázi ani trvalý proces. GitHub Actions přijme událost, připraví checkout a kontejner a následně spustí pythonovský runner. Runner předá práci harnessu a výsledek převede zpět do issue, větve nebo pull requestu @darkfactory-e9c10221.
+První zjištění se týká volby vývojového prostředí. Požadavek, jeho schválení, plán, zpětná vazba i výsledná revize zůstávají v GitHubu, takže jednotlivé běhy nemusí sdílet vlastní databázi ani trvalý proces. GitHub Actions přijme událost, připraví checkout a kontejner a následně spustí pythonovský runner. Runner předá práci harnessu a výsledek převede zpět do issue, větve nebo pull requestu @darkfactory-d576ec8f.
 
-Druhé zjištění potvrzuje oddělení lidského rozhodnutí od modelového návrhu. Issue nejprve vyvolá interpretaci, následně plán a teprve po schválení obou kroků se vytvoří pracovní větev a spustí implementace. Tím pipeline nevytváří změny v hlavní větvi pouze na základě samotného návrhu agenta @darkfactory-e9c10221.
+Druhé zjištění potvrzuje oddělení lidského rozhodnutí od modelového návrhu. Issue nejprve vyvolá interpretaci, následně plán a teprve po schválení obou kroků se vytvoří pracovní větev a spustí implementace. Tím pipeline nevytváří změny v hlavní větvi pouze na základě samotného návrhu agenta @darkfactory-d576ec8f.
 
-Třetí zjištění se týká průběhu revize. Implementace je nejprve odevzdána jako draft pull request. Automatická kontrola nejprve porovná změněné soubory se schváleným plánem a poté předá diff modelové review. Nalezené problémy spouštějí samostatný běh opravy, po němž následuje nová kontrola. Teprve čistá review a kontrola souladu s plánem otevřou pull request pro lidskou revizi @darkfactory-e9c10221.
+Třetí zjištění se týká průběhu revize. Implementace je nejprve odevzdána jako draft pull request. Automatická kontrola nejprve porovná změněné soubory se schváleným plánem a poté předá diff modelové review. Nalezené problémy spouštějí samostatný běh opravy, po němž následuje nová kontrola. Teprve čistá review a kontrola souladu s plánem otevřou pull request pro lidskou revizi @darkfactory-d576ec8f.
 
-Čtvrté zjištění se týká zpětné vazby a integrace. Změnový požadavek na pull requestu spouští opravu na stejné větvi a po pushi znovu vstupuje do review smyčky. Schválení pull requestu naopak spouští merge s odstraněním větve. Pipeline tedy nekončí automatickým vytvořením kódu, ale přechází do explicitního lidského schválení a následné integrace @darkfactory-e9c10221.
+Čtvrté zjištění se týká zpětné vazby a integrace. Změnový požadavek na pull requestu spouští opravu na stejné větvi a po pushi znovu vstupuje do review smyčky. Schválení pull requestu naopak spouští merge s odstraněním větve. Pipeline tedy nekončí automatickým vytvořením kódu, ale přechází do explicitního lidského schválení a následné integrace @darkfactory-d576ec8f.
 
 
 
 #heading(level: 2)[Diskuse]
 
-Zjištění lze interpretovat jako konkrétní podobu Agentického inženýrství: praktická autonomie není vlastností samotného modelu, ale výsledkem návrhu prostředí, v němž model pracuje. GitHub poskytuje trvalý kontext a lidskou odpovědnost, Python určuje přechody mezi kroky, Docker omezuje běhové prostředí a harness propojuje model s nástroji a pozorováními. Tato dělba odpovědnosti je v souladu s principy efektivního a kontrolovaného systému popsanými v teoretické části @anthropic-harness-design @anthropic-managed-agents @darkfactory-e9c10221.
+Zjištění lze interpretovat jako konkrétní podobu Agentického inženýrství: praktická autonomie není vlastností samotného modelu, ale výsledkem návrhu prostředí, v němž model pracuje. GitHub poskytuje trvalý kontext a lidskou odpovědnost, Python určuje přechody mezi kroky, Docker omezuje běhové prostředí a harness propojuje model s nástroji a pozorováními. Tato dělba odpovědnosti je v souladu s principy efektivního a kontrolovaného systému popsanými v teoretické části @anthropic-harness-design @anthropic-managed-agents @darkfactory-d576ec8f.
 
-Review smyčka ukazuje výhodu a zároveň omezení průběžné kontroly. Deterministická scope kontrola může zachytit změnu mimo plán a testy mohou poskytnout konkrétní zpětnou vazbu, ale modelová revize zůstává pravděpodobnostní. Opakované iterace zvyšují počet příležitostí k nálezu, nikoli záruku konečné správnosti. Zablokování při opakování stejného nálezu je proto rozumnou ochranou před nekonečným během, nikoli důkazem vyřešení problému @darkfactory-e9c10221.
+Review smyčka ukazuje výhodu a zároveň omezení průběžné kontroly. Deterministická scope kontrola může zachytit změnu mimo plán a testy mohou poskytnout konkrétní zpětnou vazbu, ale modelová revize zůstává pravděpodobnostní. Opakované iterace zvyšují počet příležitostí k nálezu, nikoli záruku konečné správnosti. Zablokování při opakování stejného nálezu je proto rozumnou ochranou před nekonečným během, nikoli důkazem vyřešení problému @darkfactory-d576ec8f.
 
-Jednoduchost návrhu má také ekonomickou a epistemickou cenu. Nevyžaduje databázi, dlouho běžícího agenta ani samostatnou orchestrátorskou službu, a celý průběh je dohledatelný v issue, commitech, kontrolách a pull requestu. Na druhé straně pipeline závisí na dostupnosti GitHubu, kvalitě issue, schopnosti modelu pracovat s nástroji a pravidlech, která definují akceptační podmínky. Jednoduchá architektura tedy usnadňuje reprodukci postupu, ale nenahrazuje odpovědnost člověka za architekturu, bezpečnost a přijetí výsledku @darkfactory-e9c10221.
+Jednoduchost návrhu má také ekonomickou a epistemickou cenu. Nevyžaduje databázi, dlouho běžícího agenta ani samostatnou orchestrátorskou službu, a celý průběh je dohledatelný v issue, commitech, kontrolách a pull requestu. Na druhé straně pipeline závisí na dostupnosti GitHubu, kvalitě issue, schopnosti modelu pracovat s nástroji a pravidlech, která definují akceptační podmínky. Jednoduchá architektura tedy usnadňuje reprodukci postupu, ale nenahrazuje odpovědnost člověka za architekturu, bezpečnost a přijetí výsledku @darkfactory-d576ec8f.
 
-Deterministické a modelové kontroly se proto doplňují, nenahrazují. Formátovací nástroje, testy a kontrola scope poskytují opakovatelné pozorování; modelové review, plánování a opravy interpretují zadání a neočekávané nálezy. Tato kombinace odpovídá cíli Agentického inženýrství zvýšit užitečnost delegované práce při zachování explicitních bran, ale její skutečná kvalita zůstává závislá na datech, promptu, modelu a konkrétním repozitáři @darkfactory-e9c10221.
+Deterministické a modelové kontroly se proto doplňují, nenahrazují. Formátovací nástroje, testy a kontrola scope poskytují opakovatelné pozorování; modelové review, plánování a opravy interpretují zadání a neočekávané nálezy. Tato kombinace odpovídá cíli Agentického inženýrství zvýšit užitečnost delegované práce při zachování explicitních bran, ale její skutečná kvalita zůstává závislá na datech, promptu, modelu a konkrétním repozitáři @darkfactory-d576ec8f.
 
 
 

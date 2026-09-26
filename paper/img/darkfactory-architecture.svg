@@ -1,28 +1,81 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 420" role="img" aria-labelledby="title desc">
-  <title id="title">Jednoduchá architektura DarkFactory</title>
-  <desc id="desc">GitHub poskytuje vývojové prostředí a události, GitHub Actions spouští workflow, Docker izoluje běh pythonovského runneru a harness df poskytuje modelu nástroje a pozorování.</desc>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 430" role="img" aria-labelledby="t d">
+  <title id="t">Jednoduchá produkční architektura DarkFactory</title>
+  <desc id="d">Čtyři navazující vrstvy: GitHub jako vývojové prostředí a zdroj událostí, GitHub Actions jako výpočetní prostředí, Docker s pythonovským runnerem jako izolační vrstva a produkční harness, který poskytuje modelu nástroje a pozorování.</desc>
   <defs>
-    <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0 1L10 5L0 9Z" fill="#475569"/></marker>
-    <style>
-      .title{font:700 17px Caladea,serif;fill:#0f172a}.rev{font:700 11px 'Courier New',monospace;fill:#1d4ed8}.layer{font:700 10px Caladea,serif;letter-spacing:.55px;fill:#475569}.head{font:700 13px Caladea,serif;fill:#0f172a}.body{font:11px Caladea,serif;fill:#475569}.small{font:10px Caladea,serif;fill:#64748b}
-    </style>
+    <marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+      <path d="M0 1L10 5L0 9Z" fill="#1a1a1a"/>
+    </marker>
   </defs>
-  <rect x="8" y="8" width="984" height="404" rx="12" fill="#fff" stroke="#cbd5e1"/>
-  <text x="32" y="38" class="title">Jednoduchá produkční architektura</text><text x="968" y="37" text-anchor="end" class="rev">e9c10221</text>
-  <rect x="30" y="70" width="220" height="286" rx="9" fill="#f8fafc" stroke="#cbd5e1"/><text x="48" y="94" class="layer">GITHUB JAKO VÝVOJOVÉ PROSTŘEDÍ</text>
-  <g><rect x="50" y="120" width="180" height="72" rx="7" fill="#fff" stroke="#94a3b8"/><text x="140" y="148" text-anchor="middle" class="head">Issue a komentáře</text><text x="140" y="170" text-anchor="middle" class="body">požadavek · plán · brány</text></g>
-  <g><rect x="50" y="220" width="180" height="72" rx="7" fill="#fff" stroke="#94a3b8"/><text x="140" y="248" text-anchor="middle" class="head">Git + pull request</text><text x="140" y="270" text-anchor="middle" class="body">větev · diff · merge</text></g>
-  <path d="M250 180H286" stroke="#475569" stroke-width="1.8" fill="none" marker-end="url(#arrow)"/>
-  <rect x="286" y="70" width="220" height="286" rx="9" fill="#eff6ff" stroke="#93c5fd"/><text x="304" y="94" class="layer">GITHUB ACTIONS</text>
-  <g><rect x="306" y="120" width="180" height="102" rx="7" fill="#fff" stroke="#60a5fa"/><text x="396" y="151" text-anchor="middle" class="head">Workflow</text><text x="396" y="174" text-anchor="middle" class="body">checkout · build · dispatch</text><text x="396" y="196" text-anchor="middle" class="small">izolovaný běh pro každý krok</text></g>
-  <g><rect x="306" y="250" width="180" height="52" rx="7" fill="#dbeafe" stroke="#60a5fa"/><text x="396" y="282" text-anchor="middle" class="body">event → další běh</text></g>
-  <path d="M506 180H542" stroke="#475569" stroke-width="1.8" fill="none" marker-end="url(#arrow)"/>
-  <rect x="542" y="70" width="218" height="286" rx="9" fill="#f5f3ff" stroke="#c4b5fd"/><text x="560" y="94" class="layer">DOCKER A PYTHON</text>
-  <g><rect x="562" y="120" width="178" height="102" rx="7" fill="#fff" stroke="#8b5cf6"/><text x="651" y="150" text-anchor="middle" class="head">agent_runner.py</text><text x="651" y="174" text-anchor="middle" class="body">interpretace · plán</text><text x="651" y="194" text-anchor="middle" class="body">implementace · review</text></g>
-  <g><rect x="562" y="250" width="178" height="52" rx="7" fill="#ede9fe" stroke="#8b5cf6"/><text x="651" y="282" text-anchor="middle" class="body">/workspace</text></g>
-  <path d="M760 180H796" stroke="#475569" stroke-width="1.8" fill="none" marker-end="url(#arrow)"/>
-  <rect x="796" y="70" width="174" height="286" rx="9" fill="#f0fdfa" stroke="#5eead4"/><text x="814" y="94" class="layer">HARNESS DF</text>
-  <g><rect x="814" y="120" width="138" height="102" rx="7" fill="#fff" stroke="#14b8a6"/><text x="883" y="150" text-anchor="middle" class="head">Produkční</text><text x="883" y="174" text-anchor="middle" class="body">model</text><text x="883" y="194" text-anchor="middle" class="body">nástroje</text></g>
-  <g><rect x="814" y="250" width="138" height="52" rx="7" fill="#ccfbf1" stroke="#14b8a6"/><text x="883" y="282" text-anchor="middle" class="body">pozorování</text></g>
-  <rect x="30" y="378" width="940" height="24" rx="6" fill="#fff7ed" stroke="#fdba74"/><text x="500" y="394" text-anchor="middle" class="small">GitHub Secrets → workflow → prostředí kontejneru; stav zůstává v issue, větvi a pull requestu</text>
+  <style>
+    .panel{fill:#fafafa;stroke:#1a1a1a;stroke-width:1.2}
+    .box{fill:#fff;stroke:#1a1a1a;stroke-width:1.4}
+    .plabel{font:700 10.5px Caladea,serif;letter-spacing:.7px;fill:#1a1a1a}
+    .head{font:700 13px Caladea,serif;fill:#1a1a1a}
+    .body{font:11.5px Caladea,serif;fill:#333}
+    .mono{font:11px 'DejaVu Sans Mono',monospace;fill:#1a1a1a}
+    .note{font:italic 11px Caladea,serif;fill:#444}
+    .rev{font:700 11px 'DejaVu Sans Mono',monospace;fill:#555}
+    .title{font:700 17px Caladea,serif;fill:#1a1a1a}
+    .edge{fill:none;stroke:#1a1a1a;stroke-width:1.6;marker-end:url(#a)}
+  </style>
+
+  <text x="30" y="36" class="title">Jednoduchá produkční architektura</text>
+  <text x="970" y="35" text-anchor="end" class="rev">d576ec8f</text>
+
+  <!-- 1 · GitHub -->
+  <rect x="30" y="62" width="208" height="288" rx="7" class="panel"/>
+  <text x="46" y="86" class="plabel">GITHUB</text>
+  <rect x="48" y="104" width="172" height="88" rx="5" class="box"/>
+  <text x="134" y="130" text-anchor="middle" class="head">Issue a komentáře</text>
+  <text x="134" y="152" text-anchor="middle" class="body">požadavek · plán · brány</text>
+  <text x="134" y="174" text-anchor="middle" class="note">stav, který přežije běh</text>
+  <rect x="48" y="216" width="172" height="88" rx="5" class="box"/>
+  <text x="134" y="242" text-anchor="middle" class="head">Git a pull request</text>
+  <text x="134" y="264" text-anchor="middle" class="body">větev · diff · merge</text>
+  <text x="134" y="286" text-anchor="middle" class="note">změna a její revize</text>
+
+  <path d="M238 206H268" class="edge"/>
+
+  <!-- 2 · GitHub Actions -->
+  <rect x="274" y="62" width="208" height="288" rx="7" class="panel"/>
+  <text x="290" y="86" class="plabel">GITHUB ACTIONS</text>
+  <rect x="292" y="104" width="172" height="88" rx="5" class="box"/>
+  <text x="378" y="130" text-anchor="middle" class="head">Workflow</text>
+  <text x="378" y="152" text-anchor="middle" class="body">checkout · build</text>
+  <text x="378" y="174" text-anchor="middle" class="mono">dispatch</text>
+  <rect x="292" y="216" width="172" height="88" rx="5" class="box"/>
+  <text x="378" y="242" text-anchor="middle" class="head">Běh na událost</text>
+  <text x="378" y="264" text-anchor="middle" class="body">issue · komentář</text>
+  <text x="378" y="286" text-anchor="middle" class="note">žádný trvalý server</text>
+
+  <path d="M482 206H512" class="edge"/>
+
+  <!-- 3 · Docker + Python -->
+  <rect x="518" y="62" width="208" height="288" rx="7" class="panel"/>
+  <text x="534" y="86" class="plabel">DOCKER A PYTHON</text>
+  <rect x="536" y="104" width="172" height="88" rx="5" class="box"/>
+  <text x="622" y="130" text-anchor="middle" class="mono">agent_runner.py</text>
+  <text x="622" y="152" text-anchor="middle" class="body">interpretace · plán</text>
+  <text x="622" y="174" text-anchor="middle" class="body">implementace · review</text>
+  <rect x="536" y="216" width="172" height="88" rx="5" class="box"/>
+  <text x="622" y="242" text-anchor="middle" class="head">/workspace</text>
+  <text x="622" y="264" text-anchor="middle" class="body">pracovní strom z checkoutu</text>
+  <text x="622" y="286" text-anchor="middle" class="note">izolovaný běh</text>
+
+  <path d="M726 206H756" class="edge"/>
+
+  <!-- 4 · Production harnesses -->
+  <rect x="762" y="62" width="208" height="288" rx="7" class="panel"/>
+  <text x="778" y="86" class="plabel">PRODUKČNÍ HARNESSY</text>
+  <rect x="780" y="104" width="172" height="88" rx="5" class="box"/>
+  <text x="866" y="126" text-anchor="middle" class="head">Externí CLI</text>
+  <text x="866" y="148" text-anchor="middle" class="mono">claude · codex</text>
+  <text x="866" y="168" text-anchor="middle" class="mono">opencode · agy</text>
+  <rect x="780" y="216" width="172" height="88" rx="5" class="box"/>
+  <text x="866" y="242" text-anchor="middle" class="head">Model a nástroje</text>
+  <text x="866" y="264" text-anchor="middle" class="body">prompt → příkaz</text>
+  <text x="866" y="286" text-anchor="middle" class="body">→ stdout jako odpověď</text>
+
+  <text x="500" y="384" text-anchor="middle" class="note">Přihlašovací údaje modelových providerů se předávají jako GitHub Secrets do prostředí kontejneru, nikoli do repozitáře.</text>
+  <text x="500" y="406" text-anchor="middle" class="note">Runner je rozhodovací vrstva: převádí událost na agentní krok a jeho výstup zpět na událost.</text>
 </svg>
