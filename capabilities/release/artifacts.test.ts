@@ -110,10 +110,7 @@ describe("release artifact manifest", () => {
 
 		const bad = {
 			...manifest,
-			artifacts: [
-				...manifest.artifacts,
-				{ path: "escape", bytes: 8, sha256: "0".repeat(64) },
-			],
+			artifacts: [...manifest.artifacts, { path: "escape", bytes: 8, sha256: "0".repeat(64) }],
 		};
 		const result = await verifyReleaseArtifactManifest(root, bad, {
 			releaseVersion: "2.0.0",

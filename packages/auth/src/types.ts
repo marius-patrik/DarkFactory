@@ -54,7 +54,13 @@ export function parseGitHubTokenResponse(value: unknown): GitHubTokenResponse {
 /** Parses browser persistence and rejects secret-bearing or malformed session shapes. */
 export function parseBrowserSession(value: unknown): BrowserSession {
 	const input = record(value);
-	if (!input || typeof input.id !== "string" || !input.id || typeof input.expiresAt !== "number" || !Number.isFinite(input.expiresAt))
+	if (
+		!input ||
+		typeof input.id !== "string" ||
+		!input.id ||
+		typeof input.expiresAt !== "number" ||
+		!Number.isFinite(input.expiresAt)
+	)
 		throw new Error("Invalid browser auth session");
 	return {
 		id: input.id,

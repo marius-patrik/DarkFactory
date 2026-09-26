@@ -46,7 +46,7 @@ describe("run-state load/save", () => {
 	test("circular reference rejects and leaves no temp file", async () => {
 		const state = await loadRunState(tmpDir, subject, graph);
 		// Build a circular reference that JSON.stringify will throw on.
-		state.outputs["self"] = state.outputs;
+		state.outputs.self = state.outputs;
 		await expect(saveRunState(tmpDir, subject, state)).rejects.toThrow();
 		// No *.tmp* file should remain after the failed save.
 		const files = await readdir(tmpDir);
@@ -56,7 +56,7 @@ describe("run-state load/save", () => {
 
 	test("round‑trip persistence and atomic write", async () => {
 		const state = await loadRunState(tmpDir, subject, graph);
-		state.outputs["foo"] = "bar";
+		state.outputs.foo = "bar";
 		await saveRunState(tmpDir, subject, state);
 		const loaded = await loadRunState(tmpDir, subject, graph);
 		expect(loaded.outputs).toEqual({ foo: "bar" });

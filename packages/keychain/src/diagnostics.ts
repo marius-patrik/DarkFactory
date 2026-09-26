@@ -25,7 +25,11 @@ function primaryOAuth(account: AccountRecord): OAuthCredentialSlot | undefined {
 	return undefined;
 }
 
-function health(oauth: OAuthCredentialSlot | undefined, auth: AccountAuthMetadata | undefined, now: number): CredentialHealth {
+function health(
+	oauth: OAuthCredentialSlot | undefined,
+	auth: AccountAuthMetadata | undefined,
+	now: number,
+): CredentialHealth {
 	if (auth?.rotationDue && Date.parse(auth.rotationDue) <= now) return "rotation_due";
 	if (!oauth) return "non_oauth";
 	if (oauth.expires <= now) return "expired";

@@ -58,7 +58,10 @@ export function importCredentialAccount(
 		]).toString("utf8");
 		return validateAccountRecord(JSON.parse(plaintext) as unknown, expectedId);
 	} catch (error) {
-		if (error instanceof Error && /Account record|Invalid account|credential slot|metadata|does not match/iu.test(error.message)) {
+		if (
+			error instanceof Error &&
+			/Account record|Invalid account|credential slot|metadata|does not match/iu.test(error.message)
+		) {
 			throw error;
 		}
 		throw new Error("Failed to decrypt credential export: bad key or corrupted ciphertext");

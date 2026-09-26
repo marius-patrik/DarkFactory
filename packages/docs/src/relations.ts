@@ -63,7 +63,9 @@ export function analyzeRuleNoteRelations(graph: DocsContentGraph): RuleNoteRelat
 	const rules: DocsRuleRelationEntry[] = [];
 	const ruleIds = new Set<string>();
 
-	for (const page of graph.pages.filter((candidate) => candidate.kind === "rule").sort((a, b) => a.source.localeCompare(b.source))) {
+	for (const page of graph.pages
+		.filter((candidate) => candidate.kind === "rule")
+		.sort((a, b) => a.source.localeCompare(b.source))) {
 		let id = "";
 		let title = "";
 		let status = "";
@@ -90,7 +92,8 @@ export function analyzeRuleNoteRelations(graph: DocsContentGraph): RuleNoteRelat
 			findings.push(`${page.source}: rule heading title must match front-matter title`);
 		}
 		for (const section of ["Requirement", "Rationale", "Enforcement", "Exceptions", "Change control"]) {
-			if (!hasSection(page.markdown, section)) findings.push(`${page.source}: canonical rule is missing non-empty ${section} section`);
+			if (!hasSection(page.markdown, section))
+				findings.push(`${page.source}: canonical rule is missing non-empty ${section} section`);
 		}
 		if (ruleIds.has(id)) findings.push(`${page.source}: duplicate rule id ${id}`);
 		ruleIds.add(id);
@@ -99,9 +102,7 @@ export function analyzeRuleNoteRelations(graph: DocsContentGraph): RuleNoteRelat
 
 	if (rules.length === 0) findings.push(".agents/notes/rules: at least one canonical rule is required");
 
-	const ruleNumbers = rules
-		.map((rule) => Number(ruleNumber(rule.id)))
-		.filter((number) => Number.isFinite(number));
+	const ruleNumbers = rules.map((rule) => Number(ruleNumber(rule.id))).filter((number) => Number.isFinite(number));
 	const expectedRuleNumbers = Array.from({ length: ruleNumbers.length }, (_, index) => index + 1);
 	if (ruleNumbers.some((number, index) => number !== expectedRuleNumbers[index])) {
 		findings.push(`.agents/notes/rules: rule numbers must be contiguous from 001; found ${ruleNumbers.join(", ")}`);
@@ -109,7 +110,9 @@ export function analyzeRuleNoteRelations(graph: DocsContentGraph): RuleNoteRelat
 
 	const notes: DocsNoteRelationEntry[] = [];
 	const noteIds = new Set<string>();
-	for (const page of graph.pages.filter((candidate) => candidate.kind === "adr").sort((a, b) => a.source.localeCompare(b.source))) {
+	for (const page of graph.pages
+		.filter((candidate) => candidate.kind === "adr")
+		.sort((a, b) => a.source.localeCompare(b.source))) {
 		const note = noteIdentity(page);
 		const number = adrNumber(note.id);
 		if (!number) findings.push(`${page.source}: invalid ADR id ${note.id}`);
@@ -120,7 +123,8 @@ export function analyzeRuleNoteRelations(graph: DocsContentGraph): RuleNoteRelat
 			findings.push(`${page.source}: current ADR status must be Accepted`);
 		}
 		for (const section of ["Decision", "Consequences"]) {
-			if (!hasSection(page.markdown, section)) findings.push(`${page.source}: accepted ADR is missing non-empty ${section} section`);
+			if (!hasSection(page.markdown, section))
+				findings.push(`${page.source}: accepted ADR is missing non-empty ${section} section`);
 		}
 		if (noteIds.has(note.id)) findings.push(`${page.source}: duplicate ADR id ${note.id}`);
 		noteIds.add(note.id);
@@ -157,6 +161,7 @@ export function analyzeRuleNoteRelations(graph: DocsContentGraph): RuleNoteRelat
 /** Returns valid rule/note relations or throws with all semantic alignment findings. */
 export function assertRuleNoteRelations(graph: DocsContentGraph): RuleNoteRelationAnalysis {
 	const analysis = analyzeRuleNoteRelations(graph);
-	if (analysis.findings.length > 0) throw new Error(`Rule/note relationship contract failed:\n${analysis.findings.join("\n")}`);
+	if (analysis.findings.length > 0)
+		throw new Error(`Rule/note relationship contract failed:\n${analysis.findings.join("\n")}`);
 	return analysis;
 }

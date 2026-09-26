@@ -32,7 +32,11 @@ export const recoverySourceIdentitySchema = z
 			context.addIssue({ code: "custom", path: ["originalPath"], message: "Worktree recovery requires originalPath" });
 		}
 		if ((source.kind === "branch" || source.kind === "ref" || source.kind === "stash") && !source.originalRef) {
-			context.addIssue({ code: "custom", path: ["originalRef"], message: `${source.kind} recovery requires originalRef` });
+			context.addIssue({
+				code: "custom",
+				path: ["originalRef"],
+				message: `${source.kind} recovery requires originalRef`,
+			});
 		}
 		if (source.kind === "snapshot" && !source.snapshot) {
 			context.addIssue({ code: "custom", path: ["snapshot"], message: "Snapshot recovery requires snapshot identity" });
@@ -70,7 +74,11 @@ export const recoverySafetySchema = z
 	})
 	.superRefine((safety, context) => {
 		if (safety.status === "blocked" && safety.publicationAllowed) {
-			context.addIssue({ code: "custom", path: ["publicationAllowed"], message: "Blocked recovery cannot be published" });
+			context.addIssue({
+				code: "custom",
+				path: ["publicationAllowed"],
+				message: "Blocked recovery cannot be published",
+			});
 		}
 		if (safety.status === "blocked" && safety.blockedReasons.length === 0) {
 			context.addIssue({ code: "custom", path: ["blockedReasons"], message: "Blocked recovery requires a reason" });

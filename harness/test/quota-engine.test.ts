@@ -337,14 +337,14 @@ describe("df quota report", () => {
 			accounts: [],
 			free: { kind: "permanent", keyUrl: "https://docs-p.example/keys" },
 		});
-		expect(byId["docs-p"]!.declared[0]).toMatchObject({
+		expect(byId["docs-p"]?.declared[0]).toMatchObject({
 			source: "docs",
 			sourceUrl: "https://docs-p.example/limits",
 			checkedAt: "2026-09-15",
 		});
 		expect(byId["anon-p"]).toMatchObject({ credentials: "anonymous", state: "unknown" });
-		expect(byId["have-p"]!.accounts[0]!.models.map((model) => model.model)).toEqual(["m", "big-model"]);
-		expect(byId["have-p"]!.accounts[0]!.models[0]!.items[0]).toMatchObject({
+		expect(byId["have-p"]?.accounts[0]?.models.map((model) => model.model)).toEqual(["m", "big-model"]);
+		expect(byId["have-p"]?.accounts[0]?.models[0]?.items[0]).toMatchObject({
 			type: "daily",
 			limit: 20,
 			used: 0,
