@@ -13,6 +13,6 @@
     "typecheck": "bun run --cwd harness typecheck",
     "check": "bun run --cwd harness check",
     "docs": "bun scripts/build-docs.ts",
-    "format:check": "BASE=\"$(bun scripts/get-base-branch.mjs)\"; if [ -z \"$BASE\" ]; then echo \"Base branch not detected\"; exit 1; fi; if ! git rev-parse --verify \"$BASE\" > /dev/null; then echo \"Base branch $BASE not found\"; exit 1; fi; bun x biome ci --changed --since=\"$BASE\""
+    "format:check": "bash scripts/format-check.sh"
   }
 }

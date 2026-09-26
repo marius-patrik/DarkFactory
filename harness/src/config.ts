@@ -352,7 +352,6 @@ export function localCredentialFallback(
     try {
       key = (await reader(path)).trim();
     } catch (error) {
-      console.warn(`Failed to read credential file at ${path}:`, error);
       if ((error as NodeJS.ErrnoException).code === "ENOENT")
         throw new Error(`Credential file does not exist: ${path}`);
       throw error;

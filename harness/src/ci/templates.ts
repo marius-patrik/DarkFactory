@@ -84,10 +84,7 @@ export function getWorkflowTemplateContent(templateName: string): string {
 }
 
 export function interpolateTemplate(rawTemplate: string, context: TemplateContext = {}): string {
-	const defaultBranch = context.default_branch;
-	if (!defaultBranch) {
-		throw new Error("context.default_branch must be provided");
-	}
+	const defaultBranch = context.default_branch || "main";
 	const fullContext: Record<string, string> = {
 		pipeline_repo: context.pipeline_repo || "marius-patrik/DarkFactory",
 		pipeline_ref: context.pipeline_ref || defaultBranch,
@@ -112,15 +109,15 @@ export function parseManagedHeader(content: string): (ManagedHeader & { headerLi
 	const firstLine = firstNewline === -1 ? normalized.trim() : normalized.slice(0, firstNewline).trim();
 
 	const match = firstLine.match(MANAGED_HEADER_REGEX);
-	if (!match) {
+	if (!match || !match[1] || !match[2] || !match[3]) {
 		return null;
 	}
 
 	const body = firstNewline === -1 ? "" : normalized.slice(firstNewline + 1);
 	return {
-		template: match[1] ?? "",
-		version: match[2] ?? "",
-		hash: match[3]?.toLowerCase() ?? "",
+		template: match[1],
+		version: match[2],
+		hash: match[3].toLowerCase(),
 		headerLine: firstLine,
 		body,
 	};

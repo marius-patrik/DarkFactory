@@ -37,9 +37,11 @@ def temp_redaction_file():
     target_file = os.path.join("harness", "src", "redaction.ts")
     with open(target_file, "r") as f:
         original = f.read()
-    yield target_file
-    with open(target_file, "w") as f:
-        f.write(original)
+    try:
+        yield target_file
+    finally:
+        with open(target_file, "w") as f:
+            f.write(original)
 
 
 def test_format_check_drift_integration(temp_redaction_file):
