@@ -1,6 +1,14 @@
 import subprocess
 import os
+import shutil
 import pytest
+
+
+def get_bun_path():
+    bun_path = shutil.which("bun")
+    if not bun_path:
+        pytest.fail("bun not found in PATH")
+    return bun_path
 
 
 def test_get_base_branch_fallback():
@@ -8,7 +16,7 @@ def test_get_base_branch_fallback():
     env.pop("DF_BASE_SHA", None)
     env.pop("GITHUB_BASE_REF", None)
     result = subprocess.run(
-        ["bun", "scripts/get-base-branch.mjs"], env=env, capture_output=True, text=True
+        [get_bun_path(), "scripts/get-base-branch.mjs"], env=env, capture_output=True, text=True
     )
     assert result.returncode == 0
     assert result.stdout.strip() in ["origin/main", "main", "origin/develop", "develop", "HEAD~1"]
@@ -18,7 +26,7 @@ def test_get_base_branch_malicious_input():
     env = os.environ.copy()
     env["DF_BASE_SHA"] = "invalid-ref-$(whoami)"
     result = subprocess.run(
-        ["bun", "scripts/get-base-branch.mjs"], env=env, capture_output=True, text=True
+        [get_bun_path(), "scripts/get-base-branch.mjs"], env=env, capture_output=True, text=True
     )
     assert result.returncode == 0
     assert result.stdout.strip() in ["origin/main", "main", "origin/develop", "develop", "HEAD~1"]
@@ -41,7 +49,7 @@ def test_format_check_drift_integration(temp_redaction_file):
 
     # Run the actual command (do not mock subprocess.run)
     result = subprocess.run(
-        ["bun", "run", "format:check"],
+        [get_bun_path(), "run", "format:check"],
         env={**os.environ, "DF_BASE_SHA": "HEAD~1"},  # Compare against HEAD~1
         capture_output=True,
         text=True,
@@ -68,6 +76,8 @@ def test_get_base_branch_with_config():
         env["DF_CONFIG_PATH"] = os.path.join(tmp_dir, "repo.dfconfig")
 
         script_path = os.path.abspath("scripts/get-base-branch.mjs")
-        result = subprocess.run(["bun", script_path], env=env, capture_output=True, text=True)
+        result = subprocess.run(
+            [get_bun_path(), script_path], env=env, capture_output=True, text=True
+        )
         assert result.returncode == 0
         assert "HEAD^" in result.stdout

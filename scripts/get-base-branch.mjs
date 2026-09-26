@@ -66,14 +66,15 @@ function getBaseBranch() {
 
   // Attempt fetching origin if remote refs are absent (e.g. shallow checkout / CI)
   try {
-    execFileSync('git', ['fetch', 'origin', '--depth=1'], { stdio: 'ignore', timeout: 30000 });
+    console.error("Attempting to fetch origin/ to resolve base branch...");
+    execFileSync('git', ['fetch', 'origin', '--depth=1'], { stdio: 'pipe', timeout: 5000 });
     for (const candidate of candidates) {
       if (verifyRef(candidate)) {
         return candidate;
       }
     }
-  } catch {
-    // Fetch failed
+  } catch (e) {
+    console.error(`Fetch operation failed: ${e.message}`);
   }
 
   const fallback = configDefaultBranch ? `origin/${configDefaultBranch}` : (configDevBranch ? `origin/${configDevBranch}` : 'origin/main');
