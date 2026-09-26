@@ -19,6 +19,6 @@
   "scripts": {
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "lint": "biome lint .",
-    "format:check": "biome ci ."
+    "format:check": "biome format ."
   }
 }

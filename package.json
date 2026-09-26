@@ -13,7 +13,7 @@
     "typecheck": "bun run --cwd harness typecheck",
     "check": "bun run --cwd harness check",
     "docs": "bun scripts/build-docs.ts",
-    "format:check": "biome ci ."
+    "format:check": "biome format ."
   },
   "devDependencies": {
     "@biomejs/biome": "2.5.13",

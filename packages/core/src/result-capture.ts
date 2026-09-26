@@ -7,7 +7,6 @@ import {
 	type ExtractedJudgement,
 	type ScopeCheckResultSummary,
 	type VerificationActionResultSummary,
-	validateCaptureSchema,
 } from "@darkfactory/protocol/result-capture";
 import type { AssistantMessage, Context } from "@earendil-works/pi-ai";
 import { z } from "zod";

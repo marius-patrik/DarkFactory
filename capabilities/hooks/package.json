@@ -13,7 +13,7 @@
     "test": "bun test capability.test.ts",
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "lint": "biome lint .",
-    "format:check": "biome ci ."
+    "format:check": "biome format ."
   },
   "license": "GPL-3.0",
   "dependencies": {
