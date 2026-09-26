@@ -5,47 +5,44 @@ description: Steering the DarkFactory pipeline on issues and pull requests with 
 
 # DarkFactory pipeline operations
 
-The DarkFactory pipeline is driven **entirely by GitHub comments** on the Request/Plan issues and the associated pull request.  The agents watch for a strict command grammar defined in `.github/scripts/commands.py`.
+The DarkFactory pipeline is driven by GitHub comments on the Request issue and the associated pull
+request. Comment commands are the only way a human advances or redirects a run.
 
 ## Core commands
 
 | Comment | What it does | Where it applies | Who may use it |
 |---|---|---|---|
-| ``/df approve`` | Advances the current gate (interpretation → plan → implementation) | The interpretation and plan gates on the Request issue | The request author, or anyone with the GitHub association `OWNER`, `MEMBER` or `COLLABORATOR` (see `is_allowed_approver` in `agent_runner.py`). |
-| ``/df reject <feedback>`` | Sends the pipeline back to the previous stage with the supplied feedback attached to the comment.  The free‑text after the command is extracted by `command_feedback` and stored on the issue. | Any *issue* gate (Interpretation, Plan) | Same approver set as above. |
-| ``/df revise`` | Alias of ``/df reject`` – the parser normalises it to *reject* and treats the trailing text exactly the same way. | Same as *reject* | Same as *reject* |
-| ``/df resume`` | Unblocks a pipeline that stopped because of a quota exhaustion.  The comment must be posted after the quota is restored. | Any gate that is currently *blocked* (usually after the quota resume sweep runs) | Same as *approve* – the approver role is checked again. |
+| ``/df approve`` | Approves the gate the run is currently waiting on. | Any open gate | The Request author, or any account whose repository association is `OWNER`, `MEMBER` or `COLLABORATOR`. Bot accounts are never accepted. |
+| ``/df reject <feedback>`` | Returns the run to the stage that produced the artifact under review, with the feedback attached. Free text after the verb is the reason. | Any open gate | Same approver set as above. |
+| ``/df revise`` | Alias of ``/df reject``. The parser normalises it to *reject* and treats the trailing text the same way. | Same as *reject* | Same as *reject* |
+| ``/df resume`` | Unblocks a run that stopped because every configured account was out of quota. Post it after quota is restored. | A run that is *blocked* on quota | Same as *approve* |
 
-The strict grammar is captured by the regular expression `STRICT_COMMAND` in `commands.py` and **must be the entire comment** (no surrounding prose).  A rejection command is the only one that allows trailing feedback, matched by `STRICT_REJECT_WITH_FEEDBACK`.
+The grammar is strict: a command must be the entire comment, with no surrounding prose. Only a
+rejection accepts trailing feedback. Bare legacy words (`approve`, `lgtm`, `good`, `merge`) are still
+recognised on issues and pull requests, but new comments should use the ``/df`` form.
 
-## Legacy spellings
+## The gates
 
-Older versions of DarkFactory accepted bare words without the ``/df`` prefix.  Those legacy maps are still exported for compatibility:
+There are three, and a run waits on one at a time. There is no separate interpretation gate: the
+verbatim Request goes straight to Planning, and one reviewed Planning artifact carries the semantic
+interpretation of that Request through to alignment.
 
-```python
-LEGACY_ISSUE_COMMANDS = {
-    "approve": "approve",
-    "/approve": "approve",
-    "lgtm": "approve",
-    "good": "approve",
-    "resume": "resume",
-    "/resume": "resume",
-}
+| Gate | Approving it means |
+|---|---|
+| **Planning** | The single unified Planning artifact — semantic interpretation of the verbatim Request, the evidence-justified approach, dependencies, recovery inputs and verification expectations — is accepted. Planning passes an independent review/fix loop until clean first; approval is the last step, not the first. |
+| **Deviation** | Material implementation scope that falls outside approved Planning is accepted. It does not re-open Planning. |
+| **Merge** | The implementation is aligned against approved Planning plus approved amendments, and the final merge is authorised. |
 
-LEGACY_PR_COMMANDS = {
-    "approve": "approve",
-    "/approve": "approve",
-    "merge": "approve",
-    "/merge": "approve",
-    "lgtm": "approve",
-}
-```
+Rejecting at the Planning gate routes the run back for another review/fix iteration. Rejecting at
+Deviation or Merge returns the run to implementation with your reason attached.
 
-New comments should always use the ``/df`` form to avoid ambiguity.
+Planning approval goes stale after a material change to the Request, the base, a dependency or the
+recovery context, and cannot be silently reused.
 
 ## Resuming after a quota stop
 
-When every configured account is out of quota, the pipeline pauses and posts a comment that contains the **resume instructions** (the constant `RESUME_INSTRUCTIONS` in `commands.py`).  It looks like this:
+When every configured account is out of quota, the run pauses and posts a comment containing the
+resume instructions:
 
 ```
 When quota limits reset or additional quota is provisioned:
@@ -54,7 +51,7 @@ When quota limits reset or additional quota is provisioned:
 3. The agent resumes from the checkpoint on whichever harness is available.
 ```
 
-After the quota is restored you can run a few df CLI commands to see the current state:
+To check state before you resume:
 
 ```sh
 df quota --json            # quota state for every provider, account and model
@@ -62,19 +59,24 @@ df ci runs                 # recent workflow runs of the repository
 df ci logs <run-id>        # logs of one run
 ```
 
-These are the **only** df CLI commands referenced in this skill – they are read‑only checks; the pipeline itself never invokes the CLI.
+## What the pipeline runs
 
-## Where these commands live
+The pipeline is not read-only against df. It configures credentials and executes work through df
+itself:
 
-* The comment parsing lives in **`.github/scripts/commands.py`** (docstring and the constants shown above).
-* Permission checking is done by **`.github/scripts/agent_runner.py`** via `is_allowed_approver`.
-* The resume footer text is the constant `RESUME_INSTRUCTIONS` in `commands.py`.
+- `df account set` places an API-key slot from a repository secret.
+- `df account load` installs a previously exported account record from an environment variable.
+- `df run` executes planning, implementation and review stages.
 
-## Quick cheat‑sheet
+Availability always comes from the quota engine, so a run that cannot route reports unavailable
+providers rather than failing on a hand-run provider probe.
 
-* Approve: ` /df approve `
+## Quick cheat-sheet
+
+* Approve the open gate: ` /df approve `
 * Reject with feedback: ` /df reject <your notes> `
 * Revise (same as reject): ` /df revise <notes> `
 * Resume after quota: ` /df resume `
 
-Remember: these are **GitHub comment commands**, not shell commands.  The only df CLI commands you need to type are the three read‑only checks listed above.
+These are **GitHub comment commands**, not shell commands. The three read-only `df` checks above are
+the only commands you need to type yourself.
