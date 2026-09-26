@@ -1474,6 +1474,65 @@ def _dispatch_issue_comment(monkeypatch, tmp_path, payload, plan_exists=False):
     return calls
 
 
+@pytest.mark.parametrize("is_pr", [False, True])
+@pytest.mark.parametrize(
+    "body",
+    [
+        "Merged #931; proceed after #358.",
+        "I do not approve yet",
+        None,
+        "> @darkfactory-pipeline explain",
+        "`@darkfactory-pipeline explain`",
+        "@darkfactory-pipeline-other explain",
+    ],
+)
+def test_unaddressed_comments_have_no_effects(monkeypatch, tmp_path, is_pr, body):
+    """Discussion, quoted mentions and lookalike accounts invoke no model or lifecycle effect."""
+    calls = _dispatch_issue_comment(
+        monkeypatch, tmp_path, _issue_comment_payload(body, is_pr=is_pr)
+    )
+    assert all(not values for values in calls.values())
+
+
+@pytest.mark.parametrize("is_pr", [False, True])
+def test_direct_mentions_only_answer(monkeypatch, tmp_path, is_pr):
+    """A direct address requests a reply, not a lifecycle transition."""
+    calls = _dispatch_issue_comment(
+        monkeypatch,
+        tmp_path,
+        _issue_comment_payload("@DarkFactory-Pipeline[bot]: explain this", is_pr=is_pr),
+    )
+    assert len(calls.pop("respond")) == 1
+    assert all(not values for values in calls.values())
+
+
+def test_bot_type_cannot_request_a_reply(monkeypatch, tmp_path):
+    """Automation is ignored even when its login does not end in [bot]."""
+    calls = _dispatch_issue_comment(
+        monkeypatch,
+        tmp_path,
+        _issue_comment_payload(
+            "@darkfactory-pipeline explain", login="automation", user_type="Bot"
+        ),
+    )
+    assert all(not values for values in calls.values())
+
+
+def test_discussion_quota_does_not_receive_lifecycle_context(monkeypatch):
+    """Discussion exhaustion cannot checkpoint or relabel the Request."""
+    seen = []
+    monkeypatch.setattr(
+        agent_runner,
+        "run_agent_prompt",
+        lambda *a, **k: seen.append(k) or agent_runner.QUOTA_EXHAUSTED_NOTICE,
+    )
+    monkeypatch.setattr(
+        agent_runner, "run_gh", lambda *a, **k: pytest.fail("unexpected GitHub effect")
+    )
+    agent_runner.handle_respond(359, "@darkfactory-pipeline explain", REPO_SLUG)
+    assert seen == [{"kind": "chat"}]
+
+
 class TestPipelineFailureComments:
     """Comments on `pipeline-failure` issues must not run the agent."""
 
@@ -1502,13 +1561,30 @@ class TestPipelineFailureComments:
         assert calls["implement"] == []
 
     def test_only_a_resume_command_is_processed(self, monkeypatch, tmp_path):
-        """The resume escape hatch still answers instead of skipping."""
+        """A report without a Request/Plan stage is unblocked by resume itself.
+
+        The failure report carries only `pipeline-failure`, so it matches neither branch of
+        resume_item. The escape hatch exists to unblock the report, so it has to unblock it
+        directly or `/df resume` on a failure report does nothing at all.
+        """
         calls = _dispatch_issue_comment(
             monkeypatch,
             tmp_path,
             _issue_comment_payload("/df resume", labels=("pipeline-failure",)),
         )
-        assert len(calls["respond"]) == 1
+        assert calls["respond"] == []
+        assert len(calls["unblock"]) == 1
+
+    def test_an_unauthorized_resume_cannot_unblock_a_failure(self, monkeypatch, tmp_path):
+        """Authorization precedes failure-report handling."""
+        calls = _dispatch_issue_comment(
+            monkeypatch,
+            tmp_path,
+            _issue_comment_payload(
+                "/df resume", login="stranger", assoc="NONE", labels=("pipeline-failure", "Request")
+            ),
+        )
+        assert all(not values for values in calls.values())
 
 
 class TestRejectRoutesBack:
@@ -1543,14 +1619,14 @@ class TestRejectRoutesBack:
         assert calls["implement"] == []
         assert calls["interpret"] == []
 
-    def test_reject_on_a_pull_request_is_a_change_request(self, monkeypatch, tmp_path):
-        """On a PR there is no stage to re-run: the agent answers, nothing merges."""
+    def test_reject_without_linked_planning_does_not_answer(self, monkeypatch, tmp_path):
+        """Missing workflow linkage must not turn a command into conversational success."""
         calls = _dispatch_issue_comment(
             monkeypatch,
             tmp_path,
             _issue_comment_payload("/df reject needs tests", labels=(), is_pr=True),
         )
-        assert len(calls["respond"]) == 1
+        assert calls["respond"] == []
         assert calls["self_review"] == []
         assert calls["unblock"] == [], "a change request arms no merge"
 
@@ -1565,25 +1641,25 @@ class TestRejectRoutesBack:
 class TestWhoMayApprove:
     """Owner decision 9c: the Request author or OWNER/MEMBER/COLLABORATOR, never a bot."""
 
-    def test_a_strangers_approve_is_feedback(self, monkeypatch, tmp_path):
-        """It is answered, but the plan gate does not move."""
+    def test_a_strangers_approve_is_ignored(self, monkeypatch, tmp_path):
+        """An unauthorized command starts neither a model nor a gate."""
         calls = _dispatch_issue_comment(
             monkeypatch,
             tmp_path,
             _issue_comment_payload("approve", login="stranger", assoc="CONTRIBUTOR"),
         )
-        assert len(calls["respond"]) == 1
+        assert calls["respond"] == []
         assert calls["plan"] == []
         assert calls["implement"] == []
 
-    def test_a_strangers_strict_command_is_feedback(self, monkeypatch, tmp_path):
+    def test_a_strangers_strict_command_is_ignored(self, monkeypatch, tmp_path):
         """The strict grammar does not promote strangers either."""
         calls = _dispatch_issue_comment(
             monkeypatch,
             tmp_path,
             _issue_comment_payload("/df approve", login="stranger", assoc="NONE"),
         )
-        assert len(calls["respond"]) == 1
+        assert calls["respond"] == []
         assert calls["plan"] == []
 
     def test_the_request_author_may_approve(self, monkeypatch, tmp_path):
@@ -1642,22 +1718,20 @@ class TestCommandHint:
         module.dispatch_event(str(path), "issue_comment")
         return calls, posted
 
-    def test_a_mention_posts_the_hint_and_still_answers(self, monkeypatch, tmp_path):
-        """The mention is feedback (answered), and the grammar gets one explanation."""
+    def test_command_words_in_discussion_stay_silent(self, monkeypatch, tmp_path):
+        """Ordinary discussion earns neither a model reply nor an unsolicited hint."""
         calls, posted = self._dispatch_with_comments(
             monkeypatch, tmp_path, "I do not approve yet", []
         )
-        assert len(calls["respond"]) == 1
-        assert len(posted) == 1
-        assert "<!-- darkfactory-command-hint -->" in posted[0]
-        assert "/df approve" in posted[0]
+        assert calls["respond"] == []
+        assert posted == []
 
     def test_the_hint_is_posted_at_most_once(self, monkeypatch, tmp_path):
         """A second mention finds the marker and stays silent."""
         _calls, posted = self._dispatch_with_comments(
             monkeypatch,
             tmp_path,
-            "I do not approve yet",
+            "@darkfactory-pipeline how do I approve?",
             ["<!-- darkfactory-command-hint -->\nuse /df approve"],
         )
         assert posted == []
@@ -2835,9 +2909,17 @@ class TestPrFeedbackRevision:
             }
         ]
 
-    def test_a_plain_review_comment_is_only_answered(self, monkeypatch, tmp_path):
+    def test_a_plain_review_comment_is_ignored(self, monkeypatch, tmp_path):
         calls = self._comment_event(monkeypatch, tmp_path, "why is this function so long?")
+        assert calls == {"dispatch": [], "respond": []}
+
+    def test_direct_review_mention_gets_a_discussion_reply(self, monkeypatch, tmp_path):
+        calls = self._comment_event(monkeypatch, tmp_path, "@darkfactory-pipeline explain this")
         assert calls["dispatch"] == [] and len(calls["respond"]) == 1
+
+    def test_reject_without_planning_has_no_conversational_fallback(self, monkeypatch, tmp_path):
+        calls = self._comment_event(monkeypatch, tmp_path, "/df reject needs tests", plan=None)
+        assert calls == {"dispatch": [], "respond": []}
 
     def test_the_revision_is_pushed_announced_and_reviewed_again(self, monkeypatch):
         module = agent_runner_module()
@@ -2969,3 +3051,41 @@ def test_checkpoint_and_notify_exhaustion_includes_resume_time_and_instructions(
     assert "/df resume" in comment_body
     assert len(recorded_blocks) == 1
     assert recorded_blocks[0][3] == 1742054400.0
+
+
+class TestDiscussionWithoutDf:
+    """A chat reply must report why it could not run, not blame quota."""
+
+    def test_a_chain_without_df_says_so_instead_of_reporting_quota(self, monkeypatch):
+        """Skipping every non-df attempt must not fall through to the exhaustion notice.
+
+        The chat path skips harnesses that cannot serve a tool-free reply, so a chain without df
+        leaves nothing attempted. Reporting quota exhaustion across an empty list is untrue and
+        gives the operator nothing to act on.
+        """
+        monkeypatch.setattr(
+            agent_runner,
+            "resolve_attempts",
+            lambda **_: [
+                agent_runner.harnesses.Attempt(
+                    agent_runner.harnesses.get_harness("claude"), None, 1
+                )
+            ],
+        )
+        result = agent_runner.run_agent_prompt("explain", kind="chat")
+        assert result.startswith("[DarkFactory Agent Execution Error]")
+        assert "discussion reply" in result
+        assert "quota" not in result.lower()
+
+
+class TestCommandHintNamesTheHandle:
+    """The hint must tell a person the handle the matcher actually accepts."""
+
+    def test_the_hint_names_the_declared_handle(self, monkeypatch):
+        handle = agent_runner.agent_mention_handle()
+        assert handle
+        assert f"@{handle}" in agent_runner.COMMAND_HINT_BODY
+
+    def test_the_named_handle_is_the_one_the_matcher_accepts(self, monkeypatch):
+        handle = agent_runner.agent_mention_handle()
+        assert agent_runner.is_direct_agent_mention(f"@{handle}: explain this")

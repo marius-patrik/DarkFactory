@@ -40,9 +40,52 @@
       "tag_prefix": "v",
       "initial": "3a.1.0"
     },
+    "environment": {
+      "testing": {
+        "typst": {
+          "command": "bun run publication -- --check",
+          "versions": [
+            "0.15.1"
+          ]
+        }
+      },
+      "linting": {
+        "typst": {
+          "enabled": false
+        }
+      },
+      "formatting": {
+        "typst": {
+          "enabled": false
+        }
+      },
+      "release": {
+        "typst": {
+          "command": "bun run publication",
+          "artifacts": [
+            "../PAPER.pdf"
+          ]
+        }
+      },
+      "setup": {
+        "typst": {
+          "command": "bun install --frozen-lockfile"
+        }
+      }
+    },
     "areas": {
       "$comment": "Area labels, commit scopes and agent routing all read this one list, so they cannot drift apart. Declaration order is match order - the first area whose keywords hit wins - so specific areas come before general ones. A consumer repository replaces this block wholesale with its own domains.",
       "$default": "ci",
+      "paper": {
+        "description": "Paper manuscript, scholarly evidence and publication outputs",
+        "keywords": [
+          "paper",
+          "thesis",
+          "typst",
+          "manuscript",
+          "publication"
+        ]
+      },
       "agents": {
         "description": "Agent runtime, routing, providers, planning/review orchestration and model execution",
         "keywords": [

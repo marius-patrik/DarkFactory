@@ -32,6 +32,7 @@ accepted ADR metadata; edit canonical rules/ADRs rather than this projection.
 | `DF-RULE-017` | Final architecture, DRY, and deletion | `ADR-0006`, `ADR-0008`, `ADR-0017`, `ADR-0022` | `.agents/rules/017-final-architecture-dry-and-deletion.md` |
 | `DF-RULE-018` | Concurrency, atomicity, and idempotency | `ADR-0011`, `ADR-0013`, `ADR-0015`, `ADR-0019`, `ADR-0020`, `ADR-0024` | `.agents/rules/018-concurrency-atomicity-and-idempotency.md` |
 | `DF-RULE-019` | Orchestrated integration and worker isolation | `ADR-0022`, `ADR-0025` | `.agents/rules/019-orchestrated-integration-and-worker-isolation.md` |
+| `DF-RULE-020` | Paper authorship and publication | `ADR-0028` | `.agents/rules/020-paper-authorship-and-publication.md` |
 
 
 ---
@@ -406,3 +407,11 @@ Parallel implementation has one integration authority per delivery branch.
 - CI is read-only on delivery branches; background automation does not race the orchestrator by
   pushing formatter/fix commits.
 - Each implementation gate records exact-head evidence before downstream work treats it as satisfied.
+
+### Rule 20 — Paper authorship and publication
+
+`paper/index.typ` is the sole authored thesis manuscript. `paper/bib/`, `paper/fonts/`, and `paper/img/` contain its supporting bibliography, font, and image resources.
+
+The canonical publication command generates the repository-root `PAPER.pdf` artifact. The Paper does not generate or own repository Markdown; the repository README is generated from `.agents/notes/`. `PAPER.pdf` is included in the release assets.
+
+The Paper uses the shared documentation, capability, CI, and release contracts. Manuscript prose and supporting assets change only on explicit author request. The author reviews thesis changes before they are staged or delivered.

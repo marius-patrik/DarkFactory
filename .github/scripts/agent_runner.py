@@ -961,8 +961,8 @@ def is_bot_or_agent_comment(user_login: str, body: str) -> bool:
 #: Recognises an approval, which must be the whole comment.
 #:
 #: Deliberately strict, and it was briefly loosened by mistake. A comment carrying anything besides
-#: the word is feedback, and feedback has its own path: it reaches `handle_respond`, the agent
-#: answers or amends, and the reviewer then approves cleanly once satisfied.
+#: the word is discussion. Only a direct bot mention requests a conversational response;
+#: an explicit rejection command routes actionable feedback back through the governed stage.
 #:
 #: Accepting "three concerns, and approve" would collapse those two acts into one ambiguous
 #: message - nobody can tell whether the concerns were meant to be addressed first. Requiring the
@@ -2121,6 +2121,9 @@ def run_agent_prompt(
 
     for index, attempt in enumerate(attempts):
         harness, current_model = attempt.harness, attempt.model
+        if kind == "chat" and harness.name != "df":
+            # Only df exposes the deterministic tool policy used for discussion replies.
+            continue
         label = attempt.label
         tried.append(label)
         # A template carrying ``{{PROMPT_FILE}}`` (df) receives the prompt by path rather than as
@@ -2172,7 +2175,10 @@ def run_agent_prompt(
                     kind=kind,
                 )
             try:
-                res = subprocess.run(argv, capture_output=True, text=True, check=True, env=env)
+                invocation = [*argv, "--deny", "*"] if kind == "chat" else argv
+                res = subprocess.run(
+                    invocation, capture_output=True, text=True, check=True, env=env
+                )
             except FileNotFoundError:
                 print(
                     f"Harness binary {harness.binary!r} vanished between resolution and "
@@ -2372,6 +2378,17 @@ def run_agent_prompt(
         print(notice, file=sys.stderr)
         _post_agent_failure_notice(notice, checkpoint_context)
         raise RuntimeError(notice)
+
+    if not tried:
+        # The chat path skips every harness that cannot serve a tool-free discussion reply, so a
+        # chain without df leaves nothing attempted. Falling through would report quota exhaustion
+        # across an empty list, which is both untrue and unactionable.
+        err = (
+            "[DarkFactory Agent Execution Error]: No harness can serve a discussion reply. "
+            "Only df answers chat, and it is not on PATH."
+        )
+        print(redact_secrets(err), file=sys.stderr)
+        return err
 
     if last_rotatable == "auth":
         # Every credential in the chain was rejected. This is not quota - resuming the same
@@ -2644,22 +2661,16 @@ def handle_plan(request_number: int, plan_number: int, repo: str, feedback: str 
 
 
 def handle_respond(issue_or_pr_num: int, comment_text: str, repo: str, is_pr: bool = False):
-    """Generates a contextual agent response to human feedback."""
-    checkpoint_ctx = {
-        "issue_number": issue_or_pr_num,
-        "repo": repo,
-        "completed_steps": [
-            f"Received user comment on {'PR' if is_pr else 'Issue'} #{issue_or_pr_num}"
-        ],
-        "is_pr": is_pr,
-    }
+    """Answers explicitly addressed discussion without lifecycle checkpoints or tools."""
     prompt = (
         f"User posted the following feedback on {'PR' if is_pr else 'Issue'} #{issue_or_pr_num}:\n"
         f'"{comment_text}"\n\n'
-        "Provide a direct, helpful, and concise response addressing the feedback and detailing next actions.\n"
+        "Answer the question concisely. This is discussion only: no workflow was started and "
+        "no tools are available. Do not promise execution or claim edits, verification, commits, "
+        "pushes or delivery. Explain which explicit command is needed if action is requested.\n"
         "Cite repository files as plain `path/to/file` code spans, never as file:// URLs."
     )
-    response = run_agent_prompt(prompt, checkpoint_context=checkpoint_ctx, kind="chat")
+    response = run_agent_prompt(prompt, kind="chat")
     if is_quota_exhaustion_notice(response):
         return
 
@@ -2672,6 +2683,7 @@ def handle_respond(issue_or_pr_num: int, comment_text: str, repo: str, is_pr: bo
         fail_agent_run(f"Respond failed on #{issue_or_pr_num}; Execution Error posted.")
     body = (
         "<!-- darkfactory-agent -->\n### DarkFactory Agent Response\n\n"
+        "Discussion reply; no workflow action was started.\n\n"
         f"{rewrite_file_links(response, repo, development_branch())}"
     )
 
@@ -4491,13 +4503,29 @@ def handle_plan_alignment(pr_number: int, plan_number: int, request_number: int,
         print(f"Plan alignment divergence detected on PR #{pr_number}")
 
 
+def agent_mention_handle() -> str:
+    """Returns the handle a human types to address the agent, without the ``[bot]`` suffix.
+
+    The command hint and the mention matcher both read this, so the handle the docs tell a
+    person to type cannot drift from the one the matcher accepts.
+
+    Returns:
+        The declared bot login with any ``[bot]`` suffix removed, or an empty string when the
+        manifest declares no identity.
+    """
+    identity = _MANIFEST.identities.get("app") or _MANIFEST.identities.get("automation") or {}
+    login = str(identity.get("login") or _MANIFEST.app.get("slug") or "")
+    return login.removesuffix("[bot]")
+
+
 #: One-time hint posted when free text merely mentions a command word.
 COMMAND_HINT_BODY = (
     HINT_MARKER
     + "\nThat looks like approval feedback, but only a command on its own line counts as a "
     "decision. Reply with `/df approve` (or `/approve`) to approve, `/df reject` (alias "
     "`/df revise`, or `/reject` / `/revise`) to send the stage back with feedback, or `/df resume` "
-    "(or `/resume`) to resume a stopped run. Anything else is answered as ordinary feedback."
+    "(or `/resume`) to resume a stopped run. Address "
+    f"@{agent_mention_handle()} directly for a discussion reply."
 )
 
 
@@ -4528,6 +4556,22 @@ def post_command_hint_once(issue_number: int, repo: str) -> bool:
         doing=f"post the command hint on #{issue_number}",
     )
     return True
+
+
+def is_direct_agent_mention(body: str) -> bool:
+    """Matches a leading bot mention using the identity declared in repo.df.
+
+    Args:
+        body: Human comment text; quoted/code examples are not direct addresses.
+
+    Returns:
+        Whether the comment starts with the exact declared bot login or App slug.
+    """
+    slug = agent_mention_handle()
+    return bool(
+        slug
+        and re.match(r"@" + re.escape(slug) + r"(?:\[bot\])?(?=$|[\s,:!?])", body.strip(), re.I)
+    )
 
 
 def _comment_actor(comment: Dict[str, Any]) -> tuple:
@@ -4643,7 +4687,7 @@ def dispatch_event(event_path: str, event_name: str):
     elif event_name == "issue_comment":
         action = payload.get("action")
         comment = payload.get("comment", {})
-        comment_body = comment.get("body", "").strip()
+        comment_body = (comment.get("body") or "").strip()
         comment_user = comment.get("user", {}).get("login", "")
         issue = payload.get("issue", {})
         issue_num = issue.get("number")
@@ -4654,24 +4698,13 @@ def dispatch_event(event_path: str, event_name: str):
             if is_bot_or_agent_comment(comment_user, comment_body):
                 print(f"Skipping comment on #{issue_num} authored by bot/agent ({comment_user}).")
                 return
+            if (comment.get("user", {}) or {}).get("type") == "Bot":
+                return
 
             labels = [
                 l.get("name") if isinstance(l, dict) else str(l) for l in issue.get("labels", [])
             ]
             lowered_labels = {str(lbl).lower() for lbl in labels}
-
-            # A pipeline-failure issue is the pipeline reporting on itself. Comments on it
-            # must not run the agent (an LLM call) — unless the comment resumes the run.
-            if "pipeline-failure" in lowered_labels:
-                if parse_issue_command(comment_body) != "resume":
-                    print(
-                        f"Skipping comment on pipeline-failure issue #{issue_num}; "
-                        "only a resume command resumes it."
-                    )
-                    return
-                unblock_entity(issue_num, repo, is_pr=is_pr)
-                handle_respond(issue_num, comment_body, repo=repo, is_pr=is_pr)
-                return
 
             issue_author = ((issue.get("user", {}) or {}).get("login", "")) or ""
             login, association, user_type = _comment_actor(comment)
@@ -4685,12 +4718,19 @@ def dispatch_event(event_path: str, event_name: str):
             is_plan = any(l.lower() == "plan" for l in labels)
             command = parse_issue_command(comment_body)
             if command is not None and not allowed:
-                # A stranger's "approve" is feedback, never a gate transition.
+                # An unauthorized command must not fall through to a model response.
                 print(
                     f"Ignoring {command} command on #{issue_num} from @{login}: "
                     "not the author nor OWNER/MEMBER/COLLABORATOR."
                 )
-                command = None
+                return
+            if "pipeline-failure" in lowered_labels:
+                # A failure report carries only the pipeline-failure label, so it matches neither the
+                # Request nor the Plan branch of resume_item and would be silently dropped. The
+                # escape hatch exists to unblock the report itself, so unblock it directly.
+                if command == "resume":
+                    unblock_entity(issue_num, repo, is_pr=is_pr, target_status="In Progress")
+                return
             if command in ("approve", "resume"):
                 print(f"Approval comment on #{issue_num} from @{comment_user}.")
                 resume_item(issue_num, is_pr, repo, labels)
@@ -4714,7 +4754,7 @@ def dispatch_event(event_path: str, event_name: str):
                             },
                         )
                     else:
-                        handle_respond(issue_num, comment_body, repo=repo, is_pr=is_pr)
+                        print(f"Could not find Planning for PR #{issue_num}; no action taken.")
                 else:
                     # Non‑PR issues keep previous behaviour
                     if is_request:
@@ -4728,10 +4768,9 @@ def dispatch_event(event_path: str, event_name: str):
                             handle_plan(request_num, issue_num, repo, feedback=feedback)
                         else:
                             print(f"Could not find parent Request for Plan #{issue_num}")
-                            handle_respond(issue_num, comment_body, repo=repo, is_pr=is_pr)
                     else:
-                        handle_respond(issue_num, comment_body, repo=repo, is_pr=is_pr)
-            else:
+                        print(f"Issue #{issue_num} has no Request/Planning gate; no action taken.")
+            elif is_direct_agent_mention(comment_body):
                 if (is_request or is_plan) and is_command_hint(comment_body):
                     post_command_hint_once(issue_num, repo)
                 handle_respond(issue_num, comment_body, repo=repo, is_pr=is_pr)
@@ -4739,7 +4778,7 @@ def dispatch_event(event_path: str, event_name: str):
     elif event_name == "pull_request_review_comment":
         action = payload.get("action")
         comment = payload.get("comment", {})
-        comment_body = comment.get("body", "").strip()
+        comment_body = (comment.get("body") or "").strip()
         comment_user = comment.get("user", {}).get("login", "")
         pr = payload.get("pull_request", {})
         pr_num = pr.get("number")
@@ -4749,6 +4788,8 @@ def dispatch_event(event_path: str, event_name: str):
                 print(
                     f"Skipping PR review comment on #{pr_num} authored by bot/agent ({comment_user})."
                 )
+                return
+            if (comment.get("user", {}) or {}).get("type") == "Bot":
                 return
             pr_author = ((pr.get("user", {}) or {}).get("login", "")) or ""
             review_user = comment.get("user", {}) or {}
@@ -4763,7 +4804,7 @@ def dispatch_event(event_path: str, event_name: str):
                     f"Ignoring {review_command} review comment on #{pr_num}: "
                     "not the author nor OWNER/MEMBER/COLLABORATOR."
                 )
-                review_command = None
+                return
             if review_command in ("approve", "resume"):
                 resume_item(pr_num, True, repo)
                 return
@@ -4782,7 +4823,10 @@ def dispatch_event(event_path: str, event_name: str):
                     },
                 )
                 return
-            handle_respond(pr_num, comment_body, repo=repo, is_pr=True)
+            if review_command == "reject":
+                print(f"Could not find Planning for PR #{pr_num}; no action taken.")
+            elif is_direct_agent_mention(comment_body):
+                handle_respond(pr_num, comment_body, repo=repo, is_pr=True)
 
 
 def development_branch() -> str:
