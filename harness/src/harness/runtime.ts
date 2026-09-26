@@ -94,7 +94,7 @@ class RebindableCredentialStore implements CredentialStore {
 	}
 }
 
-function isolateAmbientAuth(provider: Provider): Provider {
+export function isolateAmbientAuth(provider: Provider): Provider {
 	const apiKey = provider.auth.apiKey;
 	// A provider with no api-key resolver has nothing to isolate, and returning it untouched keeps
 	// `auth` assignable — a conditional spread would widen `apiKey` back to optional.
