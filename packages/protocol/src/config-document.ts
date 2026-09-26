@@ -21,9 +21,12 @@ export function resolveConfigDocumentPath(
 	const configuredDirectory = env.DF_CONFIG_DIR?.trim() || ".darkfactory";
 	const configDirectory = resolve(repositoryRoot, configuredDirectory);
 	const candidatesIn = (directory: string): string[] =>
-		["repo.dfconfig", "config.dfconfig", ".dfconfig"].map((name) => join(directory, name)).filter(existsSync);
+		["repo.dfconfig", "config.dfconfig", ".dfconfig"]
+			.map((name) => join(directory, name))
+			.filter((path) => existsSync(path));
 	const rootCandidates = candidatesIn(repositoryRoot);
-	const folderCandidates = configDirectory === repositoryRoot ? [] : candidatesIn(configDirectory);
+	const folderCandidates =
+		configDirectory === repositoryRoot || !existsSync(configDirectory) ? [] : candidatesIn(configDirectory);
 
 	if (rootCandidates.length > 0 && folderCandidates.length > 0) {
 		throw new Error(

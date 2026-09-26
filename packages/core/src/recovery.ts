@@ -29,11 +29,11 @@ export function fingerprintRecoverySource(source: RecoverySourceIdentity): strin
 		originalHead: source.originalHead,
 		snapshot: source.snapshot
 			? {
-				id: source.snapshot.id,
-				contentSha256: source.snapshot.contentSha256,
-				trackedTreeSha: source.snapshot.trackedTreeSha ?? null,
-				untrackedManifestSha256: source.snapshot.untrackedManifestSha256 ?? null,
-			}
+					id: source.snapshot.id,
+					contentSha256: source.snapshot.contentSha256,
+					trackedTreeSha: source.snapshot.trackedTreeSha ?? null,
+					untrackedManifestSha256: source.snapshot.untrackedManifestSha256 ?? null,
+				}
 			: null,
 		recoveryRef: source.recoveryRef ?? null,
 		recoverySha: source.recoverySha ?? null,

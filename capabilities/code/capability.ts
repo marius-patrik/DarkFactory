@@ -1,17 +1,18 @@
-import {
-	CAPABILITY_ABI_VERSION,
-	type CapabilityPackageContext,
-	defineCapability,
-} from "@darkfactory/capability";
+import { CAPABILITY_ABI_VERSION, type CapabilityPackageContext, defineCapability } from "@darkfactory/capability";
 
 function nodeRun(pkg: CapabilityPackageContext, script: string): string | undefined {
 	if (!pkg.scripts.includes(script)) return undefined;
 	switch (pkg.packageManager) {
-		case "bun": return `bun run ${script}`;
-		case "pnpm": return `pnpm run ${script}`;
-		case "yarn": return `yarn ${script}`;
-		case "npm": return `npm run ${script}`;
-		default: return undefined;
+		case "bun":
+			return `bun run ${script}`;
+		case "pnpm":
+			return `pnpm run ${script}`;
+		case "yarn":
+			return `yarn ${script}`;
+		case "npm":
+			return `npm run ${script}`;
+		default:
+			return undefined;
 	}
 }
 
@@ -19,37 +20,58 @@ function nodeTest(pkg: CapabilityPackageContext): string | undefined {
 	return nodeRun(pkg, "test");
 }
 
+function nodeTypecheck(pkg: CapabilityPackageContext): string | undefined {
+	return nodeRun(pkg, "typecheck") ?? "tsc --noEmit";
+}
+
+function nodeLint(pkg: CapabilityPackageContext): string | undefined {
+	return nodeRun(pkg, "lint") ?? "biome lint .";
+}
+
 function nodeFormatCheck(pkg: CapabilityPackageContext): string | undefined {
-	return nodeRun(pkg, "format:check");
+	return nodeRun(pkg, "format:check") ?? "biome ci .";
 }
 
 function nodeSetup(pkg: CapabilityPackageContext): string | undefined {
 	switch (pkg.packageManager) {
-		case "bun": return "bun install --frozen-lockfile";
-		case "pnpm": return "pnpm install --frozen-lockfile";
-		case "yarn": return "yarn install --immutable";
-		case "npm": return "npm ci";
-		default: return undefined;
+		case "bun":
+			return "bun install --frozen-lockfile";
+		case "pnpm":
+			return "pnpm install --frozen-lockfile";
+		case "yarn":
+			return "yarn install --immutable";
+		case "npm":
+			return "npm ci";
+		default:
+			return undefined;
 	}
 }
 
 function pythonCommand(pkg: CapabilityPackageContext, command: string): string {
 	switch (pkg.packageManager) {
-		case "uv": return `uv run ${command}`;
-		case "poetry": return `poetry run ${command}`;
-		case "pipenv": return `pipenv run ${command}`;
-		default: return command;
+		case "uv":
+			return `uv run ${command}`;
+		case "poetry":
+			return `poetry run ${command}`;
+		case "pipenv":
+			return `pipenv run ${command}`;
+		default:
+			return command;
 	}
 }
 
 function pythonSetup(pkg: CapabilityPackageContext): string {
 	switch (pkg.packageManager) {
-		case "uv": return "uv sync --frozen";
-		case "poetry": return "poetry install --no-interaction";
-		case "pipenv": return "pipenv sync --dev";
-		default: return pkg.manifest === "requirements.txt"
-			? "python -m pip install -r requirements.txt"
-			: "python -m pip install -e .";
+		case "uv":
+			return "uv sync --frozen";
+		case "poetry":
+			return "poetry install --no-interaction";
+		case "pipenv":
+			return "pipenv sync --dev";
+		default:
+			return pkg.manifest === "requirements.txt"
+				? "python -m pip install -r requirements.txt"
+				: "python -m pip install -e .";
 	}
 }
 
@@ -80,10 +102,16 @@ export const capability = defineCapability({
 			command: nodeTest,
 		},
 		{
+			kind: "typecheck",
+			description: "Run TypeScript type checking.",
+			ecosystems: ["node"],
+			command: nodeTypecheck,
+		},
+		{
 			kind: "lint",
 			description: "Run the package lint script with the detected Node package manager.",
 			ecosystems: ["node"],
-			command: (pkg) => nodeRun(pkg, "lint"),
+			command: nodeLint,
 		},
 		{
 			kind: "format_check",
@@ -174,7 +202,7 @@ export const capability = defineCapability({
 			kind: "format_check",
 			description: "Check Go formatting.",
 			ecosystems: ["go"],
-			command: "test -z \"$(gofmt -l .)\"",
+			command: 'test -z "$(gofmt -l .)"',
 		},
 		{
 			kind: "docs_check",

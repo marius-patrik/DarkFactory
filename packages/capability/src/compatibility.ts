@@ -1,4 +1,4 @@
-import { CAPABILITY_ABI_VERSION, defineCapability, type CapabilityDefinition, type CapabilityModule } from "./abi.ts";
+import { CAPABILITY_ABI_VERSION, type CapabilityDefinition, type CapabilityModule, defineCapability } from "./abi.ts";
 
 /** Error thrown when a capability requires an unsupported ABI version. */
 export class CapabilityAbiError extends Error {
@@ -6,7 +6,9 @@ export class CapabilityAbiError extends Error {
 		readonly capabilityId: string,
 		readonly requestedAbi: string,
 	) {
-		super(`Capability ${capabilityId} requires unsupported ABI ${requestedAbi}; supported ABI is ${CAPABILITY_ABI_VERSION}`);
+		super(
+			`Capability ${capabilityId} requires unsupported ABI ${requestedAbi}; supported ABI is ${CAPABILITY_ABI_VERSION}`,
+		);
 		this.name = "CapabilityAbiError";
 	}
 }

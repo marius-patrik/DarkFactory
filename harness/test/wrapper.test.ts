@@ -6,11 +6,14 @@ const roots: string[] = [];
 afterEach(async () => {
 	for (const path of roots.splice(0)) await rm(path, { recursive: true, force: true });
 });
+<<<<<<< HEAD
 
 const shellPath = (path: string) =>
 	process.platform === "win32"
 		? path.replace(/^([A-Za-z]):/u, (_match, drive: string) => `/${drive.toLowerCase()}`).replaceAll("\\", "/")
 		: path;
+=======
+>>>>>>> origin/develop
 
 describe("Unix df wrapper", () => {
 	test("uses DF_BIN for DarkFactory subcommands and a later PATH df for flags and non-interactive bare calls", async () => {
@@ -29,6 +32,13 @@ describe("Unix df wrapper", () => {
 			chmod(join(root, "df-bin"), 0o755),
 			chmod(join(systemDir, "df"), 0o755),
 		]);
+<<<<<<< HEAD
+=======
+		const shellPath = (path: string) =>
+			process.platform === "win32"
+				? path.replace(/^([A-Za-z]):/u, (_match, drive: string) => `/${drive.toLowerCase()}`).replaceAll("\\", "/")
+				: path;
+>>>>>>> origin/develop
 		const env = {
 			...process.env,
 			PATH: `${shellPath(wrapperDir)}:${shellPath(systemDir)}`,

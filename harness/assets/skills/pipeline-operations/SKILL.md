@@ -14,7 +14,7 @@ The DarkFactory pipeline is driven **entirely by GitHub comments** on the Reques
 | ``/df approve`` | Advances the current gate (interpretation → plan → implementation) | The interpretation and plan gates on the Request issue | The request author, or anyone with the GitHub association `OWNER`, `MEMBER` or `COLLABORATOR` (see `is_allowed_approver` in `agent_runner.py`). |
 | ``/df reject <feedback>`` | Sends the pipeline back to the previous stage with the supplied feedback attached to the comment.  The free‑text after the command is extracted by `command_feedback` and stored on the issue. | Any *issue* gate (Interpretation, Plan) | Same approver set as above. |
 | ``/df revise`` | Alias of ``/df reject`` – the parser normalises it to *reject* and treats the trailing text exactly the same way. | Same as *reject* | Same as *reject* |
-| ``/df resume`` | Unblocks a pipeline that stopped because of a quota exhaustion.  The comment must be posted after the quota is restored. | Any gate that is currently *blocked* (usually after `quota_resume.py` triggers) | Same as *approve* – the approver role is checked again. |
+| ``/df resume`` | Unblocks a pipeline that stopped because of a quota exhaustion.  The comment must be posted after the quota is restored. | Any gate that is currently *blocked* (usually after the quota resume sweep runs) | Same as *approve* – the approver role is checked again. |
 
 The strict grammar is captured by the regular expression `STRICT_COMMAND` in `commands.py` and **must be the entire comment** (no surrounding prose).  A rejection command is the only one that allows trailing feedback, matched by `STRICT_REJECT_WITH_FEEDBACK`.
 

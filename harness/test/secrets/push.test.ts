@@ -51,7 +51,7 @@ describe("push sealed-box payload", () => {
 		const results = await pushSecrets({ vault, pushMap, repoSlug: "owner/repo", repository: repo });
 		expect(results).toHaveLength(2);
 		expect(results.every((r) => r.status === "pushed")).toBe(true);
-		const bodies = mock.calls.filter((c) => c.init?.body).map((c) => String(c.init!.body));
+		const bodies = mock.calls.filter((c) => c.init?.body).map((c) => String(c.init?.body));
 		expect(bodies.join(" ")).not.toContain("secret-123");
 		expect(bodies.join(" ")).not.toContain("other-456");
 		// Verify we can decrypt one
@@ -72,7 +72,7 @@ describe("push sealed-box payload", () => {
 			only: ["GEMINI_API_KEY"],
 		});
 		expect(onlyResults).toHaveLength(1);
-		expect(onlyResults[0]!.name).toBe("GEMINI_API_KEY");
+		expect(onlyResults[0]?.name).toBe("GEMINI_API_KEY");
 
 		// --dry-run: no fetch calls
 		let fetchCalled = false;

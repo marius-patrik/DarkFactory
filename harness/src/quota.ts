@@ -356,8 +356,8 @@ export function proseResetAt(message: string, now: number): number | undefined {
 	const match = /try again in\s+((?:\d+(?:\.\d+)?\s*(?:ms|d|h|m|s)\b\s*)+)/i.exec(message);
 	if (!match) return undefined;
 	let total = 0;
-	for (const part of match[1]!.matchAll(/(\d+(?:\.\d+)?)\s*(ms|d|h|m|s)\b/gi)) {
-		const unit = part[2]!.toLowerCase();
+	for (const part of match[1]?.matchAll(/(\d+(?:\.\d+)?)\s*(ms|d|h|m|s)\b/gi)) {
+		const unit = part[2]?.toLowerCase();
 		total +=
 			Number(part[1]) *
 			(unit === "d" ? 86_400_000 : unit === "h" ? 3_600_000 : unit === "m" ? 60_000 : unit === "s" ? 1_000 : 1);

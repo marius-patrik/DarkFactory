@@ -78,7 +78,13 @@ export interface CheckReferenceNode extends BaseNode {
 /** Any supported workflow graph node. */
 export type GraphNode = AgentNode | GateNode | AutomationNode | CheckReferenceNode;
 /** Named loop semantics supported by graph edges. */
-export type LoopKind = "self_review" | "ci_repair" | "gate_revision" | "deviation_rework" | "planning_revision" | "review_fix";
+export type LoopKind =
+	| "self_review"
+	| "ci_repair"
+	| "gate_revision"
+	| "deviation_rework"
+	| "planning_revision"
+	| "review_fix";
 /** Events/outcomes that may activate a workflow edge. */
 export type EdgeOn =
 	| { event: string; filter: { ignore_bots: true; label?: string }; when?: string }

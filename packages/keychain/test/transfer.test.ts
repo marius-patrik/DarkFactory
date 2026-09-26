@@ -1,9 +1,9 @@
 import { describe, expect, test } from "bun:test";
 import {
+	type AccountRecord,
 	exportCredentialAccount,
 	generateVaultKey,
 	importCredentialAccount,
-	type AccountRecord,
 } from "../src/index.ts";
 
 describe("encrypted credential transfer", () => {

@@ -15,5 +15,10 @@
   "dependencies": {
     "@darkfactory/protocol": "workspace:*",
     "zod": "4.1.5"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "lint": "biome lint .",
+    "format:check": "biome format ."
   }
 }

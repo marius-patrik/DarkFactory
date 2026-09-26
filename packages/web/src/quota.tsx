@@ -1,8 +1,4 @@
-import type {
-	OperatorQuotaSnapshot,
-	QuotaCredentialState,
-	QuotaState,
-} from "@darkfactory/protocol/quota";
+import type { OperatorQuotaSnapshot, QuotaCredentialState, QuotaState } from "@darkfactory/protocol/quota";
 import type { FC } from "react";
 
 /** Browser data-source state for the quota dashboard. */

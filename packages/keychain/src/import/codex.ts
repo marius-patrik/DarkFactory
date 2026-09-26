@@ -81,12 +81,22 @@ export async function findCodexAuth(options: CodexFindOptions): Promise<CodexImp
  * becomes an `api_key` slot. A tokens block with no refresh token is rejected the
  * same way as Claude (dsh-stack notes it as "cannot self-heal").
  */
-export async function importCodexAccount(store: FileCredentialStore, label: string, homeReader: HomeReader, provider: string, apiKeyProvider: string | undefined): Promise<void> {
+export async function importCodexAccount(
+	store: FileCredentialStore,
+	label: string,
+	homeReader: HomeReader,
+	provider: string,
+	apiKeyProvider: string | undefined,
+): Promise<void> {
 	const found = await findCodexAuth({ homeReader });
 	if (found.oauth) {
 		const oauth = found.oauth;
-		if (!oauth.refreshToken) throw new Error("Codex login has no refresh token; it cannot self-heal and cannot be imported as an OAuth account");
-		if (!oauth.expiresAt || !Number.isFinite(oauth.expiresAt)) throw new Error("Codex access token JWT has no valid exp claim");
+		if (!oauth.refreshToken)
+			throw new Error(
+				"Codex login has no refresh token; it cannot self-heal and cannot be imported as an OAuth account",
+			);
+		if (!oauth.expiresAt || !Number.isFinite(oauth.expiresAt))
+			throw new Error("Codex access token JWT has no valid exp claim");
 		const accessToken = oauth.accessToken;
 		const refreshToken = oauth.refreshToken;
 		const expiresAt = oauth.expiresAt;
@@ -99,7 +109,8 @@ export async function importCodexAccount(store: FileCredentialStore, label: stri
 			auth: { ...(current?.auth ?? {}), scopes: [...oauth.scopes] },
 			metadata: {
 				...(current?.metadata ?? {}),
-				ownership: "df-owned", sync: "machine-only",
+				ownership: "df-owned",
+				sync: "machine-only",
 				importedFrom: "codex",
 				...(oauth.account ? { account: oauth.account } : {}),
 				...(oauth.plan ? { plan: oauth.plan } : {}),
@@ -109,7 +120,13 @@ export async function importCodexAccount(store: FileCredentialStore, label: stri
 			},
 			slots: {
 				...(current?.slots ?? {}),
-				oauth: { type: "oauth", access: accessToken, refresh: refreshToken, expires: expiresAt, ...(accountIdValue ? { accountId: accountIdValue } : {}) },
+				oauth: {
+					type: "oauth",
+					access: accessToken,
+					refresh: refreshToken,
+					expires: expiresAt,
+					...(accountIdValue ? { accountId: accountIdValue } : {}),
+				},
 			},
 		}));
 		return;
@@ -121,7 +138,14 @@ export async function importCodexAccount(store: FileCredentialStore, label: stri
 			id,
 			provider: apiKeyProvider,
 			label,
-			metadata: { ...(current?.metadata ?? {}), ownership: "df-owned", sync: "machine-only", importedFrom: "codex", source: "codex-auth-json", plan: "metered_api_key" },
+			metadata: {
+				...(current?.metadata ?? {}),
+				ownership: "df-owned",
+				sync: "machine-only",
+				importedFrom: "codex",
+				source: "codex-auth-json",
+				plan: "metered_api_key",
+			},
 			slots: { ...(current?.slots ?? {}), api_key: { type: "api_key", value: found.apiKey! } },
 		}));
 		return;

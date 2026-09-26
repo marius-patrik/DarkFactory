@@ -310,7 +310,7 @@ describe("ModelCatalog integration boundary", () => {
 		const root = await home();
 		const store = new FileCredentialStore(root);
 		await store.setSlot("sample-google-dialect:default", "api_key", { type: "api_key", value: "fixture-google" });
-		const fetcher: CatalogFetch = async (input, init) => {
+		const fetcher: CatalogFetch = async (input, _init) => {
 			expect(String(input)).toBe("https://generativelanguage.googleapis.com/v1beta/models");
 			return Response.json({
 				models: [

@@ -30,14 +30,14 @@ export async function resolveDetectedQuality(
 /** Result of one detected executable quality action. */
 export interface DetectedQualityExecution {
 	packageId: string;
-	kind: "test" | "lint" | "format_check";
+	kind: "test" | "lint" | "format_check" | "typecheck";
 	supported: boolean;
 	command?: string;
 	reason?: string;
 	result?: VerifyResult;
 }
 
-/** Runs the supported detected test/lint/format actions without inventing fallback commands. */
+/** Runs the supported detected test/lint/format/typecheck actions without inventing fallback commands. */
 export async function runDetectedQuality(
 	repoDir = process.cwd(),
 	options: { capabilitiesRoot?: string; timeoutMs?: number } = {},
@@ -45,7 +45,7 @@ export async function runDetectedQuality(
 	const state = await resolveDetectedQuality(repoDir, options.capabilitiesRoot);
 	const results: DetectedQualityExecution[] = [];
 	for (const entry of state.resolution.packages) {
-		for (const kind of ["test", "lint", "format_check"] as const) {
+		for (const kind of ["test", "lint", "format_check", "typecheck"] as const) {
 			const action = entry.actions[kind];
 			if (!action.supported || !action.command) {
 				results.push({
