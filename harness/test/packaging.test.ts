@@ -51,7 +51,7 @@ describe("biome configuration", () => {
 		const json = JSON.parse(await readFile(new URL("../biome.json", import.meta.url), "utf8"));
 		expect(json.formatter).toMatchObject({ indentStyle: "tab", lineWidth: 120 });
 		expect(json.javascript.formatter.quoteStyle).toBe("double");
-		expect(json.linter.rules.recommended).toBe(true);
+		expect(json.linter.rules.preset).toBe("recommended");
 		expect(json.linter.rules.correctness).toMatchObject({ noUnusedImports: "error", noUnusedVariables: "error" });
 	});
 

@@ -34,7 +34,11 @@ def test_format_check_drift_integration():
             f.write(original + "\n\nconst bad  =   123  ;\n")
 
         result = subprocess.run(
-            "DF_BASE_SHA=HEAD^^ bun run format:check", shell=True, capture_output=True, text=True
+            ["bun", "run", "format:check"],
+            env={**os.environ, "DF_BASE_SHA": "HEAD^^"},
+            capture_output=True,
+            text=True,
+            shell=False,
         )
         assert result.returncode != 0
 

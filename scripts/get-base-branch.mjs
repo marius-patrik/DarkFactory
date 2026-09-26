@@ -1,13 +1,21 @@
 import { readFileSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
-import { execFileSync } from 'child_process';
+import { execFileSync, execSync } from 'child_process';
+
+try {
+  execSync('git --version', { stdio: 'ignore' });
+} catch {
+  console.error("Error: git command not found. Please ensure git is installed and in your PATH.");
+  process.exit(1);
+}
 
 function verifyRef(ref) {
   try {
     execFileSync('git', ['rev-parse', '--verify', ref], { stdio: 'ignore' });
     return true;
-  } catch {
+  } catch (e) {
+    console.error(`Verification of ref ${ref} failed: ${e.message}`);
     return false;
   }
 }
