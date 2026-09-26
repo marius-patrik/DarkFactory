@@ -1123,7 +1123,7 @@ Browser artifacts cannot contain/import the GitHub App private key, confidential
 
 It compiles one typed content graph from:
 
-- canonical Markdown documents under `.agents/`;
+- this document's own canonical text, including §34 and §35;
 - ADRs and rules;
 - actual TypeScript/TSDoc API extraction;
 - capability-contributed documentation;
@@ -2965,6 +2965,12 @@ has a cliff where a certain amount of structure makes it non-linear, which is pl
 been tested — then §3.6 has failed and every other procedure decays from there. This is the failure
 most likely to arrive late and be hardest to attribute, because it looks like ordinary friction.
 
+The test is a slope, not a threshold. Measure the wall-clock cost of adding a feature of a kind the
+system already has, and compare it against the cost of adding the first one. The marginal cost must
+fall; if the second feature of a kind costs what the first did, the corpus is not compounding and
+§4.2's economics do not hold. The measurement has to be taken rather than estimated, because the
+claim rests on it and it is the one number in this document nobody has yet produced.
+
 **The seams prove insufficient.** Binding existing systems does not provide enough construction
 material to build the system out of, and the project retreats into implementing organs directly.
 The test is whether `Change/`, `Identity/` and the interpreter can express a real change to
@@ -2991,10 +2997,17 @@ a far-fetched one. The mitigation is that discovery can be cached and invalidate
 introduces the possibility of a stale set, which is a second source of truth in miniature, and that
 possibility needs an answer rather than a hope.
 
+The test has two halves, because the failure has two faces. Measure the time to resolve the full
+feature set and the time to diagnose a load failure, and compare both against what a barrel would
+have cost; derivation that is slower *and* less legible has lost on both axes at once. Separately,
+the stale-set risk is real only if a cache can be wrong, so the test is whether an invalidated cache
+is ever observably wrong — and if it can be, that cache is a second site of meaning at miniature
+scale and §3.2 applies to it directly.
+
 **The corpus does not compound.** Adding the *N+1*th capability is not cheaper than the *N*th. The
 economics of the moat assume a corpus whose value grows and whose marginal cost falls; if the
 second capability costs as much as the tenth, the moat is a constraint without an economic, and
-the honest response is to say so rather than to keep citing §4.
+the honest response is to say so rather than to keep citing §4. That comparison is the test, and it is the one to report publicly whether or not it flatters the design.
 
 **Self-hosting stalls just short.** The system builds itself most of the time, and the residue is
 maintained by hand. This is the most seductive failure because each step of progress is real, and
