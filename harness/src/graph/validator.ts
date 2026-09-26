@@ -168,7 +168,7 @@ export function validateGraph(value: unknown): WorkflowGraph {
 		if (
 			node.kind === "gate" &&
 			node.on_reject &&
-			!graph.nodes.some((candidate) => candidate.id === node.on_reject!.target)
+			!graph.nodes.some((candidate) => candidate.id === node.on_reject?.target)
 		)
 			issues.push(`nodes[${node.id}].on_reject.target: unknown node "${node.on_reject.target}"`);
 		if (node.kind === "agent") {

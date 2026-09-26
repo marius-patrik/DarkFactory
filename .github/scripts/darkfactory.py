@@ -44,7 +44,7 @@ def _repos(args: argparse.Namespace) -> List[str]:
     # A manifest that cannot be read still yields an object, with the repository name guessed from
     # the working directory. Acting on that would write credentials at whatever the current folder
     # happens to be called, so both halves must be real before it is used.
-    if not loaded.owner or not loaded.repo:
+    if not loaded.owner or not loaded.repo or loaded.owner == "/":
         return []
     return [f"{loaded.owner}/{loaded.repo}"]
 

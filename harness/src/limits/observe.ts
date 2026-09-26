@@ -69,13 +69,13 @@ export function parseDuration(value: string): number | undefined {
 	for (const match of value.matchAll(/([0-9]+(?:\.[0-9]+)?)(ms|[dhms])/giu)) {
 		found = true;
 		const factor =
-			match[2]!.toLowerCase() === "d"
+			match[2]?.toLowerCase() === "d"
 				? 86_400_000
-				: match[2]!.toLowerCase() === "h"
+				: match[2]?.toLowerCase() === "h"
 					? 3_600_000
-					: match[2]!.toLowerCase() === "m"
+					: match[2]?.toLowerCase() === "m"
 						? 60_000
-						: match[2]!.toLowerCase() === "s"
+						: match[2]?.toLowerCase() === "s"
 							? 1_000
 							: 1;
 		total += Number(match[1]) * factor;
@@ -154,7 +154,7 @@ function bodyEntry(
 		const clock = body.match(/try again at\s+(\d{1,2}):(\d{2})\s*(AM|PM)/iu);
 		if (clock) {
 			let hour = Number(clock[1]) % 12;
-			if (clock[3]!.toUpperCase() === "PM") hour += 12;
+			if (clock[3]?.toUpperCase() === "PM") hour += 12;
 			const target = new Date(now);
 			target.setHours(hour, Number(clock[2]), 0, 0);
 			if (target.getTime() <= now) target.setDate(target.getDate() + 1);

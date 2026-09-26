@@ -2,9 +2,9 @@ import { describe, expect, test } from "bun:test";
 import { mkdirSync, mkdtempSync, rmSync, symlinkSync, unlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { renderAgentsMarkdown } from "../src/agents.ts";
 import type { DocsContentGraph } from "../src/content.ts";
 import { assertCurrentDocumentation, currentDocumentationFindings } from "../src/current.ts";
-import { renderAgentsMarkdown } from "../src/agents.ts";
 
 function graph(): DocsContentGraph {
 	return {

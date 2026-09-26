@@ -39,7 +39,7 @@ export function resolveGeneratedHeaders(
 	const requestValues = new Map<string, string>();
 	for (const [header, spec] of Object.entries(config?.generatedHeaders ?? {})) {
 		const values = spec.scope === "session" ? sessionValues : requestValues;
-		const key = `${config!.id}:${spec.group ?? header}`;
+		const key = `${config?.id}:${spec.group ?? header}`;
 		let value = values.get(key);
 		if (!value) {
 			if (spec.kind === "session-id") value = sessionId;
@@ -104,7 +104,7 @@ function isolateAmbientAuth(provider: Provider): Provider {
 				? {
 						apiKey: {
 							...apiKey,
-							...(apiKey.check ? { check: (input) => apiKey.check!({ ...input, ctx: isolatedAuthContext }) } : {}),
+							...(apiKey.check ? { check: (input) => apiKey.check?.({ ...input, ctx: isolatedAuthContext }) } : {}),
 							resolve: (input) => apiKey.resolve({ ...input, ctx: isolatedAuthContext }),
 						},
 					}

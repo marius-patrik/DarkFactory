@@ -1,0 +1,4 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "include": ["capability.ts", "artifacts.ts", "artifacts.test.ts", "versioning.ts", "versioning.test.ts"]
+}

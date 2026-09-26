@@ -1,9 +1,4 @@
-import type {
-	CapabilityDefinition,
-	CapabilityRuntimeContext,
-	CapabilityToolDefinition,
-	JsonSchema,
-} from "./abi.ts";
+import type { CapabilityDefinition, CapabilityRuntimeContext, CapabilityToolDefinition, JsonSchema } from "./abi.ts";
 import { assertCapabilityCompatible } from "./compatibility.ts";
 
 /** Serializable tool metadata exposed by generated adapters. */
