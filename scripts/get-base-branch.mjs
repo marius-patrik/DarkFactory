@@ -21,20 +21,27 @@ function getBaseBranch() {
 
   const candidates = [];
 
+  if (process.env.GITHUB_BASE_REF) {
+    candidates.push(`origin/${process.env.GITHUB_BASE_REF}`, process.env.GITHUB_BASE_REF);
+  }
+
+  let configDefaultBranch = null;
+  let configDevBranch = null;
+
   try {
     const __dirname = dirname(fileURLToPath(import.meta.url));
     const configPath = join(__dirname, '..', 'repo.dfconfig');
     const config = JSON.parse(readFileSync(configPath, 'utf-8'));
-    const devBranch = config?.repo?.identity?.development_branch;
-    const defaultBranch = config?.repo?.identity?.default_branch;
+    configDevBranch = config?.repo?.identity?.development_branch;
+    configDefaultBranch = config?.repo?.identity?.default_branch;
 
-    if (devBranch) {
-      candidates.push(`origin/${devBranch}`);
-      candidates.push(devBranch);
+    if (configDevBranch) {
+      candidates.push(`origin/${configDevBranch}`);
+      candidates.push(configDevBranch);
     }
-    if (defaultBranch) {
-      candidates.push(`origin/${defaultBranch}`);
-      candidates.push(defaultBranch);
+    if (configDefaultBranch) {
+      candidates.push(`origin/${configDefaultBranch}`);
+      candidates.push(configDefaultBranch);
     }
   } catch {
     // Config missing, unreadable, or malformed
@@ -62,7 +69,7 @@ function getBaseBranch() {
     // Fetch failed
   }
 
-  const fallback = 'origin/main';
+  const fallback = configDefaultBranch ? `origin/${configDefaultBranch}` : (configDevBranch ? `origin/${configDevBranch}` : 'origin/main');
   console.error(`Warning: Could not verify any base branch candidate. Falling back to ${fallback}.`);
   return fallback;
 }
