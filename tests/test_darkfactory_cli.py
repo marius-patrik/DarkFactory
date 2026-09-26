@@ -48,6 +48,7 @@ def test_auth_without_a_repository_is_a_usage_error(tmp_path, monkeypatch, capsy
     """
     monkeypatch.chdir(tmp_path)
     monkeypatch.delenv("GITHUB_REPOSITORY", raising=False)
+    monkeypatch.setenv("DF_CONFIG_DIR", "nonexistent")
     assert darkfactory.main(["auth"]) == 2
     assert "pass --repo" in capsys.readouterr().err
 
