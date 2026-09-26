@@ -13,7 +13,6 @@
   "license": "GPL-3.0",
   "dependencies": {
     "@darkfactory/protocol": "workspace:*",
-    "@darkfactory/core": "workspace:*",
     "@darkfactory/capability": "workspace:*"
   },
   "scripts": {

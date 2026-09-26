@@ -20,8 +20,6 @@
   "license": "GPL-3.0",
   "dependencies": {
     "@darkfactory/protocol": "workspace:*",
-    "@darkfactory/auth": "workspace:*",
-    "@darkfactory/github": "workspace:*",
     "@darkfactory/docs": "workspace:*",
     "wouter": "^3.3.5"
   },

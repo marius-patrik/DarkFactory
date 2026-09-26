@@ -3,15 +3,8 @@ import { mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { mkdtemp } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import {
-	alignmentResultSchema,
-	CAPTURE_TOOL_NAME,
-	CaptureError,
-	captureCodeResult,
-	extractJudgementResult,
-	planningResultSchema,
-	reviewResultSchema,
-} from "@darkfactory/core";
+import { CAPTURE_TOOL_NAME, captureCodeResult, extractJudgementResult } from "@darkfactory/core/result-capture";
+import { alignmentResultSchema, CaptureError, planningResultSchema, reviewResultSchema } from "@darkfactory/protocol";
 import {
 	type AssistantMessage,
 	type Context,
