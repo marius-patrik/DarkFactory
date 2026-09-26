@@ -32,8 +32,10 @@ df account export openai-codex:work          # prints a portable account record 
 df account load openai-codex:pipeline --from-env DF_ACCOUNT_OPENAI_CODEX
 ```
 
-In the pipeline container `agent_runner.py` performs these steps from repository secrets. The secret names it
-consumes are `df_setup_secret_names()` in `.github/scripts/agent_runner.py`:
+`df account set` and `df account load` are the only steps that move a credential into the pipeline container.
+There is no second credential registry: no Python secret map and no script-side table of secret-to-account
+bindings. The secret names the pipeline consumes are declared as workflow inputs in
+`.github/workflows/agent.yml`, and each one names the `df` command that consumes it:
 
 | Secret | Becomes | How |
 |---|---|---|
@@ -43,9 +45,8 @@ consumes are `df_setup_secret_names()` in `.github/scripts/agent_runner.py`:
 | `DF_ACCOUNT_OPENAI_CODEX` | `openai-codex:pipeline` | `df account load` of an exported record |
 | `DF_ACCOUNT_GROK_SUB` | `grok-sub:pipeline` | `df account load` of an exported record |
 
-The source of truth is `DF_ACCOUNT_SET_MAP` and `DF_ACCOUNT_LOAD_MAP` beside that function. A workflow that does
-not forward one of these secrets does not fail - it silently runs without that account, so check the list when a
-provider never appears in a run.
+A workflow that does not forward one of these secrets does not fail - it silently runs without that account, so
+check the list when a provider never appears in a run.
 
 ## Repository secrets
 
