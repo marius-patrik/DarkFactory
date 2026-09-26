@@ -383,9 +383,12 @@ describe("config-driven provider registry", () => {
 				.map((auth) => auth.flow),
 		);
 		expect(flows).toEqual(new Set(["device_code", "pkce"]));
-		const config = BUILTIN_PROVIDER_CONFIG.providers
-			.find((entry) => entry.id === "anthropic")
-			?.auth.find((auth) => auth.kind === "oauth")!;
+		const anthropic = BUILTIN_PROVIDER_CONFIG.providers.find((entry) => entry.id === "anthropic");
+		const config = anthropic?.auth.find((auth) => auth.kind === "oauth");
+		// Assert rather than assert-with-`!`: a provider losing its OAuth block is a real failure,
+		// and a non-null assertion here would turn it into a confusing TypeError three lines later.
+		expect(config).toBeDefined();
+		if (config === undefined) throw new Error("anthropic provider declares no oauth auth block");
 		const calls: Array<{ url: string; contentType: string | null }> = [];
 		const oauth = createConfiguredOAuth(config, {
 			isHeadless: true,

@@ -103,6 +103,26 @@ function knownAmount(value: number | undefined): string {
 	return value === undefined ? "Unknown" : String(value);
 }
 
+/**
+ * A key for one limit row that does not depend on the row's position in the list.
+ *
+ * A quota observation has no id of its own, and keying on the array index is a real defect rather
+ * than a style preference: when a new observation arrives the rows shift, React reuses the previous
+ * rows' DOM nodes by position, and a `<time>` element ends up patched with another limit's reset.
+ * Keying on (type, dimension) is the row's identity. Two rows sharing one are indistinguishable in
+ * the rendered output anyway, so an occurrence counter among same-identity siblings keeps their keys
+ * unique while staying stable when unrelated rows are inserted or removed.
+ */
+function limitKey(limit: QuotaLimitView, all: readonly QuotaLimitView[]): string {
+	const base = `${limit.type}:${limit.dimension ?? ""}`;
+	let occurrence = 0;
+	for (const other of all) {
+		if (other === limit) break;
+		if (`${other.type}:${other.dimension ?? ""}` === base) occurrence += 1;
+	}
+	return occurrence === 0 ? base : `${base}#${occurrence}`;
+}
+
 const ModelQuotaCard: FC<{ model: QuotaModelView }> = ({ model }) => (
 	<article className="quota-model">
 		<header>
@@ -131,8 +151,8 @@ const ModelQuotaCard: FC<{ model: QuotaModelView }> = ({ model }) => (
 			<p>No active or known limit observations.</p>
 		) : (
 			<ul aria-label="Quota limits">
-				{model.limits.map((limit, index) => (
-					<li key={limit.type + ":" + (limit.dimension ?? "") + ":" + index}>
+				{model.limits.map((limit) => (
+					<li key={limitKey(limit, model.limits)}>
 						<strong>{limit.type}</strong>
 						{limit.dimension ? " · " + limit.dimension : ""} · {stateLabel(limit.state)}
 						{" · "}remaining {knownAmount(limit.remaining)}

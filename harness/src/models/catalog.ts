@@ -177,12 +177,14 @@ function mappedString(value: unknown, path: string | undefined, key?: string): s
 
 export function normalizeConfiguredCatalog(provider: string, value: unknown, mapping: ModelListConfig): CatalogModel[] {
 	const raw = pathValues(value, mapping.itemsPath);
-	const entries =
-		raw.length === 1 && Array.isArray(raw[0]?.value)
-			? (raw[0]?.value as unknown[]).map((entry, index) => ({ key: String(index), value: entry }))
-			: raw.length === 1 && raw[0]?.value && typeof raw[0].value === "object"
-				? Object.entries(raw[0].value as Record<string, unknown>).map(([key, entry]) => ({ key, value: entry }))
-				: raw;
+	// A single wrapper object is how every provider nests its list. Narrow `wrapper` once so the
+	// branches below read off a value that is known to exist rather than re-dereferencing `raw[0]`.
+	const wrapper = raw.length === 1 ? raw[0]?.value : undefined;
+	const entries = Array.isArray(wrapper)
+		? wrapper.map((entry, index) => ({ key: String(index), value: entry }))
+		: wrapper !== null && typeof wrapper === "object"
+			? Object.entries(wrapper as Record<string, unknown>).map(([key, entry]) => ({ key, value: entry }))
+			: raw;
 	const byId = new Map<string, CatalogModel>();
 	for (const entry of entries) {
 		const rawId = mappedString(entry.value, mapping.idPath, entry.key);

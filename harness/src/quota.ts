@@ -355,8 +355,12 @@ export function isExhaustedQuota(detail: string | undefined): boolean {
 export function proseResetAt(message: string, now: number): number | undefined {
 	const match = /try again in\s+((?:\d+(?:\.\d+)?\s*(?:ms|d|h|m|s)\b\s*)+)/i.exec(message);
 	if (!match) return undefined;
+	// Group 1 is not optional in the pattern, so it always participates. Bind it anyway: iterating
+	// `match[1]?.matchAll(...)` would throw on undefined rather than declining to parse.
+	const captured = match[1];
+	if (captured === undefined) return undefined;
 	let total = 0;
-	for (const part of match[1]?.matchAll(/(\d+(?:\.\d+)?)\s*(ms|d|h|m|s)\b/gi)) {
+	for (const part of captured.matchAll(/(\d+(?:\.\d+)?)\s*(ms|d|h|m|s)\b/gi)) {
 		const unit = part[2]?.toLowerCase();
 		total +=
 			Number(part[1]) *

@@ -2,6 +2,7 @@
  * Repository/package/domain evidence discovery owned by the DarkFactory core mechanism.
  */
 
+import type { Dirent } from "node:fs";
 import { access, readdir, readFile } from "node:fs/promises";
 import { basename, dirname, join, relative, resolve } from "node:path";
 import { configBlock, parseConfigDocument, resolveConfigDocumentPath } from "@darkfactory/protocol/config-document";
@@ -340,7 +341,7 @@ async function scan(
 	const rel = repoPath(root, directory);
 	if (rel !== "." && (ignored.has(rel) || rel.split("/").some((part) => ignored.has(part)))) return;
 	output.push(...(await discoveredPackages(directory, root)));
-	let entries;
+	let entries: Dirent[];
 	try {
 		entries = await readdir(directory, { withFileTypes: true });
 	} catch {
