@@ -10,8 +10,10 @@ try {
   process.exit(1);
 }
 
+const REF_REGEX = /^[a-zA-Z0-9\/\-_.]+$/;
+
 function verifyRef(ref) {
-  if (typeof ref !== 'string' || !/^[a-zA-Z0-9\/\-_.]+$/.test(ref)) {
+  if (typeof ref !== 'string' || !REF_REGEX.test(ref)) {
     console.error(`Invalid ref format: ${ref}`);
     return false;
   }
@@ -26,14 +28,14 @@ function verifyRef(ref) {
 
 function getBaseBranch() {
   if (process.env.DF_BASE_SHA) {
-    if (/^[a-zA-Z0-9\/\-_.]+$/.test(process.env.DF_BASE_SHA) && verifyRef(process.env.DF_BASE_SHA)) {
+    if (REF_REGEX.test(process.env.DF_BASE_SHA) && verifyRef(process.env.DF_BASE_SHA)) {
       return process.env.DF_BASE_SHA;
     }
   }
 
   const candidates = [];
 
-  if (process.env.GITHUB_BASE_REF && /^[a-zA-Z0-9\/\-_.]+$/.test(process.env.GITHUB_BASE_REF)) {
+  if (process.env.GITHUB_BASE_REF && REF_REGEX.test(process.env.GITHUB_BASE_REF)) {
     candidates.push(`origin/${process.env.GITHUB_BASE_REF}`, process.env.GITHUB_BASE_REF);
   }
 
@@ -42,20 +44,27 @@ function getBaseBranch() {
 
   try {
     const configPath = process.env.DF_CONFIG_PATH || join(process.cwd(), 'repo.dfconfig');
-    const config = JSON.parse(readFileSync(configPath, 'utf-8'));
+    const content = readFileSync(configPath, 'utf-8');
+    let config;
+    try {
+      config = JSON.parse(content);
+    } catch (e) {
+      console.error(`Warning: Failed to parse ${configPath} as JSON: ${e.message}`);
+      throw e; // continue to catch block below
+    }
     configDevBranch = typeof config?.repo?.identity?.development_branch === 'string' ? config.repo.identity.development_branch : null;
     configDefaultBranch = typeof config?.repo?.identity?.default_branch === 'string' ? config.repo.identity.default_branch : null;
 
-    if (configDevBranch && /^[a-zA-Z0-9\/\-_.]+$/.test(configDevBranch)) {
+    if (configDevBranch && REF_REGEX.test(configDevBranch)) {
       candidates.push(`origin/${configDevBranch}`);
       candidates.push(configDevBranch);
     }
-    if (configDefaultBranch && /^[a-zA-Z0-9\/\-_.]+$/.test(configDefaultBranch)) {
+    if (configDefaultBranch && REF_REGEX.test(configDefaultBranch)) {
       candidates.push(`origin/${configDefaultBranch}`);
       candidates.push(configDefaultBranch);
     }
   } catch {
-    // Config missing, unreadable, or malformed
+    // Config missing, unreadable, or malformed (parse errors logged above)
   }
 
   // Check candidates from GITHUB_BASE_REF or repo.dfconfig
