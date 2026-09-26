@@ -107,6 +107,38 @@ export interface CandidatePreference {
 	candidates?: string[];
 	tiers?: LimitTier[];
 	quality?: TaskKind;
+	/**
+	 * Providers to rank first, without excluding any other.
+	 *
+	 * A hard `candidates` list is a ceiling: a model that appears in the provider's catalogue
+	 * tomorrow is invisible until somebody edits the list. Naming providers expresses a preference
+	 * instead, so the rest of the live catalogue stays reachable as a fallback.
+	 */
+	preferProviders?: string[];
+	/**
+	 * Model ids or id prefixes to rank first, without excluding any other.
+	 *
+	 * This is how a newly published model gets used without a configuration edit: name the
+	 * prefix once and every model the provider adds under it is preferred from then on.
+	 */
+	preferModels?: string[];
+	/**
+	 * Rank models whose `limitTier` is `bulk` or `free` ahead of the rest.
+	 *
+	 * Nothing is excluded, so a repository that has declared no paid provider still runs when the
+	 * free tiers are exhausted — it just tries them first.
+	 */
+	preferFree?: boolean;
+	/**
+	 * Keep the rest of the live catalogue reachable behind whatever this policy names.
+	 *
+	 * By default a `candidates` list is a ceiling: only those models are considered, so one
+	 * published after the list was written is invisible. Setting this keeps the named models as a
+	 * preference — tried first, in the order given — while everything the providers actually offer
+	 * stays available as the fallback. That is the combination worth having: a repository states
+	 * what it trusts, and still runs when a provider is out of quota or a model is retired.
+	 */
+	includeCatalogue?: boolean;
 }
 
 /** Named routing rule mapping task matches to candidate preferences. */

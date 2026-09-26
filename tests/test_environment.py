@@ -267,7 +267,17 @@ class TestPlans:
         assert docs["version"] == 1
         assert docs["home"] == ".agents/PRD.md"
         assert "api" not in docs
-        assert providers["defaultChain"]
+        # Routing intent is declared as preferences, and `defaultChain` is optional: a chain is a
+        # ceiling, so requiring one would mean every model a provider publishes afterwards needs a
+        # configuration edit before it can be used. What must be declared is the intent.
+        policies = providers["router"]["policies"]
+        assert policies
+        assert any(
+            preference
+            for policy in policies
+            for preference in ("preferModels", "preferProviders", "preferFree", "includeCatalogue")
+            if preference in policy["prefer"]
+        )
 
     def test_a_declared_command_overrides_the_default(self, polyglot):
         _manifest(polyglot, {"testing": {"rust": {"command": "cargo nextest run"}}})
