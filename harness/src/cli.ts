@@ -1,6 +1,6 @@
 #!/usr/bin/env bun
 
-import { existsSync } from "node:fs";
+import { appendFileSync, existsSync } from "node:fs";
 import { readFile } from "node:fs/promises";
 import { createRequire } from "node:module";
 import { homedir } from "node:os";
@@ -35,6 +35,9 @@ import { loginProviderAccount } from "@darkfactory/keychain/login";
 import type { AuthEvent, AuthPrompt, Provider } from "@earendil-works/pi-ai";
 import { fauxAssistantMessage, fauxProvider } from "@earendil-works/pi-ai";
 import { runCiCli } from "./ci/cli.ts";
+import { applyLicence } from "./ci/licensing.ts";
+import { reportFailure, resolveFailure } from "./ci/report-failure.ts";
+import { buildRouterCatalog } from "./router/catalog.ts";
 import { DEFAULT_ROUTER_CONFIG, type DfConfig, loadDfConfig, localCredentialFallback } from "./config.ts";
 import type { Candidate } from "./failover.ts";
 import { GitHubClient } from "./github/client.ts";
@@ -55,6 +58,7 @@ import { runDoctorIdentities } from "./identities/index.ts";
 import { LimitLedger } from "./limits/ledger.ts";
 import { QuotaEngine } from "./limits/quota-engine.ts";
 import { buildQuotaReport } from "./limits/quota-report.ts";
+import { sweepQuotaResumes } from "./limits/resume-sweep.ts";
 import { estimateTask } from "./limits/routing.ts";
 import { type CatalogResult, isRunnableCatalogModel, ModelCatalog } from "./models/catalog.ts";
 import { ModelPoller } from "./models/poller.ts";
@@ -62,7 +66,6 @@ import { ProviderRegistry } from "./providers/runtime.ts";
 import { loadProviderConfig } from "./providers/schema.ts";
 import { classifyFailure } from "./quota.ts";
 import { redactErrorMessage } from "./redaction.ts";
-import { buildRouterCatalog } from "./router/catalog.ts";
 import { OutcomeStore } from "./router/outcomes.ts";
 import { routeTask } from "./router/router.ts";
 import { type CapabilityEscalationPolicy, candidateTierKey } from "./router/tiers.ts";
@@ -78,6 +81,7 @@ import type {
 import { secretsCommand } from "./secrets/cli.ts";
 import { runWorkspaceCli } from "./workspace/cli.ts";
 import { runGit } from "./workspace/git.ts";
+import { describeSubmoduleMovement, pinSubmoduleBranches, updateSubmodules } from "./workspace/submodules.ts";
 
 function usage(): string {
 	return [
@@ -87,6 +91,10 @@ function usage(): string {
 		"  df route [--kind kind] [--size size] [--difficulty easy|medium|hard] [--min-tier id] [--need capability] [--json] <prompt>",
 		"  df limits [--json] | df limits clear <provider|provider:account|provider/model@account|*>",
 		"  df quota [--json] [--provider p]   # every provider/account/model: state, limits, usage and the source of each number",
+		"  df resume [--repo owner/name]        # resume runs blocked on quota whose models have reset",
+		"  df report-failure                  # file or close the failure issue for this run",
+		"  df submodules [--root dir]         # pin and advance super-repository submodules",
+		"  df license [--root dir]            # materialise LICENSE from the manifest declaration",
 		"  df providers",
 		"  df models [--provider p] [--account label] [--refresh]",
 		"  df accounts",
@@ -585,26 +593,44 @@ async function logoutCommand(
 	console.log(`Logged out ${providerId}/${label}.`);
 }
 
+/**
+ * Resolves the models a one-off question may be answered by.
+ *
+ * The same routing a full run uses, so `ask` and `run` agree on which model would serve a prompt:
+ * asking a question must not silently pick a worse model than running the same prompt would.
+ *
+ * @param registry Provider registry.
+ * @param config Loaded configuration, carrying the routing preferences.
+ * @param prompt The question, which is routed on.
+ * @returns Candidates in preference order; empty when nothing is usable.
+ */
+async function routeForPrompt(registry: ProviderRegistry, config: DfConfig, prompt: string): Promise<Candidate[]> {
+	const models = buildRouterCatalog({
+		providers: registry.entries,
+		capabilityTiers: config.router?.capabilityTiers,
+		defaultTier: config.router?.defaultTier,
+	});
+	if (models.length === 0) return [];
+	const route = await routeTask({ prompt }, { config: config.router ?? DEFAULT_ROUTER_CONFIG, models });
+	return route.chain;
+}
+
 async function askCommand(
 	registry: ProviderRegistry,
 	store: FileCredentialStore,
 	config: DfConfig,
 	args: string[],
 ): Promise<void> {
+	// `--chain` is optional: an ad-hoc question should not require knowing the chain, and the
+	// router already resolves the whole live catalogue when no chain is pinned. Naming one still
+	// works, for when a question should only ever be answered by a particular model.
 	const chainValue = option(args, "--chain");
-	if (!chainValue) throw new Error("ask requires --chain");
 	const prompt = removeOptions(args, ["--chain"]).join(" ").trim();
 	if (!prompt) throw new Error("ask requires a prompt");
 	const json = args.includes("--json");
-	const supervisor = await createCliSupervisor(
-		registry,
-		store,
-		config,
-		["run", ...args],
-		parseChain(chainValue),
-		json,
-		estimateTask(prompt),
-	);
+	const chain = chainValue ? parseChain(chainValue) : await routeForPrompt(registry, config, prompt);
+	if (chain.length === 0) throw new Error("ask could not resolve a model: add an account, or pass --chain");
+	const supervisor = await createCliSupervisor(registry, store, config, ["run", ...args], chain, json, estimateTask(prompt));
 	const result = await supervisor.prompt(prompt);
 	if (!json) process.stdout.write("\n");
 	else
@@ -1380,6 +1406,119 @@ async function runCommand(
 	}
 }
 
+/**
+ * Resumes runs that stopped on quota once their models' quota has reset.
+ *
+ * The blocked run is recorded in a `DF_QUOTA_*` repository variable; this sweeps those records and
+ * dispatches the `resume` stage for each one whose reset time has passed.
+ *
+ * @param args Command arguments; `--repo` overrides the repository from the environment.
+ * @returns Process exit code.
+ */
+async function resumeCommand(args: string[]): Promise<void> {
+	const slug = option(args, "--repo") ?? process.env.GITHUB_REPOSITORY ?? process.env.DF_REPO ?? "";
+	if (!slug.includes("/")) throw new Error("df resume needs --repo owner/name or GITHUB_REPOSITORY");
+	const token = process.env.GH_TOKEN ?? process.env.GITHUB_TOKEN;
+	if (!token) throw new Error("df resume needs GH_TOKEN or GITHUB_TOKEN");
+	const [owner, name] = slug.split("/");
+	const repo = new GitHubRepository(new GitHubClient({ token }), owner!, name!);
+	const result = await sweepQuotaResumes({
+		repo,
+		now: new Date(),
+		log: (message) => console.error(message),
+	});
+	const resumed = result.resumed.map((item) => `#${item}`).join(", ") || "none";
+	console.log(`Resumed ${result.resumed.length} quota-blocked item(s): ${resumed}`);
+}
+
+/**
+ * Turns a failed pipeline run into an issue, or closes the one a success resolves.
+ *
+ * Reads the run's outcome from the environment, as the workflow that owns a red build provides it.
+ *
+ * @param args Command arguments; `--repo` overrides the repository from the environment.
+ * @returns Process exit code; non-zero when the report itself could not be filed.
+ */
+async function reportFailureCommand(args: string[]): Promise<void> {
+	const slug = option(args, "--repo") ?? process.env.GITHUB_REPOSITORY ?? process.env.DF_REPO ?? "";
+	const workflow = process.env.WORKFLOW_NAME ?? "";
+	if (!slug.includes("/") || !workflow) {
+		throw new Error("df report-failure needs GITHUB_REPOSITORY and WORKFLOW_NAME");
+	}
+	const token = process.env.GH_TOKEN ?? process.env.GITHUB_TOKEN;
+	if (!token) throw new Error("df report-failure needs GH_TOKEN or GITHUB_TOKEN");
+	const [owner, name] = slug.split("/");
+	const repo = new GitHubRepository(new GitHubClient({ token }), owner!, name!);
+	const log = (message: string) => console.log(message);
+
+	try {
+		if (process.env.CONCLUSION === "failure") {
+			const outcome = await reportFailure({
+				repo,
+				workflow,
+				runUrl: process.env.RUN_URL ?? "",
+				runId: process.env.RUN_ID ?? "",
+				log,
+			});
+			if (outcome.number === null) {
+				// Reporting a failure is itself a pipeline step. A step that swallows its own errors
+				// is the thing this exists to surface, so a report that could not be filed fails the
+				// run rather than logging and moving on.
+				throw new Error(`could not file a failure issue for ${workflow}`);
+			}
+			return;
+		}
+		await resolveFailure(repo, workflow, log);
+	} catch (error) {
+		console.error(`Error: ${(error as Error).message}`);
+		process.exitCode = 1;
+	}
+}
+
+/**
+ * Pins any unpinned submodule branch, then moves every submodule to its branch tip.
+ *
+ * Idempotent: a repository whose pointers already match produces no movement and no commit.
+ *
+ * @param args Command arguments; `--root` overrides `GITHUB_WORKSPACE`.
+ * @returns Process exit code.
+ */
+async function submodulesCommand(args: string[]): Promise<void> {
+	const root = option(args, "--root") ?? process.env.GITHUB_WORKSPACE ?? process.cwd();
+	const log = (message: string) => console.log(message);
+	pinSubmoduleBranches(root, log);
+	const moved = updateSubmodules(root);
+	const report = describeSubmoduleMovement(moved);
+	console.log(report);
+	// The workflow branches its commit on this output, so it is part of the contract rather than a
+	// convenience for whoever reads the log.
+	if (process.env.GITHUB_OUTPUT) {
+		appendFileSync(process.env.GITHUB_OUTPUT, `moved=${moved.length > 0}\n`);
+	}
+}
+
+/**
+ * Materialises the repository's licence from what its manifest declares.
+ *
+ * A licence is configuration, not content: it is chosen once, it is the same text every project
+ * with that choice uses, and getting it wrong is a legal question rather than a stylistic one.
+ *
+ * @param args Command arguments; `--root` overrides `TARGET_ROOT`.
+ * @returns Process exit code.
+ */
+async function licenseCommand(args: string[]): Promise<void> {
+	const root = option(args, "--root") ?? process.env.TARGET_ROOT ?? process.cwd();
+	const token = process.env.GH_TOKEN ?? process.env.GITHUB_TOKEN;
+	if (!token) throw new Error("df license needs GH_TOKEN or GITHUB_TOKEN to fetch the canonical text");
+	const written = await applyLicence({
+		root,
+		client: new GitHubClient({ token }),
+		log: (message) => console.log(message),
+	});
+	// The install workflow branches on this, the same way the submodule sweep reports movement.
+	if (process.env.GITHUB_OUTPUT) appendFileSync(process.env.GITHUB_OUTPUT, `spdx=${written ?? ""}\n`);
+}
+
 async function quotaCommand(
 	registry: ProviderRegistry,
 	store: FileCredentialStore,
@@ -1623,6 +1762,14 @@ export async function main(args = process.argv.slice(2)): Promise<void> {
 			return accountsCommand(store);
 		case "limits":
 			return limitsCommand(ledger, args.slice(1));
+		case "resume":
+			return resumeCommand(args.slice(1));
+		case "report-failure":
+			return reportFailureCommand(args.slice(1));
+		case "submodules":
+			return submodulesCommand(args.slice(1));
+		case "license":
+			return licenseCommand(args.slice(1));
 		case "quota":
 			return quotaCommand(registry, store, ledger, config, args.slice(1));
 		case "route":

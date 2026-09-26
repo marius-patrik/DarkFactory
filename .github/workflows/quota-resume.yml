@@ -8,7 +8,7 @@ on:
     - cron: "*/15 * * * *"
   workflow_dispatch:
 
-  # Consumers call this rather than copying it, so the script it runs lives in one place.
+  # Consumers call this rather than copying it, so the runtime it runs lives in one place.
   workflow_call:
     inputs:
       pipeline-ref:
@@ -50,14 +50,6 @@ jobs:
           ref: ${{ inputs.pipeline-ref }}
           path: .darkfactory-pipeline
 
-      - name: Put the pipeline scripts on the path
-        run: |
-          if [ -d .darkfactory-pipeline/.github/scripts ]; then
-            echo "PIPELINE_SCRIPTS=$GITHUB_WORKSPACE/.darkfactory-pipeline/.github/scripts" >> "$GITHUB_ENV"
-          else
-            echo "PIPELINE_SCRIPTS=$GITHUB_WORKSPACE/.github/scripts" >> "$GITHUB_ENV"
-          fi
-
       - name: Mint an installation token for the App
         # Reading and deleting repository variables and sending repository_dispatch belong to the
         # App (it needs the Variables: read and write permission).
@@ -69,13 +61,25 @@ jobs:
           app-id: ${{ vars.DARKFACTORY_APP_ID || '4861004' }}
           private-key: ${{ secrets.DARKFACTORY_APP_PRIVATE_KEY }}
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
+      - name: Set up Bun
+        uses: oven-sh/setup-bun@v2
+
+      - name: Install DarkFactory runtime
+        run: |
+          ROOT="$GITHUB_WORKSPACE"
+          if [ -d "$GITHUB_WORKSPACE/.darkfactory-pipeline" ]; then
+            ROOT="$GITHUB_WORKSPACE/.darkfactory-pipeline"
+          fi
+          bun install --frozen-lockfile --cwd "$ROOT"
 
       - name: Resume quota-blocked runs
+        # The sweep is a df subcommand rather than a pipeline script, so the same runtime that owns
+        # the quota ledger also owns the resume that follows it.
         run: |
-          python3 "${PIPELINE_SCRIPTS:-.github/scripts}/quota_resume.py"
+          ROOT="$GITHUB_WORKSPACE"
+          if [ -d "$GITHUB_WORKSPACE/.darkfactory-pipeline" ]; then
+            ROOT="$GITHUB_WORKSPACE/.darkfactory-pipeline"
+          fi
+          bun "$ROOT/packages/cli/src/bin.ts" resume
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token || secrets.GITHUB_TOKEN }}

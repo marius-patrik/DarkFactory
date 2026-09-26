@@ -77,6 +77,12 @@ jobs:
           token: ${{ steps.app-token.outputs.token || secrets.GH_PROJECT_TOKEN || secrets.GITHUB_TOKEN }}
           fetch-depth: 0
 
+      - name: Set up Bun
+        uses: oven-sh/setup-bun@v2
+
+      - name: Install DarkFactory runtime
+        run: bun install --frozen-lockfile --cwd .darkfactory-pipeline
+
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
@@ -104,11 +110,13 @@ jobs:
         run: python3 .darkfactory-pipeline/.github/scripts/install.py
 
       - name: Apply the declared licence
+        # A df subcommand rather than a pipeline script. The licence text is fetched from GitHub's
+        # licence API rather than bundled, because a bundled copy is a fork of a legal document that
+        # drifts from the canonical wording.
         env:
-          PYTHONPATH: ${{ github.workspace }}/.darkfactory-pipeline/.github/scripts
           TARGET_ROOT: ${{ github.workspace }}/target
           GH_TOKEN: ${{ steps.app-token.outputs.token || secrets.GH_PROJECT_TOKEN || secrets.GITHUB_TOKEN }}
-        run: python3 .darkfactory-pipeline/.github/scripts/licensing.py
+        run: bun .darkfactory-pipeline/packages/cli/src/bin.ts license
 
       - name: File the issue the installation pull request binds
         id: install-issue

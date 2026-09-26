@@ -24,7 +24,7 @@ on:
       - Verify Bound Issue
     types: [completed]
 
-  # Consumers call this rather than copying it, so the script it runs lives in one place.
+  # Consumers call this rather than copying it, so the runtime it runs lives in one place.
   workflow_call:
     inputs:
       pipeline-ref:
@@ -89,13 +89,26 @@ jobs:
           app-id: ${{ vars.DARKFACTORY_APP_ID || '4861004' }}
           private-key: ${{ secrets.DARKFACTORY_APP_PRIVATE_KEY }}
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
+      - name: Set up Bun
+        uses: oven-sh/setup-bun@v2
+
+      - name: Install DarkFactory runtime
+        run: |
+          ROOT="$GITHUB_WORKSPACE"
+          if [ -d "$GITHUB_WORKSPACE/.darkfactory-pipeline" ]; then
+            ROOT="$GITHUB_WORKSPACE/.darkfactory-pipeline"
+          fi
+          bun install --frozen-lockfile --cwd "$ROOT"
 
       - name: File or resolve the failure issue
-        run: python3 "${PIPELINE_SCRIPTS:-.github/scripts}/report_failure.py"
+        # A df subcommand rather than a pipeline script: the same runtime that decides a run failed
+        # is what turns that into an issue.
+        run: |
+          ROOT="$GITHUB_WORKSPACE"
+          if [ -d "$GITHUB_WORKSPACE/.darkfactory-pipeline" ]; then
+            ROOT="$GITHUB_WORKSPACE/.darkfactory-pipeline"
+          fi
+          bun "$ROOT/packages/cli/src/bin.ts" report-failure
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token || secrets.GH_PROJECT_TOKEN || secrets.GITHUB_TOKEN }}
           GITHUB_REPOSITORY: ${{ github.repository }}

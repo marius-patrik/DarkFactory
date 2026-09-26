@@ -118,6 +118,12 @@ function parseRouter(value: unknown): RouterConfig | undefined {
 			"sensitive",
 		]) as ("normal" | "sensitive")[] | undefined;
 		const candidates = candidateArray(prefer.candidates, `router policy ${id} prefer.candidates`);
+		const preferProviders = stringArray(prefer.preferProviders, `router policy ${id} prefer.preferProviders`);
+		const preferModels = stringArray(prefer.preferModels, `router policy ${id} prefer.preferModels`);
+		if (prefer.preferFree !== undefined && typeof prefer.preferFree !== "boolean")
+			throw new Error(`providers block router policy ${id} prefer.preferFree must be a boolean`);
+		if (prefer.includeCatalogue !== undefined && typeof prefer.includeCatalogue !== "boolean")
+			throw new Error(`providers block router policy ${id} prefer.includeCatalogue must be a boolean`);
 		const tiers = stringArray(prefer.tiers, `router policy ${id} prefer.tiers`, TIERS) as LimitTier[] | undefined;
 		const quality =
 			prefer.quality === undefined
@@ -134,7 +140,15 @@ function parseRouter(value: unknown): RouterConfig | undefined {
 				...(needs ? { needs } : {}),
 				...(sensitivity ? { sensitivity } : {}),
 			},
-			prefer: { ...(candidates ? { candidates } : {}), ...(tiers ? { tiers } : {}), ...(quality ? { quality } : {}) },
+			prefer: {
+				...(candidates ? { candidates } : {}),
+				...(tiers ? { tiers } : {}),
+				...(quality ? { quality } : {}),
+				...(preferProviders && preferProviders.length > 0 ? { preferProviders } : {}),
+				...(preferModels && preferModels.length > 0 ? { preferModels } : {}),
+				...(typeof prefer.preferFree === "boolean" ? { preferFree: prefer.preferFree } : {}),
+				...(typeof prefer.includeCatalogue === "boolean" ? { includeCatalogue: prefer.includeCatalogue } : {}),
+			},
 		};
 	});
 	let models: RouterConfig["models"];
