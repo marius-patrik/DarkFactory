@@ -4,8 +4,8 @@ import { join, resolve } from "node:path";
 
 const REPOSITORY_ROOT = resolve(import.meta.dir, "..", "..");
 const PAPER_ROOT = join(REPOSITORY_ROOT, "paper");
-const SOURCE = join(PAPER_ROOT, "index.typ");
-const FONT_PATH = join(PAPER_ROOT, "fonts");
+const SOURCE = join(PAPER_ROOT, "main.typ");
+const FONT_PATH = join(PAPER_ROOT, "components", "fonts");
 const PDF = join(REPOSITORY_ROOT, "PAPER.pdf");
 const CHECK = process.argv.includes("--check");
 

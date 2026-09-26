@@ -3,8 +3,8 @@ import { join, resolve } from "node:path";
 
 const REPOSITORY_ROOT = resolve(import.meta.dir, "..", "..");
 const PAPER_ROOT = join(REPOSITORY_ROOT, "paper");
-const PAPER = join(PAPER_ROOT, "index.typ");
-const WATCH_PATHS = [PAPER, join(PAPER_ROOT, "bib"), join(PAPER_ROOT, "img"), join(PAPER_ROOT, "fonts")];
+const PAPER = join(PAPER_ROOT, "main.typ");
+const WATCH_PATHS = [PAPER, join(PAPER_ROOT, "pages"), join(PAPER_ROOT, "styles"), join(PAPER_ROOT, "components")];
 const DEBOUNCE_MS = 150;
 
 let debounce: ReturnType<typeof setTimeout> | undefined;
@@ -48,5 +48,5 @@ process.on("SIGINT", () => {
 	process.exit(0);
 });
 
-console.log("[dev] watching paper/index.typ, paper/bib, paper/img, paper/fonts");
+console.log("[dev] watching paper/main.typ, paper/pages, paper/styles, paper/components");
 await runBuild();

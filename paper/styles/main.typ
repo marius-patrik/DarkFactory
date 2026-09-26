@@ -12,7 +12,6 @@
 // One concern per file, each file named after its concern:
 //
 //   fonts.typ     which typefaces the document uses
-//   metadata.typ  the facts printed in the front matter
 //   page.typ      sheet size and margins
 //   footer.typ    the running footer, off until the body starts
 //   body.typ      the face, size, language and paragraph rhythm
@@ -34,7 +33,6 @@
 // innermost because caption styling is the last thing to override.
 
 #import "fonts.typ": PISMO, MONO
-#import "metadata.typ": meta
 #import "page.typ": page-setup
 #import "footer.typ": page-footer
 #import "body.typ": body-text
