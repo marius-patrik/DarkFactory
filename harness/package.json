@@ -10,6 +10,7 @@
     "test": "bun test",
     "typecheck": "tsc --noEmit",
     "build": "bun run ./scripts/build.ts",
+    "install:df": "bun run ./scripts/install.ts",
     "format": "biome format --write .",
     "lint": "biome lint .",
     "check": "biome ci ."
