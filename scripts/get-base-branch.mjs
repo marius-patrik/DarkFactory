@@ -66,7 +66,7 @@ function getBaseBranch() {
 
   // Attempt fetching origin if remote refs are absent (e.g. shallow checkout / CI)
   try {
-    execFileSync('git', ['fetch', 'origin', '--depth=1'], { stdio: 'ignore' });
+    execFileSync('git', ['fetch', 'origin', '--depth=1'], { stdio: 'ignore', timeout: 30000 });
     for (const candidate of candidates) {
       if (verifyRef(candidate)) {
         return candidate;

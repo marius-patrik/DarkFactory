@@ -84,10 +84,14 @@ export function getWorkflowTemplateContent(templateName: string): string {
 }
 
 export function interpolateTemplate(rawTemplate: string, context: TemplateContext = {}): string {
+	const defaultBranch = context.default_branch;
+	if (!defaultBranch) {
+		throw new Error("context.default_branch must be provided");
+	}
 	const fullContext: Record<string, string> = {
 		pipeline_repo: context.pipeline_repo || "marius-patrik/DarkFactory",
-		pipeline_ref: context.pipeline_ref || context.default_branch || "main",
-		default_branch: context.default_branch || "main",
+		pipeline_ref: context.pipeline_ref || defaultBranch,
+		default_branch: defaultBranch,
 		...Object.fromEntries(Object.entries(context).filter(([_, v]) => typeof v === "string") as [string, string][]),
 	};
 
