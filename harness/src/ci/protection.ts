@@ -11,7 +11,8 @@ export interface ProtectionVerificationReport {
 }
 
 export interface ApplyProtectionOptions {
-	branch?: string;
+	branches?: string[];
+	branch?: string; // deprecated, use branches
 	dryRun?: boolean;
 }
 
@@ -48,7 +49,7 @@ export async function applyBranchProtection(
 	options: ApplyProtectionOptions = {},
 ): Promise<ApplyProtectionResult> {
 	const dryRun = options.dryRun === true;
-	const branch = options.branch ?? "main";
+	const branches = options.branches ?? (options.branch ? [options.branch] : ["main"]);
 
 	if (dryRun) {
 		return {
@@ -76,7 +77,7 @@ export async function applyBranchProtection(
 				enforcement: "active",
 				conditions: {
 					ref_name: {
-						include: ["~DEFAULT_BRANCH"],
+						include: branches.map((b) => (b === "main" || b === "develop" ? "~DEFAULT_BRANCH" : b)),
 						exclude: [],
 					},
 				},
@@ -116,15 +117,17 @@ export async function applyBranchProtection(
 		// Rulesets not supported (404) or permission issue; fall back to classic branch protection
 	}
 
-	// Fallback to classic branch protection
-	await repo.client.rest(
-		"PUT",
-		`/repos/${encodeURIComponent(owner)}/${encodeURIComponent(repoName)}/branches/${encodeURIComponent(branch)}/protection/required_status_checks`,
-		{
-			strict: true,
-			contexts,
-		},
-	);
+	// Fallback to classic branch protection - apply to each branch
+	for (const branch of branches) {
+		await repo.client.rest(
+			"PUT",
+			`/repos/${encodeURIComponent(owner)}/${encodeURIComponent(repoName)}/branches/${encodeURIComponent(branch)}/protection/required_status_checks`,
+			{
+				strict: true,
+				contexts,
+			},
+		);
+	}
 
 	return {
 		success: true,
@@ -201,6 +204,18 @@ export async function verifyBranchProtection(
 			source: "none",
 		};
 	}
+}
+
+export async function verifyBranchProtectionForBranches(
+	repo: GitHubRepository,
+	expectedContexts: string[],
+	branches: string[],
+): Promise<Record<string, ProtectionVerificationReport>> {
+	const reports: Record<string, ProtectionVerificationReport> = {};
+	for (const branch of branches) {
+		reports[branch] = await verifyBranchProtection(repo, expectedContexts, branch);
+	}
+	return reports;
 }
 
 function evaluateProtection(

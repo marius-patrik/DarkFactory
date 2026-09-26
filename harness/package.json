@@ -28,6 +28,7 @@
     "commander": "^15.0.0",
     "jose": "6.1.0",
     "libsodium-wrappers": "0.8.2",
+    "yaml": "2.7.0",
     "zod": "4.1.5"
   },
   "devDependencies": {

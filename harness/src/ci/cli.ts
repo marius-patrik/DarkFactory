@@ -14,8 +14,17 @@ export interface CiCliContext {
 }
 
 function getOption(args: string[], name: string): string | undefined {
-	const index = args.indexOf(name);
-	return index >= 0 ? args[index + 1] : undefined;
+	return getOptions(args, name)[0];
+}
+
+function getOptions(args: string[], name: string): string[] {
+	const values: string[] = [];
+	for (let i = 0; i < args.length; i++) {
+		if (args[i] === name && i + 1 < args.length) {
+			values.push(args[i + 1]!);
+		}
+	}
+	return values;
 }
 
 function hasFlag(args: string[], ...names: string[]): boolean {

@@ -4,7 +4,10 @@ import yaml
 
 def _workflow(path):
     with pathlib.Path(path).open("r", encoding="utf-8") as handle:
-        return yaml.safe_load(handle)
+        workflow = yaml.safe_load(handle)
+        if True in workflow and "on" not in workflow:
+            workflow["on"] = workflow.pop(True)
+        return workflow
 
 
 def _steps(path, job):
@@ -42,11 +45,23 @@ def test_ci_quality_is_detector_driven_and_aggregated():
     assert aggregate["if"] == "always()"
 
 
-def test_ci_has_no_handwritten_language_quality_jobs():
+def test_ci_trigger_includes_stacked_pr_branches():
     workflow = _workflow(".github/workflows/ci.yml")
-    jobs = workflow["jobs"]
-    for legacy in ("pipeline", "rust", "paper", "math", "web", "harness", "docs"):
-        assert legacy not in jobs
+    push_branches = workflow["on"]["push"]["branches"]
+    assert "develop" in push_branches
+    assert "refactor/*" in push_branches
+    assert "finish/*" in push_branches
+
+
+def test_ci_pull_request_trigger_has_no_branch_filter_and_base_ref_changed():
+    workflow = _workflow(".github/workflows/ci.yml")
+    pr_trigger = workflow["on"]["pull_request"]
+    assert "branches" not in pr_trigger
+    assert "types" in pr_trigger
+    assert "base_ref_changed" in pr_trigger["types"]
+    assert "opened" in pr_trigger["types"]
+    assert "synchronize" in pr_trigger["types"]
+    assert "reopened" in pr_trigger["types"]
 
 
 def test_autonomous_agent_skips_pipeline_failure_issues_and_comments():

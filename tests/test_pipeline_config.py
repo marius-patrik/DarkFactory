@@ -445,7 +445,7 @@ def test_workflows_separate_development_from_release_pushes():
 
     for name in ("ci.yml", "project-automation.yml"):
         content = _read(os.path.join(WORKFLOW_DIR, name))
-        assert "[develop]" in content, f"{name} must follow the development branch"
+        assert "develop" in content, f"{name} must follow the development branch"
 
     for name in ("deploy-docs.yml", "release.yml"):
         content = _read(os.path.join(WORKFLOW_DIR, name))
