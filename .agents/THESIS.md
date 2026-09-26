@@ -34,7 +34,7 @@ they carry a compatibility promise that internal refactors do not.
 **DarkFactory is implemented in DarkFactory, and maintained by DarkFactory via DarkFactory.**
 
 This is the load-bearing commitment and the reason the rest of the system is shaped the way it
-is. Three things follow, and they are not optional extras.
+is. Two things follow, and they are not optional extras.
 
 **The abstractions are construction material.** Every abstraction in this document has to be
 sufficient to *build the system that defines it*. If `forge` and the capability model cannot
@@ -45,10 +45,25 @@ the thing it is supposed to be a part of.
 
 **There is a bootstrap, and it should be named.** Something has to execute the first `.df`
 file. Either that something is itself expressible in `.df`, or there is a seed, and seeds rot
-because they are the one part of the system nothing else can rebuild. Naming the seed is a
-decision, and everything else waits on it. The honest options are a minimal kernel in another
-language that the system grows out of and eventually deletes, or a self-hosting interpreter
-that bootstraps through a fixed point. Pretending there is no seed is the failure mode.
+**The bootstrap is TypeScript, and that is the whole answer.** `.df` is TypeScript (§11), so
+there is no foreign seed to grow out of and no fixed point to bootstrap through. The base
+language and the interpreter are already a language we did not have to invent, with a compiler
+and an ecosystem behind it, and **the interpreter is the bridge**: it is simultaneously what
+executes a `.df` file, what makes a `.df` file composable rather than merely typed, and what
+turns a declaration into state. Compositability, declaration and execution are the same
+mechanism seen from three sides, which is why the systems layer can be a bridge instead of a
+wall.
+
+This is the concrete form of §3's bind-don't-reimplement applied to ourselves. We did not
+write the base language or the type checker, and by not writing them we get editors, language
+servers and every published `@types` package for free. The one thing we do own — the loader,
+the capability discovery, the composition — is the part no existing system provides, because
+it is specific to what we are.
+
+**The residual risk is not a foreign core; it is a frozen one.** The danger is not that the
+bootstrap is in another language — it is not — but that the interpreter's assumptions harden
+until the systems layer can only be written the way the first version expected. So the test in
+§2 below is worth more than a seed policy would have been.
 
 **This is a filter, and it is a good one.** Every proposal can now be asked a question that
 design review cannot answer: *could this be built by the system it belongs to?* If not, the
@@ -76,12 +91,13 @@ and it is what makes two otherwise awkward requirements into one mechanism:
 
 - DarkFactory's own systems layer is TypeScript, so `.df` is TypeScript with a framework
   standard library. Every editor, language server and `@types` package works unchanged.
-- `omnis` is deliberately a **Nix module**, because it gets typed options, merge semantics,
+- A system DarkFactory governs may be declared in **its own** language, because a mature
+  system usually already has one — Nix modules get typed options, merge semantics,
   `mkDefault`/`mkForce`, imports and nixpkgs for free rather than by owning a language.
 
 A single interpreter subsystem with a backend per declaration language serves both. A
-TypeScript-only systems layer could not govern `omnis`, and would make "universal" aspirational
-— see §5.
+TypeScript-only systems layer could not govern anything declared in a language we did not
+choose, and would make "universal" aspirational — see §5.
 
 ## 4. Bind, never reimplement
 
@@ -119,13 +135,12 @@ lets you enumerate what works where, and every row is a promise to maintain. Rem
 friction means **one semantic model with no location-dependent behaviour**, which is a
 constraint on the design rather than a feature to be added.
 
-It is also what the fleet demands. PRD §17 puts six repositories in one system and `omnis` —
-a machine-level operating system — is consumer #2. DarkFactory does not merely learn from
-`omnis`; it has to install, configure and evolve it. A repo-scoped DarkFactory could configure
-it. A machine-spanning one *runs* it. The second is what "universal" has to mean if the word
-is to mean anything.
+It is also what the system is for. A repository-scoped DarkFactory could *configure* a
+machine; a machine-spanning one has to *run* it. The second is what "universal" has to mean if
+the word is to mean anything, and it is why a machine-scoped consumer is a first-class fleet
+member rather than a separate kind of target.
 
-## 6. AI-first, and what makes that falsifiable
+## 6. AI-first: a next-generation harness
 
 Every repository since 2023 has an agent attached. AI-first is only a real architectural
 position if something is true of the system that would be false without an agent. Five claims,
@@ -144,8 +159,10 @@ each checkable:
    why `.df` is TypeScript rather than a new notation: the model already reads it.
 
 4. **Agent mutations are staged and reversible.** An agent operating at machine scope needs
-   undo, or autonomy and safety are permanently in tension. `omnis`'s generations exist for
-   exactly this reason.
+   undo, or autonomy and safety are permanently in tension. This is why an applied
+   declaration produces a *generation* — a parent, a diff and an author — rather than a
+   mutation: audit without undo records damage already done, and undo without audit is an
+   approval with no history. They are one invariant, not two features.
 
 5. **Completion is observed, not asserted.** Effects are idempotent and externally checkable,
    so "done" is a fact about the world. The PRD's "truthful" property is the AI-first one.
@@ -153,6 +170,41 @@ each checkable:
 **The test:** *if the agent were removed, would the system still be complete?* If yes, this is
 a system with an agent attached. If no, something is missing that only an agent needs — and
 that something is the design.
+
+### 6.1 What the harness is actually for
+
+The five claims describe a position. This is the purpose behind it.
+
+**The harness decouples the work from the agent.** Agent CLIs are a means, not the system:
+they differ in tool surface, context handling, session model, quota behaviour and how they
+fail. Binding them directly into the delivery path means the pipeline's capabilities are
+whatever whichever agent happens to be installed this week, and a harness upgrade is a
+delivery risk. A harness in between fixes that — the agent becomes a replaceable execution
+backend behind a stable interface, and fallback escalates across harnesses rather than only
+across models on one of them.
+
+**That is what gets us back to software engineering, at a new scale.** The point of a harness
+is not that the agent is in the loop; it is that the *work* is expressed in terms the system
+understands — capabilities, declarations, effects, checks — and the agent is one interpreter of
+that expression. A pipeline that expresses delivery as a declared graph rather than as a
+sequence of prompts can be reasoned about, diffed, reviewed, resumed and re-run by a different
+agent without rewriting it.
+
+**The scope is anything, not only software engineering.** A system built to express "act on a
+system through a declared interface" has no domain built into it. Repository work is the first
+application, not the definition. A declaration can equally describe a machine, a fleet, or a
+domain with no relationship to either, and the mechanism should not notice the difference. If
+the system can only ever do what its first application did, it is a tool that grew a pipeline,
+not a harness.
+
+**And it is the same system a human surface will read.** A later interface is a renderer over
+the same declarations, the same capability catalogue and the same effect log — not a second
+frontend with its own model of the world. Two things follow from that, and both are cheap to
+get right and expensive to retrofit: every object needs a stable identity so a human and an
+agent can refer to the same thing, and the settings surface is generated from the same option
+schema the agent reads, so the two cannot drift. This is why the declaration is the
+authoritative surface rather than a configuration convenience — it is the one thing both a model
+and a person are forced to go through.
 
 ## 7. Declarable by nature
 
@@ -236,18 +288,20 @@ TypeScript and joins the system by being renamed, not rewritten.** An experiment
 work is a deleted file rather than a reverted design, and nothing is committed to the system
 until it has survived being ordinary code.
 
-The obvious objection is well-founded, and `omnis` rejected a declaration language for good
-reason — owning a language means owning a parser, a type system, an error-reporting story and a
-compiler "to arrive where the Nix module system already is." §3 is why that does not apply
-here: for what DarkFactory **authors** we may choose the dialect, and for what it **binds** we
-do not and must not. We are not replacing Nix; we are making Nix reachable.
+The obvious objection is well-founded, and a mature system with an existing language is right
+to keep it: owning a language means owning a parser, a type system, an error-reporting story
+and a compiler "to arrive where an existing module system already is." §3 is why that does not
+apply here: for what DarkFactory **authors** we may choose the dialect, and for what it
+**binds** we do not and must not. We are not replacing a mature system's language; we are
+making it reachable.
 
 ## 12. How to tell if this is wrong
 
 A thesis that cannot be falsified is a mood. These would sink it:
 
-- **The bootstrap cannot be made self-hosting.** If the seed is irreducibly foreign and cannot
-  be deleted, §2 is aspiration and the system has a permanent core nobody can rebuild.
+- **The interpreter hardens into a wall.** If the systems layer can only be written the way
+  the first version of the loader expected, §2 is aspiration: not a foreign core but a frozen
+  one, which is the same failure wearing a friendlier shape.
 - **The abstractions cannot build the system.** If `forge` and the capability model are
   insufficient construction material, self-hosting is a slogan.
 - **The friction cannot be removed.** If machine and repository remain two modes with
@@ -266,12 +320,15 @@ specification. This one is a direction, and it is allowed to outlive whatever pr
 
 ## Provenance
 
-Synthesised from the scoping in `marius-patrik/omnis` — ADR-0011 (*bind existing services
-rather than reimplement them*), ADR-0012 (*one declarative configuration applied as
-generations*), §4 (*the declaration*), §7 (*the modification surface*) — together with the
-Cordis service-row composition already used in the dsh profiles, and the one-file-per-function
-tendency already present in `harness/src/`.
+Synthesised from an earlier machine-scope scoping exercise that was never built and that
+DarkFactory supersedes: its *kernel* doctrine (bind existing services rather than reimplement
+them), its one-declaration/one-modification-surface/one-audit-trail structure, its generations
+model, and its decision to keep a mature system's own language rather than replace it. Those
+are inputs to the thinking here, not components of this system and not dependencies of it.
 
-Departures from `omnis` are deliberate and marked where they occur: §2 and §11 argue that owning
-`.df` is not the same decision as owning a declaration language, because DarkFactory authors its
-own systems layer and binds everyone else's.
+Also informed by the Cordis service-row composition already used in the dsh profiles, and by
+the one-file-per-function tendency already present in `harness/src/`.
+
+The one place this document departs from its sources is deliberate and marked where it occurs:
+§2 and §11 argue that owning `.df` is not the same decision as owning a declaration language,
+because DarkFactory authors its own systems layer and binds everyone else's.

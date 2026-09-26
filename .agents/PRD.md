@@ -389,14 +389,13 @@ The standard installation includes official capabilities while allowing third-pa
 
 ## 17. Consumer/fleet model
 
-The intended fleet contains six repositories identified by stable GitHub repository identity:
+The intended fleet contains five repositories identified by stable GitHub repository identity:
 
 1. DarkFactory;
-2. omnis;
-3. ChessWithQuests;
-4. OdbornaPrace-paper;
-5. template-OdbornaPrace;
-6. OdbornaPrace-mono.
+2. ChessWithQuests;
+3. OdbornaPrace-paper;
+4. template-OdbornaPrace;
+5. OdbornaPrace-mono.
 
 Consumers receive released df and managed project-specific setup. They do not receive copied DarkFactory source trees and do not rebuild the shared React application.
 
@@ -406,9 +405,10 @@ Install/update is idempotent and drift-aware.
 
 ### 17.1 One model across repositories and machines
 
-The fleet is not two populations. `omnis` is a machine-level operating system and is a
-consumer of the same df, so repository-scoped and machine-scoped work must resolve through
-one semantic model rather than a repository mode and a machine mode.
+The fleet is not two populations. Machine-scoped and repository-scoped work must resolve
+through one semantic model rather than a repository mode and a machine mode, and a
+machine-scoped consumer is a first-class member of the fleet rather than a separate kind of
+target.
 
 - A capability behaves identically whether it is invoked in a working tree, on a host, or in CI. There are no per-location code paths and no host-only or repo-only capability variants.
 - A declaration means the same thing in a repository and on a machine. Where a consumer's machine-level configuration is authored in a foreign declaration format, df resolves and composes it in that format (§5.1) rather than requiring it to be re-expressed.
@@ -438,7 +438,7 @@ DarkFactory is final only when the exact pre-merge candidate has passed the decl
 - generated `.agents/AGENTS.md` is deterministic and current from canonical rules/ADRs; root `README.md` remains a symlink to the canonical product document;
 - shared web UI is deployed across the fleet without consumer frontend rebuild;
 - the source-free pre-merge candidate installs/updates cleanly, and the canonical publication reproduces that behavior;
-- all six repositories pass governance, detection, capability, docs/web, release-candidate and drift checks before the integration merge;
+- all fleet repositories pass governance, detection, capability, docs/web, release-candidate and drift checks before the integration merge;
 - `audit.df` is internally consistent;
 - installed fleet acceptance is green across the supported consumer set before merge;
 - the declarable-graph product contract passes against the installed exact-head candidate and is re-smoked against the canonical publication.
