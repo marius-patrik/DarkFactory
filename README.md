@@ -560,11 +560,10 @@ Data that belongs to no system — fixtures, lockfiles, third-party manifests �
 block is promoted from a `.dfconfig` to code only once something must *interpret* it rather than
 read it.
 
-**Configuration is one convention, not four.**  An earlier shape of this document gave the root
-a `*.dfconfig`, a graph file, and two `.json` files, which is three places to name a thing and
-three ways for a repository to spell a convention it inherited rather than chose. Everything a
-scope declares is now a block in one document, so the only thing that varies between repositories
-is block *content*.
+**Configuration is one convention.** Everything a scope declares is a block in one `*.dfconfig`
+document, so the only thing that varies between repositories is block *content*. Splitting it across
+a `*.dfconfig`, a graph file and two `.json` files would be three places to name a thing and three
+ways for a repository to spell a convention it inherited rather than chose.
 
 **The layers are process boundaries, not folder names.** A directory tree is a claim about naming;
 a process boundary is a claim about what can go wrong. Each concern below runs as its own thing and
@@ -574,7 +573,7 @@ is separate and saying nothing inside it can be reached except through its seam 
 satisfied by a good folder name, the second is not satisfied by anything except isolation.
 
 It also means a concern can be *removed* and take only itself with it. A folder name implies a
-convention that outlives the folder; a process boundary implies nothing left behind, which is what
+convention that outliving the folder; a process boundary implies nothing left behind, which is what
 makes a backend removable along with its installation rather than merely substitutable.
 
 
@@ -720,18 +719,16 @@ reason to share a file. What belongs together is a folder, whose name says what 
 
 ## 9 Compose, and bind only where it is cheaper
 
-The goal is not to reach an existing system. It is to be able to **rearrange how a system is
-used** without forking it, and that is a different property from access, and a stronger one.
+The goal is not to reach an existing system. It is to be able to **rearrange how a system is used**
+without forking it, and that is a stronger property than access. Access is a fixed vocabulary: you
+get what the interface exposes. Composability means the arrangement is not the interface's decision.
+A seam's job is therefore to **name a place in a composition, not to fix a vocabulary**, and the
+discipline below follows from that distinction rather than from a preference for writing less code.
 
-Access is a fixed vocabulary: you get what the interface exposes. Composability means the
-arrangement is not the interface's decision. A seam's job is therefore to **name a place in a
-composition, not to fix a vocabulary** — and the whole discipline below follows from that
-distinction rather than from a preference for not writing code.
-
-We implement the seam and none of the organs. Version control is `git`, `gh`, `forgejo`, `gitlab`
-or a bare directory; the browser is a system webview; toolchains are Nix; composable services are
-Cordis rows. What we own is that those mean the same thing on every backend, compose with
-everything else, and can be named in a declaration without a conditional.
+We implement the seam and none of the organs. Version control is `git`, `gh`, `forgejo`, `gitlab` or
+a bare directory; the browser is a system webview; toolchains are Nix; composable services are
+Cordis rows. What we own is that those mean the same thing on every backend, compose with everything
+else, and can be named in a declaration without a conditional.
 
 ```
 ReadState:   <target>                 what is true out there
@@ -742,44 +739,38 @@ OpenChange:  <target, ref, title>     the only way to request review
 Identify:    <who>                    who is acting
 ```
 
-**Every line written to replace a mature tool is a line worse than what it replaces, and one
-maintained forever.** But that sentence alone makes binding look like a tax, and the test in the
-first draft of this document is why. It measured a seam against *the tool* — and that quietly
-assumes the only alternative to a seam is the organ it wraps. The real alternatives are the tool,
-another binding, and a composition of bindings, so the comparison is against **the best
-construction available**, not against the tool. Measured that way, binding is usually cheaper,
-which is the honest reason for it rather than the virtuous one.
+**Every line written to replace a mature tool is a line worse than what it replaces and one
+maintained forever.** But measured against the tool, binding looks like a tax, and that comparison
+is wrong: it assumes the only alternative to a seam is the organ it wraps. The real alternatives are
+the tool, another binding, and a composition of bindings, so the comparison is against **the best
+construction available**. Measured that way, binding is usually cheaper — which is the honest reason
+for it rather than the virtuous one.
 
 A seam has two properties, and only the first is usually checked:
 
 1. **Substitutability.** A different implementation is available, and the current one is not
-   measurably worse than the best alternative available — in latency, error fidelity, or
-   capability. This is the empirical half, and it is a measurement to take rather than a
-   preference to defend.
-2. **Permeability.** A caller can compose *around* the seam, or the seam decides the arrangement
-   for them. This half is the one that fails silently. A seam that can only be used one way is a
-   wall, and a wall is exactly where an abstraction leaks — the same failure §38 names when the
-   interpreter hardens. A permeable seam is one a caller can route around, extend, or ignore for
-   the cases it does not cover, and it stays usable when they do.
+   measurably worse than the best alternative — in latency, error fidelity or capability. This half
+   is empirical, and it is a measurement to take rather than a preference to defend.
+2. **Permeability.** A caller can compose *around* the seam, or the seam decides the arrangement for
+   them. This half fails silently, because every substitutability check keeps passing while the thing
+   gets worse. A seam that can only be used one way is a wall, and a wall is where an abstraction
+   leaks. A permeable one is one a caller can route around, extend, or ignore for the cases it does
+   not cover, and it stays usable when they do.
 
-The two are independent, and the second is what makes the first tolerable. A substitutable seam
-that is not permeable is a menu: several choices, none of them composable with anything the
-caller has. A permeable seam that is not substitutable is worse — a single escape hatch with no
-alternative behind it.
+The two are independent, and the second is what makes the first tolerable. A substitutable seam that
+is not permeable is a menu: several choices, none composable with what the caller already has. A
+permeable seam that is not substitutable is worse — a single escape hatch with nothing behind it.
 
-**This is not only about external systems.** Because interfaces are derived from structure
-(§4.3) and discovery is structural (§15), the system's own features are composable inputs: a
-consumer can take one, move it, combine it with something of their own, and the system reads the
-new arrangement because it was never registered anywhere. So the seam is not a boundary around the
-system — it is a claim that **nothing in the system is privileged, including the seams**. A
-property of the system follows from the same property of every part of it, which is why the two
-are worth stating once.
+**This is not only about external systems.** Because interfaces are derived from structure (§4.3)
+and discovery is structural (§15), the system's own features are composable inputs: a consumer can
+take one, move it, combine it with something of their own, and the system reads the new arrangement
+because it was never registered anywhere. So a seam is not a boundary around the system — it is a
+claim that **nothing in the system is privileged, including the seams.**
 
-The practical payoff is an answer to every "this tool does not understand us" moment. A tool that
-cannot be configured for the system is **a system to bind, not a system to fork** — the formatter,
-the test discovery, the coverage reporter — and the surrounding system can host the binding
-precisely because it is built from recombinable parts rather than a program with one fixed entry
-point.
+The payoff is an answer to every "this tool does not understand us" moment. A tool that cannot be
+configured for the system is **a system to bind, not a system to fork** — the formatter, the test
+discovery, the coverage reporter — and the surrounding system can host the binding precisely because
+it is built from recombinable parts rather than a program with one fixed entry point.
 
 ### 9.1 The interpreter is the same seam applied to language
 
@@ -2818,11 +2809,10 @@ accepted ADR metadata; edit canonical rules/ADRs rather than this projection.
 
 ---
 
-**Nothing restates the rules.** An agent reads §35 directly, and this section exists to say so and
-to hold the index that points there. A projection of the rules is a second description of the rules,
-which is the thing §5.2 exists to prevent, and the earlier version of this section was the clearest
-instance of the failure in the document that argues against it: three thousand words restating
-twenty rules that were already stated, in the same file, forty lines above.
+**Nothing restates the rules.** An agent reads §35 directly, and this section exists to hold the
+index that points there. A projection of the rules is a second description of the rules, which is
+the thing §5.2 exists to prevent, so a projection is not kept here even when it is convenient for a
+reader to find.
 
 ## 38 How to tell if this is wrong
 
@@ -2896,11 +2886,11 @@ the definition. A paper is a domain, mathematics is a domain, and a fleet of mac
 and the system should not notice the difference. If it can only ever do what its first application
 did, it is a tool that grew a pipeline.
 
-**Not a faster build for any one workload.** A general mechanism will not beat a hand-tuned build
-graph specialised to a repository, and it is not trying to. Trying would mean encoding per-project
-knowledge into the mechanism, which is the second site of meaning wearing a performance budget. The
-honest claim is about *maintenance*, not milliseconds: a system that describes itself once does not
-drift, and drift is what makes builds slow over time.
+**Not a faster build for any one workload.** A general mechanism will not beat a hand-tuned graph
+specialised to a repository. Trying would mean encoding per-project knowledge into the mechanism,
+which is the second site of meaning wearing a performance budget. The honest claim is about
+*maintenance*, not milliseconds: a system that describes itself once does not drift, and drift is
+what makes builds slow over time.
 
 **Not the system of record for problems others solve.** GitHub remains the durable control plane.
 Version control is git. Toolchains are Nix's. A general system that accumulated its own answer to
@@ -2936,41 +2926,38 @@ description of what the system is.
 
 ## 40 Related work
 
-DarkFactory is not the first system to insist on a declarative description, and the comparison is
-where the moat is either load-bearing or decorative. This section states the difference for each
-body of related work; where the difference is thin, that is said.
+DarkFactory is not the first system to insist on a declarative description. This section is where
+the moat is either load-bearing or decorative, and where a difference is thin it is said to be.
 
-| Work | What it shares | Where it differs |
+| Work | Shares | Differs |
 | --- | --- | --- |
-| **Terraform / OpenTofu** | Desired state, convergence, plan-before-apply | The description is a separate authored language (HCL), the plan is a text artifact reviewed separately from the system, and each resource type is a hand-written provider plugin. DarkFactory's description *is* the implementation, and the interface is derived from it. |
-| **Nix / NixOS** | One declarative description, reproducible output, the most disciplined instance of the idea | Nix's description is a DSL with a fixed evaluator and it describes a *build*; DarkFactory's is the code, it describes a *running system*, and documentation is part of the description. Nix also needs `mkDefault`/`mkForce` and manual override plumbing — the friction of a language that is not the thing being described. |
-| **Bazel / Buck2 / Pants** | Hermetic, derived from source, fast | `BUILD` files are hand-written beside the source. That is the second site of meaning exactly, and keeping it current is a tax the design accepts. They also describe *how to build* rather than what a system means. |
-| **Dagger, CI-as-code, GitHub Actions** | Programmable pipelines, code as configuration | The pipeline is a second description of the same work the system is doing. DarkFactory's graph is a projection of the same resolution rather than an independent description of the work. |
-| **Convergent design** | One declarative description, convergence, anti-entropy, no duplication of state | The framing is nearly identical; the contribution here is extending the declarative description from *configuration* to *interfaces and documentation*, which is what makes surfaces free and self-description possible. |
-| **Category theory** (monoidal, CCC, monad) | The natural language for composition and for swappable interpreters | Algebraic composition fixes the product. DarkFactory's composition is structural discovery at runtime and its "tensor" is a folder, which is why adding a capability needs no change to a monoid instance. |
-| **Algebraic effects, free monads** | The standard encoding of "small vocabulary, several interpreters" | A free monad is the right *shape*, but a program still names its interpreter. DarkFactory's declaration names a backend and the vocabulary is fixed; the difference is that the composition set is discovered rather than assembled. |
-| **Protobuf / OpenAPI / GraphQL** | Interface descriptions that can be generated from code | The middle path this design rejects. A generated description is still a description, still a claim about the system, and still needs a component that must be current. Deriving the interface *from the code that implements it, including its documentation*, removes the claim. |
-| **MCP, plugin manifests, extension APIs** | Published contracts for agent integration | All authored per integration, and therefore all a second place to update. DarkFactory derives the forms. |
-| **Language servers, `tsc`** | The reason a systems layer need not invent syntax | Adopted rather than extended: the systems layer is TypeScript, so every editor, type package and published library works unchanged. |
+| **Terraform / OpenTofu** | desired state, convergence, plan-before-apply | HCL is a separate authored language; the plan is an artifact reviewed apart from the system; each resource type is a hand-written plugin. Here the description *is* the implementation. |
+| **Nix / NixOS** | one declarative description, reproducible output — the most disciplined instance of the idea | a DSL with a fixed evaluator, describing a *build* rather than a running system, with documentation outside it, and `mkDefault`/`mkForce` plumbing because the language is not the thing described. |
+| **Bazel / Buck2 / Pants** | hermetic, derived from source, fast | `BUILD` files are hand-written beside the source — the second site of meaning exactly. They also describe *how to build* rather than what a system means. |
+| **Dagger, CI-as-code** | programmable pipelines, code as configuration | the pipeline is a second description of the work. Here the graph is a projection of the same resolution. |
+| **Convergent design** | one declarative description, convergence, anti-entropy | nearly the same framing; the addition is extending the declarative description from *configuration* to *interfaces and documentation*, which is what makes surfaces free. |
+| **Category theory** (monoidal, CCC, monad) | the natural language for composition and swappable interpreters | algebraic composition fixes the product. Here composition is structural discovery and the tensor is a folder, so adding a capability changes no monoid instance. |
+| **Free monads, algebraic effects** | the standard encoding of a small vocabulary with several interpreters | a program still names its interpreter, and the composition set is assembled. Here a declaration names a backend and the set is discovered. |
+| **Protobuf / OpenAPI / GraphQL** | interface descriptions generated from code | the near miss this design rejects — see below. |
+| **MCP, plugin manifests** | published contracts for agent integration | authored per integration, so each is a second place to update. Here the forms are derived. |
+| **`tsc`, language servers** | why a systems layer need not invent syntax | adopted rather than extended: the systems layer is TypeScript, so all of it works unchanged. |
 
-Two comparisons are worth drawing out, because they are the ones a reader is most likely to
-assume are equivalent.
+Two comparisons deserve more than a row, because they are the ones a reader will assume are
+equivalent.
 
 **Nix is the strongest existing example and is still different in kind.** It has one declarative
-description, and that is most of the idea. But its description is a purpose-built language with a
-fixed evaluator, so the description is a *thing* the author writes rather than the thing they
-wrote; the ecosystem around it is large precisely because the description cannot express what the
-author already knows in their own language; and it describes a derivation to an artifact, not a
-system that is running while you read it. DarkFactory's claim is that the description and the
-implementation can be the same artifact, and that documentation belongs inside it.
+description, which is most of the idea. But that description is a purpose-built language with a fixed
+evaluator, so it is a *thing the author writes* rather than the thing they wrote — which is why an
+ecosystem grew around it to express what the language could not. It describes a derivation to an
+artifact, not a system that is running while you read it. The claim here is that the description and
+the implementation can be the same artifact, and that documentation belongs inside it.
 
-**Generated descriptions are the near miss, and the gap is small enough to be easy to close by
-accident.** The intuitive fix for "a manifest drifts from the code" is to generate the manifest,
-and it is a genuine improvement on maintaining it. It is also a trap with a long fuse: the
-generated description is still consumed as a description, so a consumer is reading a claim about the
-system; the generator becomes something that must be correct; and the moment someone needs a field
-the generator does not produce, the pressure to hand-write it is immediate and locally reasonable.
-§4.2 and I1 exist to close that fuse.
+**Generated descriptions are the near miss, and the gap is small enough to close by accident.** The
+intuitive fix for "a manifest drifts from the code" is to generate the manifest, and it is a real
+improvement on maintaining it. It is also a trap with a long fuse: a generated description is still
+consumed *as a description*, so a consumer is reading a claim about the system; the generator
+becomes something that must be correct; and the moment someone needs a field it does not produce,
+hand-writing it is locally reasonable. §5.2 and I1 exist to close that fuse.
 
 ## 41 Terminology
 
