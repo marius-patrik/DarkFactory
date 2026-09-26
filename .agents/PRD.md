@@ -266,13 +266,17 @@ The capability ABI is versioned independently from product SemVer.
 
 ### 5.1 Declaration interpretation
 
-There is one core interpreter package, and the systems layer is what it interprets.
-Interpretation is itself a capability with swappable backends — the same seam as any other
-bound system: a small vocabulary, several implementations, and a declaration that names one.
+Reading is the whole of df's mechanism rather than one part of it. Every scale a consumer
+works at — a function, a file, a repository, a pipeline, a machine, a fleet — is a shape the
+same reading resolves, with no separate mechanism per scale.
 
-The interpreter is the whole of df's mechanism rather than one part of it. Every scale a
-consumer works at — a function, a file, a repository, a pipeline, a machine, a fleet — is a
-shape the interpreter resolves, with no separate mechanism per scale.
+Reading is itself bound through the same seam as any other system: a small vocabulary, several
+implementations, and a declaration that names one. §4.1 of the thesis carries the argument in
+full; the requirement here is that no declaration language is privileged.
+
+A feature's interface is **derived** rather than authored. It is read from the feature's names,
+its signatures, its position in the tree and its documentation, and published to every surface.
+No file states what a feature is, and no surface implements one.
 
 - A declaration is interpreted through a named backend. TypeScript is the first-party backend for `.df`. Further backends exist so that declarations authored in another system's own language stay first-class instead of requiring translation into ours.
 - A declaration written for a bound system remains in that system's language. Where a consumer's machine-level configuration is authored in a foreign declaration format, df resolves and composes it rather than re-expressing it.
@@ -369,7 +373,7 @@ Model claims such as “pushed”, “merged”, “committed” or “resolved�
 
 ## 10. Git, GitHub and governance
 
-Production GitHub interaction uses `@darkfactory/github`; production shell/subprocess `gh` mutation is not allowed.
+Production GitHub interaction goes through the `Change/github/` binding; production shell/subprocess `gh` mutation is not allowed.
 
 Deterministic workspace/git mechanisms own status/diff/log/fetch/branch/update/rebase/merge/cherry-pick/conflict continuation/abort and lease-safe pushes. A push contract identifies both the expected old remote SHA and the new local SHA, verifies the resulting remote ref, and refuses stale remote state. Models may assist conflict resolution but do not own deterministic git state.
 
@@ -389,11 +393,23 @@ Static CI checks remain external to the runtime graph where appropriate; graph c
 
 The repository default branch is always discovered from repository state/config, never hard-coded to `main`.
 
-## 11. Keychain and machine credentials
+## 11. Identity
 
-`@darkfactory/keychain` is the sole machine/runtime credential owner.
+Identity is a first-class concern of the system and is not scoped to any caller. An identity is a
+declaration plus one or more proofs. A proof is not restricted to a stored secret: it may be
+stored, derived, or exist only for the duration of a flow. The system supports at minimum long-lived
+bearer tokens, OAuth grants, mTLS client certificates, SSH keys, passkeys, time-based one-time
+codes, codes delivered to another channel, and opaque session cookies.
 
-Credential/account/vault updates are transactionally serialized. Multi-file vault representations cannot expose a mixed generation after interruption. Replicated/synchronized secret state converges deterministically regardless of merge direction, represents deletion explicitly so removed secrets cannot be resurrected by stale replicas, and does not resolve equal-version conflicts by caller-local preference.
+Acquisition is part of the concern. An identity may be obtained through a flow that requires a
+human or a second device — a login, a device code, a push approval, a code presented for entry —
+so the system must not assume prior provisioning.
+
+Custody is pluggable and may be split. Material may be held in OS-native secure storage, in an
+encrypted fallback where supported, in a remote vault, or divided into shares across holders and
+reassembled at the point of use. No single holder is authoritative when material is split.
+
+Identity updates are transactionally serialized. Multi-file representations cannot expose a mixed generation after interruption. Replicated/synchronized secret state converges deterministically regardless of merge direction, represents deletion explicitly so removed secrets cannot be resurrected by stale replicas, and does not resolve equal-version conflicts by caller-local preference.
 
 It covers:
 
@@ -413,13 +429,13 @@ It covers:
 - import/export;
 - diagnostics.
 
-Other packages/capabilities request scoped credential handles. They do not directly inspect secret environment variables, credential files or OS keychains.
+Everything else requests scoped identity handles. It does not directly inspect secret environment variables, credential files or OS keychains.
 
 Secret values are never committed, written to issues/PRs, included in generated docs/static Pages assets or emitted in logs.
 
 ## 12. Human web authentication
 
-`@darkfactory/auth` is separate from keychain and owns DarkFactory Web human authentication.
+Human/browser authentication is owned separately from machine identity and is reached through `Identity/`. It is distinct from a GitHub App installation authority.
 
 It uses the existing DarkFactory GitHub App.
 
@@ -443,7 +459,7 @@ Browser artifacts cannot contain/import the GitHub App private key, confidential
 
 ## 13. Documentation
 
-`@darkfactory/docs` is the final documentation engine.
+`Surfaces/Docs/` is the final documentation engine and is a projection of the resolved system.
 
 It compiles one typed content graph from:
 
@@ -460,9 +476,13 @@ Documentation builds are deterministic, strict and zero-warning for required API
 
 `.agents/PRD.md` is the canonical product-documentation homepage. Root `README.md` is a symlink to this canonical product document; `.agents/AGENTS.md` is the deterministic generated projection of canonical `.agents/rules/**`, with ADR links derived from `.agents/adr/**`. CI fails when the generated projection drifts from its canonical directory or when rule↔note relations are incomplete or contradictory.
 
-## 14. DarkFactory Web
+## 14. Renderer
 
-`@darkfactory/web` is the only first-party web UI.
+`Surfaces/Renderer/` is the only first-party rendered interface.
+
+It is a projection of one derived resolution and holds no per-feature implementation. Its feature
+set, its option schema and its effect log are the same ones every other surface reads, so it
+cannot present a capability, a setting or an outcome that another surface does not.
 
 It is a prebuilt React/TypeScript application released once per DarkFactory version and reused unchanged by consumer repositories.
 
@@ -501,11 +521,13 @@ DarkFactory Web becomes the primary day-to-day operator interface. Direct use of
 
 The web application is not a second state database or privileged mutation engine.
 
-## 15. CLI and TUI
+## 15. Terminal
 
-The supported command is `df` from `@darkfactory/cli`.
+`Surfaces/Terminal/` is the only first-party terminal surface, covering both the command line and
+the interactive view. The supported command is `df`.
 
-One command registry composes core/capability commands and drives:
+Like every surface it is a projection, so its command set is derived from the resolved system and
+carries no per-feature implementation. It drives:
 
 - CLI dispatch/help;
 - wrapper/system-`df` coexistence;
