@@ -17,20 +17,26 @@ A material deviation from this document requires owner approval and an accepted 
 
 ## 2. Product vision
 
-DarkFactory turns a repository into a governed autonomous software factory.
+DarkFactory is one system that is at once a library, a framework, a pipeline, a developer tool, a workspace manager and an operator of machines. Those are not products sharing a name; they are one capability — act on a system through a declared interface — observed at several scales: a function call, a file, a repository, a pipeline, a machine, a fleet.
 
 A human supplies intent and approvals. DarkFactory performs planning, implementation, deterministic verification, review/fix iteration, alignment, Git/GitHub mutation, CI coordination, merge/reconciliation, release and audit through one production engine.
 
 The system must be:
 
-- **self-hosting** — df is used to finish and evolve DarkFactory itself;
+- **self-hosting** — df is implemented in df and maintained by df via df, so a change to DarkFactory is proposed, interpreted, planned, implemented, reviewed, verified and merged by DarkFactory with humans approving rather than authoring;
+- **both tool and platform** — usable directly, and extensible by code DarkFactory has never seen, so the capability surface and `.df` are published contracts carrying a compatibility promise that internal refactors do not;
 - **governed** — explicit approval gates bind human intent;
 - **resumable** — interruption, quota exhaustion and conflicts do not lose completed effects;
 - **truthful** — completion/mutation claims come from observed state, not agent prose;
+- **AI-first** — the agent is a first-class operator of the same abstractions as any other caller, its capability set is presented rather than fixed, and its mutations are staged and reversible. Removing the agent must leave the system incomplete, otherwise this is a system with an agent attached;
 - **extensible** — new project-specific behavior can be added as capabilities rather than rebuilding core;
+- **unfrictional across machines, repositories and hosting types** — one semantic model with no location-dependent behaviour. A capability behaves identically in a working tree, on a host or in CI, and a declaration means the same thing in a repository and on a machine. Support matrices are not sufficient: each row is a promise to maintain and each per-location special case is a place an abstraction has leaked;
 - **multi-domain** — one repository may contain code, papers, mathematics and other supported package types;
+- **declarable** — anything config-shaped in nature is data rather than code, resolved through inspectable layers, and bound systems are reached through seams rather than reimplemented;
 - **GitHub-native** — GitHub remains the durable issue/PR/check/project/event/authorization control plane;
 - **source-free in production** — released df installs and runs without a DarkFactory source checkout.
+
+`.agents/THESIS.md` records why the system is shaped this way and is non-normative. Where it and this document disagree, this document wins.
 
 ## 3. Actors
 
@@ -112,6 +118,17 @@ There must not be independent handwritten implementations of the same capability
 Official capabilities use the same loader/ABI as third-party capabilities. The normal df distribution includes the official capability set so standard installation remains batteries-included.
 
 The capability ABI is versioned independently from product SemVer.
+
+### 5.1 Declaration interpretation
+
+The systems layer is interpreted, and interpretation is itself a capability with swappable backends. It is the same seam as any other bound system: a small vocabulary, several implementations, and a declaration that names one.
+
+- A declaration is interpreted through a named backend. TypeScript is the first-party backend for `.df`. Further backends exist so that declarations authored in another system's own language stay first-class instead of requiring translation into ours.
+- A declaration written for a bound system remains in that system's language. Where a consumer repository's machine-level configuration is authored in a foreign declaration format, DarkFactory resolves and composes it rather than re-expressing it.
+- Backend selection is declarative. Capability availability is not conditional on which interpreter is present.
+- Interpretation is read-only with respect to the declaration. Evaluating a declaration never mutates it; applying it produces state through the ordinary governed effect path.
+
+This is what lets the system span machines and repositories under one semantic model: the interpreter is chosen per declaration, not per location.
 
 ## 6. Domains, ecosystems and project detection
 
@@ -387,6 +404,17 @@ Capabilities should handle project/repository-specific setup wherever possible, 
 
 Install/update is idempotent and drift-aware.
 
+### 17.1 One model across repositories and machines
+
+The fleet is not two populations. `omnis` is a machine-level operating system and is a
+consumer of the same df, so repository-scoped and machine-scoped work must resolve through
+one semantic model rather than a repository mode and a machine mode.
+
+- A capability behaves identically whether it is invoked in a working tree, on a host, or in CI. There are no per-location code paths and no host-only or repo-only capability variants.
+- A declaration means the same thing in a repository and on a machine. Where a consumer's machine-level configuration is authored in a foreign declaration format, df resolves and composes it in that format (§5.1) rather than requiring it to be re-expressed.
+- The boundary between repositories, machines and hosting types is not a place the system degrades. Support is stated as one behaviour, not as a matrix of what is known to work where, because a matrix is a standing promise to maintain and each per-location special case is a place an abstraction has leaked.
+- Identifiers for repositories, machines, capabilities and providers are stable and comparable across the fleet, so a declaration written for one host resolves correctly on another.
+
 ## 18. Security requirements
 
 - No credential/token/private key in source, logs, issues, PRs, docs or Pages assets.
@@ -414,3 +442,17 @@ DarkFactory is final only when the exact pre-merge candidate has passed the decl
 - `audit.df` is internally consistent;
 - installed fleet acceptance is green across the supported consumer set before merge;
 - the declarable-graph product contract passes against the installed exact-head candidate and is re-smoked against the canonical publication.
+
+### 19.1 Self-hosting acceptance
+
+Self-hosting is a claim with a completion condition, not a milestone. It is met when a change
+to DarkFactory is proposed, interpreted, planned, implemented, reviewed, verified and merged
+**by DarkFactory**, with humans approving rather than authoring.
+
+Concretely, before the system can be called final:
+
+- a real change to DarkFactory has been carried end to end by df — intake, Planning, implementation, review/fix to a fixed point, verification, governed merge and reconciliation — without a human authoring the change;
+- the abstractions the system depends on are sufficient construction material for the system itself; a proposal that cannot be built by df is evidence the abstraction is wrong or the boundary is misplaced, not that the proposal should be hand-written;
+- the bootstrap is named and accounted for: whatever executes the first systems-layer declaration is identified, and its removal path is stated. A seed that nothing else can rebuild is a permanent core outside the system's own guarantees;
+- a capability's runtime surface is presented to an agent session rather than fixed, and an agent mutation is staged and reversible;
+- removing the agent from a representative delivery leaves the delivery incomplete, demonstrating that the agent is an operator of the system's abstractions rather than a consumer of a fixed tool list.
