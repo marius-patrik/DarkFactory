@@ -30,7 +30,7 @@ df quota --json --provider google
 
 ## Adding a provider
 
-To add a provider that isn't built into df, add an entry to `providers.json` in the df home directory (`$DF_HOME`, default `~/.df`); it is merged over the built-in providers. Required fields:
+To add a provider that isn't built into df, add an entry under `providers` in `providers.df` in the df home directory (`$DF_HOME`, default `~/.df`); it is merged over the built-in providers. There is no `providers.json` - df reads `providers.df` and nothing else. Required fields:
 
 - `id` - the provider identifier used in accounts and chains (`<provider>:<label>`, `<provider>/<model>@<label>`)
 - `name` - display name
