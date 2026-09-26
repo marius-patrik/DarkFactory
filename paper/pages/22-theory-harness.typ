@@ -5,7 +5,7 @@ Praktickou hranicí mezi konverzačním chatbotem a agentem je míra delegované
 
 #heading(level: 3)[Smyčka]
 
-Základním mechanismem agentického systému je iterativní řídicí smyčka podle vzoru #strong[ReAct] (*Reasoning and Acting*) @yao2022. V každém kroku model střídá dvě části: uvažování, kterým zdůvodní, co hodlá udělat, a akci, kterou to vyjádří jako požadavek na nástroj. Harness akci provede v běhovém prostředí a výsledek vrátí modelu jako pozorování; to se připojí k přepisu konverzace a cyklus se opakuje. Smyčka končí teprve tehdy, když model místo dalšího požadavku na nástroj vydá závěrečnou odpověď. Právě tím se smyčka liší od prosté posloupnosti promptů, v níž by model neměl jak poznat, zda předchozí krok vůbec uspěl. @fig-react-loop 
+Základním mechanismem agentického systému je iterativní řídicí smyčka podle vzoru #strong[ReAct] (*Reasoning and Acting*) @yao2022. V každém kroku model střídá dvě části: uvažování, kterým zdůvodní, co hodlá udělat, a akci, kterou to vyjádří jako požadavek na nástroj. Harness akci provede v běhovém prostředí a výsledek vrátí modelu jako pozorování; to se připojí k přepisu konverzace a cyklus se opakuje. Smyčka končí teprve tehdy, když model místo dalšího požadavku na nástroj vydá závěrečnou odpověď. Právě tím se smyčka liší od prosté posloupnosti promptů, v níž by model neměl jak poznat, zda předchozí krok vůbec uspěl; průběh shrnuje @fig-react-loop.
 
 #figure(
   image("/components/img/react-loop.svg", width: 75%),

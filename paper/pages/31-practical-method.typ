@@ -5,7 +5,7 @@ Praktická část implementuje záměrně jednoduchou produkční pipeline, v n�
 
 Předmětem analýzy jsou čtyři navazující vrstvy:
 1. *GitHub jako zdroj pravdy:* issue a jeho komentáře uchovávají požadavek, schválení, plán a zpětnou vazbu; větev, commit a pull request uchovávají změnu a její průběžnou revizi @github-branches @github-pull-requests.
-2. *GitHub Actions jako výpočetní prostředí:* jednotlivé události spouštějí krátké workflow, která checkoutují repozitář, sestaví obraz, spustí agenta a provedou následnou integraci.
+2. *GitHub Actions jako výpočetní prostředí:* jednotlivé události spouštějí krátké workflow, které provede checkout pracovní kopie repozitáře, sestaví obraz, spustí agenta a následnou integraci provede.
 3. *Python a Docker jako izolační vrstva:* workflow předá událost a pracovní strom pythonovskému runneru v kontejneru; runner volá harness a předává mu nástroje, přihlašovací údaje a stav úlohy.
 4. *Review smyčka jako podmínka integrace:* automatická revize diffu, opravy a další revize se opakují do té doby, než se uzavře poslední nález; teprve poté je pull request předán člověku.
 
