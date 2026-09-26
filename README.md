@@ -6,14 +6,14 @@
 
 **Part I — Orientation**
 
-- [1 Goal](#1-goal)
-- [2 The shape](#2-the-shape)
-  - [2.1 Three unifiers](#21-three-unifiers)
-  - [2.2 Five operations](#22-five-operations)
-  - [2.3 Why five is the right number](#23-why-five-is-the-right-number)
-  - [2.4 Guarantees nest, which is what makes it portable](#24-guarantees-nest-which-is-what-makes-it-portable)
-  - [2.5 What the structure is not](#25-what-the-structure-is-not)
-- [3 Introduction](#3-introduction)
+- [2 Goal](#2-goal)
+- [3 The shape](#3-the-shape)
+  - [3.1 Three unifiers](#31-three-unifiers)
+  - [3.2 Five operations](#32-five-operations)
+  - [3.3 Why five is the right number](#33-why-five-is-the-right-number)
+  - [3.4 Guarantees nest, which is what makes it portable](#34-guarantees-nest-which-is-what-makes-it-portable)
+  - [3.5 What the structure is not](#35-what-the-structure-is-not)
+- [1 Introduction](#1-introduction)
 - [4 Methodology](#4-methodology)
   - [4.1 Compose; bind only where it is cheaper](#41-compose-bind-only-where-it-is-cheaper)
   - [4.2 One site of meaning](#42-one-site-of-meaning)
@@ -56,7 +56,7 @@
 - [19 Actors](#19-actors)
 - [20 Capability architecture](#20-capability-architecture)
 - [21 Domains, ecosystems and project detection](#21-domains-ecosystems-and-project-detection)
-- [22 Configuration and persisted state](#22-configuration-and-persisted-state)
+- [22 Configuration and state](#22-configuration-and-state)
   - [22.1 Configuration](#221-configuration)
   - [22.2 Documentation configuration and output](#222-documentation-configuration-and-output)
   - [22.3 State](#223-state)
@@ -120,9 +120,6 @@
   - [36.18 ADR-0027 — Repository-authored artifacts use English](#3618-adr-0027--repository-authored-artifacts-use-english)
   - [36.19 ADR-0028 — Integrate Paper as a repository domain](#3619-adr-0028--integrate-paper-as-a-repository-domain)
 - [37 Agent guidance](#37-agent-guidance)
-
-**Part V — Standing**
-
 - [38 How to tell if this is wrong](#38-how-to-tell-if-this-is-wrong)
 - [39 Non-goals](#39-non-goals)
 - [40 Related work](#40-related-work)
@@ -158,7 +155,7 @@ agent-first · credential proof · provenance
 
 # Part I — Orientation
 
-## 1 Goal
+## 2 Goal
 
 **The goal is a system that builds and repairs itself, and knows when it has.**
 
@@ -185,13 +182,13 @@ general usefulness across arbitrary domains, matching the performance of a hand-
 any single workload, and being the system of record for a problem another system already solves
 well.
 
-## 2 The shape
+## 3 The shape
 
 Everything in this document follows from a structure small enough to state in full. DarkFactory
 reduces anything it touches to three unifiers, and runs exactly five operations over them. There is
 no sixth operation, and nothing in the system lies outside them.
 
-### 2.1 Three unifiers
+### 3.1 Three unifiers
 
 **One normal form.** Anything a system knows about itself is an *interface*: a name, its inputs,
 its outputs, its documentation, and where it sits. An interface is never authored. It is derived
@@ -213,7 +210,7 @@ a suggestion: the system has a reserved identity for each one, because a system 
 own seams could be assembled without them, and that is the configuration the design exists to make
 impossible. §9 argues what the seam is for and what makes it worth having.
 
-### 2.2 Five operations
+### 3.2 Five operations
 
 | | operation | what it is |
 | --- | --- | --- |
@@ -226,7 +223,7 @@ impossible. §9 argues what the seam is for and what makes it worth having.
 A change is operations 3, 4 and 5. That is the whole lifecycle, and it is the same lifecycle
 whether the change is a provider setting or the deletion of a subsystem.
 
-### 2.3 Why five is the right number
+### 3.3 Why five is the right number
 
 Because **the same five apply to the system itself**, and nothing needs to be added for that to
 hold. The system reads its own meaning, addresses its own nodes, declares differences against
@@ -245,7 +242,7 @@ is one-directional and why editing a declaration is not drift. **Free surfaces**
 of the normal form: after derivation there is nothing left to write per surface, so a surface is a
 renderer rather than an adapter, and adding one costs a folder.
 
-### 2.4 Guarantees nest, which is what makes it portable
+### 3.4 Guarantees nest, which is what makes it portable
 
 A guarantee is a seam whose interior is another guarantee. The system claims a small number of
 guarantees — the runtime is the declaration, composition is safe and teardownable, the world is
@@ -276,7 +273,7 @@ level and the system never guesses**: a degraded binding is chosen by the declar
 what was given up. Otherwise the same system runs everywhere and quietly means something different
 in each place, which is the support matrix §10 names, arriving through the front door.
 
-### 2.5 What the structure is not
+### 3.5 What the structure is not
 
 Three things follow from the shape that are easy to assume and are not true of it.
 
@@ -288,7 +285,7 @@ And it is **not a promise of generality in place of a specification of behaviour
 Part III is specific — this pipeline, these guarantees, these acceptance conditions — and the
 generality is a consequence of the structure rather than a substitute for the work.
 
-## 3 Introduction
+## 1 Introduction
 
 Every system that describes a system writes that description at least twice.
 
@@ -470,7 +467,6 @@ the habit of treating a requested exception as evidence that the interpreter is 
 capability. §4.6 is the load-bearing one, because it is the only counter that does not depend on
 anyone remembering.
 
-
 # Part II — The design
 
 ## 6 Invariants
@@ -521,27 +517,17 @@ what any repository's copy looks like.
 
 ### 7.1 Structure is the declaration
 
-Meaning lives in exactly one place: the code. Folders, file names, function names, signatures
-and doc comments are the declaration, and the interpreter reads meaning from them. Nothing
-describes a feature except the feature.
+Meaning lives in exactly one place: the code. Folders, file names, function names, signatures and doc
+comments are the declaration, and the interpreter reads meaning from them. Nothing describes a
+feature except the feature.
 
-Consequently:
-
-- There is no privileged core subset. A top-level folder declares a *concern*; the set of
-  concerns is itself content, so a concern can be added or removed without amending this
-  specification. The question "is this core or content?" is not asked, because what a thing
-  needs is already answered by where it sits and what it sits beside.
-- One file is one askable feature — the unit a caller can request on its own. Not one step
-  inside a larger operation, and not one abstraction grouping several asks.
-- Folders are named for concerns. `utils`, `helpers`, `common`, `shared`, `manager`, `core`
-  and `lib` are forbidden at any depth, because a name that means "the rest" cannot be
-  resolved to anything.
-- No barrel exports of any kind, under any filename. Re-exporting reintroduces a place where the set
-  of things is written down separately from the things.
-- No registry, manifest, catalogue or index enumerates features. Discovery is structural: a
-  folder is discovered by existing.
-- Doc comments are normative. What a feature publishes to every surface is its own
-  documentation, so a comment is part of the contract and not decoration.
+The rules that follow are stated with their reasoning in §8.1 and §15 — one askable thing per file,
+no privileged subset, no barrels, no registries, discovery by structure, and documentation as part
+of the contract. What is specific to *architecture* is only this: **there is no privileged
+top-level subset.** A folder declares a concern, and the set of concerns is itself content, so a
+concern can be added or removed without amending this document. The question "is this core or
+content?" is not asked, because what a thing needs is already answered by where it sits and what it
+sits beside.
 
 ### 7.2 Declaration and implementation are separate files
 
@@ -579,6 +565,18 @@ a `*.dfconfig`, a graph file, and two `.json` files, which is three places to na
 three ways for a repository to spell a convention it inherited rather than chose. Everything a
 scope declares is now a block in one document, so the only thing that varies between repositories
 is block *content*.
+
+**The layers are process boundaries, not folder names.** A directory tree is a claim about naming;
+a process boundary is a claim about what can go wrong. Each concern below runs as its own thing and
+is reached only through a declared interface, so the guarantees are enforced by the runtime rather
+than by a convention everyone is trusted to follow. This is the difference between saying `Execution/`
+is separate and saying nothing inside it can be reached except through its seam — the first is
+satisfied by a good folder name, the second is not satisfied by anything except isolation.
+
+It also means a concern can be *removed* and take only itself with it. A folder name implies a
+convention that outlives the folder; a process boundary implies nothing left behind, which is what
+makes a backend removable along with its installation rather than merely substitutable.
+
 
 ### 7.3 The tree
 
@@ -951,6 +949,30 @@ is necessary; this is the stronger property. If the code is buildable by semanti
 artifacts are too, and the surfaces a capability appears on are a consequence of what it means
 rather than a list someone maintains.
 
+**Self-building is not a new mechanism, and saying so is the strongest form of the claim.** A design
+that needed a *self-modification path* would be admitting that its ordinary path cannot express
+"change me." Here it can: the system reads its own meaning, addresses its own nodes, declares a
+difference against itself, converges, and versions the result. There is no privileged tuner, no
+separate build-for-darkfactory routine, and no code path that exists only for the system to edit
+itself — and the reason to insist is that a privileged path produces changes with no author, no
+diff and no rollback, which is the precise failure §7 is written against. That it is the system
+rather than an external agent making the change does not improve the position; it makes it harder
+to notice.
+
+**Every mutation, including the system's own, goes through the same escrow and the same record.** A
+runtime change is written to the declaration and applied by convergence — not as an overlay and not
+as a side channel — and applying any declaration produces a **generation** carrying a parent, a
+diff and an author. Audit without undo records damage already done; undo without audit is an
+approval with no history. They are one mechanism.
+
+**Undo is a first-class operation over the system's own log, not a reconstruction from the
+backend's internals.** That distinction is what makes a backend *removable* rather than merely
+substitutable: if undo depended on git's reflog and on nothing else, then a consumer who wanted
+only one backend could not remove the other along with its entire system integration, because the
+undo story would differ per backend. The log is ours, the backends are driven as they are, and that
+is what lets a whole implementation leave without taking a guarantee with it.
+
+
 The completion condition is a fixed point: **the system compiled by itself resolves to itself.**
 Not approximately, and not after a maintenance pass — the same resolution, which is only possible
 if there was never a second description to reconcile.
@@ -1026,43 +1048,6 @@ owning a language means owning a parser, a type system, an error story and a com
 where an existing module system already is." §9.1 is why that does not apply. For what
 DarkFactory **authors** we choose the dialect; for what it **binds** we do not and must not. We
 are not replacing a mature system's language, we are making it reachable.
-
-**The layers are process boundaries, not folder names.** A directory tree is a claim about naming;
-a process boundary is a claim about what can go wrong. Each concern below runs as its own thing and
-is reached only through a declared interface, so the guarantees are enforced by the runtime rather
-than by a convention everyone is trusted to follow. This is the difference between saying `Execution/`
-is separate and saying nothing inside it can be reached except through its seam — the first is
-satisfied by a good folder name, the second is not satisfied by anything except isolation.
-
-It also means a concern can be *removed* and take only itself with it. A folder name implies a
-convention that outlives the folder; a process boundary implies nothing left behind, which is what
-makes a backend removable along with its installation rather than merely substitutable.
-
-**Self-building is not a new mechanism, and saying so is the strongest form of the claim.** A design
-that needed a *self-modification path* would be admitting that its ordinary path cannot express
-"change me." Here it can: the system reads its own meaning, addresses its own nodes, declares a
-difference against itself, converges, and versions the result. There is no privileged tuner, no
-separate build-for-darkfactory routine, and no code path that exists only for the system to edit
-itself — and the reason to insist is that a privileged path produces changes with no author, no
-diff and no rollback, which is the precise failure §7 is written against. That it is the system
-rather than an external agent making the change does not improve the position; it makes it harder
-to notice.
-
-**Every mutation, including the system's own, goes through the same escrow and the same record.** A
-runtime change is written to the declaration and applied by convergence — not as an overlay and not
-as a side channel — and applying any declaration produces a **generation** carrying a parent, a
-diff and an author. Audit without undo records damage already done; undo without audit is an
-approval with no history. They are one mechanism.
-
-**Undo is a first-class operation over the system's own log, not a reconstruction from the
-backend's internals.** That distinction is what makes a backend *removable* rather than merely
-substitutable: if undo depended on git's reflog and on nothing else, then a consumer who wanted
-only one backend could not remove the other along with its entire system integration, because the
-undo story would differ per backend. The log is ours, the backends are driven as they are, and that
-is what lets a whole implementation leave without taking a guarantee with it.
-
-
-
 
 # Part III — Requirements
 
@@ -1189,9 +1174,11 @@ Detection discovers repository/package/domain evidence. Capability resolution th
 
 The final system must not rely on one ever-growing repository-specific language/command table when behavior can be provided by a capability.
 
-## 22 Configuration and persisted state
+## 22 Configuration and state
 
-
+Configuration is data in a document; state is what the system observed and recorded. They are kept
+apart because they answer different questions — what was meant, and what was found — and conflating
+them is how a system ends up unable to say whether a difference is drift or an edit.
 
 ### 22.1 Configuration
 
@@ -1222,7 +1209,6 @@ The rules are:
 - Blocks are never merged across documents, for the reason §4.2 gives: merging two declarations is
   how a second source of meaning appears.
 - `.df` and `.dfconfig` are filename extensions, never directories.
-
 
 ### 22.2 Documentation configuration and output
 
@@ -1386,8 +1372,6 @@ ciphertext globally, which lets anyone confirm whether a known file exists. Deri
 key from a per-holder master secret restores deduplication within a holder without publishing
 equality across holders. §4.3's fixed points and §26's split custody both depend on this and neither
 invents it.
-
-
 
 **One option schema, three consumers.** Every option carries a type, a default, a description, an
 example, and whether changing it applies live or needs a restart. From that single definition the
@@ -1590,7 +1574,6 @@ Concretely, before the system can be called final:
 - the bootstrap is named and accounted for: whatever executes the first systems-layer declaration is identified, and its removal path is stated. A seed that nothing else can rebuild is a permanent core outside the system's own guarantees;
 - a capability's runtime surface is presented to an agent session rather than fixed, and an agent mutation is staged and reversible;
 - removing the agent from a representative delivery leaves the delivery incomplete, demonstrating that the agent is an operator of the system's abstractions rather than a consumer of a fixed tool list.
-
 
 # Part IV — Governance
 
@@ -2833,471 +2816,73 @@ accepted ADR metadata; edit canonical rules/ADRs rather than this projection.
 | `DF-RULE-019` | Orchestrated integration and worker isolation | `ADR-0022`, `ADR-0025` | §35.19 |
 | `DF-RULE-020` | Paper authorship and publication | `ADR-0028` | §35.20 |
 
-
 ---
 
-#### Rule 1 — Tests prove invariants
-
-Every behavior or contract change MUST be covered at the owning package/capability boundary by tests
-that prove observable invariants, state transitions, failure behavior or integration contracts.
-
-Tests MUST survive valid refactors. They must not normally assert exact implementation filenames,
-source-code substrings, function/class names, workflow step labels, copied command text, or the
-presence/absence of an internal file merely because the current implementation happens to use it.
-
-Static architecture/governance tests are appropriate only for real static contracts. They MUST inspect
-semantic structure where practical: parsed manifests/configuration/YAML, schemas, dependency/import
-graphs, package exports, generated artifacts or public interfaces rather than brittle source grep.
-
-Concurrency-sensitive behavior MUST be tested concurrently. Idempotency/crash-safety claims MUST
-exercise duplicate invocation and the relevant crash window, not only call the same function twice
-after a successful journal write. Atomicity claims MUST test interruption/failure between transaction
-steps.
-
-Each final first-party package/capability MUST own or be explicitly covered by one canonical detected
-test action. Coverage that happens only because a legacy aggregate/harness test imports the package is
-not sufficient. Duplicate/shadowed test definitions and copied test blocks are forbidden.
-
-Applicable test actions come from the canonical repository/package detection plus
-capability-resolution contract. All applicable suites MUST pass before a head is considered green.
-
-#### Rule 2 — Inline documentation and generated documentation
-
-Public source APIs MUST be documented inline.
-
-- **TypeScript**: TSDoc on every exported public symbol in first-party packages and capabilities.
-- **Rust**: `///` documentation on public items, including error/panic behavior where applicable.
-
-Documentation MUST be generated from canonical source and architecture records. DarkFactory's documentation engine is `@darkfactory/docs`; TypeDoc may be used internally for TypeScript extraction. The `docs` block of the combined DarkFactory configuration is the only documentation configuration contract. Generated sites and JSON content graphs are CI outputs and MUST NOT be committed.
-
-this document is the product-documentation homepage. §35 is the canonical rule set and §36 is the canonical current long-term note set. the root document is the canonical product document; §37 is a deterministic generated projection of the canonical rules. These discovery surfaces are never authorities and are never edited directly. Repository/tool discovery aliases may point to canonical documents or generated projections only when they serve a current external/conventional entry point; aliases remain links rather than copied authored documents, and unsupported legacy aliases are forbidden. CI MUST fail on deterministic projection drift and on missing/orphaned rule↔note relations.
-
-The final web rendering layer is `@darkfactory/web`; docs must not maintain a second frontend or theme runtime.
-
-#### Rule 3 — Product requirements and ADRs
-
-this document is the single normative product requirements document. Current active Request/Planning records define approved feature-specific behavior and executable delivery scope. Accepted ADRs record durable architectural decisions and rationale.
-
-Executable declarations use the final DarkFactory contracts:
-
-- one root `*.dfconfig` per scope for the combined configuration, with any filename stem accepted and none canonical;
-- the `repo` block for repository/product declaration;
-- the `providers` block for runtime/user/provider configuration;
-- the `docs` block for native documentation configuration;
-- the declarable workflow graph for execution topology;
-- §35 for mandatory contribution/governance behavior.
-
-`DF_CONFIG_DIR` (default `.darkfactory`) may hold the same combined document for supported discovery, but `.darkfactory` is not a committed source in this repository. Ambiguous root/folder or alias candidates fail closed and are never merged.
-
-A material deviation from this document MUST be owner-approved and recorded as an accepted numbered ADR before implementation.
-
-Long-term notes and normative rules form one bidirectional current-truth graph:
-
-- every accepted ADR MUST declare the canonical rules it explains or constrains;
-- every canonical rule MUST be backed by at least one current accepted ADR explaining its durable rationale;
-- unknown, missing or orphaned links are documentation-currentness failures;
-- superseded/historical decisions are removed from the live notes/rules graph and remain in Git/GitHub history instead.
-
-#### Rule 4 — English language consistency
-
-All code, identifiers, comments, docstrings, commit messages, issues, and documentation MUST be
-written in English.
-
-#### Rule 5 — Commit granularity
-
-Keep commits modular, focused, and descriptive — one commit per component or coherent change. A
-single delivery PR may contain multiple coherent commits; one PR does not imply one commit. When an
-integration/orchestrator session combines parallel worker output, preserve coherent commit boundaries
-until the final merge rather than collapsing unrelated work into one opaque commit.
-
-Commit syntax, allowed types and repository scopes are owned by DF-RULE-015. This rule owns only
-commit granularity and preservation of coherent change boundaries.
-
-#### Rule 6 — CI readiness and verification
-
-The canonical/default branch MUST remain green on its required checks. A red canonical branch is a
-stop-the-line event for repository-wide delivery until restored.
-
-A failing topic/recovery branch blocks that branch's merge and any dependent work, but does not
-globally halt unrelated isolated branches whose own required checks are green.
-
-CI MUST derive one normalized quality contract from detected packages plus applicable capabilities
-and fail closed when that contract has an unresolved required gap, ambiguity or unsupported action.
-Warnings are not an acceptable substitute for required test, typecheck, lint, format or documentation
-coverage.
-
-Type safety is a first-class required quality action for TypeScript packages. Every detected
-first-party package/capability MUST be accounted for exactly once by an owning package action or an
-explicit workspace-level action whose coverage can be proven. Incidental execution through a legacy
-aggregate package does not count.
-
-The aggregate required quality check is green only when every applicable required action for the
-current head completed successfully. A required action that is missing, stale, cancelled, skipped or
-neutral is not treated as proven success unless canonical configuration explicitly marks that action
-not applicable before matrix construction.
-
-CI validation MUST be read-only with respect to the delivery branch. Formatting and other
-deterministic fixes happen in the governed mutation path before commit; CI reports drift rather than
-pushing corrective commits.
-
-Required checks are synchronized with branch protection and evaluated for the exact current head. A
-branch may not merge while any required check or required invariant is red, missing, stale or
-unevaluated.
-
-#### Rule 7 — Branch and pull request workflow
-
-All product changes MUST reach the protected canonical branch through a reviewed delivery branch and GitHub pull request. Direct mutation of canonical is prohibited. A bootstrap/emergency exception may change who authors the delivery branch when df itself is unavailable, but it never bypasses the PR, checks, review or merge gate.
-
-- Branch names are lowercase, descriptive and do not depend on issue numbers.
-- The repository's actual canonical/default branch is resolved dynamically; `main` is never assumed.
-- Automation-authored PRs use the canonical DarkFactory GitHub App/bot identity so the human maintainer can independently review them.
-- PRs remain draft while implementation/review is active and become merge-ready only through the governed gate.
-- Required checks and current-base requirements must pass before merge.
-- Branch protection remains enabled with the final detected/generated check contract.
-- Rewrites/pushes use deterministic git owners and lease-safe expected-old-SHA semantics; blind force push is forbidden.
-
-#### Rule 8 — Automated formatting and linting
-
-Formatting is deterministic automation, not a review topic.
-
-The canonical detection + capability-resolution contract determines the formatter/linter for each detected package/ecosystem. First-party TypeScript workspace packages use the canonical Biome configuration; other ecosystems use their declared/detected capability actions.
-
-Formatting/linting commands MUST be derived from the same normalized package/capability result used by local verification and CI. Do not maintain a second workflow-specific command map.
-
-The mutation path applies deterministic formatting before creating a commit. CI validates the resulting tree but MUST NOT asynchronously create/push formatter commits that advance an active delivery branch after the orchestrator has integrated or proven a head.
-
-Lints are blocking where supported. Generated artifacts are excluded only by explicit canonical policy.
-
-#### Rule 9 — Request binding, branch cleanup and board status
-
-Every delivery PR MUST explicitly bind every **active** Request it satisfies.
-
-A PR may satisfy one Request or multiple Requests when the shared-Planning/multi-Request model proves
-that every active bound Request has valid Planning/gate coverage. Epic membership or stack topology
-never implies completion by itself.
-
-When the owner deliberately consolidates tightly coupled work into one current Request, the
-consolidated Request MUST first preserve the current required behavior and relevant verbatim owner
-direction. Earlier duplicate Requests are then closed as historical traceability and do not need to
-remain separately bound by the delivery PR.
-
-Failures already associated with a delivery PR/Request MUST be recorded as check/run evidence and on
-that bound work rather than creating a new implementation Request. A standalone unbound/default-branch
-operational failure may use one deduplicated incident record when durable follow-up is required.
-
-Merged delivery branches are cleaned up when safe. A branch with unique unrepresented recovery/stack
-work is not deleted merely because another PR merged.
-
-Request/PR/project status uses one canonical reconciliation model with the seven states:
-
-- `Backlog`
-- `ToDo`
-- `In Progress`
-- `Blocked`
-- `Done`
-- `Superseded`
-- `Dropped`
-
-A Request reaches Done only from its own terminal evidence or explicit valid shared-Planning/
-multi-Request completion.
-
-Webhook/event payloads are triggers, not authoritative lifecycle snapshots. Before mutating status,
-labels, project fields, PR bindings or branch cleanup, reconciliation MUST derive the desired state
-from current GitHub/runtime evidence. Delayed or out-of-order events must be idempotent and must not
-roll a newer status backward.
-
-#### Rule 10 — Reviewed Planning and implementation alignment
-
-Before implementation begins, each governed unit of work MUST have one current unified Planning
-artifact.
-
-Planning contains the semantic interpretation of the verbatim Request plus the evidence-justified
-implementation approach, dependencies, recovery inputs and verification expectations.
-
-Planning MUST pass an independent review/fix loop until clean, followed by one explicit owner
-Planning Approval.
-
-There is no separate interpretation approval gate and plan approval gate in the final lifecycle.
-
-After implementation:
-
-- deterministic verification runs;
-- implementation review/fix loops until clean;
-- material scope outside approved Planning requires the lighter scope-amendment approval;
-- final alignment validates the implementation against approved Planning plus approved amendments;
-- required checks/review/merge gates remain mandatory.
-
-Planning approval becomes stale after a material Request/base/dependency/recovery-context change and
-cannot be silently reused.
-
-If the governed Planning implementation itself is unavailable or is the component being repaired,
-only the narrow bootstrap/completion exception below may substitute an owner-authorized tracked
-Request as the temporary Planning record.
-
-#### Rule 11 — Pull request review approval and governed merge
-
-Pull requests require the final repository protection/review contract before merge.
-
-Native GitHub review approval and the canonical authorized DarkFactory approval command grammar are both valid only when the current actor is authorized. Free-text that merely resembles approval cannot advance a gate.
-
-Merge readiness requires:
-
-- current-base/stack validity;
-- required checks green;
-- implementation review/fix clean;
-- final Planning alignment;
-- any required scope-amendment approval;
-- official final review/merge authorization.
-
-After merge, df deterministically reconciles bound Requests/PRs/project state and safe branch cleanup.
-
-#### Rule 12 — Verbatim Request capture and Planning gate
-
-Every incoming governed task MUST be represented by one or more tracked GitHub Requests before
-implementation.
-
-- Preserve the user's verbatim wording.
-- Decompose genuinely independent tasks; do not split tightly coupled architecture solely to satisfy one-PR/one-issue assumptions.
-- When the owner consolidates previously separate Requests into one current Request, copy the relevant verbatim owner direction and all still-current required behavior into the consolidated Request before closing duplicates.
-- Resolve Request/Epic/dependency/recovery relationships explicitly.
-- Produce one unified Planning artifact from the verbatim Request and authoritative context.
-- Hand that artifact to the single review/approval/alignment lifecycle owned by DF-RULE-010; this rule does not define a second Planning gate.
-- Subsequent delivery remains bound to the active Request(s) or an explicitly approved shared-Planning record.
-
-There is no separate `Interpretation` approval lifecycle before Planning.
-
-#### Rule 13 — Specification sequence and work tracking
-
-Specification proceeds in one direction, and each stage is settled before implementation depends on
-it:
-
-```text
-this document  →  accepted ADRs when a durable architecture decision is required  →  Request/Planning
-```
-
-- **Issues track settled intent and executable work, not unresolved architecture debates.** An issue
-  may be filed when its required outcome is settled by this document/§36 or when it is a concrete
-  mechanical task whose outcome is not in question.
-- **Open architecture questions stay with the owning product/ADR decision until settled.** Do not
-  create speculative decision issues merely to move an unresolved argument into the tracker.
-- **Decomposition follows delivery independence, not size alone.** A large tightly coupled body of
-  settled work may remain one Request/Planning record and one delivery PR when the owner explicitly
-  chooses one coherent integration/validation contract. Do not manufacture child Requests merely to
-  satisfy a process shape.
-- **Use an Epic when genuinely independent child Requests benefit from separate lifecycle,
-  ownership, sequencing or delivery.** Epic relationships organize Requests; they are not mandatory
-  wrappers around every large change and never waive child Planning/evidence when children exist.
-The active Request/Planning record is the single live work ledger. Concrete current implementation
-steps, checkboxes, approvals and evidence live there with the workflow graph and GitHub/project
-state.
-
-#### Rule 14 — Capability-driven agent runtime and resilience
-
-DarkFactory runs agentic work through the TypeScript df runtime, not a final Python harness registry.
-
-- Core owns execution, routing primitives and persistence/resume; `@darkfactory/capability` owns capability discovery/loading/resolution.
-- Agentic/product behaviors are versioned capabilities.
-- One canonical capability implementation may generate native Pi, MCP and supported agent skill/plugin adapters.
-- Pipeline stages pass explicit task kind where known; undeclared inference separates subject from required capability.
-- Provider/account/model selection respects sensitivity, data-collection policy, capability requirements, quotas and capability tiers.
-- Exhaustion/failure moves through the configured eligible failover chain without repeating deterministic effects.
-- Every logical agent stage has one bounded elapsed-time budget across model failover and tools.
-- Natural model stop is accepted; mutation truth comes from observed effects.
-- Quota/provider interruption checkpoints durable state and resumes without duplicating completed effects.
-- CI agent execution remains containerizable/non-root.
-
-#### Rule 15 — Commits, repository taxonomy and domains
-
-Commits use Conventional Commits: `<type>(<scope>): <description>`.
-
-Allowed base types are `feat`, `fix`, `chore`, `docs`, `refactor`, `test`, and `ci`.
-
-Repository area labels/scopes are declared by the `repo` block.
-
-Project classification separates:
-
-- ecosystem/toolchain;
-- package;
-- semantic domain (initially including code, paper and math);
-- capability.
-
-A repository may contain multiple packages, ecosystems and domains. Capabilities are orthogonal and may apply across domains.
-
-Request classification, commit-scope validation and repository labels consume the same declared taxonomy rather than copied lists.
-
-#### Rule 16 — Security and secrets
-
-No credential, access token, refresh token, cookie, client secret or private key may be committed, logged, written to issues/PRs, included in generated docs or embedded in static web assets.
-
-`@darkfactory/keychain` is the sole machine/runtime credential-custody owner. Other packages/capabilities declare credential requirements and receive scoped access; they do not read raw credential files, secret environment variables or OS keychains directly.
-
-`@darkfactory/auth` separately owns human/browser GitHub App authentication and sessions. Browser bundles cannot import keychain/private-key/server-confidential code.
-
-The web auth broker may hold only credentials required for confidential user-token exchange/refresh and is not a DarkFactory state/execution backend.
-
-GitHub user authority and GitHub App installation authority remain distinct.
-
-Secret-bearing recovery material remains preserved locally and blocked from publication rather than leaked or discarded.
-
-#### Rule 17 — Final architecture, DRY, and deletion
-
-The repository targets the current final architecture directly.
-
-- Every concern has one final owner and one source of truth. Duplicate implementations, registries,
-  state stores, config contracts, command maps and generated/manual copies are forbidden.
-- Reuse or move working code when it already implements the required behavior, but delete its old
-  owner once the final owner is live. Final packages MUST NOT forward implementation to a
-  deletion-bound/legacy tree.
-- Internal backward-compatibility, migration, parity, shadow, canary, fallback and alias layers are
-  forbidden unless an **external supported contract explicitly required by this document** needs them.
-  Previous internal architecture is never a compatibility target and is not preserved "just in case".
-- Delete unreachable/dead code, stale configuration, unused assets, obsolete tests, superseded docs,
-  abandoned feature flags and transitional adapters instead of documenting or testing their presence.
-- Abstract repeated mechanisms and invariants once at the lowest stable owner. Do not create
-  speculative abstractions for one caller or hide unrelated behavior behind a generic helper merely
-  to reduce line count.
-- Public exports are intentional product/extension contracts. Keep internal helpers private; tests do
-  not justify widening an API.
-- Package/capability dependencies remain explicit and acyclic. Historical implementation belongs in
-  Git/issues, not live source.
-
-#### Rule 18 — Concurrency, atomicity, and idempotency
-
-Authoritative state and external effects MUST remain correct under duplicate delivery, concurrent
-execution, interruption and ambiguous transport failure.
-
-- Serialize authoritative transitions at the identity they mutate (run, effect, account, branch,
-  worktree, quota reservation, release, etc.). Check-then-act without an atomic claim/lease/CAS is not
-  sufficient.
-- A deterministic external effect ID may produce at most one logical mutation. Concurrent duplicates
-  cannot both enter the mutation; crash recovery reconciles observed external state before retrying.
-- Remote writes use expected-old-version/SHA or equivalent conditional semantics and fail closed on
-  stale state.
-- Mutation retries are method/effect aware. After an ambiguous write outcome, reconcile first; never
-  blindly replay a non-idempotent POST/write because a transport or 5xx response failed.
-- Authoritative file/state updates are crash-consistent. Multi-file logical state uses one
-  generation/transaction boundary; lock recovery cannot delete a replacement owner's lock.
-- Replicated state converges deterministically regardless of merge direction and represents deletion
-  explicitly until it is safe to compact.
-- Quota/capacity is reserved atomically before concurrent work is dispatched and settled from observed
-  usage.
-- Webhook/events are triggers, not authoritative snapshots; reconciliation derives desired state from
-  current evidence so stale/out-of-order events cannot roll state backward.
-- Concurrency, idempotency and atomicity claims are tested at the actual race/crash windows with
-  simultaneous actors and fault injection.
-
-#### Rule 19 — Orchestrated integration and worker isolation
-
-Parallel implementation has one integration authority per delivery branch.
-
-- The orchestrator alone advances the authoritative remote delivery branch and owns integration.
-- Parallel workers use isolated local worktrees/branches with explicit prerequisites and disjoint
-  subsystem/path ownership. They do not create competing remote delivery branches/PRs or mutate the
-  integration branch.
-- Shared integration surfaces (root manifests/lockfiles, package export maps, workflow/config,
-  PRD/PLAN/rules/docs and generated projections) stay orchestrator-owned unless one non-overlapping
-  edit is explicitly delegated.
-- Workers return a coherent commit SHA, changed-file set, targeted verification and assumptions.
-  The orchestrator integrates those commits in dependency order, resolves shared files semantically
-  and re-runs affected gates.
-- A dependent lane starts only after the interface it consumes is integrated and verified on the
-  authoritative branch. Do not parallelize across unsettled shared interfaces.
-- Keep coherent Conventional Commit boundaries. One delivery PR does not justify one opaque commit.
-- CI is read-only on delivery branches; background automation does not race the orchestrator by
-  pushing formatter/fix commits.
-- Each implementation gate records exact-head evidence before downstream work treats it as satisfied.
-
-#### Rule 20 — Paper authorship and publication
-
-`paper/index.typ` is the sole authored thesis manuscript. `paper/bib/`, `paper/fonts/`, and `paper/img/` contain its supporting bibliography, font, and image resources.
-
-The canonical publication command generates the repository-root `PAPER.pdf` artifact. The Paper does not generate or own repository prose; this document is. `PAPER.pdf` is included in the release assets.
-
-The Paper uses the shared documentation, capability, CI, and release contracts. Manuscript prose and supporting assets change only on explicit author request. The author reviews thesis changes before they are staged or delivered.
-
-
-# Part V — Standing
+**Nothing restates the rules.** An agent reads §35 directly, and this section exists to say so and
+to hold the index that points there. A projection of the rules is a second description of the rules,
+which is the thing §5.2 exists to prevent, and the earlier version of this section was the clearest
+instance of the failure in the document that argues against it: three thousand words restating
+twenty rules that were already stated, in the same file, forty lines above.
 
 ## 38 How to tell if this is wrong
 
 A design that cannot be falsified is a mood. §5.3 gives the countable half — the number of sites
-where meaning is authored. These are the failures a count cannot see, and each is stated as
-something that would be observed rather than felt.
+where meaning is authored. These are the failures a count cannot see, each stated as something that
+would be observed rather than felt.
 
-**Reading hardens into a wall.** The systems layer can only be written the way the first loader
-expected, so extension means editing the interpreter. This is the most likely failure and the most
-damaging, because it converts a forge into a frozen artefact while every artifact still looks like
-a forge. The test: count how many of the system's features required a change to the interpreter
-rather than a new file. That number should be zero, and a project where it is not has already
-become the thing it set out to replace.
+**Reading hardens into a wall.** Extension means editing the interpreter, because the systems layer
+can only be written the way the first loader expected. This is the likeliest failure and the most
+damaging: it converts a forge into a frozen artefact while everything still looks like a forge.
+*Test:* how many features required a change to the interpreter rather than a new file. Zero, and a
+project where it is not has already become the thing it set out to replace.
 
-**Derivation becomes slower than authoring.** A system's worth is not its elegance but its
-latency. If a hand-authored interface is quicker to produce than a derived one — or if derivation
-has a cliff where a certain amount of structure makes it non-linear, which is plausible and has not
-been tested — then §4.6 has failed and every other procedure decays from there. This is the failure
-most likely to arrive late and be hardest to attribute, because it looks like ordinary friction.
+**Derivation becomes slower than authoring.** A system's worth is its latency, not its elegance. If
+a hand-authored interface is quicker to produce than a derived one — or if derivation has a cliff
+where enough structure makes it non-linear, which is plausible and untested — then §4.6 has failed
+and the rest decays from there. This arrives late and is hard to attribute, because it looks like
+ordinary friction. *Test:* a slope, not a threshold. The wall-clock cost of the second feature of a
+kind must fall below the first. This is the one number in this document nobody has yet produced, and
+the claim rests on it.
 
-The test is a slope, not a threshold. Measure the wall-clock cost of adding a feature of a kind the
-system already has, and compare it against the cost of adding the first one. The marginal cost must
-fall; if the second feature of a kind costs what the first did, the corpus is not compounding and
-§5.2's economics do not hold. The measurement has to be taken rather than estimated, because the
-claim rests on it and it is the one number in this document nobody has yet produced.
+**The seams prove insufficient.** Binding existing systems stops providing enough construction
+material and the project retreats into implementing organs. *Test:* can `Change/`, `Identity/` and
+the interpreter express a real change to DarkFactory without anything being owned twice? The
+temptation is always to add one organ "just for this", and it is always cheaper than the seam.
 
-**The seams prove insufficient.** Binding existing systems does not provide enough construction
-material to build the system out of, and the project retreats into implementing organs directly.
-The test is whether `Change/`, `Identity/` and the interpreter can express a real change to
-DarkFactory without anything being owned twice. The temptation is always to add one organ "just
-for this", and it is always cheaper than the seam and always wrong.
+**A seam hardens into a menu.** The quiet one: substitutability keeps passing while the thing gets
+worse. A caller can choose a backend but cannot combine one with a capability of their own, route
+around a case the seam does not cover, or extend it without forking. This is the interpreter
+hardening one layer out, and it is why a seam is judged on permeability as well — permeability is
+what fails without anyone noticing. *Test:* did a real requirement arrive that the seam could only be
+stretched to cover, and was the stretch possible at all?
 
-**A seam hardens into a menu.** This is the failure that arrives quietly, because every
-substitutability check still passes while the thing gets worse. A caller can choose between
-backends but cannot combine one with a capability of their own, route around a case the seam does
-not cover, or extend it without forking. The test is whether a real requirement arrived that the
-seam could only be stretched to cover, and specifically whether the stretch was possible at all —
-because a seam that cannot be extended without being forked is not a seam, and the moment that
-happens the abstraction has leaked in the one place composability was supposed to hold it
-together. This is the same shape as the interpreter hardening, one layer out, and the reason the
-seam is judged on permeability as well as substitutability is that permeability is what fails
-without anyone noticing.
-
-**The abstraction leaks into the interfaces.** A user-facing surface names, selects, configures or
-reports an agent. Then, whatever the internals do, the seam has leaked at the one place it matters
-most, and §11.1's claim is false. This one is a grep rather than a judgement call, which is
-precisely why it belongs here: a property that can be checked mechanically should be checked
-mechanically, and its being checkable is evidence that the constraint is real rather than
+**The abstraction leaks into the interfaces.** A surface names, selects, configures or reports an
+agent; whatever the internals do, the seam has leaked where it matters most and §11.1 is false.
+*Test:* a grep. Worth including precisely because it is mechanical — a property that can be checked
+automatically should be, and its checkability is evidence the constraint is real rather than
 aspirational.
 
 **Location-dependent behaviour reappears.** Machines and repositories become two modes, with
-per-location special cases, host-only capability variants, or a table of what is known to work
-where. Each is individually reasonable and collectively fatal: a matrix is a standing promise to
-maintain, and the promise is never kept. The test is whether any capability has a variant that
-exists only in one location, and whether any new host is a code change.
+per-location special cases, host-only capability variants, or a table of what works where. Each is
+individually reasonable and collectively fatal. *Test:* does any capability have a variant that
+exists only in one location, and is any new host a code change?
 
-**Dynamic composition proves unaffordable.** Feature sets cannot be resolved reliably at load, or
-the errors are worse than the barrels they removed. Derivation is a real cost paid at the worst
-moment — during a failure, when clarity matters most — and this is a plausible outcome rather than
-a far-fetched one. The mitigation is that discovery can be cached and invalidated, but caching
-introduces the possibility of a stale set, which is a second source of truth in miniature, and that
-possibility needs an answer rather than a hope.
+**Dynamic composition proves unaffordable.** Derivation is a real cost paid at the worst moment —
+during a failure, when clarity matters most. Discovery can be cached, but caching makes a stale set
+possible, which is a second source of meaning at miniature scale. *Test:* two halves, because the
+failure has two faces. Compare resolution time and load-diagnosis time against what a barrel cost;
+and ask whether an invalidated cache can ever be observably wrong, because if it can, §5.2 applies
+to it directly.
 
-The test has two halves, because the failure has two faces. Measure the time to resolve the full
-feature set and the time to diagnose a load failure, and compare both against what a barrel would
-have cost; derivation that is slower *and* less legible has lost on both axes at once. Separately,
-the stale-set risk is real only if a cache can be wrong, so the test is whether an invalidated cache
-is ever observably wrong — and if it can be, that cache is a second site of meaning at miniature
-scale and §4.2 applies to it directly.
+**The corpus does not compound.** Adding the *N+1*th capability is not cheaper than the *N*th, and
+the moat's economics do not hold. *Test:* whether the second capability costs what the tenth did —
+and it should be reported publicly whether or not it flatters the design.
 
-**The corpus does not compound.** Adding the *N+1*th capability is not cheaper than the *N*th. The
-economics of the moat assume a corpus whose value grows and whose marginal cost falls; if the
-second capability costs as much as the tenth, the moat is a constraint without an economic, and
-the honest response is to say so rather than to keep citing §5. That comparison is the test, and it is the one to report publicly whether or not it flatters the design.
-
-**Self-hosting stalls just short.** The system builds itself most of the time, and the residue is
-maintained by hand. This is the most seductive failure because each step of progress is real, and
-the fixed point is the only condition that distinguishes the result from a well-automated
-pipeline. The test is whether the output of compiling the system is byte-identical to its input,
-with nothing reconciled in between. A system that is 95% of the way there has a second description
-containing 5%, and that fraction does not stay put.
+**Self-hosting stalls just short.** The system builds itself most of the time and the residue is
+maintained by hand. The most seductive failure, because every step of progress is real and only the
+fixed point distinguishes the result from a well-automated pipeline. *Test:* is the output of
+compiling the system byte-identical to its input, with nothing reconciled in between? A system 95% of
+the way there has a second description containing 5%, and that fraction does not stay put.
 
 ## 39 Non-goals
 
@@ -3334,7 +2919,17 @@ same thing more quietly, and that is why there is only one.
 who is *allowed* to do what is a different concern with a different owner, and conflating them
 produces a system that is either unusable or unsafe. §26 states what identity does not decide.
 
-**Not a debugger, an IDE, or a package manager.**  These are consumers. The system's obligation
+**Not a debugger, an IDE, or a package manager.**
+
+**Not a rendering technology per surface.** A surface is a *projection*, and a projection is not the
+same thing as a technology it happens to be drawn with. The terminal aesthetic — a fixed grid, a
+monospace grid of cells, pane navigation, command-palette-first interaction — is a **layout mode**,
+not a second surface, and the distinction matters because conflating them produces two
+implementations of one interaction model and a parity contract to keep them honest. A layout mode
+changing is a renderer detail; a surface changing is a new place the system's meaning is read, and
+that is a bigger event than it looks. `Surfaces/Terminal` is therefore one surface with two
+presentations, not one surface and a half.
+  These are consumers. The system's obligation
 ends at the derived interface; anything a consumer needs that the interface does not expose is a
 gap in the interface, and building the missing consumer tool here would be building a second
 description of what the system is.
@@ -3408,7 +3003,7 @@ file. §4.4.
 difference. One-directional. §4.5.
 
 **Fixed point** — the system compiled by itself resolving to itself, byte-identical, with no
-reconciliation. The completion condition. §1.
+reconciliation. The completion condition. §2.
 
 **Generation** — an applied declaration's recorded result: a parent, a diff and an author. Audit
 and undo are one mechanism, not two.
@@ -3424,17 +3019,6 @@ split across several.
 
 **Authored meaning** — any description of a feature written beside the feature. The thing the count
 in §5.3 measures, and the only number this design is honest about.
-
-**Not a rendering technology per surface.** A surface is a *projection*, and a projection is not the
-same thing as a technology it happens to be drawn with. The terminal aesthetic — a fixed grid, a
-monospace grid of cells, pane navigation, command-palette-first interaction — is a **layout mode**,
-not a second surface, and the distinction matters because conflating them produces two
-implementations of one interaction model and a parity contract to keep them honest. A layout mode
-changing is a renderer detail; a surface changing is a new place the system's meaning is read, and
-that is a bigger event than it looks. `Surfaces/Terminal` is therefore one surface with two
-presentations, not one surface and a half.
-
-
 
 ## 42 Relationship to the paper
 
@@ -3463,7 +3047,7 @@ Two of them changed this document rather than filling a gap in it. The claim tha
 parts are reached only across process boundaries, and the distinction between a surface and a
 layout mode, are both sharper than what was here — the first because a folder name is a claim about
 naming where a boundary is a claim about failure, and the second because a rendering technology is
-not a place meaning is read. The structural frame in §2 — three unifiers and five operations — is
+not a place meaning is read. The structural frame in §3 — three unifiers and five operations — is
 also not new: it is the shape those decisions had in common, which is why it is stated once instead
 of being rediscovered per section.
 
