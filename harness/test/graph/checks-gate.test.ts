@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { evaluateChecksGate, type CheckStateSource } from "../../src/graph/index.ts";
+import { type CheckStateSource, evaluateChecksGate } from "../../src/graph/index.ts";
 import type { WorkflowGraph } from "../../src/graph/types.ts";
 
 function fakeSource(states: Map<string, "success" | "pending" | "failure">): CheckStateSource {
@@ -10,7 +10,12 @@ function graphWithChecks(checks: { name: string; required: boolean }[]): Workflo
 	return {
 		version: 1,
 		checks,
-		nodes: checks.map((check) => ({ id: check.name, kind: "check-reference" as const, check: check.name, required: check.required })),
+		nodes: checks.map((check) => ({
+			id: check.name,
+			kind: "check-reference" as const,
+			check: check.name,
+			required: check.required,
+		})),
 		edges: [],
 	};
 }

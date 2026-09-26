@@ -2,11 +2,7 @@ import { afterEach, describe, expect, test } from "bun:test";
 import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import {
-	ConfiguredBorrowedCredentialCoordinator,
-	type ExternalKeyring,
-	FileCredentialStore,
-} from "../src/index.ts";
+import { ConfiguredBorrowedCredentialCoordinator, type ExternalKeyring, FileCredentialStore } from "../src/index.ts";
 
 const roots: string[] = [];
 
@@ -84,7 +80,11 @@ describe("ConfiguredBorrowedCredentialCoordinator", () => {
 			read: async (service, account) => {
 				expect(service).toBe("Fixture CLI");
 				expect(account).toBe("work");
-				return JSON.stringify({ access: "keyring-access", refresh: "keyring-refresh", expires: "2033-05-18T03:33:20.000Z" });
+				return JSON.stringify({
+					access: "keyring-access",
+					refresh: "keyring-refresh",
+					expires: "2033-05-18T03:33:20.000Z",
+				});
 			},
 		};
 		const coordinator = new ConfiguredBorrowedCredentialCoordinator(

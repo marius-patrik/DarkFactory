@@ -754,7 +754,7 @@ export class FailoverSupervisor {
 					? "Model spent its output budget without an answer"
 					: "Model returned an empty response"
 				: answerLimits.length > 0
-					? `Provider answered with a ${answerLimits[0]!.type} limit message`
+					? `Provider answered with a ${answerLimits[0]?.type} limit message`
 					: redactErrorMessage(
 							thrown instanceof Error ? thrown.message : (final?.errorMessage ?? `Agent stopped: ${stopReason}`),
 						);

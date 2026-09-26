@@ -3,8 +3,8 @@ import { mkdtemp, readFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import {
-	accountId,
 	type AccountRecord,
+	accountId,
 	type BorrowedCredentialCoordinator,
 	FileCredentialStore,
 	type OAuthCredentialSlot,
@@ -28,17 +28,20 @@ function oauth(access: string, refresh: string, expires = Date.now() + 3_600_000
 
 async function seedBorrowed(store: FileCredentialStore, credential = oauth("stored-access", "stored-refresh")) {
 	const id = accountId("fixture", "work");
-	await store.modifyAccount(id, async (): Promise<AccountRecord> => ({
+	await store.modifyAccount(
 		id,
-		provider: "fixture",
-		label: "work",
-		metadata: {
-			ownership: "borrowed",
-			importer: "fixture-cli",
-			source_path: ".fixture/auth.json",
-		},
-		slots: { oauth: credential },
-	}));
+		async (): Promise<AccountRecord> => ({
+			id,
+			provider: "fixture",
+			label: "work",
+			metadata: {
+				ownership: "borrowed",
+				importer: "fixture-cli",
+				source_path: ".fixture/auth.json",
+			},
+			slots: { oauth: credential },
+		}),
+	);
 	return id;
 }
 

@@ -1,4 +1,4 @@
-import { existsSync, readFileSync, readdirSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { basename, join, relative } from "node:path";
 import type { DocsConfig } from "./config.ts";
 import { loadDocsConfig } from "./config.ts";
@@ -107,7 +107,8 @@ function markdownPage(repoRoot: string, source: string, kind: DocsPageKind, id?:
 	const absolute = join(repoRoot, source);
 	if (!existsSync(absolute)) throw new Error(`Documentation source does not exist: ${source}`);
 	const markdown = readFileSync(absolute, "utf8").replaceAll("\r\n", "\n");
-	if (kind === "adr" && !/^\*\*Status\*\*:\s*Accepted\s*$/mu.test(markdown)) throw new Error(`ADR must have Status: Accepted: ${source}`);
+	if (kind === "adr" && !/^\*\*Status\*\*:\s*Accepted\s*$/mu.test(markdown))
+		throw new Error(`ADR must have Status: Accepted: ${source}`);
 	return {
 		id: id ?? idFromSource(source),
 		kind,
@@ -168,12 +169,18 @@ export function includeCapabilityDocumentation(
 }
 
 /** Compiles canonical repository documentation into a deterministic typed content graph. */
-export function compileDocsContentGraph(repoRoot: string, config: DocsConfig = loadDocsConfig(repoRoot), api?: DocsApiReference): DocsContentGraph {
+export function compileDocsContentGraph(
+	repoRoot: string,
+	config: DocsConfig = loadDocsConfig(repoRoot),
+	api?: DocsApiReference,
+): DocsContentGraph {
 	const pages: DocsPage[] = [markdownPage(repoRoot, config.home, "home", "home")];
 	const rulesRoot = join(repoRoot, ".agents", "notes", "rules");
-	for (const name of markdownFiles(rulesRoot)) pages.push(markdownPage(repoRoot, join(".agents", "notes", "rules", name), "rule"));
+	for (const name of markdownFiles(rulesRoot))
+		pages.push(markdownPage(repoRoot, join(".agents", "notes", "rules", name), "rule"));
 	const adrRoot = join(repoRoot, ".agents", "notes", "adr");
-	for (const name of markdownFiles(adrRoot)) pages.push(markdownPage(repoRoot, join(".agents", "notes", "adr", name), "adr"));
+	for (const name of markdownFiles(adrRoot))
+		pages.push(markdownPage(repoRoot, join(".agents", "notes", "adr", name), "adr"));
 	const workflowRoot = join(repoRoot, ".github", "workflows");
 	const workflows = existsSync(workflowRoot)
 		? readdirSync(workflowRoot, { withFileTypes: true })

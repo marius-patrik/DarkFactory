@@ -17,7 +17,7 @@ test("runGit runs inside the given repository, not the process directory", () =>
 test("runGit passes arguments without a shell", () => {
 	temp = createTempRepo();
 	const hostile = "feature/$(echo pwned);x";
-	expect(() => runGit(temp!.repo, ["check-ref-format", "--branch", hostile])).toThrow(GitError);
+	expect(() => runGit(temp?.repo, ["check-ref-format", "--branch", hostile])).toThrow(GitError);
 	expect(runGit(temp.repo, ["log", "--format=%s", "-1"])).toBe("init");
 });
 

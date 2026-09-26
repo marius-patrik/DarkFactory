@@ -34,9 +34,9 @@ describe("validateIdentities", () => {
 		const result = validateIdentities(raw);
 		expect(result.app.login).toBe("darkfactory-pipeline[bot]");
 		expect(result.app.user_id).toBe(326069535);
-		expect(result.providers["claude"]?.name).toBe("Claude");
-		expect(result.providers["claude"]?.verified).toBe(true);
-		expect(result.providers["claude"]?.trailer).toBe("Co-authored-by: Claude <noreply@anthropic.com>");
+		expect(result.providers.claude?.name).toBe("Claude");
+		expect(result.providers.claude?.verified).toBe(true);
+		expect(result.providers.claude?.trailer).toBe("Co-authored-by: Claude <noreply@anthropic.com>");
 		expect(result.providers["grok-sub"]?.verified).toBe(false);
 		expect(result.providers["grok-sub"]?.trailer).toBeNull();
 	});
@@ -59,8 +59,8 @@ describe("validateIdentities", () => {
 		};
 
 		const result = validateIdentities(raw);
-		expect(result.providers["google"]?.name).toBe("Gemini");
-		expect(result.providers["google"]?.verified).toBe(true);
+		expect(result.providers.google?.name).toBe("Gemini");
+		expect(result.providers.google?.verified).toBe(true);
 	});
 
 	it("throws IdentitiesValidationError when identities section is missing", () => {
@@ -151,7 +151,7 @@ describe("loadIdentities", () => {
 
 			const loaded = await loadIdentities(manifestFile);
 			expect(loaded.app.login).toBe("darkfactory-pipeline[bot]");
-			expect(loaded.providers["google"]?.name).toBe("Gemini");
+			expect(loaded.providers.google?.name).toBe("Gemini");
 		} finally {
 			await rm(tempDir, { recursive: true, force: true });
 		}

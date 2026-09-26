@@ -59,8 +59,8 @@ describe("CI status surface & log extractor", () => {
 		const repo = new GitHubRepository(new GitHubClient({ token: "fake-token", fetch }), "owner", "repo");
 		const runs = await getWorkflowRuns(repo, { limit: 10 });
 		expect(runs).toHaveLength(1);
-		expect(runs[0]!.id).toBe(1234);
-		expect(runs[0]!.actor).toBe("marius-patrik");
+		expect(runs[0]?.id).toBe(1234);
+		expect(runs[0]?.actor).toBe("marius-patrik");
 	});
 
 	it("fetches run logs and extracts failure excerpt", async () => {
@@ -78,12 +78,12 @@ describe("CI status surface & log extractor", () => {
 		const repo = new GitHubRepository(new GitHubClient({ token: "fake-token", fetch }), "owner", "repo");
 		const logs = await getRunLogs(repo, 123, { failedOnly: true });
 		expect(logs.jobs).toHaveLength(1);
-		expect(logs.jobs[0]!.excerpt).toContain("AssertionError: expected true to be false");
-		expect(logs.jobs[0]!.excerpt).not.toContain("\x1b[31m");
+		expect(logs.jobs[0]?.excerpt).toContain("AssertionError: expected true to be false");
+		expect(logs.jobs[0]?.excerpt).not.toContain("\x1b[31m");
 	});
 
 	it("truncates oversized logs into head/tail excerpt", () => {
-		const excerpt = extractFailureExcerpt("HEAD_LINE_START\n" + "A".repeat(50_000) + "\nTAIL_LINE_END", 10_000);
+		const excerpt = extractFailureExcerpt(`HEAD_LINE_START\n${"A".repeat(50_000)}\nTAIL_LINE_END`, 10_000);
 		expect(excerpt.length).toBeLessThanOrEqual(10_200);
 		expect(excerpt).toContain("HEAD_LINE_START");
 		expect(excerpt).toContain("TAIL_LINE_END");
@@ -94,8 +94,8 @@ describe("CI status surface & log extractor", () => {
 		const { fetch, calls } = scripted([json({}, 201), json({}, 201)]);
 		const repo = new GitHubRepository(new GitHubClient({ token: "fake-token", fetch }), "owner", "repo");
 		await rerunWorkflowRun(repo, 123, { failedOnly: true });
-		expect(calls[0]!.url).toContain("/actions/runs/123/rerun-failed-jobs");
+		expect(calls[0]?.url).toContain("/actions/runs/123/rerun-failed-jobs");
 		await rerunWorkflowRun(repo, 123, { failedOnly: false });
-		expect(calls[1]!.url).toContain("/actions/runs/123/rerun");
+		expect(calls[1]?.url).toContain("/actions/runs/123/rerun");
 	});
 });

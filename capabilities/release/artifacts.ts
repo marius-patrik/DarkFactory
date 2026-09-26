@@ -143,7 +143,10 @@ export async function verifyReleaseArtifactManifest(
 	const root = await realpath(resolve(rootDir));
 
 	if (manifest.version !== 1) {
-		findings.push({ code: "manifest-version", message: `Unsupported release manifest version: ${String(manifest.version)}` });
+		findings.push({
+			code: "manifest-version",
+			message: `Unsupported release manifest version: ${String(manifest.version)}`,
+		});
 	}
 	try {
 		assertReleaseVersion(manifest.releaseVersion);
@@ -243,8 +246,10 @@ export async function verifyReleaseArtifactManifest(
 
 /** Renders portable sha256sum-compatible lines from a deterministic release manifest. */
 export function renderSha256Sums(manifest: ReleaseArtifactManifest): string {
-	return manifest.artifacts.map((artifact) => `${artifact.sha256}  ${artifact.path}`).join("\n") +
-		(manifest.artifacts.length > 0 ? "\n" : "");
+	return (
+		manifest.artifacts.map((artifact) => `${artifact.sha256}  ${artifact.path}`).join("\n") +
+		(manifest.artifacts.length > 0 ? "\n" : "")
+	);
 }
 
 /** Serializes a release manifest with stable indentation and trailing newline. */

@@ -7,7 +7,7 @@ import { json, scripted } from "./helpers.ts";
 test("App JWT resolves installation and single-flights a long opaque token", async () => {
 	const { privateKey } = await generateKeyPair("RS256", { extractable: true });
 	const pem = await exportPKCS8(privateKey);
-	const token = "ghs_" + "z".repeat(520);
+	const token = `ghs_${"z".repeat(520)}`;
 	const mock = scripted([json({ id: 77 }), json({ token, expires_at: "2030-01-01T00:00:00Z" })]);
 	const provider = new AppInstallationTokenProvider(
 		{ appId: "4861004", privateKey: pem, owner: "o", repo: "r", permissions: { issues: "write" } },
@@ -17,7 +17,7 @@ test("App JWT resolves installation and single-flights a long opaque token", asy
 	expect(a).toBe(token);
 	expect(b).toBe(token);
 	expect(mock.calls).toHaveLength(2);
-	expect(new Headers(mock.calls[0]!.init?.headers).get("authorization")).toStartWith("Bearer ey");
+	expect(new Headers(mock.calls[0]?.init?.headers).get("authorization")).toStartWith("Bearer ey");
 });
 
 test("manifest app identity wins, with explicit PAT and GH_TOKEN fallback", async () => {

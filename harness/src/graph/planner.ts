@@ -17,8 +17,8 @@ function guard(expression: string | undefined, outputs: Record<string, unknown>)
 					? false
 					: match[3] === "null"
 						? null
-						: match[3]!.startsWith('"')
-							? match[3]!.slice(1, -1)
+						: match[3]?.startsWith('"')
+							? match[3]?.slice(1, -1)
 							: Number(match[3]);
 		return match[2] === "==" ? outputs[match[1]!] === rhs : outputs[match[1]!] !== rhs;
 	});

@@ -37,9 +37,7 @@ export function conventionalCommit(input: CapabilityHookContext): CapabilityHook
 	if (firstLine.startsWith("Merge ") || firstLine.startsWith("Revert ")) return pass();
 	const convention =
 		/^(feat|fix|chore|docs|refactor|test|ci|style|perf|build|revert)(\([a-z0-9][a-z0-9-]*\))?!?: \s*\S.*$/u;
-	return convention.test(firstLine)
-		? pass()
-		: fail(`commit message is not a conventional commit: ${firstLine}`);
+	return convention.test(firstLine) ? pass() : fail(`commit message is not a conventional commit: ${firstLine}`);
 }
 
 /** Validates the recovered F47 lowercase segmented branch-name contract. */
@@ -50,9 +48,7 @@ export function branchName(input: CapabilityHookContext): CapabilityHookResult {
 		return fail(`branch "${branch}" is invalid: must be lowercase alphanumeric segments separated by - or /`);
 	}
 	const numeric = branch.split(/[-/]/u).find((segment) => /^[0-9]+$/u.test(segment));
-	return numeric
-		? fail(`branch "${branch}" is invalid: segment "${numeric}" cannot be only digits`)
-		: pass();
+	return numeric ? fail(`branch "${branch}" is invalid: segment "${numeric}" cannot be only digits`) : pass();
 }
 
 const hooks: readonly CapabilityHookDefinition[] = [

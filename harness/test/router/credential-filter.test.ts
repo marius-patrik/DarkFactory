@@ -79,7 +79,7 @@ test("a model with a learned model limit leaves the candidates while the account
 		(model) => model.candidate.provider === "google",
 	);
 	expect(before.length).toBeGreaterThan(1);
-	const blocked = before[0]!.candidate.model;
+	const blocked = before[0]?.candidate.model;
 	const now = Date.now();
 	await new LimitLedger(process.env.DF_HOME!).record([
 		{
