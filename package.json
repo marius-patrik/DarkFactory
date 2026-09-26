@@ -13,6 +13,6 @@
     "typecheck": "bun run --cwd harness typecheck",
     "check": "bun run --cwd harness check",
     "docs": "bun scripts/build-docs.ts",
-    "format:check": "BASE=\"$(bun scripts/get-base-branch.mjs)\"; if ! git rev-parse --verify \"$BASE\" > /dev/null; then echo \"Base branch $BASE not found\"; exit 1; fi; if git diff --name-only \"$BASE\" -- harness | grep -q .; then cd harness && bun x biome ci --changed --since=\"$BASE\" .; else echo \"No changed harness files\"; fi"
+    "format:check": "BASE=\"$(bun scripts/get-base-branch.mjs)\"; if ! git rev-parse --verify \"$BASE\" > /dev/null; then echo \"Base branch $BASE not found\"; exit 1; fi; CHANGED=$(git diff --name-only \"$BASE\" -- harness | grep -E '\\.ts$|\\.tsx$|\\.js$|\\.mjs$' | tr '\\n' ' '); if [ -n \"$CHANGED\" ]; then cd harness && bun x biome ci $CHANGED; else echo \"No changed harness files\"; fi"
   }
 }
