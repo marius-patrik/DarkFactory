@@ -1,5 +1,3 @@
-#import "../styles/main.typ": draft
-
 // 3.5 Feedback, approval and cleanup.
 #heading(level: 2)[Zpětná vazba, schválení a úklid]
 
@@ -9,6 +7,12 @@ Schválení pull requestu zpracovává samostatný workflow. Po ověření, že 
 
 Tato architektura je záměrně jednoduchá. GitHub poskytuje události, schválení, uložení změn a průběh kontroly. GitHub Actions poskytuje výpočet. Docker odděluje běh, Python koordinuje, harness vykonává agentní práci. Složitější služby, trvalý stavový server a více souběžných agentů jsou záměrně mimo základní návrh. Výhodou je snadná reprodukovatelnost a viditelnost každého rozhodnutí. Výhodou je zároveň závislost na dostupnosti GitHubu a na kvalitě promptu, modelu a pravidel repozitáře, kterou samotná automatizace neodstraňuje.
 
-#draft[
-  Popsaný průchod odpovídá počátečnímu stavu, kdy pythonovský runner volal cizí produkční CLI. Pozdější revize @darkfactory-e9c10221 tuto vrstvu zrušila: veškeré agentní kroby vedou přes vlastní harness `df`, který si sám volí model a přepíná poskytovatele, a externí CLI zůstávají jen jako zapsané, neinstaltované položky registru. Pro práci má to dva důsledky, které ještě nejsou rozhodnuté. Zaprvé se tím argumentace musí opřít o revizi, v níž dané rozhraní ještě existovala, což je slabší místo, než kdyby praktická část popisovala vlastní nástroj. Zadruhé se nabízí otázka, zda vlastní harness není vhodnější předmět praktické části právě proto, že jeho rozhraní lze popsat úplně a jeho změny jsou autorově vlastní. Zatím je tedy tato poznámka návrhem k doplnění, nikoli závěrem.
-]
+// The scope boundary, stated once here at the point a reader meets the end of the
+// described pipeline, and again in 1.1 where the aim is set. What follows is not a
+// caveat: the follow-up thesis takes the later state as its subject, and this
+// thesis deliberately stops at the initial implementation.
+Směr vývoje, který práce záměrně nepopisuje, je vymezen v @intro-goal. Zde je tedy
+přesnější dodat, kde popsaný průchod končí: je popsán stav, v němž pythonovský runner
+volal cizí produkční CLI @darkfactory-d576ec8f. Popsaná architektura je tudíž
+mezníkem, nikoli vyvrcholením, a její popis nenahrazuje posouzení této meze, které
+patří do @diskuse.

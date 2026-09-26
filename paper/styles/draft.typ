@@ -10,7 +10,14 @@
 // Everything inside a `draft[]` block is unconfirmed: it may be reworded, cut, or
 // contradicted by later work without the rest of the thesis being invalidated.
 //
-// To find them: `grep -n 'draft\[' index.typ`
+// Currently no passage in ./pages uses this: the provisional material that motivated
+// it was either resolved or moved to the follow-up thesis, and the one that remained
+// became an ordinary paragraph. The module is kept because provisional writing is
+// expected to recur — in particular when the follow-up thesis is drafted — and a
+// marking that only exists once the need for it is gone is not much use. It is
+// referenced from styles/main.typ, so `#show: apply` already makes it available.
+//
+// To find live passages: `grep -rn 'draft\[' pages/`
 // To drop one: delete the whole block. Nothing outside it depends on a draft passage,
 // so removal needs no other edit. Keep draft passages free of headings and figures,
 // so that deleting one cannot leave a dangling outline entry or figure number.
