@@ -1,5 +1,5 @@
 import { existsSync } from "node:fs";
-import { join, resolve } from "node:path";
+import { join, resolve, isAbsolute } from "node:path";
 
 /** Recognized semantic blocks in a DarkFactory combined configuration document. */
 export type DarkFactoryConfigBlock = "repo" | "docs" | "providers";
@@ -18,7 +18,12 @@ export function resolveConfigDocumentPath(
 	env: Readonly<Record<string, string | undefined>> = process.env,
 ): string | undefined {
 	const repositoryRoot = resolve(root);
-	const configuredDirectory = env.DF_CONFIG_DIR?.trim() || ".darkfactory";
+	let configuredDirectory = env.DF_CONFIG_DIR?.trim() || ".darkfactory";
+	if (isAbsolute(configuredDirectory)) {
+		if (!configuredDirectory.startsWith(repositoryRoot)) {
+			configuredDirectory = ".darkfactory";
+		}
+	}
 	const configDirectory = resolve(repositoryRoot, configuredDirectory);
 	const candidatesIn = (directory: string): string[] =>
 		["repo.dfconfig", "config.dfconfig", ".dfconfig"].map((name) => join(directory, name)).filter(existsSync);

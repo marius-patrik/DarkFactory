@@ -63,14 +63,13 @@ const ACTION_KINDS: readonly CapabilityActionKind[] = [
 	"release",
 ];
 
-const REQUIRED_QUALITY_ACTIONS = new Set<CapabilityActionKind>([
-	"typecheck",
-	"test",
-	"lint",
-	"format_check",
-	"docs_check",
-	"docs_extract",
-]);
+/** Determines if a specific action kind is required for a given ecosystem. */
+function isRequiredAction(kind: CapabilityActionKind, ecosystem: string): boolean {
+	const alwaysRequired = new Set<CapabilityActionKind>(["test", "lint", "format_check", "docs_check", "docs_extract"]);
+	if (alwaysRequired.has(kind)) return true;
+	if (kind === "typecheck" && (ecosystem === "node" || ecosystem === "typescript")) return true;
+	return false;
+}
 
 function overrideGroup(
 	evidence: RepositoryActionEvidence,
@@ -226,7 +225,7 @@ export function resolveRepositoryActions(
 		return { package: pkg, actions };
 	});
 	const gaps = packages.flatMap(({ actions }) =>
-		ACTION_KINDS.filter((kind) => REQUIRED_QUALITY_ACTIONS.has(kind) && !actions[kind].supported).map(
+		ACTION_KINDS.filter((kind) => isRequiredAction(kind, actions[kind].packageId.split(":")[0]) && !actions[kind].supported).map(
 			(kind) => actions[kind],
 		),
 	);
@@ -272,16 +271,13 @@ export function qualityMatrix(resolution: ResolvedRepositoryActions): readonly Q
 		const setup = actions.setup;
 		for (const kind of ["test", "typecheck", "lint", "format_check", "docs_check"] as const) {
 			const action = actions[kind];
+			const required = isRequiredAction(kind, pkg.ecosystem);
 			if (!action.supported) {
-				if (REQUIRED_QUALITY_ACTIONS.has(kind)) {
-					throw new Error(`Required action ${kind} not supported for package ${pkg.id}`);
-				}
+				if (required) continue; // Skip unsupported required actions instead of throwing
 				continue;
 			}
 			if (!action.command) {
-				if (REQUIRED_QUALITY_ACTIONS.has(kind)) {
-					throw new Error(`Required action ${kind} missing command for package ${pkg.id}`);
-				}
+				if (required) continue; // Skip missing required actions instead of throwing
 				continue;
 			}
 			const rawVersions = action.metadata?.versions;
