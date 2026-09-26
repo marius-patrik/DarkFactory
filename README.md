@@ -1827,7 +1827,7 @@ this document  →  accepted ADRs when a durable architecture decision is requir
 ```
 
 - **Issues track settled intent and executable work, not unresolved architecture debates.** An issue
-  may be filed when its required outcome is settled by the PRD/accepted ADRs or when it is a concrete
+  may be filed when its required outcome is settled by this document/§35 or when it is a concrete
   mechanical task whose outcome is not in question.
 - **Open architecture questions stay with the owning product/ADR decision until settled.** Do not
   create speculative decision issues merely to move an unresolved argument into the tracker.
@@ -1890,7 +1890,7 @@ Core/router/runtime tests plus capability adapter tests and live df-only accepta
 
 #### Exceptions
 
-Previous internal runtime implementations are not compatibility targets. External compatibility exists only when the PRD explicitly promises it; otherwise old orchestration is deleted when its final owner is live.
+Previous internal runtime implementations are not compatibility targets. External compatibility exists only when this document explicitly promises it; otherwise old orchestration is deleted when its final owner is live.
 
 #### Change control
 
@@ -2003,7 +2003,7 @@ code.
 
 #### Exceptions
 
-Only an external compatibility promise explicitly present in the PRD/accepted ADRs may survive. It
+Only an external compatibility promise explicitly present in this document/§35 may survive. It
 must have a named owner and invariant tests; internal migration convenience is not an exception.
 
 #### Change control
@@ -2798,7 +2798,7 @@ this document  →  accepted ADRs when a durable architecture decision is requir
 ```
 
 - **Issues track settled intent and executable work, not unresolved architecture debates.** An issue
-  may be filed when its required outcome is settled by the PRD/accepted ADRs or when it is a concrete
+  may be filed when its required outcome is settled by this document/§35 or when it is a concrete
   mechanical task whose outcome is not in question.
 - **Open architecture questions stay with the owning product/ADR decision until settled.** Do not
   create speculative decision issues merely to move an unresolved argument into the tracker.

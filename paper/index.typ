@@ -290,6 +290,18 @@ Jednoduchost návrhu má také ekonomickou a epistemickou cenu. Nevyžaduje data
 
 Deterministické a modelové kontroly se proto doplňují, nenahrazují. Formátovací nástroje, testy a kontrola scope poskytují opakovatelné pozorování; modelové review, plánování a opravy interpretují zadání a neočekávané nálezy. Tato kombinace odpovídá cíli Agentického inženýrství zvýšit užitečnost delegované práce při zachování explicitních bran, ale její skutečná kvalita zůstává závislá na datech, promptu, modelu a konkrétním repozitáři @darkfactory-d576ec8f.
 
+#heading(level: 3)[Omezení praktické části]
+
+Praktická část má omezení, která je třeba pojmenovat, protože se dotýkají samotného tvrzení práce. spočívají ve třech vrstvách.
+
+První je vlastnictví. Agentickou smyčku v popsané realizaci neautor navrhuje: sestavuje ji cizí harness, který spravuje kontext, volá nástroje a vyřizuje oprávnění. Co autor navrhuje, je vrstva nad ní, tedy stavový stroj, který rozhoduje, kdy se smyčka spustí, co smí agent změnit a kde práce skončí. To je užší tvrzení, než kdyby byla smyčka implementována od začátku, a je třeba je takto i formulovat.
+
+Druhé je historičnost důkazu. Popsaná konfigurace odpovídá revizi z 14. září 2026; pozdější revize agenty zahodila a veškeré kroky svedla do vlastního harnessu. Čtenář, který si dnes repozitář stáhne, tedy nenajde architekturu v podobě, v níž je zde popsána. Tvrzení, že takový systém vznikl, je proto opřeno o revizi, nikoli o stav projektu v době odevzdání.
+
+Třetí je pohyblivost rozhraní, kterou ukazuje @fig-harness-interfaces. Přepínače existují a fungují, ale jejich význam se mění bez změny názvu, jak ukazuje případ `kimi --yolo`. Deklarativní registr proti tomu nechrání: proti přejmenování ano, proti změně významu ne.
+
+Z těchto tří omezení však plyne i obrana tvrzení. Harness je v popsané architektře zaměnitelná závislost, stejně jako databáze nebo runner. Co práce především ukazuje, není volba konkrétního CLI, ale struktura procesu: že požadavek musí projít interpretací, plánem a dvěma lidskými branami dříve, než vznikne větev, a že změna se přebírá jako konkrétní revize na jednom pull requestu, dokud nesplní dvě nezávislé kontroly. Tato struktura je vůči tomu, kdo vykonává modelové kroky, invariantní. Právě to je obsahem Agentického inženýrství ve smyslu vymezeném v teoretické části, a právě to zůstává platné i tehdy, když se harness, jehož rozhraní je popsáno výše, přestane používat.
+
 
 
 #heading(level: 1)[Závěr]
