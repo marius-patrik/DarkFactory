@@ -83,7 +83,9 @@ describe("repository evidence and capability actions", () => {
 		expect(python.actions.test.command).toBe("pytest");
 		expect(python.actions.test.metadata).toEqual({ versions: ["3.12"] });
 		expect(python.actions.docs_extract.supported).toBe(false);
-		expect(resolution.gaps.some((gap) => gap.packageId === "python:python" && gap.kind === "docs_extract")).toBe(true);
+		// gaps covers the required quality actions — test, typecheck, lint, format_check. docs_extract
+		// is not one of them, so it is reported per package above and not duplicated here.
+		expect(resolution.gaps.some((gap) => gap.packageId === "python:python" && gap.kind === "typecheck")).toBe(true);
 
 		const paper = resolution.packages.find((entry) => entry.package.id === "typst:paper")!;
 		expect(paper.actions.test.command).toContain("typst compile");

@@ -28,9 +28,19 @@ function openAICompatible(id = "fixture-cloud"): ProviderConfig {
 	};
 }
 
+
+// A missing or renamed provider is a broken fixture, not an empty config. Throwing keeps it loud;
+// a non-null assertion after optional chaining is a lint error and, worse, defers the failure to
+// the first property access.
+function builtinProvider(id: string): ProviderConfig {
+	const provider = BUILTIN_PROVIDER_CONFIG.providers.find((entry) => entry.id === id);
+	if (!provider) throw new Error(`Missing builtin provider ${id}`);
+	return provider;
+}
+
 describe("config-driven provider registry", () => {
 	test("Google-to-Google hand-off marks a foreign completed function call with the configured placeholder", () => {
-		const google = BUILTIN_PROVIDER_CONFIG.providers.find((entry) => entry.id === "google")!;
+		const google = builtinProvider("google");
 		const replay = prepareReplayPayload(google, {
 			contents: [
 				{
@@ -44,7 +54,7 @@ describe("config-driven provider registry", () => {
 	});
 
 	test("replay patching tolerates non-cloneable payload fields (abort signal, tool handlers) and leaves unrelated payloads untouched", () => {
-		const google = BUILTIN_PROVIDER_CONFIG.providers.find((entry) => entry.id === "google")!;
+		const google = builtinProvider("google");
 		const abortSignal = new AbortController().signal;
 		const handler = () => undefined;
 		const payload = {
@@ -62,9 +72,10 @@ describe("config-driven provider registry", () => {
 	});
 
 	test("Google-to-Google hand-off patches the serialized wire payload after pi strips the foreign signature", async () => {
-		const google = BUILTIN_PROVIDER_CONFIG.providers.find((entry) => entry.id === "google")!;
+		const google = builtinProvider("google");
 		const provider = providerFromConfig(google);
-		const target = provider.getModels().find((entry) => entry.id === "gemini-3.5-flash-lite")!;
+		const target = provider.getModels().find((entry) => entry.id === "gemini-3.5-flash-lite");
+		if (!target) throw new Error("Expected gemini-3.5-flash-lite in the google model list");
 		const source = fauxAssistantMessage(
 			{ ...fauxToolCall("read", { path: "x" }, { id: "call-1" }), thoughtSignature: "YWJjZA==" },
 			{ stopReason: "toolUse" },
@@ -383,9 +394,8 @@ describe("config-driven provider registry", () => {
 				.map((auth) => auth.flow),
 		);
 		expect(flows).toEqual(new Set(["device_code", "pkce"]));
-		const config = BUILTIN_PROVIDER_CONFIG.providers
-			.find((entry) => entry.id === "anthropic")
-			?.auth.find((auth) => auth.kind === "oauth")!;
+		const config = builtinProvider("anthropic").auth.find((auth) => auth.kind === "oauth");
+		if (!config) throw new Error("Expected anthropic to declare an oauth auth entry");
 		const calls: Array<{ url: string; contentType: string | null }> = [];
 		const oauth = createConfiguredOAuth(config, {
 			isHeadless: true,

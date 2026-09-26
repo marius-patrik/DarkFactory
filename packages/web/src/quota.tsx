@@ -131,8 +131,12 @@ const ModelQuotaCard: FC<{ model: QuotaModelView }> = ({ model }) => (
 			<p>No active or known limit observations.</p>
 		) : (
 			<ul aria-label="Quota limits">
-				{model.limits.map((limit, index) => (
-					<li key={limit.type + ":" + (limit.dimension ?? "") + ":" + index}>
+				{model.limits.map((limit) => (
+					// Keyed on content rather than the array index: two limits can share a type and
+					// dimension (different pools), and an index key is unstable when the list reorders.
+					// Two rows identical in type, dimension and reset are the same observation, so this
+					// is identifying as well as stable.
+					<li key={[limit.type, limit.dimension ?? "", limit.resetAt ?? ""].join(":")}>
 						<strong>{limit.type}</strong>
 						{limit.dimension ? " · " + limit.dimension : ""} · {stateLabel(limit.state)}
 						{" · "}remaining {knownAmount(limit.remaining)}

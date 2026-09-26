@@ -48,7 +48,7 @@ describe("biome configuration", () => {
 	const harnessDir = join(import.meta.dir, "..");
 
 	test("uses tabs, width 120, double quotes and blocks unused imports and variables", async () => {
-		const json = JSON.parse(await readFile(new URL("../biome.json", import.meta.url), "utf8"));
+		const json = JSON.parse(await readFile(new URL("../../biome.json", import.meta.url), "utf8"));
 		expect(json.formatter).toMatchObject({ indentStyle: "tab", lineWidth: 120 });
 		expect(json.javascript.formatter.quoteStyle).toBe("double");
 		expect(json.linter.rules.preset ?? json.linter.rules.recommended).toBe("recommended");
