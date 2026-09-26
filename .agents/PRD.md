@@ -121,12 +121,19 @@ The capability ABI is versioned independently from product SemVer.
 
 ### 5.1 Declaration interpretation
 
-The systems layer is interpreted, and interpretation is itself a capability with swappable backends. It is the same seam as any other bound system: a small vocabulary, several implementations, and a declaration that names one.
+There is one core interpreter package, and the systems layer is what it interprets.
+Interpretation is itself a capability with swappable backends — the same seam as any other
+bound system: a small vocabulary, several implementations, and a declaration that names one.
+
+The interpreter is the whole of df's mechanism rather than one part of it. Every scale a
+consumer works at — a function, a file, a repository, a pipeline, a machine, a fleet — is a
+shape the interpreter resolves, with no separate mechanism per scale.
 
 - A declaration is interpreted through a named backend. TypeScript is the first-party backend for `.df`. Further backends exist so that declarations authored in another system's own language stay first-class instead of requiring translation into ours.
 - A declaration written for a bound system remains in that system's language. Where a consumer's machine-level configuration is authored in a foreign declaration format, df resolves and composes it rather than re-expressing it.
 - Backend selection is declarative. Capability availability is not conditional on which interpreter is present.
 - Interpretation is read-only with respect to the declaration. Evaluating a declaration never mutates it; applying it produces state through the ordinary governed effect path.
+- The interpreter is declarable: which backend interprets a declaration, and the systems layer and interpreter revision it loads, are chosen by declaration rather than hardcoded. A system that can describe its own configuration can describe the thing doing the describing.
 
 This is what lets the system span machines and repositories under one semantic model: the interpreter is chosen per declaration, not per location.
 

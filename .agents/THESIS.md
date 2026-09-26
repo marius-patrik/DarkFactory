@@ -15,19 +15,49 @@
 
 ## 1. The claim
 
-DarkFactory is **one system** that is at once a library, a framework, a pipeline, a
-developer tool, a workspace manager and an operator of machines. Those are not six products
-sharing a name. They are one capability — **act on a system through a declared interface** —
-observed at six scales: a function call, a file, a repository, a pipeline, a machine, a fleet.
+**The code is buildable by semantics, and self-healing.** That is the whole idea. Everything
+below is a consequence of taking it seriously.
 
-Everything below is a consequence of taking that literally, including the parts that are
-uncomfortable.
+*Buildable by semantics* means the system is derived from what its parts **mean** — what a
+folder is for, what a function does, what a declaration asserts — rather than from a separate
+description of how to build it. A name is not a label; it is an instruction the interpreter
+acts on. So there is no build file to keep in step with the code, because the code *is* the
+build description. *Self-healing* means the system observes what is actually true, compares it
+to what was meant, and converges the difference.
+
+Together those give the rest. A single core interpreter package for TypeScript, with the whole
+system expressed as the structure that interpreter finds — capabilities, declarations,
+pipelines, machines, fleets, all shapes it resolves, with no separate mechanism per scale. Not a
+framework that hosts a pipeline, a tool that runs a pipeline, or a pipeline with plugins. Capabilities, declarations, pipelines, machines, fleets: all of them are
+shapes the interpreter resolves, at every scale, with no separate mechanism per scale. Because
+the system is written in the interpreter's own input language, it can build and maintain itself.
+Because the interpreter resolves what is present rather than what a registry lists, any system
+can be assembled by dropping folders and files in and out and reshaping them. Self-hosting and
+composability are not two goals this document argues for; they are the same property seen from
+the author's side and the user's side.
+
+That single claim is what the rest of this document is for. The sections below are its
+consequences, and the parts that are uncomfortable are the parts worth reading.
+
+**The code is self-describing, all of it.** A folder is named for the capability it provides; a
+file implements one function and is named for the feature that function implements, not for the
+code that implements it. A tree can therefore be read to know what a system does without opening
+the files, and adding a folder adds a capability while removing one deletes it — because
+resolution is structural and there is no index to keep in step. \`utils\`, \`helpers\`, \`common\`
+and \`manager\` are forbidden for the same reason they are forbidden as filenames: they are a
+missing decision, not a category.
+
+**The interpreter is itself declarable.** Which backend interprets a given declaration, and how,
+is chosen by declaration rather than hardcoded — including the interpreter's own revision and
+the systems layer it loads. A system that can describe its own configuration can describe the
+thing doing the describing, and that is what closes the loop in §2.
 
 **It is both a tool and a platform, and that is not a compromise.** A tool you use; a platform
 others build on. DarkFactory is the second *and* the first, because a platform nobody can
 extend is a tool with opinions, and a tool nobody can trust with a machine is a script. The
-consequence is a real obligation: `.df` and the capability surface are published contracts, so
-they carry a compatibility promise that internal refactors do not.
+consequence is a real obligation: the interpreter's input surface is a published contract and
+carries a compatibility promise that internal refactors do not.
+
 
 ## 2. Self-hosting is the engine, not a milestone
 
@@ -45,7 +75,7 @@ the thing it is supposed to be a part of.
 
 **There is a bootstrap, and it should be named.** Something has to execute the first `.df`
 file. Either that something is itself expressible in `.df`, or there is a seed, and seeds rot
-**The bootstrap is TypeScript, and that is the whole answer.** `.df` is TypeScript (§11), so
+**The bootstrap is TypeScript, and that is the whole answer.** `.df` is TypeScript (§12), so
 there is no foreign seed to grow out of and no fixed point to bootstrap through. The base
 language and the interpreter are already a language we did not have to invent, with a compiler
 and an ecosystem behind it, and **the interpreter is the bridge**: it is simultaneously what
@@ -80,7 +110,32 @@ That is measurable, and almost nothing satisfies it today. It is also the most u
 acceptance criterion in the whole system, because unlike "is the pipeline green" it cannot be
 met by writing more code in the same style.
 
-## 3. The interpreter is a forge for declarations
+### 2.2 Self-building, which is a stronger claim
+
+Maintaining yourself and building yourself are different, and the second is the harder one.
+Self-hosting is satisfied when the system reviews, implements and merges changes to itself.
+Self-building additionally requires it to **produce its own artifacts** — the binary, the
+release, the container — from the same structure it resolves to decide what to do. The system is
+not only the author of its source, it is the thing that emits the shippable form of itself.
+
+The reason this is affordable rather than circular is that **input and output are the same
+mechanism pointed in opposite directions.** The interpreter resolves structure into behaviour;
+the build resolves the same structure into artifacts. If a capability is a folder, then both
+what it *does* and what it *ships* are derivations of the same tree, and there is no second
+description of the system anywhere that could disagree with the first.
+
+The test: if the build were a separate hand-written pipeline describing how to package the
+system, then the system has two sources of truth about itself — what the code says and what the
+build says — and self-hosting is only true until they diverge.
+
+## 3. One core interpreter package
+
+There is exactly one core interpreter package, and it is the whole of DarkFactory's mechanism.
+Everything a user of the system can build, they build by putting structure in front of it.
+"Core" means there is one of it — not one per scale, not one per host, not a second
+implementation for machines alongside the one for repositories. The interpreter is a forge for
+declarations, which is §4's seam applied to language rather than version control, and it is
+what makes the machine/repository distinction in §5 a non-distinction.
 
 The systems layer needs an interpreter, and the instinct is to bind one — TypeScript via Bun,
 say. That is half right, and the half that is wrong matters more.
@@ -218,7 +273,65 @@ schema the agent reads, so the two cannot drift. This is why the declaration is 
 authoritative surface rather than a configuration convenience — it is the one thing both a model
 and a person are forced to go through.
 
-## 7. Declarable by nature
+### 6.2 Where the harness lives, and why it is not inside the interpreter
+
+The harness is where agent work is actually executed, so it has to be somewhere specific. Two
+candidate answers: a second integral package beside the core interpreter, or folded into the
+interpreter itself. It should be **integral and separate** — required by the system's
+construction, not optional, and not a plugin — and the separation is for three concrete reasons
+rather than taste:
+
+- **The interpreter must be runnable where no agent exists.** Resolving a declaration to show
+  what a system *would* do, rendering it for a human, or validating it in CI needs no model, no
+  credentials and no network. If the harness is inside the interpreter, all of that inherits the
+  harness's dependencies, and the most common operation in the system becomes the most
+  demanding one.
+- **The harness is the trust boundary.** It holds credential access and executes model output.
+  Keeping it out of the core keeps the core auditable, sandboxable and reason-about-able without
+  carrying the property that most needs auditing.
+- **They have incompatible test shapes.** The interpreter is pure resolution and wants no I/O;
+  the harness is I/O-heavy and wants fault injection. Merged, both get worse tests.
+
+But it is **integral**, which is the part that matters, and it is integral in the same sense as
+everything else here: it is not discovered, it is *guaranteed*. The system has a reserved
+identity for it, the way it has a reserved identity for the interpreter. A system that resolved
+a harness the way it resolves a capability could be assembled without one, and that is precisely
+the configuration the design is meant to make impossible.
+
+So the shape is: one core interpreter package that resolves structure, and one integral harness
+that the system guarantees exists, which executes work the interpreter has resolved. Everything
+else — every capability, every domain, every machine behaviour — is content, and content is
+whatever folders and files are present.
+
+## 7. Self-heal: convergence, not reversion
+
+Self-healing is the half of the idea that is easy to get dangerously wrong, so it needs a
+boundary stated precisely.
+
+**Healing goes one way.** The declaration is the intent. The system observes what is actually
+true, compares, and converges the world toward what was meant. Drift is corrected.
+
+**Changing the declaration is not drift.** A human editing a declaration has changed the intent,
+and that is a legitimate mutation through the ordinary governed path — not something to be
+healed back. The distinction is what makes self-healing safe: without it, a system that heals
+will silently revert every deliberate change a person makes, and a system that does that is
+worse than one that never heals at all.
+
+**Bounded by what can be attributed.** The system repairs drift it can attribute to itself, and
+surfaces drift it cannot. A file it did not write, in a place it does not own, is reported
+rather than corrected. This is the same line as DF-RULE-016's custody boundary and DF-RULE-007's
+forbidden blind force push: the ability to change state is not the ability to decide what the
+state should be, and conflating them is how an autonomous system destroys work.
+
+**Healing is idempotent and observable.** Converging twice is a no-op, and every convergence
+records what it changed and why. A healer that cannot be audited is indistinguishable from a
+corruption.
+
+The practical payoff is that drift stops being a thing you discover. Installation, update,
+reconfiguration after a capability changes, recovery from a partially-applied change, and a
+consumer whose upstream moved are all the same operation: observe, compare, converge.
+
+## 8. Declarable by nature
 
 **Anything config-shaped in nature must be declarable rather than coded.** If a competent
 operator could reasonably want to vary it without reading our source, it is data. If only
@@ -231,7 +344,7 @@ already a 17-node declared graph with edges, events and required checks. What th
 because "the user overrode the default" and "the default is this" are different facts, and an
 operator debugging a surprise needs the difference.
 
-## 8. Works with the repository in front of you
+## 9. Works with the repository in front of you
 
 DarkFactory must work on a repository it did not create, without requiring that repository to be
 reorganised to be understood.
@@ -248,7 +361,7 @@ configuration is not degraded — that is the normal case, and the one that must
 Our configuration is an *addition* to what a repository already says; where both speak, ours
 wins for what we own and theirs wins for everything else.
 
-## 9. One file per function, named for the feature
+## 10. One file per function, named for the feature
 
 A file implements one capability and is named for that capability. The naming rule is the part
 that matters: **the name states the feature, not the code.** `createWorktree.ts` is named for
@@ -259,17 +372,26 @@ implementation — the file does not rename, because the feature did not change.
 `manager` are not categories of code; they are the absence of a decision about what a piece of
 code is for. This is a rule, not a preference, and the check is filed.
 
+**Folders obey the same rule, and this is where it pays.** A folder is named for the capability
+it provides and contains the files that implement it — the same discipline one level up, not a
+weaker version of it. `harness/src/ci/` is a capability called *ci*; `capabilities/paper/` is a
+capability called *paper*. The naming is not cosmetic at this level either: because resolution
+is structural (§12), a folder's name *is* how it enters the system, so a folder that cannot be
+named is a capability that has not been decided yet. Generic container names are forbidden in
+directories exactly as they are in filenames, and the check that enforces the filename half
+should enforce both.
+
 **It applies everywhere, without exception.** The harness not meeting the standard is not a
 reason the standard does not apply to the harness. A standard that holds for `capabilities/`
 and is quietly waived for `harness/` is not a standard; it is a preference with a compliance
 team. Where a violation exists, the violation is the work.
 
 One consequence deserves care, because it is easy to get backwards: because composition is
-discovery-based (§10), a rename is *not* automatically breaking, since nothing imports by
+discovery-based (§12), a rename is *not* automatically breaking, since nothing imports by
 path. The discipline is the naming one — the name must survive the mechanism changing — not an
 appeal to path-based API stability.
 
-## 10. No indices; everything composes dynamically
+## 11. No indices; everything composes dynamically
 
 **No `index.ts` barrels.** Nothing is registered by being listed in a file a human has to
 remember to edit. The tree has six today, and each is a place where a new capability is
@@ -286,7 +408,18 @@ resolution: **composition is dynamic; typing is not.** Each file is statically t
 What is discovered is the *set* of capabilities, and an unknown name fails at load with a real
 error — not at build because a barrel was not updated.
 
-## 11. The systems layer: `.df`
+**This is what makes a system assemblable.** Because a folder's presence is its registration,
+building a system is a file operation: drop a folder in and its capability exists; take it out
+and the capability is gone, with nothing to unregister. Reshaping a system — a capability
+split across two folders, a folder merged into one, a capability added only for one consumer —
+is the same operation. There is no manifest to regenerate, no import to add, no second source of
+truth to fall out of step, and so no class of change that can silently fail to take effect.
+
+The corollary is that **the tree is the interface.** A person or an agent assembling a system
+works by choosing folders and files, and the choice is legible without reading an
+implementation. That legibility is not a documentation nicety; it is the mechanism.
+
+## 12. The systems layer: `.df`
 
 `.df` is TypeScript with a framework-provided standard library, and it means exactly one thing:
 *this file participates in system composition*.
@@ -307,7 +440,7 @@ apply here: for what DarkFactory **authors** we may choose the dialect, and for 
 **binds** we do not and must not. We are not replacing a mature system's language; we are
 making it reachable.
 
-## 12. How to tell if this is wrong
+## 13. How to tell if this is wrong
 
 A thesis that cannot be falsified is a mood. These would sink it:
 
@@ -321,11 +454,11 @@ A thesis that cannot be falsified is a mood. These would sink it:
 - **A user-facing surface names or selects an agent.** Then the abstraction has leaked, whatever the
   internals do. This is the check for §6.1 and it is a grep, not a judgement call.
 - **Dynamic composition proves unaffordable.** If capability sets cannot be resolved reliably
-  at load, or the errors are worse than the barrels they removed, §10 is wrong.
+  at load, or the errors are worse than the barrels they removed, §11 is wrong.
 - **Binding costs more than owning.** If the seam is measurably worse than calling `git`
   directly — latency, error fidelity, capability — we should own more organs.
 
-## 13. Relationship to the paper
+## 14. Relationship to the paper
 
 Unrelated. `paper/index.typ` and everything scholarly about it is a consumer of this system, not
 a part of it (DF-RULE-020). A thesis that cannot be separated from its first application is a
@@ -343,5 +476,5 @@ Also informed by the Cordis service-row composition already used in the dsh prof
 the one-file-per-function tendency already present in `harness/src/`.
 
 The one place this document departs from its sources is deliberate and marked where it occurs:
-§2 and §11 argue that owning `.df` is not the same decision as owning a declaration language,
+§2 and §12 argue that owning `.df` is not the same decision as owning a declaration language,
 because DarkFactory authors its own systems layer and binds everyone else's.
