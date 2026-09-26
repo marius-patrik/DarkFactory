@@ -574,18 +574,7 @@ Data that belongs to no system — fixtures, lockfiles, third-party manifests �
 block is promoted from a `.dfconfig` to code only once something must *interpret* it rather than
 read it.
 
-**Configuration is one convention, not four.**
-
-**The layers are process boundaries, not folder names.** A directory tree is a claim about naming;
-a process boundary is a claim about what can go wrong. Each concern below runs as its own thing and
-is reached only through a declared interface, so the guarantees are enforced by the runtime rather
-than by a convention everyone is trusted to follow. This is the difference between saying `Execution/`
-is separate and saying nothing inside it can be reached except through its seam — the first is
-satisfied by a good folder name, the second is not satisfied by anything except isolation.
-
-It also means a concern can be *removed* and take only itself with it. A folder name implies a
-convention that outlives the folder; a process boundary implies nothing left behind, which is what
-makes a backend removable along with its installation rather than merely substitutable. An earlier shape of this document gave the root
+**Configuration is one convention, not four.**  An earlier shape of this document gave the root
 a `*.dfconfig`, a graph file, and two `.json` files, which is three places to name a thing and
 three ways for a repository to spell a convention it inherited rather than chose. Everything a
 scope declares is now a block in one document, so the only thing that varies between repositories
@@ -957,30 +946,7 @@ The stronger claim is that there is no second account: compilation reads the sys
 binds it to a version, and emits every surface form at that version. A version is not a label
 applied at the end; it is part of what compilation resolved.
 
-This is the same moat applied to distribution.
-
-**Self-building is not a new mechanism, and saying so is the strongest form of the claim.** A design
-that needed a *self-modification path* would be admitting that its ordinary path cannot express
-"change me." Here it can: the system reads its own meaning, addresses its own nodes, declares a
-difference against itself, converges, and versions the result. There is no privileged tuner, no
-separate build-for-darkfactory routine, and no code path that exists only for the system to edit
-itself — and the reason to insist is that a privileged path produces changes with no author, no
-diff and no rollback, which is the precise failure §7 is written against. That it is the system
-rather than an external agent making the change does not improve the position; it makes it harder
-to notice.
-
-**Every mutation, including the system's own, goes through the same escrow and the same record.** A
-runtime change is written to the declaration and applied by convergence — not as an overlay and not
-as a side channel — and applying any declaration produces a **generation** carrying a parent, a
-diff and an author. Audit without undo records damage already done; undo without audit is an
-approval with no history. They are one mechanism.
-
-**Undo is a first-class operation over the system's own log, not a reconstruction from the
-backend's internals.** That distinction is what makes a backend *removable* rather than merely
-substitutable: if undo depended on git's reflog and on nothing else, then a consumer who wanted
-only one backend could not remove the other along with its entire system integration, because the
-undo story would differ per backend. The log is ours, the backends are driven as they are, and that
-is what lets a whole implementation leave without taking a guarantee with it. §9's substitutability
+This is the same moat applied to distribution.  §9's substitutability
 is necessary; this is the stronger property. If the code is buildable by semantics, the
 artifacts are too, and the surfaces a capability appears on are a consequence of what it means
 rather than a list someone maintains.
@@ -1060,6 +1026,42 @@ owning a language means owning a parser, a type system, an error story and a com
 where an existing module system already is." §9.1 is why that does not apply. For what
 DarkFactory **authors** we choose the dialect; for what it **binds** we do not and must not. We
 are not replacing a mature system's language, we are making it reachable.
+
+**The layers are process boundaries, not folder names.** A directory tree is a claim about naming;
+a process boundary is a claim about what can go wrong. Each concern below runs as its own thing and
+is reached only through a declared interface, so the guarantees are enforced by the runtime rather
+than by a convention everyone is trusted to follow. This is the difference between saying `Execution/`
+is separate and saying nothing inside it can be reached except through its seam — the first is
+satisfied by a good folder name, the second is not satisfied by anything except isolation.
+
+It also means a concern can be *removed* and take only itself with it. A folder name implies a
+convention that outlives the folder; a process boundary implies nothing left behind, which is what
+makes a backend removable along with its installation rather than merely substitutable.
+
+**Self-building is not a new mechanism, and saying so is the strongest form of the claim.** A design
+that needed a *self-modification path* would be admitting that its ordinary path cannot express
+"change me." Here it can: the system reads its own meaning, addresses its own nodes, declares a
+difference against itself, converges, and versions the result. There is no privileged tuner, no
+separate build-for-darkfactory routine, and no code path that exists only for the system to edit
+itself — and the reason to insist is that a privileged path produces changes with no author, no
+diff and no rollback, which is the precise failure §7 is written against. That it is the system
+rather than an external agent making the change does not improve the position; it makes it harder
+to notice.
+
+**Every mutation, including the system's own, goes through the same escrow and the same record.** A
+runtime change is written to the declaration and applied by convergence — not as an overlay and not
+as a side channel — and applying any declaration produces a **generation** carrying a parent, a
+diff and an author. Audit without undo records damage already done; undo without audit is an
+approval with no history. They are one mechanism.
+
+**Undo is a first-class operation over the system's own log, not a reconstruction from the
+backend's internals.** That distinction is what makes a backend *removable* rather than merely
+substitutable: if undo depended on git's reflog and on nothing else, then a consumer who wanted
+only one backend could not remove the other along with its entire system integration, because the
+undo story would differ per backend. The log is ours, the backends are driven as they are, and that
+is what lets a whole implementation leave without taking a guarantee with it.
+
+
 
 
 # Part III — Requirements
@@ -1302,16 +1304,7 @@ The repository default branch is always discovered from repository state/config,
 ## 26 Identity
 
 Identity is a first-class concern of the system and is not scoped to any caller. An identity is a
-declaration plus one or more proofs.
-
-**Custody deduplicates without leaking.** Where material is content-addressed, encryption must be
-*convergent* — each chunk's key derived from a master secret and that chunk's own hash — or
-deduplication and confidentiality are mutually exclusive and one of them has to go. Unkeyed
-convergent encryption is not sufficient either: identical plaintext then produces identical
-ciphertext globally, which lets anyone confirm whether a known file exists. Deriving the per-chunk
-key from a per-holder master secret restores deduplication within a holder without publishing
-equality across holders. §4.3's fixed points and §26's split custody both depend on this and neither
-invents it. A proof is not restricted to a stored secret: it may be
+declaration plus one or more proofs.  A proof is not restricted to a stored secret: it may be
 stored, derived, or exist only for the duration of a flow. The system supports at minimum long-lived
 bearer tokens, OAuth grants, mTLS client certificates, SSH keys, passkeys, time-based one-time
 codes, codes delivered to another channel, and opaque session cookies.
@@ -1384,6 +1377,16 @@ It compiles one typed content graph from:
 - capability-contributed documentation;
 - repository/graph/workflow metadata;
 - supported API extractors for other ecosystems.
+
+**Custody deduplicates without leaking.** Where material is content-addressed, encryption must be
+*convergent* — each chunk's key derived from a master secret and that chunk's own hash — or
+deduplication and confidentiality are mutually exclusive and one of them has to go. Unkeyed
+convergent encryption is not sufficient either: identical plaintext then produces identical
+ciphertext globally, which lets anyone confirm whether a known file exists. Deriving the per-chunk
+key from a per-holder master secret restores deduplication within a holder without publishing
+equality across holders. §4.3's fixed points and §26's split custody both depend on this and neither
+invents it.
+
 
 
 **One option schema, three consumers.** Every option carries a type, a default, a description, an
@@ -3331,16 +3334,7 @@ same thing more quietly, and that is why there is only one.
 who is *allowed* to do what is a different concern with a different owner, and conflating them
 produces a system that is either unusable or unsafe. §26 states what identity does not decide.
 
-**Not a debugger, an IDE, or a package manager.**
-
-**Not a rendering technology per surface.** A surface is a *projection*, and a projection is not the
-same thing as a technology it happens to be drawn with. The terminal aesthetic — a fixed grid, a
-monospace grid of cells, pane navigation, command-palette-first interaction — is a **layout mode**,
-not a second surface, and the distinction matters because conflating them produces two
-implementations of one interaction model and a parity contract to keep them honest. A layout mode
-changing is a renderer detail; a surface changing is a new place the system's meaning is read, and
-that is a bigger event than it looks. `Surfaces/Terminal` is therefore one surface with two
-presentations, not one surface and a half. These are consumers. The system's obligation
+**Not a debugger, an IDE, or a package manager.**  These are consumers. The system's obligation
 ends at the derived interface; anything a consumer needs that the interface does not expose is a
 gap in the interface, and building the missing consumer tool here would be building a second
 description of what the system is.
@@ -3430,6 +3424,16 @@ split across several.
 
 **Authored meaning** — any description of a feature written beside the feature. The thing the count
 in §5.3 measures, and the only number this design is honest about.
+
+**Not a rendering technology per surface.** A surface is a *projection*, and a projection is not the
+same thing as a technology it happens to be drawn with. The terminal aesthetic — a fixed grid, a
+monospace grid of cells, pane navigation, command-palette-first interaction — is a **layout mode**,
+not a second surface, and the distinction matters because conflating them produces two
+implementations of one interaction model and a parity contract to keep them honest. A layout mode
+changing is a renderer detail; a surface changing is a new place the system's meaning is read, and
+that is a bigger event than it looks. `Surfaces/Terminal` is therefore one surface with two
+presentations, not one surface and a half.
+
 
 
 ## 42 Relationship to the paper
