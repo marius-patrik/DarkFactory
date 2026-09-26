@@ -9,7 +9,7 @@
 - [1 Goal](#1-goal)
 - [2 Introduction](#2-introduction)
 - [3 Methodology](#3-methodology)
-  - [3.1 Bind, do not reimplement](#31-bind-do-not-reimplement)
+  - [3.1 Compose; bind only where it is cheaper](#31-compose-bind-only-where-it-is-cheaper)
   - [3.2 One site of meaning](#32-one-site-of-meaning)
   - [3.3 Derive, do not author](#33-derive-do-not-author)
   - [3.4 One askable thing is one file](#34-one-askable-thing-is-one-file)
@@ -31,7 +31,7 @@
   - [6.5 Rules the structure must satisfy](#65-rules-the-structure-must-satisfy)
 - [7 Interpretation](#7-interpretation)
   - [7.1 One askable feature is one file](#71-one-askable-feature-is-one-file)
-- [8 Bind, never reimplement](#8-bind-never-reimplement)
+- [8 Compose, and bind only where it is cheaper](#8-compose-and-bind-only-where-it-is-cheaper)
   - [8.1 The interpreter is the same seam applied to language](#81-the-interpreter-is-the-same-seam-applied-to-language)
 - [9 Remove the friction](#9-remove-the-friction)
 - [10 AI-first](#10-ai-first)
@@ -223,19 +223,27 @@ of six procedures. A proposal that cannot be settled by one of them is a proposa
 the design has not yet absorbed, and the correct response is to change the design rather than to
 admit the exception.
 
-### 3.1 Bind, do not reimplement
+### 3.1 Compose; bind only where it is cheaper
 
-Own the seam; never the organ. A mature system that already does one job better than we would is
-reached through a small vocabulary with several implementations, and a declaration names one.
+Reach a mature system through a small vocabulary with several implementations, and a declaration
+names one. Own the seam; never the organ.
 
-The test is empirical rather than principled, which is what keeps it honest: if a seam is
-measurably worse than calling the tool directly — in latency, in error fidelity, in capability —
-then the seam was drawn in the wrong place and we should own more organs. This procedure has a
-budget: every line written to replace a mature tool is a line worse than what it replaces and one
-maintained forever, so the seam is where the leverage is and the organ is never ours.
+The reason this is a procedure rather than a preference is that it is testable in two directions,
+and only one of them is obvious. **Substitutability** asks whether a different implementation is
+available and whether the current one is measurably worse than the best construction available —
+not merely worse than the tool it wraps, because the alternatives are the tool, another binding,
+and a composition of bindings. **Permeability** asks whether a caller can compose *around* the
+seam at all, or whether the seam decides the arrangement. A seam can pass the first and fail the
+second, and when it does it is a wall rather than a seam, and the response is to find what the
+composition is being prevented from doing rather than to write our own organ.
+
+Every line written to replace a mature tool is a line worse than what it replaces and one
+maintained forever, so the seam is where the leverage is. But leverage is not the reason to
+compose — recomposition is, and §8 is where that is argued.
 
 The same procedure applies to language, which is why the interpreter is a seam and not a parser, and
-to the browser, to toolchains, and to every way the system reaches a world it did not build.
+to the browser, to toolchains, and to every tool in the build that does not yet understand the
+system: a tool that cannot be configured for it is a system to bind, not a system to fork.
 
 ### 3.2 One site of meaning
 
@@ -312,6 +320,9 @@ because after derivation there is nothing left to write per surface. Self-healin
 intent is derived rather than recorded twice. Self-building works, because the system emits itself
 from the meaning it read. One semantic model spans machines, repositories and hosting types,
 because location is not a thing the model can express and therefore not a thing it can special-case.
+And the system is composable, because nothing about it is registered: a feature can be moved,
+combined, or dropped without anything else being told, which is the property §8 argues is the
+real reason to bind rather than own.
 
 None of these are separate achievements. They are what a single constraint produces when it is
 taken seriously and no exception is permitted, which is why the architecture in Part II is largely a
@@ -594,13 +605,20 @@ things in one place on the theory that they belong together, and belonging toget
 reason to share a file. What belongs together is a folder, whose name says what the group is
 *for*.
 
-## 8 Bind, never reimplement
+## 8 Compose, and bind only where it is cheaper
 
-DarkFactory is a kernel over systems that are better than ours. We implement the seam and none of
-the organs. Version control is `git`, `gh`, `forgejo`, `gitlab` or a bare directory; the browser
-is a system webview; toolchains are Nix; composable services are Cordis rows. We own that those
-mean the same thing on every backend, compose with everything else, and can be named in a
-declaration without a conditional.
+The goal is not to reach an existing system. It is to be able to **rearrange how a system is
+used** without forking it, and that is a different property from access, and a stronger one.
+
+Access is a fixed vocabulary: you get what the interface exposes. Composability means the
+arrangement is not the interface's decision. A seam's job is therefore to **name a place in a
+composition, not to fix a vocabulary** — and the whole discipline below follows from that
+distinction rather than from a preference for not writing code.
+
+We implement the seam and none of the organs. Version control is `git`, `gh`, `forgejo`, `gitlab`
+or a bare directory; the browser is a system webview; toolchains are Nix; composable services are
+Cordis rows. What we own is that those mean the same thing on every backend, compose with
+everything else, and can be named in a declaration without a conditional.
 
 ```
 ReadState:   <target>                 what is true out there
@@ -612,17 +630,51 @@ Identify:    <who>                    who is acting
 ```
 
 **Every line written to replace a mature tool is a line worse than what it replaces, and one
-maintained forever.** The falsifier is empirical: if a seam is measurably worse than calling the
-tool directly — in latency, error fidelity, or capability — then the seam was wrong and we should
-own more organs. That is a measurement to take, not a preference to defend.
+maintained forever.** But that sentence alone makes binding look like a tax, and the test in the
+first draft of this document is why. It measured a seam against *the tool* — and that quietly
+assumes the only alternative to a seam is the organ it wraps. The real alternatives are the tool,
+another binding, and a composition of bindings, so the comparison is against **the best
+construction available**, not against the tool. Measured that way, binding is usually cheaper,
+which is the honest reason for it rather than the virtuous one.
+
+A seam has two properties, and only the first is usually checked:
+
+1. **Substitutability.** A different implementation is available, and the current one is not
+   measurably worse than the best alternative available — in latency, error fidelity, or
+   capability. This is the empirical half, and it is a measurement to take rather than a
+   preference to defend.
+2. **Permeability.** A caller can compose *around* the seam, or the seam decides the arrangement
+   for them. This half is the one that fails silently. A seam that can only be used one way is a
+   wall, and a wall is exactly where an abstraction leaks — the same failure §37 names when the
+   interpreter hardens. A permeable seam is one a caller can route around, extend, or ignore for
+   the cases it does not cover, and it stays usable when they do.
+
+The two are independent, and the second is what makes the first tolerable. A substitutable seam
+that is not permeable is a menu: several choices, none of them composable with anything the
+caller has. A permeable seam that is not substitutable is worse — a single escape hatch with no
+alternative behind it.
+
+**This is not only about external systems.** Because interfaces are derived from structure
+(§3.3) and discovery is structural (§14), the system's own features are composable inputs: a
+consumer can take one, move it, combine it with something of their own, and the system reads the
+new arrangement because it was never registered anywhere. So the seam is not a boundary around the
+system — it is a claim that **nothing in the system is privileged, including the seams**. A
+property of the system follows from the same property of every part of it, which is why the two
+are worth stating once.
+
+The practical payoff is an answer to every "this tool does not understand us" moment. A tool that
+cannot be configured for the system is **a system to bind, not a system to fork** — the formatter,
+the test discovery, the coverage reporter — and the surrounding system can host the binding
+precisely because it is built from recombinable parts rather than a program with one fixed entry
+point.
 
 ### 8.1 The interpreter is the same seam applied to language
 
 The instinct on reaching for an interpreter is to bind one, TypeScript via Bun say. That is half
 right, and the half that is wrong matters more: **an interpreter is a forge for declarations.**
-A small vocabulary, several backends, and a declaration that names one. It is §8's shape applied
-to language rather than to version control, and recognising it resolves two awkward requirements
-at once.
+A small vocabulary, several backends, and a declaration that names one. It is §8's shape applied to language rather than to version control, and recognising it
+resolves two awkward requirements at once — a language is a place in a composition, not a
+fixed vocabulary.
 
 DarkFactory's own systems layer is TypeScript, so `.df` is TypeScript with a framework-provided
 standard library and every editor, language server and `@types` package works unchanged. A system
@@ -3020,6 +3072,17 @@ material to build the system out of, and the project retreats into implementing 
 The test is whether `Change/`, `Identity/` and the interpreter can express a real change to
 DarkFactory without anything being owned twice. The temptation is always to add one organ "just
 for this", and it is always cheaper than the seam and always wrong.
+
+**A seam hardens into a menu.** This is the failure that arrives quietly, because every
+substitutability check still passes while the thing gets worse. A caller can choose between
+backends but cannot combine one with a capability of their own, route around a case the seam does
+not cover, or extend it without forking. The test is whether a real requirement arrived that the
+seam could only be stretched to cover, and specifically whether the stretch was possible at all —
+because a seam that cannot be extended without being forked is not a seam, and the moment that
+happens the abstraction has leaked in the one place composability was supposed to hold it
+together. This is the same shape as the interpreter hardening, one layer out, and the reason the
+seam is judged on permeability as well as substitutability is that permeability is what fails
+without anyone noticing.
 
 **The abstraction leaks into the interfaces.** A user-facing surface names, selects, configures or
 reports an agent. Then, whatever the internals do, the seam has leaked at the one place it matters
