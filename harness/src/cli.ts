@@ -231,7 +231,6 @@ function removeOptions(args: string[], names: readonly string[]): string[] {
 	return result;
 }
 
-export { parseCandidate } from "./harness/routing.ts";
 export { routerModels };
 
 async function providersCommand(registry: ProviderRegistry): Promise<void> {
