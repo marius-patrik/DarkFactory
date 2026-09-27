@@ -4,7 +4,6 @@ import { $ } from "bun";
 import { packageAssets } from "./package-assets.ts";
 import { releaseAssetName, requireReleaseTarget, resolveHostTarget } from "./release-targets.ts";
 
-
 const args = process.argv.slice(2);
 
 function flag(name: string): string | undefined {
@@ -31,4 +30,3 @@ if (!existsSync(join("dist", asset))) {
 
 await packageAssets(process.cwd(), target.platform, target.arch);
 console.log(`built dist/${asset} for ${target.name} (${target.bunTarget})`);
-
