@@ -2881,18 +2881,67 @@ def check_scope(changed_files: List[str], plan_files: Set[str]) -> Tuple[List[st
     return in_scope, out_of_scope
 
 
+def resolve_base_refs(base: str, cwd: Optional[str] = None) -> List[str]:
+    """Returns the base refs that actually resolve in the workspace, in preference order.
+
+    A shallow checkout contains one commit and no other refs, so a diff against ``origin/<base>``
+    can fail purely because the base was never fetched. That is a different condition from an empty
+    diff, and the caller has to be able to tell them apart.
+
+    Args:
+        base: Base branch name to resolve.
+        cwd: Repository directory (defaults to WORKSPACE_DIR).
+
+    Returns:
+        The resolvable refs among ``origin/<base>...HEAD``, ``<base>...HEAD``, ``origin/<base>``
+        and ``<base>``, in that order.
+
+    Raises:
+        RuntimeError: If no candidate ref resolves, naming the base and the refs that do exist.
+    """
+    directory = cwd or WORKSPACE_DIR
+    candidates = [f"origin/{base}...HEAD", f"{base}...HEAD", f"origin/{base}", base]
+    resolvable = []
+    for ref in candidates:
+        # The base endpoint is verified rather than the range: `git rev-parse --verify a...b`
+        # reports failure for an empty range, which a base that equals HEAD legitimately produces.
+        check = subprocess.run(
+            ["git", "rev-parse", "--verify", "--quiet", f"{ref.removesuffix('...HEAD')}^{{commit}}"],
+            cwd=directory,
+            capture_output=True,
+            text=True,
+        )
+        if check.returncode == 0:
+            resolvable.append(ref)
+    if resolvable:
+        return resolvable
+    available = run_git(
+        ["for-each-ref", "--format=%(refname:short)", "refs/remotes", "refs/heads"],
+        cwd=directory,
+    )
+    raise RuntimeError(
+        f"Cannot resolve base branch '{base}' in {directory}; none of {', '.join(candidates)} exist. "
+        f"Refusing to report an empty diff against a base that does not exist. "
+        f"Refs present: {available or '(none)'}."
+    )
+
+
 def get_pr_changed_files(base_branch_name: str = "", cwd: str = WORKSPACE_DIR) -> List[str]:
-    """Returns the list of changed files between the current branch and the base branch."""
+    """Returns the list of changed files between the current branch and the base branch.
+
+    Raises:
+        RuntimeError: If the base branch cannot be resolved. An unresolvable base is an error, not
+            an empty diff: the caller uses this list to decide which files are out of plan scope,
+            and an empty list would make that gate pass on nothing.
+    """
     base = base_branch_name or development_branch()
-    for ref in (f"origin/{base}...HEAD", f"{base}...HEAD", f"origin/{base}", base):
-        try:
-            out = run_git(["diff", "--name-only", ref], cwd=cwd)
-            files = [line.strip().replace("\\", "/") for line in out.splitlines() if line.strip()]
-            if files:
-                return files
-        except Exception:
-            continue
-    return []
+    files: List[str] = []
+    for ref in resolve_base_refs(base, cwd=cwd):
+        out = run_git(["diff", "--name-only", ref], cwd=cwd)
+        files = [line.strip().replace("\\", "/") for line in out.splitlines() if line.strip()]
+        if files:
+            break
+    return files
 
 
 def revert_out_of_scope_files(
@@ -2907,11 +2956,17 @@ def revert_out_of_scope_files(
 
     Returns:
         The commit SHA of the reversion commit.
+
+    Raises:
+        RuntimeError: If the base branch cannot be resolved. A file that is absent from an
+            unresolvable base looks exactly like a file the base never had, and this function
+            would delete it rather than restore it.
     """
     base = base_branch_name or development_branch()
+    base_refs = [ref for ref in resolve_base_refs(base, cwd=cwd) if not ref.endswith("...HEAD")]
     for f in out_of_scope_files:
         exists_in_base = False
-        for ref in (f"origin/{base}", base):
+        for ref in base_refs:
             res = subprocess.run(
                 ["git", "cat-file", "-e", f"{ref}:{f}"],
                 cwd=cwd,
@@ -3550,14 +3605,12 @@ def handle_implement(plan_number: int, request_number: int, repo: str):
         fail_agent_run(f"Commit/push failed for plan #{plan_number}; Execution Error posted.")
 
     # 9. Open Draft PR via workflow dispatch
-    diff_stat = ""
-    try:
-        diff_stat = run_git(["diff", "--stat", f"origin/{development_branch()}...HEAD"], cwd=cwd)
-    except Exception:
-        try:
-            diff_stat = run_git(["diff", "--stat", f"{development_branch()}...HEAD"], cwd=cwd)
-        except Exception:
-            diff_stat = ""
+    # The base is resolved through the same check the scope gate uses, so a run that cannot reach
+    # its base fails here naming the ref instead of opening a pull request whose "Changed Files"
+    # section is empty because nothing was compared.
+    diff_stat = run_git(
+        ["diff", "--stat", resolve_base_refs(development_branch(), cwd=cwd)[0]], cwd=cwd
+    )
 
     test_cmd = (
         " ".join(test_res.args)

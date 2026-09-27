@@ -1,10 +1,21 @@
+import os
 import pathlib
+import subprocess
+
+import resolver
 import yaml
+
+CI_WORKFLOW = ".github/workflows/ci.yml"
 
 
 def _workflow(path):
     with pathlib.Path(path).open("r", encoding="utf-8") as handle:
         return yaml.safe_load(handle)
+
+
+def _triggers(workflow):
+    """Returns the parsed `on:` mapping; PyYAML resolves a bare `on` key to the boolean `True`."""
+    return workflow[True] if True in workflow else workflow["on"]
 
 
 def _steps(path, job):
@@ -73,3 +84,186 @@ def test_agent_image_installs_from_the_checked_in_harness_lock():
     assert "bun install --frozen-lockfile --cwd /opt/darkfactory/harness" in dockerfile
     assert "COPY pyproject.toml requirements-dev.txt" in dockerfile
     assert "pip install --no-cache-dir -r requirements-dev.txt" in dockerfile
+
+
+# --- #1147: a pull request whose base is not `develop` must still get the gate ------------------
+#
+# `branches` on `pull_request` filters the pull request's *base* ref. Scoping it to `develop` gave
+# every stacked pull request in the delivery chain zero check-runs, and the stack branches are
+# unprotected, so their mergeStateStatus read CLEAN from an evaluation that never happened.
+
+
+def test_ci_runs_for_a_pull_request_against_any_base_branch():
+    triggers = _triggers(_workflow(CI_WORKFLOW))["pull_request"]
+    assert "branches" not in triggers, (
+        "a `branches` filter on pull_request matches the base ref, so a stacked pull request gets "
+        "no check-runs at all"
+    )
+
+
+def test_ci_reruns_when_only_the_base_branch_changed():
+    triggers = _triggers(_workflow(CI_WORKFLOW))["pull_request"]
+    assert "edited" in triggers["types"], (
+        "a base-only change emits no synchronize event, so without `edited` the previous base's "
+        "success stays displayed as current evidence"
+    )
+    assert {"opened", "synchronize", "reopened"} <= set(triggers["types"])
+
+
+def test_ci_still_runs_on_a_protected_base_of_this_repository_itself():
+    triggers = _triggers(_workflow(CI_WORKFLOW))
+    assert triggers["push"]["branches"] == ["develop"]
+    assert triggers["merge_group"]["branches"] == ["develop"]
+
+
+def test_the_required_bound_issue_check_runs_for_a_pull_request_against_any_base_branch():
+    triggers = _triggers(_workflow(".github/workflows/verify-pr-issue.yml"))["pull_request"]
+    assert "branches" not in triggers
+    assert "edited" in triggers["types"]
+
+
+# --- #1187: the agent must be able to reach the base it is told to diff against ----------------
+
+
+def test_the_agent_checkout_fetches_the_base_branch_the_runner_diffs_against():
+    steps = _steps(".github/workflows/agent.yml", "run-agent")
+    checkout = steps[_index(steps, "Checkout repository")]
+    assert checkout["with"]["fetch-depth"] == 0, (
+        "a shallow checkout has no other refs, so every `origin/<base>` the runner tries is "
+        "unresolvable and the scope gate passes on an empty diff"
+    )
+
+
+def test_the_agent_pipeline_checkout_defaults_to_a_branch_that_exists():
+    steps = _steps(".github/workflows/agent.yml", "run-agent")
+    pipeline = steps[_index(steps, "Check out the pinned pipeline")]
+    assert pipeline["with"]["ref"] == "${{ inputs.pipeline-ref || 'main' }}"
+
+
+# --- #1225: one candidate matrix, exercised from both implementations --------------------------
+#
+# The one-config-per-scope rule is implemented twice: as a runtime resolver
+# (`.github/scripts/resolver.py`) and as the `docs-check` gate in `ci.yml`. The gate is the one that
+# decides whether a delivery run is checked, so the two must not be able to disagree about which
+# trees are ambiguous. Each fixture is a candidate layout plus a `DF_CONFIG_DIR`, and both
+# implementations are run against it.
+#
+# One known divergence is left in place and is not part of the contract: a `DF_CONFIG_DIR` that is a
+# *symlink to the repository root* is two lexical scopes to the resolver and one resolved scope to
+# the gate. Changing that means changing `os.path.normpath` to `os.path.realpath` in the resolver,
+# which belongs with the Python removal rather than with a trigger fix.
+
+
+def _docs_gate_script():
+    """Returns the shell script the `docs-check` candidate detection step actually runs."""
+    steps = _steps(CI_WORKFLOW, "docs-check")
+    step = steps[_index(steps, "Detect combined configuration docs block")]
+    script = step["run"]
+    assert "${{" not in script, "the step must be runnable outside Actions to be testable"
+    return script
+
+
+def _gate_verdict(script, root, config_dir):
+    """Runs the workflow gate against a fixture tree and returns its verdict.
+
+    Returns:
+        One of "present", "absent" or "ambiguous".
+    """
+    output = root.parent / f"gate-output-{root.name}"
+    output.write_text("", encoding="utf-8")
+    env = dict(os.environ, GITHUB_WORKSPACE=str(root), GITHUB_OUTPUT=str(output))
+    env.pop("DF_CONFIG_DIR", None)
+    if config_dir is not None:
+        env["DF_CONFIG_DIR"] = config_dir
+    completed = subprocess.run(
+        ["bash", "-e", "-c", script], env=env, capture_output=True, text=True
+    )
+    if completed.returncode != 0:
+        assert "Ambiguous DarkFactory configuration" in completed.stderr, completed.stderr
+        return "ambiguous"
+    if "present=true" in output.read_text(encoding="utf-8"):
+        return "present"
+    return "absent"
+
+
+def _resolver_verdict(root, config_dir):
+    """Runs the runtime resolver against the same fixture tree and returns its verdict."""
+    env = {} if config_dir is None else {"DF_CONFIG_DIR": config_dir}
+    try:
+        selected = resolver.resolve_config_document_path(str(root), env)
+    except ValueError as exc:
+        assert "Ambiguous DarkFactory configuration" in str(exc), exc
+        return "ambiguous"
+    return "present" if os.path.exists(selected) else "absent"
+
+
+# (label, candidate paths relative to the repository root, DF_CONFIG_DIR, expected verdict)
+CANDIDATE_FIXTURES = [
+    ("no candidate anywhere", [], None, "absent"),
+    ("root repo.dfconfig", ["repo.dfconfig"], None, "present"),
+    ("root config.dfconfig", ["config.dfconfig"], None, "present"),
+    ("root .dfconfig", [".dfconfig"], None, "present"),
+    ("two aliases in the root", ["repo.dfconfig", ".dfconfig"], None, "ambiguous"),
+    (
+        "three aliases in the root",
+        ["repo.dfconfig", "config.dfconfig", ".dfconfig"],
+        None,
+        "ambiguous",
+    ),
+    ("the default folder", [".darkfactory/repo.dfconfig"], None, "present"),
+    (
+        "a configured folder",
+        ["cfg/repo.dfconfig"],
+        "cfg",
+        "present",
+    ),
+    (
+        "two aliases in the folder",
+        ["cfg/repo.dfconfig", "cfg/.dfconfig"],
+        "cfg",
+        "ambiguous",
+    ),
+    (
+        "a candidate in each scope",
+        ["repo.dfconfig", ".darkfactory/config.dfconfig"],
+        None,
+        "ambiguous",
+    ),
+    ("DF_CONFIG_DIR naming the root itself", ["repo.dfconfig"], ".", "present"),
+    ("DF_CONFIG_DIR unset but the root configured", ["repo.dfconfig"], "", "present"),
+    ("DF_CONFIG_DIR blank", ["repo.dfconfig"], "   ", "present"),
+    (
+        "DF_CONFIG_DIR blank with a candidate in each scope",
+        ["repo.dfconfig", ".darkfactory/repo.dfconfig"],
+        "   ",
+        "ambiguous",
+    ),
+    ("DF_CONFIG_DIR with a path that does not exist", ["repo.dfconfig"], "nowhere", "present"),
+]
+
+
+def test_the_workflow_gate_and_the_resolver_agree_on_the_candidate_matrix(tmp_path):
+    script = _docs_gate_script()
+    for label, candidates, config_dir, expected in CANDIDATE_FIXTURES:
+        root = tmp_path / label.replace(" ", "-").replace("/", "-")
+        root.mkdir(parents=True)
+        for candidate in candidates:
+            path = root / candidate
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_text("{}", encoding="utf-8")
+        assert _gate_verdict(script, root, config_dir) == expected, f"workflow gate: {label}"
+        assert _resolver_verdict(root, config_dir) == expected, f"resolver: {label}"
+
+
+def test_the_workflow_gate_and_the_resolver_name_the_same_candidates():
+    script = _docs_gate_script()
+    declared = next(
+        line for line in script.splitlines() if line.startswith("CONFIG_FILENAMES=")
+    )
+    gate_filenames = tuple(declared.split("=", 1)[1].strip().strip('"').split())
+    assert set(gate_filenames) == set(resolver.CONFIG_FILENAMES)
+
+    default = next(
+        line for line in script.splitlines() if line.startswith("DEFAULT_CONFIG_DIR=")
+    )
+    assert default.split("=", 1)[1].strip().strip('"') == resolver.DEFAULT_CONFIG_DIR

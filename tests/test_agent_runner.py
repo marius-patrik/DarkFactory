@@ -2141,6 +2141,71 @@ class TestScopeCheckKeepsTestsAndVaguePlans:
         assert out == [".github/scripts/project_automation.py"]
 
 
+def _git_repo(root, branch="work"):
+    """Initialises a repository with one commit and returns its path.
+
+    Args:
+        root: Directory to initialise.
+        branch: Name of the checked-out branch.
+
+    Returns:
+        The repository path.
+    """
+    root.mkdir(parents=True, exist_ok=True)
+    (root / "kept.py").write_text("kept = 1\n", encoding="utf-8")
+    subprocess.run(["git", "init", "-q", "-b", branch, str(root)], check=True)
+    for key, value in (
+        ("user.email", "test@example.com"),
+        ("user.name", "Test"),
+        ("commit.gpgsign", "false"),
+    ):
+        subprocess.run(["git", "-C", str(root), "config", key, value], check=True)
+    subprocess.run(["git", "-C", str(root), "add", "-A"], check=True)
+    subprocess.run(["git", "-C", str(root), "commit", "-q", "-m", "base"], check=True)
+    return str(root)
+
+
+class TestAnUnresolvableBaseIsAFailureNotAnEmptyDiff:
+    """#1187: a diff against a ref that does not resolve inspected nothing, and the run reported success."""
+
+    def test_changed_files_fails_when_the_base_branch_does_not_exist(self, tmp_path):
+        repo = _git_repo(tmp_path / "repo")
+        with pytest.raises(RuntimeError) as failure:
+            agent_runner.get_pr_changed_files("develop", cwd=repo)
+        message = str(failure.value)
+        assert "develop" in message
+        assert "origin/develop" in message
+        assert "work" in message, "the error must list the refs that do exist"
+
+    def test_the_scope_gate_cannot_pass_on_a_base_it_could_not_read(self, tmp_path):
+        repo = _git_repo(tmp_path / "repo")
+        with pytest.raises(RuntimeError):
+            agent_runner.get_pr_changed_files("darkfactory", cwd=repo)
+
+    def test_an_empty_diff_against_a_base_that_exists_is_not_a_failure(self, tmp_path):
+        repo = _git_repo(tmp_path / "repo")
+        assert agent_runner.get_pr_changed_files("work", cwd=repo) == []
+
+    def test_changed_files_are_reported_when_the_base_resolves(self, tmp_path):
+        repo = _git_repo(tmp_path / "repo")
+        subprocess.run(["git", "-C", repo, "checkout", "-q", "-b", "feature"], check=True)
+        (Path(repo) / "added.py").write_text("added = 1\n", encoding="utf-8")
+        subprocess.run(["git", "-C", repo, "add", "-A"], check=True)
+        subprocess.run(["git", "-C", repo, "commit", "-q", "-m", "work"], check=True)
+        assert agent_runner.get_pr_changed_files("work", cwd=repo) == ["added.py"]
+
+    def test_resolve_base_refs_prefers_the_range_refs(self, tmp_path):
+        repo = _git_repo(tmp_path / "repo")
+        assert agent_runner.resolve_base_refs("work", cwd=repo)[0] == "work...HEAD"
+
+    def test_reverting_out_of_scope_files_refuses_to_delete_against_an_absent_base(self, tmp_path):
+        repo = _git_repo(tmp_path / "repo")
+        (Path(repo) / "added.py").write_text("added = 1\n", encoding="utf-8")
+        with pytest.raises(RuntimeError):
+            agent_runner.revert_out_of_scope_files(["added.py"], "develop", cwd=repo)
+        assert (Path(repo) / "added.py").exists()
+
+
 class TestSelfReviewFix:
     """Self-review fix run: parses findings, reverts out-of-scope files, fixes findings, and dispatches iteration N+1."""
 
