@@ -96,6 +96,7 @@ class RebindableCredentialStore implements CredentialStore {
 
 function isolateAmbientAuth(provider: Provider): Provider {
 	const apiKey = provider.auth.apiKey;
+	const check = apiKey?.check;
 	return {
 		...provider,
 		auth: {
@@ -104,7 +105,7 @@ function isolateAmbientAuth(provider: Provider): Provider {
 				? {
 						apiKey: {
 							...apiKey,
-							...(apiKey.check ? { check: (input) => apiKey.check?.({ ...input, ctx: isolatedAuthContext }) } : {}),
+							...(check ? { check: (input) => check({ ...input, ctx: isolatedAuthContext }) } : {}),
 							resolve: (input) => apiKey.resolve({ ...input, ctx: isolatedAuthContext }),
 						},
 					}

@@ -161,7 +161,7 @@ describe("df run", () => {
 			);
 		}
 		const invoke = async (...args: string[]) => {
-			const child = Bun.spawn([process.execPath, "run", "src/cli.ts", ...args], {
+			const child = Bun.spawn([process.execPath, "run", join(import.meta.dir, "../src/cli.ts"), ...args], {
 				cwd: process.cwd(),
 				env: { DF_HOME: home, PATH: process.env.PATH ?? "", SYSTEMROOT: process.env.SYSTEMROOT ?? "C:\\Windows" },
 				stdout: "pipe",
@@ -382,7 +382,7 @@ describe("df run", () => {
 			],
 		};
 		await writeFile(join(home, "providers.df"), JSON.stringify(providersConfig), "utf8");
-		const child = Bun.spawn([process.execPath, "run", "src/cli.ts", "providers"], {
+		const child = Bun.spawn([process.execPath, "run", join(import.meta.dir, "../src/cli.ts"), "providers"], {
 			cwd: process.cwd(),
 			env: { DF_HOME: home, PATH: process.env.PATH ?? "" },
 			stdout: "pipe",

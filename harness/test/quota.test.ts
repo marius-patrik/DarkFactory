@@ -11,6 +11,12 @@ function providerError(message: string, status?: number, headers?: Record<string
 	return error;
 }
 
+function googleFailureRules() {
+	const rules = BUILTIN_PROVIDER_CONFIG.providers.find((entry) => entry.id === "google")?.quota?.rules;
+	if (!rules) throw new Error("The builtin google provider must ship quota rules for these fixtures to mean anything");
+	return rules;
+}
+
 describe("classifyFailure", () => {
 	test.each([
 		[
@@ -104,7 +110,7 @@ describe("classifyFailure", () => {
 	});
 
 	test("provider-specific request-shape errors are classified as transient candidates", () => {
-		const rules = BUILTIN_PROVIDER_CONFIG.providers.find((entry) => entry.id === "google")?.quota?.rules;
+		const rules = googleFailureRules();
 		const error = providerError("Function call is missing a thought_signature in functionCall parts", 400);
 		expect(classifyFailure({ error }, { rules, model: "gemini-3.5-flash-lite" }).kind).toBe("transient");
 	});
@@ -120,7 +126,7 @@ describe("classifyFailure", () => {
 	});
 
 	describe("AI Studio daily free-tier regression triplet", () => {
-		const rules = BUILTIN_PROVIDER_CONFIG.providers.find((entry) => entry.id === "google")?.quota?.rules;
+		const rules = googleFailureRules();
 		const now = Date.parse("2026-07-10T12:00:00Z");
 		const quotaId = "GenerateRequestsPerDayPerProjectPerModel-FreeTier";
 		test("success: daily QuotaFailure is quota_exhausted and uses RetryInfo", () => {
