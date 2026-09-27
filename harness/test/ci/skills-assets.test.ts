@@ -1,6 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join } from "node:path";
+import { checkSkillsDrift, discoverBundledSkills } from "../../src/ci/installer.ts";
 
 // Paths come from this file, never from process.cwd(): the suite runs from harness/ and from the repository root.
 const harnessDir = join(import.meta.dir, "..", "..");
@@ -57,10 +58,22 @@ describe("bundled skills", () => {
 		expect(content).not.toContain("gh secret set");
 	});
 
-	test("this repository's installed darkfactory-auth skill is the bundled one", () => {
-		expect(readFileSync(join(repoDir, ".agents", "skills", "darkfactory-auth", "SKILL.md"), "utf8")).toBe(
-			readFileSync(skillPath("darkfactory-auth"), "utf8"),
-		);
+	// `harness/assets/skills` is the one source of truth: `discoverBundledSkills` reads only this
+	// directory, and `package-assets.ts` copies only this directory into a release. `.agents/skills`
+	// is where `installSkills` writes, so a copy tracked there is install output, not a second
+	// source. These two tests are what keeps that distinction true: the first fails on a divergent
+	// second text for a skill name, the second on a skill that exists only at the destination.
+	test("every bundled skill is installed here as a byte-identical copy", async () => {
+		const drift = await checkSkillsDrift(repoDir);
+		expect(drift.filter((item) => item.status !== "in_sync")).toEqual([]);
+	});
+
+	test("no skill is installed here that the bundle does not ship", async () => {
+		const bundled = new Set(await discoverBundledSkills());
+		const installed = readdirSync(join(repoDir, ".agents", "skills"), { withFileTypes: true })
+			.filter((entry) => entry.isDirectory())
+			.map((entry) => entry.name);
+		expect(installed.filter((name) => !bundled.has(name))).toEqual([]);
 	});
 
 	test("the command check recognises unknown commands", () => {
