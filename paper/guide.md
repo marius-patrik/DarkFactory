@@ -81,11 +81,11 @@ položky, které jsou přímo kontrolovatelné:
 | Dodržení jednotného stylu | 5 | Jednotný font, velikost, řádkování, číslování, okraje | ✅ |
 | Členění práce do kapitol | 1 | Správné číslování, správné úrovně nadpisů | ✅ |
 | Správné odkazování v textu | 5 | Jednotný způsob, soulad s pravidly, odkazy za převzatými myšlenkami | ✅ číselné, středníky |
-| Seznam zdrojů | 3 | Úplný, správně řazený, jednotný styl | ✅ 30 zdrojů |
-| Anotace | 2 | Obsažena, přiměřený rozsah, správná struktura | ⚠️ 128 slov, viz `rules.md` R3 |
-| Klíčová slova | 1 | Obsažena, přiměřený počet, správně zvolená | ⚠️ šest, viz `rules.md` R4 |
+| Seznam zdrojů | 3 | Úplný, správně řazený, jednotný styl | ✅ 49 zdrojů, všechny citované |
+| Anotace | 2 | Obsažena, přiměřený rozsah, správná struktura | ✅ 176 slov, doporučeno 150–250 (`rules.md` R3) |
+| Klíčová slova | 1 | Obsažena, přiměřený počet, správně zvolená | ✅ pět, doporučeno přibližně pět (`rules.md` R4) |
 | Obsah | 1 | Kompletní, automaticky generovaný, čísla stran | ✅ |
-| **Seznam obrázků, tabulek, …** | 1 | **Je obsažen, je kompletní** | ❌ viz `rules.md` R2 |
+| **Seznam obrázků, tabulek, …** | 1 | **Je obsažen, je kompletní** | ✅ sedm obrázků a jedna tabulka, generováno automaticky (`rules.md` R2) |
 | Grafické zpracování | 3 | Jednotný styl v celé práci, estetický dojem | ✅ jeden systém ve všech obrázcích |
 
 Pozor: v hodnoticím protokolu je samostatná položka **Správné odkazování v textu**
