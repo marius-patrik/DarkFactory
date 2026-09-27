@@ -11,8 +11,9 @@
   - [3.1 Three unifiers](#31-three-unifiers)
   - [3.2 Five operations](#32-five-operations)
   - [3.3 Why five is the right number](#33-why-five-is-the-right-number)
-  - [3.4 Guarantees nest, which is what makes it portable](#34-guarantees-nest-which-is-what-makes-it-portable)
-  - [3.5 What the structure is not](#35-what-the-structure-is-not)
+  - [3.4 The system rewrites itself on compile](#34-the-system-rewrites-itself-on-compile)
+  - [3.5 Guarantees nest, which is what makes it portable](#35-guarantees-nest-which-is-what-makes-it-portable)
+  - [3.6 What the structure is not](#36-what-the-structure-is-not)
 - [1 Introduction](#1-introduction)
 - [4 Methodology](#4-methodology)
   - [4.1 Compose; bind only where it is cheaper](#41-compose-bind-only-where-it-is-cheaper)
@@ -54,6 +55,7 @@
   - [10.1 One askable feature is one file](#101-one-askable-feature-is-one-file)
 - [11 Compose, and bind only where it is cheaper](#11-compose-and-bind-only-where-it-is-cheaper)
   - [11.1 The interpreter is the same seam applied to language](#111-the-interpreter-is-the-same-seam-applied-to-language)
+  - [11.2 Prose is a backend](#112-prose-is-a-backend)
 - [12 Remove the friction](#12-remove-the-friction)
 - [13 AI-first](#13-ai-first)
   - [13.1 What the harness is actually for](#131-what-the-harness-is-actually-for)
@@ -124,7 +126,10 @@ DarkFactory is a kernel over meaning. It reduces everything it touches to three 
 address, declare, converge, version. §3 states what those are; this document is about what they
 imply. Five operations run over that structure and nothing lies beside them: derive structure into
 meaning, address what exists, declare a difference, converge the world toward the declaration, and
-version the result with a parent, a diff and an author.
+version the result with a parent, a diff and an author. A declaration is a `.df` file, which
+declares and implements at once and is written in whatever language — including prose — the
+declaration needs; the system's own source is an output of that same operation, so it rewrites
+itself on compile.
 
 None of this is new machinery, and that is the point. Because the normal form is derived rather
 than authored, the same five operations apply to the system itself — which is what makes it
@@ -225,13 +230,46 @@ ambitious. A design that needed a *self-modification mechanism* would be admitti
 path could not express "change me." Here it can, and a change to DarkFactory is an ordinary change
 that happens to be proposed by the thing being changed. §13 is the claim; §40 is the failure.
 
-The same argument makes two properties that are usually treated as features into statements about
-the structure. **Self-healing** is operations 3 and 4 applied to drift, which is why convergence
-is one-directional and why editing a declaration is not drift. **Free surfaces** are a consequence
-of the normal form: after derivation there is nothing left to write per surface, so a surface is a
-renderer rather than an adapter, and adding one costs a folder.
+The same argument makes three properties that are usually treated as features into statements
+about the structure. **Self-healing** is operations 3 and 4 applied to drift, which is why
+convergence is one-directional and why editing a declaration is not drift. **Free surfaces** are a
+consequence of the normal form: after derivation there is nothing left to write per surface, so a
+surface is a renderer rather than an adapter, and adding one costs a folder. **Self-evolution** is
+operation 5 pointed at the source rather than at a version — which is §15.
 
-### 3.4 Guarantees nest, which is what makes it portable
+### 3.4 The system rewrites itself on compile
+
+Self-building is usually stated as *emitting a release*. It is stronger than that, and the stronger
+form is the one the design can actually support: **compilation emits the system's own source, and
+the system runs on what it emitted.**
+
+That is not a self-modification path, and the difference is the whole point. A self-modification
+path is a code path that exists to change code, which means changes made through it have no
+provenance, and the answer to a bug found in the system can be that the system wrote it. Here the
+ordinary path is the only path. The system reads its own meaning, notices a difference between what
+it is and what it says, and the result is a version of the source — the same operation, the same
+approval, the same rollback, applied to files rather than to a bundle.
+
+Three things this does not mean, because each would make it a fantasy:
+
+- **It does not mean the system rewrites code nobody asked it to.** A rewrite is a generation, and
+  a generation carries a parent, a diff and an author, and passes the same gate as anything else.
+  Auto-approval is a declared policy, off by default and never for a rewrite that removes or
+  relocates anything.
+- **It does not mean the rewrite is an improvement.** A system that can rewrite itself can rewrite
+  itself worse, and the failure mode is a codebase nobody wrote on purpose. What makes this safe is
+  not that the rewrite is good but that it is *reversible and attributable*, so a bad generation is
+  one rollback away and one author to ask.
+- **It does not mean the emitted source replaces the authored source by default.** The fixed point
+  is the test, not the policy: if compiling the system by itself yields source that resolves to
+  itself, the claim holds. Where it does not yet, that is a measurement, and §40 has the test.
+
+The completion condition is unchanged and now has two readings. The resolution is a fixed point — the
+version the system produces resolves to the version it read. And the source is a fixed point — the
+source the system emits is the source it read. The first is weaker than the second, and the second
+is the claim worth making.
+
+### 3.5 Guarantees nest, which is what makes it portable
 
 A guarantee is a seam whose interior is another guarantee. The system claims a small number of
 guarantees — the runtime is the declaration, composition is safe and teardownable, the world is
@@ -262,7 +300,7 @@ level and the system never guesses**: a degraded binding is chosen by the declar
 what was given up. Otherwise the same system runs everywhere and quietly means something different
 in each place, which is the support matrix §12 names, arriving through the front door.
 
-### 3.5 What the structure is not
+### 3.6 What the structure is not
 
 Three things follow from the shape that are easy to assume and are not true of it.
 
@@ -943,18 +981,42 @@ it is built from recombinable parts rather than a program with one fixed entry p
 ### 11.1 The interpreter is the same seam applied to language
 
 The instinct on reaching for an interpreter is to bind one, TypeScript via Bun say. That is half
-right, and the half that is wrong matters more: **an interpreter is a forge for declarations.**
-A small vocabulary, several backends, and a declaration that names one. It is §11's shape applied to language rather than to version control, and recognising it
-resolves two awkward requirements at once — a language is a place in a composition, not a
-fixed vocabulary.
+right, and the half that is wrong matters more: **an interpreter is a forge for declarations.** A
+small vocabulary, several backends, and a declaration that names one — §11's shape applied to
+language rather than to version control. A language is a place in a composition, not a fixed
+vocabulary.
 
-DarkFactory's own systems layer is TypeScript, so `.df` is TypeScript with a framework-provided
-standard library and every editor, language server and `@types` package works unchanged. A system
-DarkFactory *governs* may be declared in **its own** language, because a mature system usually
-has one: Nix modules get typed options, merge semantics, `mkDefault`/`mkForce` and nixpkgs for
-free rather than by our owning a language for them. One interpreter subsystem with a backend per
-declaration language serves both. A TypeScript-only systems layer could not govern anything
-declared in a language we did not choose, and would make "universal" aspirational.
+**A declaration backend is per language, and the set of languages is not restricted to programming
+languages.** Nix modules get typed options, merge semantics, `mkDefault`/`mkForce` and nixpkgs for
+free, because a mature system already has a language and we do not own one. And prose is a
+declaration language too.
+
+### 11.2 Prose is a backend
+
+A `.df` file is a declaration, and a declaration is only meaningful insofar as something interprets
+it. So a backend exists for natural language, and what it does is narrow: it reads a statement of
+intent and resolves it against what the system can actually do, yielding the same thing every other
+backend yields — a resolution.
+
+**A prose declaration states what should be true; it does not say how.** "Every repository in this
+fleet runs its pipeline with a five-minute budget" names a property the resolver can check against
+the system's real capabilities, and from it the system derives the configuration that makes it so.
+It does not get to invent a capability that does not exist, and **an unresolvable statement is an
+error with a stated reason rather than a best guess.** That is the whole safety property, and it is
+the same property §8's I2 gives derivation: a statement is only meaningful if failing to derive one
+is loud.
+
+This is not a claim that the interpreter understands everything. It is that the systems layer is not
+limited to what a compiler can check, and that the limit is drawn at *derivability* rather than at
+*syntax*. A prose declaration that resolves is as real as a typed one, because it resolved against
+the same resolution; a prose declaration that does not resolve has told the system something the
+system cannot do, which is exactly the information an author needed.
+
+**The consequence for the reader is real.** `§4.3` and `§7.1` require a feature to be documented,
+and now a feature may be documented in the language its user speaks and resolved by a backend that
+reads it. Documentation stops being a description *of* the system and becomes a way of *declaring*
+to it — which is the same move as removing `.dfconfig`, one level down: the thing that states
+meaning and the thing that carries meaning stop being different artifacts.
 
 ## 12 Remove the friction
 
