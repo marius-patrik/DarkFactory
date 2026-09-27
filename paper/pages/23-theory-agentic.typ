@@ -8,17 +8,19 @@ Agentické inženýrství (#strong[Agentic Engineering]) označuje soubor postup
 
 Spolehlivé delegování práce začíná explicitním vymezením cíle, rozsahu, omezení a podmínek přijetí. Specifikace popisuje nejen požadovaný výsledek, ale také části systému, které se měnit nemají, a způsob, jakým bude výsledek ověřen. Tento přístup, označovaný jako #strong[spec-first] nebo *spec-driven development*, dává agentovi před implementací měřitelné hranice a člověku podklad pro posouzení výsledku. Přitom jde o postup používaný i v klasickém vývoji softwaru.
 
+V praxi to znamená, že se plán nevzniká až během práce agenta, ale před ní: jeho znění se nejprve dohodnou s člověkem, zapíše do souboru v repozitáři a teprve potom se agent pustí do změn. Takový plánový soubor je zároveň stav, na který se lze vracet při dalším běhu, a harness ho na začátku běhu připomíná agentu jako použitelnou pomůcku @langchain-harness. Rozdíl mezi plánem, který si agent sepsal sám, a plánem, který člověk schválil, je přitom právě rozdílem mezi návrhem a oprávněním měnit kód.
+
 #strong[Prompt engineering] se soustředí na formulaci instrukcí, omezení, příkladů a očekávaného výstupu konkrétního inferenčního kroku @openai-prompt-engineering. #strong[Context engineering] řeší širší a průběžný výběr, uspořádání, obnovování a kompakci informací, které má model v daném kroku k dispozici @anthropic-context-engineering. 
 
 #heading(level: 3)[Dovednosti]
 
-Zadání určuje, co má agent udělat; dovednosti určují, co je mu vůbec umožněno
+Zadání určuje, co má agent udělat; dovednosti určují, co je mu vůbec umožněno udělat. Druhou skupinu zajišťuje harness, a je proto vhodné ji od zadání oddělit: změna dovedností nemění úkol, změna zadání nemění oprávnění. Rozdělení není vlastní: odpovídá běžnému výčtu součástí harnessu, jak jej uvádí @langchain-harness — systémové prompty, nástroje a skills a MCP včetně jejich popisů, doprovodná infrastruktura pro souborový systém, sandbox a prohlížeč, orchestrační logika pro zakládání subagentů, předávání a směrování modelu, a hooky nebo middleware pro deterministický běh.
 udělat. Druhou skupinu zajišťuje harness, a je proto vhodné ji od zadání oddělit:
 změna dovedností nemění úkol, změna zadání nemění oprávnění.
 
 #strong[Nástroje] umožňují agentovi číst a upravovat soubory, vyhledávat nebo spouštět příkazy; #strong[Skills] spojují opakovaně použitelné instrukce, skripty a zdroje pro určitý typ úlohy @agentskills-spec. #strong[Hooks] reagují na události životního cyklu a mohou před akcí či po ní vynutit deterministickou kontrolu @openai-agents-lifecycle. #strong[Model Context Protocol] (#strong[MCP]) standardizuje napojení externích nástrojů a datových zdrojů prostřednictvím rozhraní klient--server @mcp-specification. Instrukce lze uchovat ve standardizovaném souboru #strong[`AGENTS.md`] @agents-md přímo v repozitáři (Anthropic ojedinele využívá #strong[CLAUDE.md]). Skilly, scripty a hooky lze uchovat pod složkou #strong[`.agents/`] v projektu nebo v konfigurační složce harnessu.
 
-Tato dělenba má přímý důsledek pro praxi. Oprávnění udělená nástroji a rozsah zadání se dají omezovat nezávisle: lze agentovi odebrat právo měnit cokoliv mimo vyjmenované soubory, aniž by se změnil úkol, a lze zúžit úkol, aniž by mu přibyla schopnost. Kontrola, která by tyto dvě roviny zaměnila, by pak nedokázala říct, zda selhal úkol, nebo oprávnění.
+Tato dělba má přímý důsledek pro praxi. Oprávnění udělená nástroji a rozsah zadání se dají omezovat nezávisle: lze agentovi odebrat právo měnit cokoliv mimo vyjmenované soubory, aniž by se změnil úkol, a lze zúžit úkol, aniž by mu přibyla schopnost. Kontrola, která by tyto dvě roviny zaměnila, by pak nedokázala říct, zda selhal úkol, nebo oprávnění.
 
 
 #heading(level: 3)[Orchestrace a lidská integrace]

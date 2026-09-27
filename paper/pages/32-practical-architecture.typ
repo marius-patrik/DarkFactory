@@ -43,11 +43,7 @@ Každý harness je tak definován deklarativně: binář, způsob, jak se z prom
 
 #figure(
   raw(block: true, harness-interfaces.join("\n")),
-  caption: [Rozhraní produkčních harnessů: název v registru, binář a ověřená verze, poté příkazová řádka, kterou z bináře runner sestavuje. Deklarace odpovídá revizi @darkfactory-d576ec8f; všechny verze byly ověřeny spuštěním `--help` na nainstalovaném nástroji 27. září 2026.],
+  caption: [Rozhraní produkčních harnessů: název v registru, binář a ověřená verze, poté příkazová řádka, kterou z bináře runner sestavuje. Deklarace odpovídá revizi @darkfactory-d576ec8f.],
 ) <fig-harness-interfaces>
-
-Sleduje se tím vlastní argument práce. Harness není abstraktní pojem, ale konkrétní program s konkrétní volbou přepínačů, a právě tato volba určuje, zda model smí spouštět příkazy bez dotazu a v jakém formátu vrací odpověď.
-
-Kontrola proti nainstalovaným nástrojům zároveň odhalila, že deklarativní registr chrání před přejmenováním přepínače, nikoli před změnou jeho významu. V uvedené revizi se u `kimi` uvádí `--yolo` jako způsob, jak modelu povolit vše bez dotazování. Verze 0.42.0 tento přepínač stále přijímá, ale popisuje jej jako režim *Ask When Needed*, v němž se rizikové akce, otázky a plány ptají dál; úplně neomezený režim se nyní jmenuje `--auto`. Překlepnutí v registru by se tedy neprojevilo chybou, ale tiššým omezením oprávnění. Je to konkrétní důkaz toho, že popsané rozhraní je snímek stavu a nikoli trvalá vlastnost; závěry z toho jsou v @diskuse.
 
 Přihlašovací údaje se neukládají do repozitáře. GitHub App nebo jiný autorizovaný token se používá pro checkout, issue, pull requesty a push; přihlašovací údaje modelových providerů jsou předány workflow jako GitHub Secrets a následně prostředím kontejneru. Tím pipeline odděluje své automatizační oprávnění od přihlašovacího materiálu agenta a umožňuje změnit poskytovatele bez změny pracovního stromu @darkfactory-d576ec8f.

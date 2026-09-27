@@ -10,6 +10,8 @@
 
 Postupné šíření těchto nástrojů má tři stupně. Nejprve doplňovaly kód v editoru a člověk zůstával tím, kdo jej přijímal a spouští. Potom přišly konverzační chatboty, v nichž model sestavuje odpověď, ale nástroje mu zpravidla nebyly k dispozici, takže i nadále všechno provedl uživatel. Až třetí stupeň, coding agenti, dostal přístup k souborům, příkazům a běhovému prostředí — a tím se poprvé změnila věta, kdo právě jedná.
 
+Tuto hranici lze pojmenovat přesněji: #strong[agent je model plus harness] @langchain-harness. Harness je všechen kód, konfigurace a vykonávací logika, která není samotným modelem. Model sám o sobě neumí udržet stav mezi kroky, spustit kód, přistupovat k údajům, které se po jeho tréninku změnily, ani připravit si prostředí — a právě to všechno mu musí dodat harness. Hrubý model tedy agentem je teprve tehdy, když mu harness dodá stav, vykonávání nástrojů, zpětné vazby a vynutitelná omezení.
+
 Praktickou hranicí mezi konverzačním chatbotem a agentem je právě míra delegovaného provádění. Samotná #strong[Inference] však nemění soubory, nespouští příkazy ani neuchovává stav mezi kroky. Tyto činnosti zajišťuje harness, který modelu zpřístupňuje nástroje, vyřizuje oprávnění a sestavuje prompt z přepisu konverzace. Rozdělení modelu a harnessu je tedy věcí odpovědnosti, nikoli pouhé implementace: první navrhuje, druhý jedná.
 
 

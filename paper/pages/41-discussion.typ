@@ -11,12 +11,10 @@ Opakovatelná a pravděpodobnostní pozorování se proto doplňují, nenahrazuj
 
 #heading(level: 3)[Omezení výzkumu]
 
-Praktická část má omezení, která je třeba pojmenovat, protože se dotýkají platnosti závěrů. Spočívají ve třech vrstvách.
+Praktická část má omezení, která je třeba pojmenovat, protože se dotýkají platnosti závěrů. Spočívají ve dvou vrstvách.
 
 První je vlastnictví. Agentickou smyčku v popsané realizaci neautor navrhuje: sestavuje ji cizí harness, která spravuje kontext, volá nástroje a vyřizuje oprávnění. Co autor navrhuje, je vrstva nad ní, tedy stavový stroj, který rozhoduje, kdy se smyčka spustí, co smí agent změnit a kde práce skončí. Odpověď na výzkumnou otázku je tím užší, než kdyby smyčka byla implementována od začátku, a je takto i formulována.
 
 Druhé je rozsah. Zkoumaný stav je záměrně jen počáteční: řadič volá cizí harnessy a všechny agentní kroky vede přes ně. Popisuje tedy míru autonomie dosažitelnou bez vlastního harnessu, nikoli míru dosažitelnou s ním, a tím záměrně neřeší otázku, kterou řeší práce následující. Tvrzení práce se proto vztahuje k této konfiguraci a je opřeno o konkrétní revizi, jejíž rozhraní jsou uvedena v @fig-harness-interfaces.
-
-Třetí je pohyblivost rozhraní. Přepínače existují a fungují, ale jejich význam se mění bez změny názvu, jak ukazuje případ `kimi --yolo`. Deklarativní registr proti tomu nechrání: proti přejmenování ano, proti změně významu ne. Ověření rozhraní proto musí být opakováno při každé revizi, jinak by popis odpovídal systému, který už takto nepracuje.
 
 Z prvního omezení plyne i obrana závěrů. Harness je v popsané architektuře zaměnitelná závislost, stejně jako databáze nebo runner. Co práce především ukazuje, není volba konkrétního CLI, ale struktura procesu: že požadavek musí projít interpretací, plánem a dvěma lidskými branami dříve, než vznikne větev, a že změna se přebírá jako konkrétní revize na jednom pull requestu, dokud nesplní obě brány. Tato struktura je vůči tomu, kdo vykonává modelové kroky, invariantní. Právě to je obsahem Agentického inženýrství ve smyslu vymezeném v teoretické části, a právě to zůstává platné i tehdy, když se harness, jehož rozhraní je popsáno výše, přestane používat. Hypotéza je tím potvrzena v užší podobě, než byla formulována: autonomie je dosažitelná bez vlastního harnessu, ale její kvalita je omezena kvalitou cizí smyčky, kterou autor neovládá.
