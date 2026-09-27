@@ -81,24 +81,18 @@
 - [35 Contribution rules](#35-contribution-rules)
   - [35.1 DF-RULE-001 — Tests prove invariants](#351-df-rule-001--tests-prove-invariants)
   - [35.2 DF-RULE-002 — Inline documentation and generated documentation](#352-df-rule-002--inline-documentation-and-generated-documentation)
-  - [35.3 DF-RULE-003 — Product requirements and ADRs](#353-df-rule-003--product-requirements-and-adrs)
+  - [35.3 DF-RULE-003 — Product requirements and decisions](#353-df-rule-003--product-requirements-and-decisions)
   - [35.4 DF-RULE-004 — English language consistency](#354-df-rule-004--english-language-consistency)
-  - [35.5 DF-RULE-005 — Commit granularity](#355-df-rule-005--commit-granularity)
-  - [35.6 DF-RULE-006 — CI readiness and verification](#356-df-rule-006--ci-readiness-and-verification)
-  - [35.7 DF-RULE-007 — Branch and pull request workflow](#357-df-rule-007--branch-and-pull-request-workflow)
-  - [35.8 DF-RULE-008 — Automated formatting and linting](#358-df-rule-008--automated-formatting-and-linting)
-  - [35.9 DF-RULE-009 — Request binding, branch cleanup and board status](#359-df-rule-009--request-binding-branch-cleanup-and-board-status)
-  - [35.10 DF-RULE-010 — Reviewed Planning and implementation alignment](#3510-df-rule-010--reviewed-planning-and-implementation-alignment)
-  - [35.11 DF-RULE-011 — Pull request review approval and governed merge](#3511-df-rule-011--pull-request-review-approval-and-governed-merge)
-  - [35.12 DF-RULE-012 — Verbatim Request capture and Planning gate](#3512-df-rule-012--verbatim-request-capture-and-planning-gate)
-  - [35.13 DF-RULE-013 — Specification sequence and work tracking](#3513-df-rule-013--specification-sequence-and-work-tracking)
-  - [35.14 DF-RULE-014 — Capability-driven agent runtime and resilience](#3514-df-rule-014--capability-driven-agent-runtime-and-resilience)
-  - [35.15 DF-RULE-015 — Commits, repository taxonomy and domains](#3515-df-rule-015--commits-repository-taxonomy-and-domains)
-  - [35.16 DF-RULE-016 — Security and secrets](#3516-df-rule-016--security-and-secrets)
-  - [35.17 DF-RULE-017 — Final architecture, DRY, and deletion](#3517-df-rule-017--final-architecture-dry-and-deletion)
-  - [35.18 DF-RULE-018 — Concurrency, atomicity, and idempotency](#3518-df-rule-018--concurrency-atomicity-and-idempotency)
-  - [35.19 DF-RULE-019 — Orchestrated integration and worker isolation](#3519-df-rule-019--orchestrated-integration-and-worker-isolation)
-  - [35.20 DF-RULE-020 — Paper authorship and publication](#3520-df-rule-020--paper-authorship-and-publication)
+  - [35.5 DF-RULE-005 — Commits and taxonomy](#355-df-rule-005--commits-and-taxonomy)
+  - [35.6 DF-RULE-006 — Deterministic quality](#356-df-rule-006--deterministic-quality)
+  - [35.7 DF-RULE-007 — Work intake and specification](#357-df-rule-007--work-intake-and-specification)
+  - [35.8 DF-RULE-008 — Delivery lifecycle](#358-df-rule-008--delivery-lifecycle)
+  - [35.9 DF-RULE-009 — Integration authority](#359-df-rule-009--integration-authority)
+  - [35.10 DF-RULE-010 — Capability-driven agent runtime and resilience](#3510-df-rule-010--capability-driven-agent-runtime-and-resilience)
+  - [35.11 DF-RULE-011 — Security and secrets](#3511-df-rule-011--security-and-secrets)
+  - [35.12 DF-RULE-012 — Final architecture, DRY, and deletion](#3512-df-rule-012--final-architecture-dry-and-deletion)
+  - [35.13 DF-RULE-013 — Concurrency, atomicity, and idempotency](#3513-df-rule-013--concurrency-atomicity-and-idempotency)
+  - [35.14 DF-RULE-014 — Paper authorship and publication](#3514-df-rule-014--paper-authorship-and-publication)
 - [36 Decision log](#36-decision-log)
 - [37 Agent guidance](#37-agent-guidance)
 - [38 How to tell if this is wrong](#38-how-to-tell-if-this-is-wrong)
@@ -193,13 +187,13 @@ impossible. §9 argues what the seam is for and what makes it worth having.
 
 ### 3.2 Five operations
 
-| | operation | what it is |
-| --- | --- | --- |
-| 1 | **derive** | structure becomes meaning — names, signatures, position and documentation become an interface |
-| 2 | **address** | meaning acquires a stable identity that survives moving, renaming and rebuilding |
-| 3 | **declare** | a difference is stated between what is and what should be |
-| 4 | **converge** | the world is moved until the difference is closed, under approval |
-| 5 | **version** | the result is recorded with a parent, a diff and an author, and is itself addressable |
+|   | operation          | what it is                                                                                     |
+| - | ------------------ | ---------------------------------------------------------------------------------------------- |
+| 1 | **derive**   | structure becomes meaning — names, signatures, position and documentation become an interface |
+| 2 | **address**  | meaning acquires a stable identity that survives moving, renaming and rebuilding               |
+| 3 | **declare**  | a difference is stated between what is and what should be                                      |
+| 4 | **converge** | the world is moved until the difference is closed, under approval                              |
+| 5 | **version**  | the result is recorded with a parent, a diff and an author, and is itself addressable          |
 
 A change is operations 3, 4 and 5. That is the whole lifecycle, and it is the same lifecycle
 whether the change is a provider setting or the deletion of a subsystem.
@@ -456,22 +450,22 @@ Properties rather than features, each paired with the thing that catches its vio
 with no check is an aspiration, so each names its enforcement. Every one of these is a statement
 about the finished system, and each is checkable.
 
-| # | invariant | held by |
-| --- | --- | --- |
-| I1 | No file describes a feature except the feature | enumeration-only files are rejected; no barrel, registry, catalogue or manifest names what exists |
-| I2 | Derivation is total — every feature is derived, with none dropped | a tree walk comparing the derived set against the discovered set, across overloads, re-exports and conditionals |
-| I2a | Identity is a function of inputs, never of time | an interface's identity is the hash of what
-  determines it — its content, its declared dependencies, and the environment it resolves under — so a
-  skip is explainable by naming the input that changed. Input declaration must be complete, and an
-  **undeclared input produces a wrong cache hit** — the same class of failure as a dropped feature under
-  I2, so detecting undeclared inputs is part of the work rather than an extra |
-| I3 | The published interface is the code's own | a feature with no doc comment is an error, not a blank; surfaces render the derived comment |
-| I4 | Effects pass through a seam | a check rejecting direct filesystem, network and process access outside the seams |
-| I5 | Nothing is published that was not compiled from a resolution | every artifact carries its resolution identity, verified before publish |
-| I6 | Discovery is structural only | a test that adding a feature requires editing no other file |
-| I7 | Drift is measured against derivation | convergence accepts only derived inputs, never a recorded copy of intent |
-| I8 | The system is a fixed point | self-hosting acceptance: compiling the system with itself yields the same resolution |
-| I9 | Presentation holds no behaviour | a surface cannot be imported by a non-surface |
+| #                                                                                                             | invariant                                                          | held by                                                                                                         |
+| ------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------- |
+| I1                                                                                                            | No file describes a feature except the feature                     | enumeration-only files are rejected; no barrel, registry, catalogue or manifest names what exists               |
+| I2                                                                                                            | Derivation is total — every feature is derived, with none dropped | a tree walk comparing the derived set against the discovered set, across overloads, re-exports and conditionals |
+| I2a                                                                                                           | Identity is a function of inputs, never of time                    | an interface's identity is the hash of what                                                                     |
+| determines it — its content, its declared dependencies, and the environment it resolves under — so a        |                                                                    |                                                                                                                 |
+| skip is explainable by naming the input that changed. Input declaration must be complete, and an              |                                                                    |                                                                                                                 |
+| **undeclared input produces a wrong cache hit** — the same class of failure as a dropped feature under |                                                                    |                                                                                                                 |
+| I2, so detecting undeclared inputs is part of the work rather than an extra                                   |                                                                    |                                                                                                                 |
+| I3                                                                                                            | The published interface is the code's own                          | a feature with no doc comment is an error, not a blank; surfaces render the derived comment                     |
+| I4                                                                                                            | Effects pass through a seam                                        | a check rejecting direct filesystem, network and process access outside the seams                               |
+| I5                                                                                                            | Nothing is published that was not compiled from a resolution       | every artifact carries its resolution identity, verified before publish                                         |
+| I6                                                                                                            | Discovery is structural only                                       | a test that adding a feature requires editing no other file                                                     |
+| I7                                                                                                            | Drift is measured against derivation                               | convergence accepts only derived inputs, never a recorded copy of intent                                        |
+| I8                                                                                                            | The system is a fixed point                                        | self-hosting acceptance: compiling the system with itself yields the same resolution                            |
+| I9                                                                                                            | Presentation holds no behaviour                                    | a surface cannot be imported by a non-surface                                                                   |
 
 I4 is the one everything above it depends on. While effects can bypass a seam, the seams are
 documentation rather than boundaries, and nothing resting on them can be enforced or relied upon.
@@ -556,7 +550,6 @@ satisfied by a good folder name, the second is not satisfied by anything except 
 It also means a concern can be *removed* and take only itself with it. A folder name implies a
 convention that outliving the folder; a process boundary implies nothing left behind, which is what
 makes a backend removable along with its installation rather than merely substitutable.
-
 
 ### 7.3 The tree
 
@@ -944,7 +937,6 @@ only one backend could not remove the other along with its entire system integra
 undo story would differ per backend. The log is ours, the backends are driven as they are, and that
 is what lets a whole implementation leave without taking a guarantee with it.
 
-
 The completion condition is a fixed point: **the system compiled by itself resolves to itself.**
 Not approximately, and not after a maintenance pass — the same resolution, which is only possible
 if there was never a second description to reconcile.
@@ -1059,14 +1051,14 @@ Part I records why the system is shaped this way and is non-normative. Where it 
 
 ## 19 Actors
 
-| Actor | Responsibility |
-|---|---|
-| Maintainer/operator | Supplies intent, approves Planning/scope amendments/final merge as required, operates df through `Surfaces/Terminal/` and `Surfaces/Renderer/`. |
-| DarkFactory engine | Executes graph/runtime mechanisms, routing, persistence and deterministic effects. |
-| Capability | Implements agentic/product behavior such as planning, review, git, docs, CI, recovery or domain-specific work. |
-| DarkFactory GitHub App | Automation identity and privileged GitHub execution identity. |
-| Authenticated human user | Human identity used by `Surfaces/Renderer/` for user-attributed GitHub access/actions. |
-| Consumer | Supplies project-specific declarations/data while consuming released df and the shared web application. A consumer is a repository, a machine, or a fleet of either. |
+| Actor                    | Responsibility                                                                                                                                                       |
+| ------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Maintainer/operator      | Supplies intent, approves Planning/scope amendments/final merge as required, operates df through`Surfaces/Terminal/` and `Surfaces/Renderer/`.                   |
+| DarkFactory engine       | Executes graph/runtime mechanisms, routing, persistence and deterministic effects.                                                                                   |
+| Capability               | Implements agentic/product behavior such as planning, review, git, docs, CI, recovery or domain-specific work.                                                       |
+| DarkFactory GitHub App   | Automation identity and privileged GitHub execution identity.                                                                                                        |
+| Authenticated human user | Human identity used by`Surfaces/Renderer/` for user-attributed GitHub access/actions.                                                                              |
+| Consumer                 | Supplies project-specific declarations/data while consuming released df and the shared web application. A consumer is a repository, a machine, or a fleet of either. |
 
 ## 20 Capability architecture
 
@@ -1093,7 +1085,7 @@ differently without contending with the mechanism. The normal distribution inclu
 installation is batteries-included without the concern being privileged.
 
 `github` appears in two places for two different reasons, and the distinction is required rather than
-incidental. `Change/github/` is the seam binding that lets the system act on a GitHub repository. 
+incidental. `Change/github/` is the seam binding that lets the system act on a GitHub repository.
 `Capabilities/github/` is GitHub as a place work comes from and goes to: issues and pull requests as requirement
 intake, review destination and reconciliation. Neither substitutes for the other.
 
@@ -1220,22 +1212,37 @@ Model claims such as “pushed”, “merged”, “committed” or “resolved�
 
 ## 24 Runtime, routing and resilience
 
-- Pipeline stages pass explicit semantic task kind where known.
-- Undeclared inference separates task subject from required capability; engineering work about images/video must not be misrouted to media-generation tools.
-- Routing respects sensitivity, data-collection policy, provider/account availability, capability requirements and capability tiers.
-- Capability tiers prefer the lowest sufficient tier and escalate deterministically according to the shipped routing contract.
-- Quota/provider failover is durable and does not repeat already-completed deterministic effects.
-- Execution is serializable per durable run identity: concurrent ingress for the same run cannot lose state, run the same node concurrently, or overwrite a newer transition.
-- External effects are serializable per deterministic effect identity. Concurrent callers of the same effect cannot both enter the mutation; crash recovery reconciles external evidence before retrying.
-- Transport retries are method/effect aware. A mutation is never blindly replayed after an ambiguous transport/server outcome; the engine reconciles external state or uses an operation with equivalent conditional/idempotent semantics first.
-- Authoritative state uses crash-consistent transactions appropriate to its scope. A rename-only single-file update is not described as durable across power loss unless file and directory durability are actually established; logically multi-file state commits through one generation/transaction boundary.
-- Every agent-backed logical stage has one bounded wall-clock budget across model failover and tool work.
-- Planning decomposes work into the smallest practical independently verifiable chunks with explicit dependencies, scope/file ownership and minimum capability/tier metadata sufficient to decide safe parallelism.
-- Independent chunks may execute concurrently only through the same persisted graph runtime in isolated engine worktrees backed by the one deterministic git substrate. Verified chunk commits integrate in dependency order; sibling failure, interruption and conflict repair remain resumable without repeating completed effects.
-- Quota admission is atomic with respect to concurrent model calls: declared/learned capacity is reserved before dispatch and settled/released from observed usage so parallel chunks cannot all consume the same remaining slot.
-- Turn limits and elapsed-time limits are independent safety bounds.
-- Timeout, quota exhaustion, authentication failure, model failure and user cancellation are distinct outcomes.
-- The runtime remains containerizable/non-root for CI execution.
+Pipeline stages pass explicit semantic task kind where known.
+
+Undeclared inference separates task subject from required capability; engineering work about images/video must not be misrouted to media-generation tools.
+
+Routing respects sensitivity, data-collection policy, provider/account availability, capability requirements and capability tiers.
+
+Capability tiers prefer the lowest sufficient tier and escalate deterministically according to the shipped routing contract.
+
+Quota/provider failover is durable and does not repeat already-completed deterministic effects.
+
+Execution is serializable per durable run identity: concurrent ingress for the same run cannot lose state, run the same node concurrently, or overwrite a newer transition.
+
+External effects are serializable per deterministic effect identity. Concurrent callers of the same effect cannot both enter the mutation; crash recovery reconciles external evidence before retrying.
+
+Transport retries are method/effect aware. A mutation is never blindly replayed after an ambiguous transport/server outcome; the engine reconciles external state or uses an operation with equivalent conditional/idempotent semantics first.
+
+Authoritative state uses crash-consistent transactions appropriate to its scope. A rename-only single-file update is not described as durable across power loss unless file and directory durability are actually established; logically multi-file state commits through one generation/transaction boundary.
+
+Every agent-backed logical stage has one bounded wall-clock budget across model failover and tool work.
+
+Planning decomposes work into the smallest practical independently verifiable chunks with explicit dependencies, scope/file ownership and minimum capability/tier metadata sufficient to decide safe parallelism.
+
+Independent chunks may execute concurrently only through the same persisted graph runtime in isolated engine worktrees backed by the one deterministic git substrate. Verified chunk commits integrate in dependency order; sibling failure, interruption and conflict repair remain resumable without repeating completed effects.
+
+Quota admission is atomic with respect to concurrent model calls: declared/learned capacity is reserved before dispatch and settled/released from observed usage so parallel chunks cannot all consume the same remaining slot.
+
+Turn limits and elapsed-time limits are independent safety bounds.
+
+Timeout, quota exhaustion, authentication failure, model failure and user cancellation are distinct outcomes.
+
+The runtime remains containerizable/non-root for CI execution.
 
 ## 25 Change and governance
 
@@ -1551,817 +1558,353 @@ Concretely, before the system can be called final:
 
 ## 35 Contribution rules
 
-Unrelated. The paper and everything scholarly about it is a consumer of this system, not a part
-of it. A thesis that cannot be separated from its first application is a specification. This one
-is a direction, and it is allowed to outlive whatever prompted it.
+Binding on every contributor, human or agent, regardless of enforcement mechanism. CI, branch
+protection and tests enforce the portions already automated. They are grouped by what they govern:
+what the system is, and how a change travels. A rule that is really two rules has been merged; a
+rule that is really a sequence has been written once rather than three times.
+
+| ID | Rule | Related notes |
+| --- | --- | --- |
+| `DF-RULE-001` | Tests prove invariants | `ADR-0026` |
+| `DF-RULE-002` | Inline documentation and generated documentation | `ADR-0023` |
+| `DF-RULE-003` | Product requirements and decisions | `ADR-0021`, `ADR-0022`, `ADR-0023` |
+| `DF-RULE-004` | English language consistency | `ADR-0027` |
+| `DF-RULE-005` | Commits and taxonomy | `ADR-0021`, `ADR-0025` |
+| `DF-RULE-006` | Deterministic quality | `ADR-0021`, `ADR-0026` |
+| `DF-RULE-007` | Work intake and specification | `ADR-0013`, `ADR-0022` |
+| `DF-RULE-008` | Delivery lifecycle | `ADR-0013`, `ADR-0015`, `ADR-0025` |
+| `DF-RULE-009` | Integration authority | `ADR-0022`, `ADR-0025` |
+| `DF-RULE-010` | Capability-driven agent runtime and resilience | `ADR-0006`, `ADR-0008`, `ADR-0009`, `ADR-0011`, `ADR-0012`, `ADR-0013`, `ADR-0016`, `ADR-0017` |
+| `DF-RULE-011` | Security and secrets | `ADR-0009`, `ADR-0019`, `ADR-0020` |
+| `DF-RULE-012` | Final architecture, DRY, and deletion | `ADR-0006`, `ADR-0008`, `ADR-0017`, `ADR-0022` |
+| `DF-RULE-013` | Concurrency, atomicity, and idempotency | `ADR-0011`, `ADR-0013`, `ADR-0015`, `ADR-0019`, `ADR-0020`, `ADR-0024` |
+| `DF-RULE-014` | Paper authorship and publication | `ADR-0028` |
 
 ### 35.1 DF-RULE-001 — Tests prove invariants
 
-#### Requirement
+Every behavior or contract change MUST be covered by tests that prove observable invariants, state
+transitions, failure behavior or integration contracts.
 
-Every behavior or contract change MUST be covered at the owning package/capability boundary by tests
-that prove observable invariants, state transitions, failure behavior or integration contracts.
+Tests MUST survive valid refactors. They must not assert exact implementation filenames,
+source-code substrings, function or class names, step labels, copied command text, or the presence of
+an internal file merely because the current implementation happens to use it. Static architecture
+tests are appropriate only for real static contracts, and MUST inspect semantic structure — parsed
+manifests, schemas, dependency graphs, package exports, generated artifacts, public interfaces —
+rather than brittle source grep.
 
-Tests MUST survive valid refactors. They must not normally assert exact implementation filenames,
-source-code substrings, function/class names, workflow step labels, copied command text, or the
-presence/absence of an internal file merely because the current implementation happens to use it.
-
-Static architecture/governance tests are appropriate only for real static contracts. They MUST inspect
-semantic structure where practical: parsed manifests/configuration/YAML, schemas, dependency/import
-graphs, package exports, generated artifacts or public interfaces rather than brittle source grep.
-
-Concurrency-sensitive behavior MUST be tested concurrently. Idempotency/crash-safety claims MUST
+Concurrency-sensitive behavior MUST be tested concurrently. Idempotency and crash-safety claims MUST
 exercise duplicate invocation and the relevant crash window, not only call the same function twice
-after a successful journal write. Atomicity claims MUST test interruption/failure between transaction
-steps.
+after a successful journal write. Atomicity claims MUST test interruption between transaction steps.
 
-Each final first-party package/capability MUST own or be explicitly covered by one canonical detected
-test action. Coverage that happens only because a legacy aggregate/harness test imports the package is
-not sufficient. Duplicate/shadowed test definitions and copied test blocks are forbidden.
-
-Applicable test actions come from the canonical repository/package detection plus
-capability-resolution contract. All applicable suites MUST pass before a head is considered green.
-
-#### Rationale
-
-Invariant-based tests preserve correctness while allowing aggressive refactoring and deletion. Tests
-that freeze source text or repository shape make cleanup harder without proving product behavior.
-Concurrency, idempotency and atomicity only become credible when the failure/race windows themselves
-are exercised.
-
-#### Enforcement
-
-The detected quality contract executes package/capability-owned tests. Architecture tests consume
-parsed semantic inputs or resolved dependency graphs where possible. CI fails on duplicate/shadowed
-test definitions and on detected packages without an applicable required test contract unless that
-action is explicitly declared not applicable by canonical configuration.
-
-#### Exceptions
-
-Exact-byte or exact-path assertions are allowed when the bytes/path are themselves a public protocol,
-packaged artifact, security boundary, generated projection, or externally required interface. The
-test must state that invariant rather than treating an implementation detail as policy.
-
-Documentation-only changes and deterministic generated-file updates need no new behavioral test when
-they change no behavior.
-
-#### Change control
-
-The canonical detection/capability contract owns test-command selection. Package/capability tests own
-behavioral truth; CI remains the authoritative execution environment.
+Every first-party package or capability MUST own or be explicitly covered by one canonical detected
+test action; coverage that happens only because an aggregate test imports the package is not
+sufficient. Duplicate or shadowed test definitions and copied test blocks are forbidden. Applicable
+test actions come from the declared repository/package detection plus capability-resolution contract,
+and all applicable suites MUST pass before a head is considered green.
 
 ### 35.2 DF-RULE-002 — Inline documentation and generated documentation
 
-#### Requirement
+Public source APIs MUST be documented inline, in the systems layer's own language, on every exported
+public symbol.
 
-Public source APIs MUST be documented inline.
+Documentation MUST be generated from canonical source and architecture records, and generated sites
+and content graphs are CI outputs that MUST NOT be committed. This document is the
+product-documentation homepage; the rules and decisions below are the canonical current note set;
+root `README.md` is a symlink to this document; the agent guidance in §37 is a deterministic
+projection. These discovery surfaces are never authorities and are never edited directly. CI MUST
+fail on deterministic projection drift and on missing or orphaned rule↔decision relations.
 
-- **TypeScript**: TSDoc on every exported public symbol in first-party packages and capabilities.
-- **Rust**: `///` documentation on public items, including error/panic behavior where applicable.
+A repository/tool discovery alias may point at a canonical document or generated projection only when
+it serves a current external or conventional entry point. Aliases remain links rather than copied
+authored documents, and unsupported legacy aliases are forbidden.
 
-Documentation MUST be generated from canonical source and architecture records. DarkFactory's documentation engine is `@darkfactory/docs`; TypeDoc may be used internally for TypeScript extraction. The `docs` block of the combined DarkFactory configuration is the only documentation configuration contract. Generated sites and JSON content graphs are CI outputs and MUST NOT be committed.
+### 35.3 DF-RULE-003 — Product requirements and decisions
 
-this document is the product-documentation homepage. §35 is the canonical rule set and §36 is the canonical current long-term note set. the root document is the canonical product document; §37 is a deterministic generated projection of the canonical rules. These discovery surfaces are never authorities and are never edited directly. Repository/tool discovery aliases may point to canonical documents or generated projections only when they serve a current external/conventional entry point; aliases remain links rather than copied authored documents, and unsupported legacy aliases are forbidden. CI MUST fail on deterministic projection drift and on missing/orphaned rule↔note relations.
+This document defines product requirements and architecture. Current active Request/Planning records
+define approved feature-specific behavior and executable delivery scope. Accepted decisions in §36
+record durable architecture decisions and rationale. Executable declarations are the `*.dfconfig`
+document, the `repo`, `graph`, `providers`, `models` and `docs` blocks, and the declared workflow.
 
-The final web rendering layer is `@darkfactory/web`; docs must not maintain a second frontend or theme runtime.
+`.agents/rules/**` is generated from this section by the documentation engine and MUST NOT be edited
+directly. A material deviation from this document MUST be owner-approved and recorded as an accepted
+decision before implementation.
 
-#### Rationale
+The long-term notes and normative rules form one bidirectional current-truth graph: every accepted
+decision MUST declare the canonical rules it explains or constrains, every rule MUST be backed by at
+least one current accepted decision explaining its durable rationale, and unknown, missing or orphaned
+links are documentation-currentness failures. Superseded decisions are removed from the live graph and
+remain in version history instead.
 
-One content graph can publish product docs, rules and notes without turning generated projections into competing authorities. Canonical records stay in their owning directories while generated indexes and supported discovery aliases make them accessible.
+Specification proceeds in one direction, and each stage settles before implementation depends on it:
 
-#### Enforcement
-
-Docs/API/projection checks consume the canonical capability-aware detection contract and first-party docs compiler. Required API surfaces build with zero required documentation warnings; §37 must match its canonical rules, the root `README.md` alias must target the canonical product document, and generated site/JSON output must remain ignored and CI-only.
-
-#### Exceptions
-
-Generated or intentionally private/internal symbols may be excluded only by the canonical docs/export policy.
-
-#### Change control
-
-Presentation belongs to the shared web package; source extraction/content ownership belongs to the docs package/capabilities.
-
-### 35.3 DF-RULE-003 — Product requirements and ADRs
-
-#### Requirement
-
-this document is the single normative product requirements document. Current active Request/Planning records define approved feature-specific behavior and executable delivery scope. Accepted ADRs record durable architectural decisions and rationale.
-
-Executable declarations use the final DarkFactory contracts:
-
-- one root `*.dfconfig` per scope for the combined configuration, with any filename stem accepted and none canonical;
-- the `repo` block for repository/product declaration;
-- the `providers` block for runtime/user/provider configuration;
-- the `docs` block for native documentation configuration;
-- the declarable workflow graph for execution topology;
-- §35 for mandatory contribution/governance behavior.
-
-`DF_CONFIG_DIR` (default `.darkfactory`) may hold the same combined document for supported discovery, but `.darkfactory` is not a committed source in this repository. Ambiguous root/folder or alias candidates fail closed and are never merged.
-
-A material deviation from this document MUST be owner-approved and recorded as an accepted numbered ADR before implementation.
-
-Long-term notes and normative rules form one bidirectional current-truth graph:
-
-- every accepted ADR MUST declare the canonical rules it explains or constrains;
-- every canonical rule MUST be backed by at least one current accepted ADR explaining its durable rationale;
-- unknown, missing or orphaned links are documentation-currentness failures;
-- superseded/historical decisions are removed from the live notes/rules graph and remain in Git/GitHub history instead.
-
-#### Rationale
-
-Stable requirements, executable declarations and current architecture decisions have separate owners so no generated view can silently override product intent.
-
-#### Enforcement
-
-Governance/docs-currentness checks ensure PRD remains the single normative product document, architecture changes are represented by ADRs, and rule/note relationships are complete in both directions.
-
-#### Exceptions
-
-None.
-
-#### Change control
-
-Planning/graph/package/capability changes update the active Request/Planning record, accepted ADRs and PRD as applicable rather than creating parallel specification files.
+```text
+this document  →  an accepted decision, when a durable architecture decision is required  →  Request/Planning
+```
 
 ### 35.4 DF-RULE-004 — English language consistency
 
-#### Requirement
-
-All code, identifiers, comments, docstrings, commit messages, issues, and documentation MUST be
-written in English.
-
-#### Rationale
-
-A single written language keeps every artifact reviewable by the same audience and keeps generated
-sites, logs, and issue threads internally consistent.
-
-#### Enforcement
-
-Hooks/CI enforce machine-checkable language policy where deterministic (for example identifiers, generated metadata and commit conventions). Human/agent review remains the backstop for prose semantics; the repository does not claim a brittle natural-language scanner can prove every sentence is English.
-
-#### Exceptions
-
-Quoted verbatim user input and content whose meaning depends on another language (for example
-localization fixtures).
-
-#### Change control
-
-Machine-checkable enforcement is owned by hooks/CI; prose-language consistency remains a review invariant.
-
-### 35.5 DF-RULE-005 — Commit granularity
-
-#### Requirement
-
-Keep commits modular, focused, and descriptive — one commit per component or coherent change. A
-single delivery PR may contain multiple coherent commits; one PR does not imply one commit. When an
-integration/orchestrator session combines parallel worker output, preserve coherent commit boundaries
-until the final merge rather than collapsing unrelated work into one opaque commit.
-
-Commit syntax, allowed types and repository scopes are owned by DF-RULE-015. This rule owns only
-commit granularity and preservation of coherent change boundaries.
-
-#### Rationale
-
-A coherent change is reviewable and reversible on its own. Splitting unrelated edits into separate
-commits keeps `git bisect`, review, integration debugging and release notes honest while still
-allowing one PR to deliver one coherent larger Request.
-
-#### Enforcement
-
-The shared hook registry validates granularity-adjacent delivery policy at deterministic commit/CI trigger points. Commit syntax/taxonomy enforcement remains owned by DF-RULE-015, and the release capability consumes the resulting commit metadata.
-
-#### Exceptions
-
-Trivial mechanical changes (one-line typos, generated churn from deterministic generators) may stand
-alone.
-
-#### Change control
-
-The commit taxonomy lives in `015-repository-taxonomy.md`; do not restate the allowed scopes here.
-
-### 35.6 DF-RULE-006 — CI readiness and verification
-
-#### Requirement
-
-The canonical/default branch MUST remain green on its required checks. A red canonical branch is a
-stop-the-line event for repository-wide delivery until restored.
-
-A failing topic/recovery branch blocks that branch's merge and any dependent work, but does not
-globally halt unrelated isolated branches whose own required checks are green.
-
-CI MUST derive one normalized quality contract from detected packages plus applicable capabilities
-and fail closed when that contract has an unresolved required gap, ambiguity or unsupported action.
-Warnings are not an acceptable substitute for required test, typecheck, lint, format or documentation
-coverage.
-
-Type safety is a first-class required quality action for TypeScript packages. Every detected
-first-party package/capability MUST be accounted for exactly once by an owning package action or an
-explicit workspace-level action whose coverage can be proven. Incidental execution through a legacy
-aggregate package does not count.
-
-The aggregate required quality check is green only when every applicable required action for the
-current head completed successfully. A required action that is missing, stale, cancelled, skipped or
-neutral is not treated as proven success unless canonical configuration explicitly marks that action
-not applicable before matrix construction.
-
-CI validation MUST be read-only with respect to the delivery branch. Formatting and other
-deterministic fixes happen in the governed mutation path before commit; CI reports drift rather than
-pushing corrective commits.
-
-Required checks are synchronized with branch protection and evaluated for the exact current head. A
-branch may not merge while any required check or required invariant is red, missing, stale or
-unevaluated.
-
-#### Rationale
-
-A single green status is meaningful only when its underlying coverage is complete. Failing closed on
-quality gaps prevents a package from escaping tests/typechecking simply because it forgot to declare a
-script. Read-only CI also preserves exact-head evidence and avoids races with deterministic
-orchestration.
-
-#### Enforcement
-
-Generated/detected CI, package/capability action resolution, df check reconciliation and branch
-protection enforce the required-check set. CI validates that every detected package has complete
-required quality coverage before executing the matrix and rejects unresolved gaps.
-
-#### Exceptions
-
-A quality action may be explicitly disabled/not-applicable only in the canonical repository/package
-contract with a reason appropriate to that package. Absence of a script or tool is not by itself an
-exception.
-
-#### Change control
-
-Required-check ownership follows the canonical detected package/capability quality contract and
-repository protection settings; no session may invent, silently drop or weaken required coverage.
-
-### 35.7 DF-RULE-007 — Branch and pull request workflow
-
-#### Requirement
-
-All product changes MUST reach the protected canonical branch through a reviewed delivery branch and GitHub pull request. Direct mutation of canonical is prohibited. A bootstrap/emergency exception may change who authors the delivery branch when df itself is unavailable, but it never bypasses the PR, checks, review or merge gate.
-
-- Branch names are lowercase, descriptive and do not depend on issue numbers.
-- The repository's actual canonical/default branch is resolved dynamically; `main` is never assumed.
-- Automation-authored PRs use the canonical DarkFactory GitHub App/bot identity so the human maintainer can independently review them.
-- PRs remain draft while implementation/review is active and become merge-ready only through the governed gate.
-- Required checks and current-base requirements must pass before merge.
-- Branch protection remains enabled with the final detected/generated check contract.
-- Rewrites/pushes use deterministic git owners and lease-safe expected-old-SHA semantics; blind force push is forbidden.
-
-#### Rationale
-
-Topic branches preserve review traceability while dynamic base resolution and lease safety prevent
-automation from overwriting repository history.
-
-#### Enforcement
-
-The final git/GitHub/hook capabilities and repository protection settings enforce this contract.
-
-#### Exceptions
-
-When the governed df delivery path itself is unavailable or is the component under repair, an
-owner-authorized bootstrap/completion Request may permit a coordinator to author directly on one
-dedicated PR branch. This never permits direct canonical mutation, skipping required checks/review,
-or self-merging. The exception ends as soon as the governed path can represent and execute the work.
-
-#### Change control
-
-Concrete workflow/script owners may change while production ownership converges; this rule names
-behavior, not implementation file paths.
-
-### 35.8 DF-RULE-008 — Automated formatting and linting
-
-#### Requirement
-
-Formatting is deterministic automation, not a review topic.
-
-The canonical detection + capability-resolution contract determines the formatter/linter for each detected package/ecosystem. First-party TypeScript workspace packages use the canonical Biome configuration; other ecosystems use their declared/detected capability actions.
-
-Formatting/linting commands MUST be derived from the same normalized package/capability result used by local verification and CI. Do not maintain a second workflow-specific command map.
-
-The mutation path applies deterministic formatting before creating a commit. CI validates the resulting tree but MUST NOT asynchronously create/push formatter commits that advance an active delivery branch after the orchestrator has integrated or proven a head.
-
-Lints are blocking where supported. Generated artifacts are excluded only by explicit canonical policy.
-
-#### Rationale
-
-One detected quality contract keeps local mutation, graph verification and CI from disagreeing about what “formatted” or “lint clean” means. Applying formatting before commit also prevents background automation from racing lease-safe integration or invalidating exact-head evidence.
-
-#### Enforcement
-
-Local verification, the hooks capability and generated CI consume the same action model.
-
-#### Exceptions
-
-Unsupported/missing quality actions are diagnosed explicitly; they are not silently treated as passing.
-
-#### Change control
-
-Formatter/tool changes are reviewed capability/package configuration changes.
-
-### 35.9 DF-RULE-009 — Request binding, branch cleanup and board status
-
-#### Requirement
-
-Every delivery PR MUST explicitly bind every **active** Request it satisfies.
-
-A PR may satisfy one Request or multiple Requests when the shared-Planning/multi-Request model proves
-that every active bound Request has valid Planning/gate coverage. Epic membership or stack topology
-never implies completion by itself.
-
-When the owner deliberately consolidates tightly coupled work into one current Request, the
-consolidated Request MUST first preserve the current required behavior and relevant verbatim owner
-direction. Earlier duplicate Requests are then closed as historical traceability and do not need to
-remain separately bound by the delivery PR.
-
-Failures already associated with a delivery PR/Request MUST be recorded as check/run evidence and on
-that bound work rather than creating a new implementation Request. A standalone unbound/default-branch
-operational failure may use one deduplicated incident record when durable follow-up is required.
-
-Merged delivery branches are cleaned up when safe. A branch with unique unrepresented recovery/stack
-work is not deleted merely because another PR merged.
-
-Request/PR/project status uses one canonical reconciliation model with the seven states:
-
-- `Backlog`
-- `ToDo`
-- `In Progress`
-- `Blocked`
-- `Done`
-- `Superseded`
-- `Dropped`
-
-A Request reaches Done only from its own terminal evidence or explicit valid shared-Planning/
-multi-Request completion.
-
-Webhook/event payloads are triggers, not authoritative lifecycle snapshots. Before mutating status,
-labels, project fields, PR bindings or branch cleanup, reconciliation MUST derive the desired state
-from current GitHub/runtime evidence. Delayed or out-of-order events must be idempotent and must not
-roll a newer status backward.
-
-#### Rationale
-
-Explicit current bindings preserve why a PR exists without forcing superseded duplicate issues to
-remain active. Failure evidence stays attached to the work that owns it instead of fragmenting the
-tracker. Treating events as triggers prevents concurrent label/project events from overwriting newer
-repository truth with stale webhook state.
-
-#### Enforcement
-
-The Request/Epic/stack/GitHub capabilities reconcile PR bindings, project status, failure evidence
-and branch cleanup.
-
-#### Exceptions
-
-None.
-
-#### Change control
-
-Relationship semantics belong to the first-class Request/Epic/stack model, not ad-hoc PR text
-parsing.
-
-### 35.10 DF-RULE-010 — Reviewed Planning and implementation alignment
-
-#### Requirement
-
-Before implementation begins, each governed unit of work MUST have one current unified Planning
-artifact.
-
-Planning contains the semantic interpretation of the verbatim Request plus the evidence-justified
-implementation approach, dependencies, recovery inputs and verification expectations.
-
-Planning MUST pass an independent review/fix loop until clean, followed by one explicit owner
-Planning Approval.
-
-There is no separate interpretation approval gate and plan approval gate in the final lifecycle.
-
-After implementation:
-
-- deterministic verification runs;
-- implementation review/fix loops until clean;
-- material scope outside approved Planning requires the lighter scope-amendment approval;
-- final alignment validates the implementation against approved Planning plus approved amendments;
-- required checks/review/merge gates remain mandatory.
-
-Planning approval becomes stale after a material Request/base/dependency/recovery-context change and
-cannot be silently reused.
-
-If the governed Planning implementation itself is unavailable or is the component being repaired,
-only the narrow bootstrap/completion exception below may substitute an owner-authorized tracked
-Request as the temporary Planning record.
-
-#### Rationale
-
-One independently-reviewed Planning artifact preserves human intent while eliminating duplicate gates
-and repeated manual correction of invented plan details. The bootstrap rule prevents a broken
-Planning engine from making its own repair impossible without weakening the normal lifecycle.
-
-#### Enforcement
-
-The governed Planning/review/fix lifecycle provides the durable Planning artifact and shared review
-machinery. Bootstrap use must be explicit in the active Request and delivery PR.
-
-#### Exceptions
-
-For an owner-authorized bootstrap/completion repair of the governed lifecycle itself, one tracked
-Request may temporarily serve as the unified Planning artifact when it contains the verbatim intent,
-implementation steps, dependencies and verification gates; an independent review is recorded before
-implementation; and the owner explicitly authorizes execution. The same deterministic verification,
-review/fix, alignment, required-check and final merge authorization rules still apply. This exception
-expires as soon as df can represent the work normally.
-
-#### Change control
-
-Stage topology may evolve, but one reviewed Planning approval before implementation and final
-alignment remain invariants.
-
-### 35.11 DF-RULE-011 — Pull request review approval and governed merge
-
-#### Requirement
-
-Pull requests require the final repository protection/review contract before merge.
-
-Native GitHub review approval and the canonical authorized DarkFactory approval command grammar are both valid only when the current actor is authorized. Free-text that merely resembles approval cannot advance a gate.
-
-Merge readiness requires:
-
-- current-base/stack validity;
-- required checks green;
-- implementation review/fix clean;
-- final Planning alignment;
-- any required scope-amendment approval;
-- official final review/merge authorization.
-
-After merge, df deterministically reconciles bound Requests/PRs/project state and safe branch cleanup.
-
-#### Rationale
-
-Review state and merge authority must be based on GitHub/df evidence, not model prose or workflow-specific shortcuts.
-
-#### Enforcement
-
-GitHub/graph/Request capabilities and branch protection own this behavior.
-
-#### Exceptions
-
-None.
-
-#### Change control
-
-The final command registry and GitHub App identity may evolve without changing these authorization invariants.
-
-### 35.12 DF-RULE-012 — Verbatim Request capture and Planning gate
-
-#### Requirement
-
-Every incoming governed task MUST be represented by one or more tracked GitHub Requests before
-implementation.
-
-- Preserve the user's verbatim wording.
-- Decompose genuinely independent tasks; do not split tightly coupled architecture solely to satisfy one-PR/one-issue assumptions.
-- When the owner consolidates previously separate Requests into one current Request, copy the relevant verbatim owner direction and all still-current required behavior into the consolidated Request before closing duplicates.
-- Resolve Request/Epic/dependency/recovery relationships explicitly.
-- Produce one unified Planning artifact from the verbatim Request and authoritative context.
-- Hand that artifact to the single review/approval/alignment lifecycle owned by DF-RULE-010; this rule does not define a second Planning gate.
-- Subsequent delivery remains bound to the active Request(s) or an explicitly approved shared-Planning record.
-
-There is no separate `Interpretation` approval lifecycle before Planning.
-
-#### Rationale
-
-Verbatim capture protects intent while DF-RULE-010 owns how Planning is reviewed, approved and aligned. Consolidation is safe only when it preserves intent before older tracking records become historical.
-
-#### Enforcement
-
-Request intake and the governed Planning lifecycle validate the contract.
-
-#### Exceptions
-
-The bootstrap/completion exception in DF-RULE-010 may use the active Request itself as the temporary
-Planning record while the normal Planning implementation is under repair. It does not waive verbatim
-capture or owner approval.
-
-#### Change control
-
-Multi-Request/shared-Planning behavior follows the first-class Request relationship model and never
-waives explicit Request coverage.
-
-### 35.13 DF-RULE-013 — Specification sequence and work tracking
-
-#### Requirement
-
-Specification proceeds in one direction, and each stage is settled before implementation depends on
-it:
-
-```text
-this document  →  accepted ADRs when a durable architecture decision is required  →  Request/Planning
-```
-
-- **Issues track settled intent and executable work, not unresolved architecture debates.** An issue
-  may be filed when its required outcome is settled by this document/§36 or when it is a concrete
-  mechanical task whose outcome is not in question.
-- **Open architecture questions stay with the owning product/ADR decision until settled.** Do not
-  create speculative decision issues merely to move an unresolved argument into the tracker.
-- **Decomposition follows delivery independence, not size alone.** A large tightly coupled body of
-  settled work may remain one Request/Planning record and one delivery PR when the owner explicitly
-  chooses one coherent integration/validation contract. Do not manufacture child Requests merely to
-  satisfy a process shape.
-- **Use an Epic when genuinely independent child Requests benefit from separate lifecycle,
-  ownership, sequencing or delivery.** Epic relationships organize Requests; they are not mandatory
-  wrappers around every large change and never waive child Planning/evidence when children exist.
-The active Request/Planning record is the single live work ledger. Concrete current implementation
-steps, checkboxes, approvals and evidence live there with the workflow graph and GitHub/project
-state.
-
-#### Rationale
-
-Arguments converge in the document that owns the decision, while executable work converges in the
-smallest useful tracking structure. This avoids both speculative issue sprawl and artificial
-decomposition of tightly coupled work.
-
-#### Enforcement
-
-- `tests/test_governance.py` asserts the specification sequence and Request/Planning invariants are
-  represented in the AGENTS projection.
-- Request/Epic/project reconciliation enforces the active tracking relationships.
-
-#### Exceptions
-
-None.
-
-#### Change control
-
-Exact graph nodes and stage topology are owned by the declarable workflow graph. This rule owns only
-the specification/tracking invariants.
-
-### 35.14 DF-RULE-014 — Capability-driven agent runtime and resilience
-
-#### Requirement
-
-DarkFactory runs agentic work through the TypeScript df runtime, not a final Python harness registry.
-
-- Core owns execution, routing primitives and persistence/resume; `@darkfactory/capability` owns capability discovery/loading/resolution.
-- Agentic/product behaviors are versioned capabilities.
-- One canonical capability implementation may generate native Pi, MCP and supported agent skill/plugin adapters.
-- Pipeline stages pass explicit task kind where known; undeclared inference separates subject from required capability.
-- Provider/account/model selection respects sensitivity, data-collection policy, capability requirements, quotas and capability tiers.
-- Exhaustion/failure moves through the configured eligible failover chain without repeating deterministic effects.
-- Every logical agent stage has one bounded elapsed-time budget across model failover and tools.
-- Natural model stop is accepted; mutation truth comes from observed effects.
-- Quota/provider interruption checkpoints durable state and resumes without duplicating completed effects.
-- CI agent execution remains containerizable/non-root.
-
-#### Rationale
-
-The runtime should be resilient and harness-portable without duplicating product behavior for each external agent implementation.
-
-#### Enforcement
-
-Core/router/runtime tests plus capability adapter tests and live df-only acceptance.
-
-#### Exceptions
-
-Previous internal runtime implementations are not compatibility targets. External compatibility exists only when this document explicitly promises it; otherwise old orchestration is deleted when its final owner is live.
-
-#### Change control
-
-Provider/model/account data lives in final configuration/keychain/catalog owners; this rule defines runtime behavior only.
-
-### 35.15 DF-RULE-015 — Commits, repository taxonomy and domains
-
-#### Requirement
-
-Commits use Conventional Commits: `<type>(<scope>): <description>`.
-
-Allowed base types are `feat`, `fix`, `chore`, `docs`, `refactor`, `test`, and `ci`.
-
-Repository area labels/scopes are declared by the `repo` block.
-
-Project classification separates:
-
-- ecosystem/toolchain;
-- package;
-- semantic domain (initially including code, paper and math);
-- capability.
-
-A repository may contain multiple packages, ecosystems and domains. Capabilities are orthogonal and may apply across domains.
-
-Request classification, commit-scope validation and repository labels consume the same declared taxonomy rather than copied lists.
-
-#### Rationale
-
-Separating domain from capability preserves multi-domain repositories while keeping extension behavior modular.
-
-#### Enforcement
-
-The configuration resolver, canonical detection/capability resolution and hooks validate the taxonomy.
-
-#### Exceptions
-
-Consumers define their own repository areas and installed/applicable capabilities.
-
-#### Change control
-
-Taxonomy changes occur through configuration and capability declarations; rule prose does not become a second list of consumer-specific areas.
-
-### 35.16 DF-RULE-016 — Security and secrets
-
-#### Requirement
-
-No credential, access token, refresh token, cookie, client secret or private key may be committed, logged, written to issues/PRs, included in generated docs or embedded in static web assets.
-
-`@darkfactory/keychain` is the sole machine/runtime credential-custody owner. Other packages/capabilities declare credential requirements and receive scoped access; they do not read raw credential files, secret environment variables or OS keychains directly.
-
-`@darkfactory/auth` separately owns human/browser GitHub App authentication and sessions. Browser bundles cannot import keychain/private-key/server-confidential code.
-
-The web auth broker may hold only credentials required for confidential user-token exchange/refresh and is not a DarkFactory state/execution backend.
-
-GitHub user authority and GitHub App installation authority remain distinct.
-
-Secret-bearing recovery material remains preserved locally and blocked from publication rather than leaked or discarded.
-
-#### Rationale
-
-Centralized custody and explicit browser/machine trust boundaries minimize secret lifetime and prevent capability/plugin code from silently widening access.
-
-#### Enforcement
-
-Keychain/auth import-boundary, redaction, secret-scan and credential-flow tests; workflow/browser artifact audits.
-
-#### Exceptions
-
-None.
-
-#### Change control
-
-Credential names/values are never copied into rule text. Provider-specific flows belong to keychain/provider capability contracts.
-
-### 35.17 DF-RULE-017 — Final architecture, DRY, and deletion
-
-#### Requirement
-
-The repository targets the current final architecture directly.
-
-- Every concern has one final owner and one source of truth. Duplicate implementations, registries,
-  state stores, config contracts, command maps and generated/manual copies are forbidden.
-- Reuse or move working code when it already implements the required behavior, but delete its old
-  owner once the final owner is live. Final packages MUST NOT forward implementation to a
-  deletion-bound/legacy tree.
-- Internal backward-compatibility, migration, parity, shadow, canary, fallback and alias layers are
-  forbidden unless an **external supported contract explicitly required by this document** needs them.
-  Previous internal architecture is never a compatibility target and is not preserved "just in case".
-- Delete unreachable/dead code, stale configuration, unused assets, obsolete tests, superseded docs,
-  abandoned feature flags and transitional adapters instead of documenting or testing their presence.
-- Abstract repeated mechanisms and invariants once at the lowest stable owner. Do not create
-  speculative abstractions for one caller or hide unrelated behavior behind a generic helper merely
-  to reduce line count.
-- Public exports are intentional product/extension contracts. Keep internal helpers private; tests do
-  not justify widening an API.
-- Package/capability dependencies remain explicit and acyclic. Historical implementation belongs in
-  Git/issues, not live source.
-
-#### Rationale
-
-A small current-only architecture is easier to reason about, test and change. Compatibility code for
-unsupported internal history multiplies states and slows final delivery without protecting a user
-contract.
-
-#### Enforcement
-
-Dependency/reachability analysis, package-boundary tests, current-truth docs checks and final
-repository audits reject duplicate/deletion-bound ownership and unexplained unreachable first-party
-code.
-
-#### Exceptions
-
-Only an external compatibility promise explicitly present in this document/§36 may survive. It
-must have a named owner and invariant tests; internal migration convenience is not an exception.
-
-#### Change control
-
-Changing a final owner or adding an external compatibility promise is an architecture change and
-requires the normal PRD/ADR process.
-
-### 35.18 DF-RULE-018 — Concurrency, atomicity, and idempotency
-
-#### Requirement
+All code, identifiers, comments, docstrings, commit messages, issues and documentation MUST be written
+in English.
+
+### 35.5 DF-RULE-005 — Commits and taxonomy
+
+Commits use Conventional Commits: `<type>(<scope>): <description>`. Allowed base types are `feat`,
+`fix`, `chore`, `docs`, `refactor`, `test` and `ci`. Repository area labels and scopes are declared by
+the `repo` block, and the commit taxonomy is not restated in rule prose.
+
+Project classification separates ecosystem/toolchain, package, semantic domain (initially including
+code, paper and mathematics) and capability. A repository may contain multiple packages, ecosystems and
+domains, and capabilities are orthogonal across them. Request classification, commit-scope validation
+and repository labels consume the same declared taxonomy rather than copied lists.
+
+Keep commits modular, focused and descriptive — one commit per component or coherent change. A single
+delivery PR may contain several coherent commits; one PR does not imply one commit. When an integration
+session combines parallel output, preserve coherent commit boundaries until the final merge rather than
+collapsing unrelated work into one opaque commit. Trivial mechanical changes may stand alone.
+
+*Rationale.* A coherent change is reviewable and reversible on its own, which keeps `git bisect`,
+review, integration debugging and release notes honest while still letting one PR deliver one larger
+Request. Separating domain from capability preserves multi-domain repositories without making
+extension behaviour modular in name only.
+
+*Enforcement.* Hooks and the mutation path validate granularity-adjacent policy at deterministic
+commit and CI trigger points; the configuration resolver, canonical detection and capability
+resolution validate the taxonomy.
+
+### 35.6 DF-RULE-006 — Deterministic quality
+
+Formatting and linting are deterministic automation, not a review topic. The declared detection and
+capability-resolution contract determines the formatter and linter for each detected package or
+ecosystem, and the mutation path applies formatting before creating a commit. There MUST NOT be a
+second workflow-specific command map: local verification and CI consume the same normalized result.
+Lints are blocking where supported, and generated artifacts are excluded only by explicit canonical
+policy.
+
+CI derives **one** normalized quality contract from detected packages plus applicable capabilities, and
+fails closed when that contract has an unresolved required gap, ambiguity or unsupported action. A
+warning is not an acceptable substitute for required test, typecheck, lint, format or documentation
+coverage. Type safety is a first-class required action: every detected first-party package or
+capability MUST be accounted for exactly once by an owning package action or an explicit
+workspace-level action whose coverage can be proven, and incidental execution through an aggregate does
+not count. The aggregate check is green only when every applicable required action for the current
+head completed successfully; an action that is missing, stale, cancelled, skipped or neutral is not
+success unless the canonical contract marked it not applicable before matrix construction.
+
+CI validation is read-only with respect to the delivery branch. It reports drift and MUST NOT
+asynchronously create or push corrective commits that advance an active branch after the orchestrator
+has integrated or proven a head.
+
+The canonical branch MUST remain green on its required checks; a red canonical branch is a stop-the-line
+event for repository-wide delivery until restored. A failing topic or recovery branch blocks that
+branch and its dependents but does not halt unrelated branches whose own required checks are green.
+Required checks are synchronized with branch protection and evaluated for the exact current head, and a
+branch may not merge while any required check or invariant is red, missing, stale or unevaluated.
+
+*Rationale.* A single green status means something only when its underlying coverage is complete, and
+failing closed on quality gaps stops a package escaping tests or typechecking because it forgot to
+declare a script. Read-only CI preserves exact-head evidence and stops background automation racing
+deterministic orchestration.
+
+*Exceptions.* A quality action may be explicitly disabled only in the canonical contract, with a
+reason appropriate to that package. Absence of a script or tool is not by itself an exception, and an
+unsupported or missing action is diagnosed rather than silently treated as passing. No session may
+invent, silently drop or weaken required coverage.
+
+### 35.7 DF-RULE-007 — Work intake and specification
+
+Every incoming governed task MUST be represented by one or more tracked Requests before implementation,
+and every delivery PR MUST explicitly bind every **active** Request it satisfies. The owner's verbatim
+wording is preserved.
+
+**Decomposition follows delivery independence, not size.** Do not split tightly coupled architecture
+to satisfy a one-PR/one-issue shape, and do not manufacture child Requests for a process shape. A
+large coupled body of settled work may remain one Request, one Planning record and one PR when the
+owner chooses one coherent integration and validation contract. An Epic is used when genuinely
+independent child Requests benefit from separate lifecycle, ownership, sequencing or delivery; epics
+organize Requests, are not mandatory wrappers, and never waive child Planning or evidence.
+
+**Issues track settled intent and executable work, not unresolved debate.** An issue may be filed when
+its outcome is settled by this document or §36, or when it is a concrete mechanical task whose outcome
+is not in question. Open architecture questions stay with the owning product or decision until settled.
+
+**Consolidation preserves intent first.** When the owner consolidates separate Requests into one, the
+consolidated Request MUST first carry the relevant verbatim owner direction and all still-current
+required behavior; only then are the duplicates closed as historical traceability. A PR may satisfy
+several Requests only when shared Planning proves every active bound Request has valid coverage, and
+epic membership or stack topology never implies completion by itself.
+
+One unified Planning artifact is produced from the verbatim Request and authoritative context, and is
+handed to the single review/approval/alignment lifecycle owned by DF-RULE-008. There is no separate
+interpretation approval lifecycle and no second Planning gate.
+
+The active Request/Planning record is the single live work ledger; concrete steps, checkboxes,
+approvals and evidence live there with the workflow graph and GitHub state. Status uses one canonical
+reconciliation model with seven states — `Backlog`, `ToDo`, `In Progress`, `Blocked`, `Done`,
+`Superseded`, `Dropped` — and a Request reaches Done only from its own terminal evidence or explicit
+valid shared-Planning completion. Webhook and event payloads are triggers, not authoritative
+snapshots: the desired state is derived from current evidence, and a stale or out-of-order event may
+never roll a newer status backward.
+
+Failures already associated with a delivery PR or Request are recorded as check/run evidence on that
+bound work rather than creating a new implementation Request; a standalone unbound or default-branch
+operational failure may use one deduplicated incident record. Merged delivery branches are cleaned up
+when safe, and a branch with unique unrepresented recovery or stack work is not deleted merely because
+another PR merged.
+
+*Rationale.* Verbatim capture protects intent; consolidation is safe only when it preserves intent
+before older records become historical; and deriving status from current evidence rather than from
+event order is what keeps a delayed webhook from un-filing finished work.
+
+### 35.8 DF-RULE-008 — Delivery lifecycle
+
+All product changes MUST reach the protected canonical branch through a reviewed delivery branch and a
+pull request. Direct mutation of canonical is prohibited. The canonical branch is resolved dynamically
+and `main` is never assumed. Branch names are lowercase, descriptive and independent of issue numbers.
+Automation-authored PRs use the canonical GitHub App identity so the human maintainer can independently
+review them, and remain draft while implementation or review is active. Rewrites and pushes use
+deterministic git owners and lease-safe expected-old-SHA semantics; blind force push is forbidden, and
+branch protection stays enabled with the final detected check contract.
+
+**Before implementation**, each governed unit of work MUST have one current unified Planning artifact
+containing the semantic interpretation of the verbatim Request plus the evidence-justified
+implementation approach, dependencies, recovery inputs and verification expectations. It MUST pass an
+independent review/fix loop until clean, followed by one explicit owner Planning Approval. Approval
+becomes stale after a material Request, base, dependency or recovery-context change and cannot be
+silently reused.
+
+**After implementation**: deterministic verification runs; implementation review/fix loops until clean;
+material scope outside approved Planning requires the lighter scope-amendment approval; final alignment
+validates the implementation against approved Planning plus amendments; and the required check, review
+and merge gates remain mandatory.
+
+**Merge readiness** requires current-base and stack validity, required checks green, implementation
+review/fix clean, final Planning alignment, any required scope-amendment approval, and official final
+authorization. Native repository review approval and the canonical authorized DarkFactory approval
+grammar are both valid, and only when the current actor is authorized — free text that merely resembles
+approval cannot advance a gate. After merge, the bound Requests, PRs, project state and safe branch
+cleanup are reconciled.
+
+*Exceptions.* A bootstrap/emergency exception may change **who authors** the delivery branch when df
+itself is unavailable, and may let one tracked Request serve as the temporary Planning artifact while
+the governed Planning implementation is the component under repair. It never permits direct canonical
+mutation, skipping required checks or review, self-merging, or an unreviewed plan, and it expires as
+soon as the governed path can represent and execute the work. It MUST be explicit in the active Request
+and delivery PR.
+
+*Change control.* Stage topology and command owners may evolve; one reviewed Planning approval before
+implementation, final alignment, and evidence-based authorization are invariants.
+
+### 35.9 DF-RULE-009 — Integration authority
+
+Parallel implementation has one integration authority per delivery branch. The orchestrator alone
+advances the authoritative remote delivery branch and owns integration. Parallel workers use isolated
+local worktrees or branches with explicit prerequisites and disjoint subsystem and path ownership; they
+do not create competing remote delivery branches or PRs, and do not mutate the integration branch.
+Shared integration surfaces — root manifests and lockfiles, package export maps, workflow and config,
+this document, rules, decisions, and generated projections — stay orchestrator-owned unless one
+non-overlapping edit is explicitly delegated.
+
+A worker returns a coherent commit SHA, changed-file set, targeted verification and assumptions. The
+orchestrator integrates those commits in dependency order, resolves shared files semantically, and
+re-runs affected gates. A dependent lane starts only after the interface it consumes is integrated and
+verified on the authoritative branch; do not parallelize across unsettled shared interfaces. CI is
+read-only on delivery branches, and each implementation gate records exact-head evidence before
+downstream work treats it as satisfied.
+
+*Exceptions.* A human may explicitly transfer integration authority, but there is still only one active
+integration owner for a delivery branch at a time. Single integration authority, worker isolation and
+exact-head evidence are the invariants; the concrete worker implementation may change.
+
+### 35.10 DF-RULE-010 — Capability-driven agent runtime and resilience
+
+DarkFactory runs agentic work through the TypeScript df runtime rather than a hard-coded harness
+registry. Execution, routing primitives and persistence live in one owner; capability discovery,
+loading and resolution live in another. Agentic and product behaviours are versioned capabilities.
+
+One canonical capability implementation generates the native, MCP, and supported agent skill, plugin
+and manifest forms. Pipeline stages pass explicit task kind where known; undeclared inference separates
+subject from required capability. Provider, account and model selection respects sensitivity,
+data-collection policy, capability requirements, quotas and capability tiers. Exhaustion or failure
+moves through the configured eligible failover chain without repeating deterministic effects. Every
+logical agent stage has one bounded elapsed-time budget across model failover and tools.
+
+Natural model stop is accepted; mutation truth comes from observed effects. Quota and provider
+interruption checkpoint durable state and resume without duplicating completed effects. CI agent
+execution remains containerizable and non-root.
+
+### 35.11 DF-RULE-011 — Security and secrets
+
+No credential, access token, refresh token, cookie, client secret or private key may be committed,
+logged, written to issues or PRs, included in generated documentation, or embedded in static web
+assets.
+
+Credential custody has one owner. Everything else declares its credential requirements and receives
+scoped handles; it does not read raw credential files, secret environment variables or OS keychains
+directly. Browser artifacts have enforced import boundaries from machine-secret code, and browser
+bundles cannot import keychain, private-key or server-confidential code.
+
+Human/browser authentication is owned separately from machine custody. A web auth broker may hold only
+the credentials required for confidential user-token exchange and refresh, and is not a state or
+execution backend. GitHub user authority and GitHub App installation authority remain distinct, and
+authentication and authorization failures fail closed.
+
+Recovery never pushes secret-bearing local material; such material is preserved locally and blocked
+from publication rather than leaked or discarded. A proof is not the same as a credential and not the
+same as an authorization, and this rule governs custody rather than what a caller may do — §26 and
+§27 own those.
+
+### 35.12 DF-RULE-012 — Final architecture, DRY, and deletion
+
+The repository targets the current final architecture directly. Every concern has one final owner and
+one source of truth; duplicate implementations, registries, state stores, config contracts, command
+maps and generated or manual copies are forbidden.
+
+Reuse or move working code that already implements the required behavior, and delete its old owner
+once the final owner is live. Final owners MUST NOT forward implementation to a deletion-bound tree.
+Internal backward-compatibility, migration, parity, shadow, canary, fallback and alias layers are
+forbidden unless an external supported contract explicitly required by this document needs them:
+previous internal architecture is never a compatibility target and is not preserved in case.
+
+Delete unreachable and dead code, stale configuration, unused assets, obsolete tests, superseded
+documentation, abandoned feature flags and transitional adapters rather than documenting or testing
+their presence. Abstract repeated mechanisms once at the lowest stable owner, and do not create
+speculative abstractions for one caller or hide unrelated behaviour behind a generic helper to reduce
+line count. Public exports are intentional product and extension contracts; internal helpers stay
+private, and tests do not justify widening an API. Package and capability dependencies remain explicit
+and acyclic.
+
+### 35.13 DF-RULE-013 — Concurrency, atomicity, and idempotency
 
 Authoritative state and external effects MUST remain correct under duplicate delivery, concurrent
 execution, interruption and ambiguous transport failure.
 
-- Serialize authoritative transitions at the identity they mutate (run, effect, account, branch,
-  worktree, quota reservation, release, etc.). Check-then-act without an atomic claim/lease/CAS is not
-  sufficient.
-- A deterministic external effect ID may produce at most one logical mutation. Concurrent duplicates
-  cannot both enter the mutation; crash recovery reconciles observed external state before retrying.
-- Remote writes use expected-old-version/SHA or equivalent conditional semantics and fail closed on
-  stale state.
-- Mutation retries are method/effect aware. After an ambiguous write outcome, reconcile first; never
-  blindly replay a non-idempotent POST/write because a transport or 5xx response failed.
-- Authoritative file/state updates are crash-consistent. Multi-file logical state uses one
-  generation/transaction boundary; lock recovery cannot delete a replacement owner's lock.
-- Replicated state converges deterministically regardless of merge direction and represents deletion
-  explicitly until it is safe to compact.
-- Quota/capacity is reserved atomically before concurrent work is dispatched and settled from observed
-  usage.
-- Webhook/events are triggers, not authoritative snapshots; reconciliation derives desired state from
-  current evidence so stale/out-of-order events cannot roll state backward.
-- Concurrency, idempotency and atomicity claims are tested at the actual race/crash windows with
-  simultaneous actors and fault injection.
+Serialize authoritative transitions at the identity they mutate — run, effect, account, branch,
+worktree, quota reservation, release. Check-then-act without an atomic claim, lease or compare-and-swap
+is not sufficient. A deterministic external effect ID may produce at most one logical mutation;
+concurrent duplicates cannot both enter the mutation, and crash recovery reconciles observed external
+state before retrying.
 
-#### Rationale
+Remote writes use expected-old-version or SHA semantics, or equivalent conditional semantics, and fail
+closed on stale state. Mutation retries are method- and effect-aware: after an ambiguous write outcome,
+reconcile first and never blindly replay a non-idempotent write because a transport or server error
+occurred. Authoritative file and state updates are crash-consistent; multi-file logical state uses one
+generation boundary, and lock recovery cannot delete a replacement owner's lock. Replicated state
+converges deterministically regardless of merge direction and represents deletion explicitly until it
+is safe to compact. Quota and capacity are reserved atomically before concurrent work is dispatched and
+settled from observed usage.
 
-Sequential happy-path tests do not prove exactly-once or crash-safe behavior. DarkFactory coordinates
-remote repositories and concurrent agents, so its correctness boundary is the transaction/effect
-protocol rather than a single function call.
+Concurrency, idempotency and atomicity claims are tested at the actual race and crash windows, with
+simultaneous actors and fault injection.
 
-#### Enforcement
+### 35.14 DF-RULE-014 — Paper authorship and publication
 
-Runtime/effect-journal, git/GitHub, storage, auth/keychain, quota and release tests exercise duplicate
-concurrent invocation, stale leases, ambiguous writes and injected interruption at durable boundaries.
+`paper/index.typ` is the sole authored thesis manuscript; `paper/bib/`, `paper/fonts/` and
+`paper/img/` hold its supporting resources. The canonical publication command generates the
+repository-root `PAPER.pdf` artifact, which is included in the release assets.
 
-#### Exceptions
-
-Advisory telemetry/cache data may use weaker durability only when it cannot authorize work, affect
-mutation truth, consume quota authority or change reconciliation decisions, and that weaker contract
-is explicit.
-
-#### Change control
-
-New authoritative stores/effects must define identity, serialization, durable boundaries,
-reconciliation and retry semantics before implementation.
-
-### 35.19 DF-RULE-019 — Orchestrated integration and worker isolation
-
-#### Requirement
-
-Parallel implementation has one integration authority per delivery branch.
-
-- The orchestrator alone advances the authoritative remote delivery branch and owns integration.
-- Parallel workers use isolated local worktrees/branches with explicit prerequisites and disjoint
-  subsystem/path ownership. They do not create competing remote delivery branches/PRs or mutate the
-  integration branch.
-- Shared integration surfaces (root manifests/lockfiles, package export maps, workflow/config,
-  PRD/PLAN/rules/docs and generated projections) stay orchestrator-owned unless one non-overlapping
-  edit is explicitly delegated.
-- Workers return a coherent commit SHA, changed-file set, targeted verification and assumptions.
-  The orchestrator integrates those commits in dependency order, resolves shared files semantically
-  and re-runs affected gates.
-- A dependent lane starts only after the interface it consumes is integrated and verified on the
-  authoritative branch. Do not parallelize across unsettled shared interfaces.
-- Keep coherent Conventional Commit boundaries. One delivery PR does not justify one opaque commit.
-- CI is read-only on delivery branches; background automation does not race the orchestrator by
-  pushing formatter/fix commits.
-- Each implementation gate records exact-head evidence before downstream work treats it as satisfied.
-
-#### Rationale
-
-Parallelism is useful only when ownership and integration are deterministic. A single remote writer
-plus isolated workers prevents lost updates, shared-file races and evidence attached to obsolete
-heads.
-
-#### Enforcement
-
-Worktree/branch ownership, lease-safe git mutation, commit/evidence handoff, exact-head CI and final
-alignment enforce the integration model.
-
-#### Exceptions
-
-A human may explicitly transfer integration authority, but there is still only one active integration
-owner for a delivery branch at a time.
-
-#### Change control
-
-The concrete worker implementation may change; single integration authority, isolation and
-exact-head evidence are invariants.
-
-### 35.20 DF-RULE-020 — Paper authorship and publication
-
-#### Requirement
-
-`paper/index.typ` is the sole authored thesis manuscript. `paper/bib/`, `paper/fonts/`, and `paper/img/` contain its supporting bibliography, font, and image resources.
-
-The canonical publication command generates the repository-root `PAPER.pdf` artifact. The Paper does not generate or own repository prose; this document is. `PAPER.pdf` is included in the release assets.
-
-The Paper uses the shared documentation, capability, CI, and release contracts. Manuscript prose and supporting assets change only on explicit author request. The author reviews thesis changes before they are staged or delivered.
-
-#### Rationale
-
-One manuscript authority and one publication generator keep the thesis reproducible without creating a second Paper product or documentation structure.
-
-#### Enforcement
-
-Paper publication validation, release planning, capability detection, CI, and repository governance checks cover these invariants.
-
-#### Exceptions
-
-Quoted source material may retain its source language. A later accepted migration may move the Paper workbench into the shared web architecture; the standalone web app is not imported as a second owner.
-
-#### Change control
-
-Durable Paper product requirements belong in the generated PRD projection; Paper publication behavior changes through this rule and an accepted ADR.
+The Paper does not generate or own repository prose; this document is the product-documentation
+homepage and the Paper is one domain of it. Manuscript prose and supporting assets change only on
+explicit author request, and the author reviews thesis changes before they are staged or delivered.
 
 ## 36 Decision log
 
@@ -2370,27 +1913,28 @@ kept here is the log: what was decided, the one reason it was decided, and the r
 The full rationale for the *thinking* is §43, and the current requirement text is Part III, so a
 second copy of either would be a second description of something already stated.
 
-| # | decision | why | constrains |
-| --- | --- | --- | --- |
-| ADR-0006 | The pipeline runs only df | The production pipeline has one execution owner and one routing/credential/quota model. | §35.14, §35.17 |
-| ADR-0008 | Providers are configuration-driven | Adding or changing a provider is primarily a configuration/data change. | §35.14, §35.17 |
-| ADR-0009 | Accounts have named credential slots | Routing and quota state can address accounts independently. | §35.14, §35.16 |
-| ADR-0011 | The quota engine is the availability authority | All routing and operator status surfaces consume one availability model. | §35.14, §35.18 |
-| ADR-0012 | Routing is limit-aware and capability-tiered | Lightweight models can serve appropriate work without consuming scarce high-capability capacity, while sensitive and capability-constrained work still fails closed. | §35.14 |
-| ADR-0013 | df runs the workflow graph | Execution state is durable and resumable. | §35.10, §35.11, §35.12, §35.13, §35.14, §35.18 |
-| ADR-0015 | The engine owns deterministic steps | Models are not required to print control JSON, perform git operations or submit completion tools. | §35.7, §35.18 |
-| ADR-0016 | Model resolution is live | Model availability can change without editing routing source. | §35.14 |
-| ADR-0017 | Modular packages and first-class capabilities | Package dependencies remain acyclic and browser-safe boundaries are explicit. | §35.14, §35.17 |
-| ADR-0019 | GitHub backs the web control plane | The web application does not maintain a second project database or privileged mutation backend. | §35.9, §35.11, §35.16, §35.18 |
-| ADR-0020 | Browser auth and machine keychain are separate trust boundaries | Human authorization and machine automation authority remain distinct. | §35.16, §35.18 |
-| ADR-0021 | Repository declarations, runtime detection and capability-resolved actions | Repository behavior is determined by current declarations plus detected evidence and capability resolution. | §35.3, §35.6, §35.15 |
-| ADR-0022 | Complete the final system directly | Completion sequencing is optimized for the shortest safe path to one final, proven merge. | §35.3, §35.13, §35.17, §35.19 |
-| ADR-0023 | First-party docs use the combined docs block and one renderer | Documentation has one compiler/configuration contract and one first-party renderer while product docs, rules and long-term notes retain distinct canonical sources and generated discovery projections. | §35.2, §35.3 |
-| ADR-0024 | Effects are serializable and authoritative state is crash-consistent | Crash recovery and concurrency safety are one protocol rather than separate best-effort features. | §35.18 |
-| ADR-0025 | Each delivery branch has one integration authority | Parallelism improves throughput without introducing lost updates, shared-file races or evidence attached to obsolete heads. | §35.5, §35.7, §35.19 |
-| ADR-0026 | Verification proves invariants and fails closed | A green head means the declared invariants were actually evaluated. | §35.1, §35.6, §35.8 |
-| ADR-0027 | Repository-authored artifacts use English | Human and agent contributors share one review language across source, GitHub and generated documentation without pretending that unreliable natural-language classification is a correctness gate. | §35.4 |
-| ADR-0028 | Integrate Paper as a repository domain | The thesis remains a first-class repository concern without creating a second documentation owner or a second product surface. | §35.20 |
+| #        | decision                                                                   | why                                                                                                                                                                                                     | constrains                                           |
+| -------- | -------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------- |
+| ADR-0006 | The pipeline runs only df                                                  | The production pipeline has one execution owner and one routing/credential/quota model.                                                                                                                 | §35.8, §35.7                                     |
+| ADR-0008 | Providers are configuration-driven                                         | Adding or changing a provider is primarily a configuration/data change.                                                                                                                                 | §35.8, §35.7                                     |
+| ADR-0009 | Accounts have named credential slots                                       | Routing and quota state can address accounts independently.                                                                                                                                             | §35.8, §35.8                                     |
+| ADR-0011 | The quota engine is the availability authority                             | All routing and operator status surfaces consume one availability model.                                                                                                                                | §35.8, §35.7                                     |
+| ADR-0012 | Routing is limit-aware and capability-tiered                               | Lightweight models can serve appropriate work without consuming scarce high-capability capacity, while sensitive and capability-constrained work still fails closed.                                    | §35.8                                              |
+| ADR-0013 | df runs the workflow graph                                                 | Execution state is durable and resumable.                                                                                                                                                               | §35.6, §35.6, §35.8, §35.8, §35.8, §35.7 |
+| ADR-0015 | The engine owns deterministic steps                                        | Models are not required to print control JSON, perform git operations or submit completion tools.                                                                                                       | §35.6, §35.7                                      |
+| ADR-0016 | Model resolution is live                                                   | Model availability can change without editing routing source.                                                                                                                                           | §35.8                                              |
+| ADR-0017 | Modular packages and first-class capabilities                              | Package dependencies remain acyclic and browser-safe boundaries are explicit.                                                                                                                           | §35.8, §35.7                                     |
+| ADR-0019 | GitHub backs the web control plane                                         | The web application does not maintain a second project database or privileged mutation backend.                                                                                                         | §35.8, §35.6, §35.8, §35.7                    |
+| ADR-0020 | Browser auth and machine keychain are separate trust boundaries            | Human authorization and machine automation authority remain distinct.                                                                                                                                   | §35.8, §35.7                                     |
+| ADR-0021 | Repository declarations, runtime detection and capability-resolved actions | Repository behavior is determined by current declarations plus detected evidence and capability resolution.                                                                                             | §35.3, §35.6, §35.5                              |
+| ADR-0022 | Complete the final system directly                                         | Completion sequencing is optimized for the shortest safe path to one final, proven merge.                                                                                                               | §35.3, §35.8, §35.7, §35.7                    |
+| ADR-0023 | First-party docs use the combined docs block and one renderer              | Documentation has one compiler/configuration contract and one first-party renderer while product docs, rules and long-term notes retain distinct canonical sources and generated discovery projections. | §35.2, §35.3                                       |
+| ADR-0024 | Effects are serializable and authoritative state is crash-consistent       | Crash recovery and concurrency safety are one protocol rather than separate best-effort features.                                                                                                       | §35.7                                              |
+| ADR-0025 | Each delivery branch has one integration authority                         | Parallelism improves throughput without introducing lost updates, shared-file races or evidence attached to obsolete heads.                                                                             | §35.5, §35.6, §35.7                              |
+| ADR-0026 | Verification proves invariants and fails closed                            | A green head means the declared invariants were actually evaluated.                                                                                                                                     | §35.1, §35.6, §35.6                               |
+| ADR-0027 | Repository-authored artifacts use English                                  | Human and agent contributors share one review language across source, GitHub and generated documentation without pretending that unreliable natural-language classification is a correctness gate.      | §35.4                                               |
+| ADR-0028 | Integrate Paper as a repository domain                                     | The thesis remains a first-class repository concern without creating a second documentation owner or a second product surface.                                                                          | §35.10                                              |
+
 ## 37 Agent guidance
 
 DarkFactory is developed by an autonomous agent pipeline under human approval gates. The rules
@@ -2402,28 +1946,28 @@ accepted ADR metadata; edit canonical rules/ADRs rather than this projection.
 
 ##### Index
 
-| ID | Rule | Related notes | Canonical file |
-|---|---|---|---|
-| `DF-RULE-001` | Tests prove invariants | `ADR-0026` | §35.1 |
-| `DF-RULE-002` | Inline documentation and generated documentation | `ADR-0023` | §35.2 |
-| `DF-RULE-003` | Product requirements and ADRs | `ADR-0021`, `ADR-0022`, `ADR-0023` | §35.3 |
-| `DF-RULE-004` | English language consistency | `ADR-0027` | §35.4 |
-| `DF-RULE-005` | Commit granularity | `ADR-0025` | §35.5 |
-| `DF-RULE-006` | CI readiness and verification | `ADR-0021`, `ADR-0026` | §35.6 |
-| `DF-RULE-007` | Branch and pull request workflow | `ADR-0015`, `ADR-0025` | §35.7 |
-| `DF-RULE-008` | Automated formatting and linting | `ADR-0026` | §35.8 |
-| `DF-RULE-009` | Request binding, branch cleanup and board status | `ADR-0019` | §35.9 |
-| `DF-RULE-010` | Reviewed Planning and implementation alignment | `ADR-0013` | §35.10 |
-| `DF-RULE-011` | Pull request review approval and governed merge | `ADR-0013`, `ADR-0019` | §35.11 |
-| `DF-RULE-012` | Verbatim Request capture and Planning gate | `ADR-0013` | §35.12 |
-| `DF-RULE-013` | Specification sequence and work tracking | `ADR-0013`, `ADR-0022` | §35.13 |
-| `DF-RULE-014` | Capability-driven agent runtime and resilience | `ADR-0006`, `ADR-0008`, `ADR-0009`, `ADR-0011`, `ADR-0012`, `ADR-0013`, `ADR-0016`, `ADR-0017` | §35.14 |
-| `DF-RULE-015` | Commits, repository taxonomy and domains | `ADR-0021` | §35.15 |
-| `DF-RULE-016` | Security and secrets | `ADR-0009`, `ADR-0019`, `ADR-0020` | §35.16 |
-| `DF-RULE-017` | Final architecture, DRY, and deletion | `ADR-0006`, `ADR-0008`, `ADR-0017`, `ADR-0022` | §35.17 |
-| `DF-RULE-018` | Concurrency, atomicity, and idempotency | `ADR-0011`, `ADR-0013`, `ADR-0015`, `ADR-0019`, `ADR-0020`, `ADR-0024` | §35.18 |
-| `DF-RULE-019` | Orchestrated integration and worker isolation | `ADR-0022`, `ADR-0025` | §35.19 |
-| `DF-RULE-020` | Paper authorship and publication | `ADR-0028` | §35.20 |
+| ID              | Rule                                             | Related notes                                                                                                  | Canonical file |
+| --------------- | ------------------------------------------------ | -------------------------------------------------------------------------------------------------------------- | -------------- |
+| `DF-RULE-001` | Tests prove invariants                           | `ADR-0026`                                                                                                   | §35.1         |
+| `DF-RULE-002` | Inline documentation and generated documentation | `ADR-0023`                                                                                                   | §35.2         |
+| `DF-RULE-003` | Product requirements and ADRs                    | `ADR-0021`, `ADR-0022`, `ADR-0023`                                                                       | §35.3         |
+| `DF-RULE-004` | English language consistency                     | `ADR-0027`                                                                                                   | §35.4         |
+| `DF-RULE-005` | Commit granularity                               | `ADR-0025`                                                                                                   | §35.5         |
+| `DF-RULE-006` | CI readiness and verification                    | `ADR-0021`, `ADR-0026`                                                                                     | §35.6         |
+| `DF-RULE-006` | Branch and pull request workflow                 | `ADR-0015`, `ADR-0025`                                                                                     | §35.6         |
+| `DF-RULE-006` | Automated formatting and linting                 | `ADR-0026`                                                                                                   | §35.6         |
+| `DF-RULE-008` | Request binding, branch cleanup and board status | `ADR-0019`                                                                                                   | §35.8         |
+| `DF-RULE-006` | Reviewed Planning and implementation alignment   | `ADR-0013`                                                                                                   | §35.6        |
+| `DF-RULE-006` | Pull request review approval and governed merge  | `ADR-0013`, `ADR-0019`                                                                                     | §35.6        |
+| `DF-RULE-008` | Verbatim Request capture and Planning gate       | `ADR-0013`                                                                                                   | §35.8        |
+| `DF-RULE-008` | Specification sequence and work tracking         | `ADR-0013`, `ADR-0022`                                                                                     | §35.8        |
+| `DF-RULE-008` | Capability-driven agent runtime and resilience   | `ADR-0006`, `ADR-0008`, `ADR-0009`, `ADR-0011`, `ADR-0012`, `ADR-0013`, `ADR-0016`, `ADR-0017` | §35.8        |
+| `DF-RULE-005` | Commits, repository taxonomy and domains         | `ADR-0021`                                                                                                   | §35.5        |
+| `DF-RULE-008` | Security and secrets                             | `ADR-0009`, `ADR-0019`, `ADR-0020`                                                                       | §35.8        |
+| `DF-RULE-007` | Final architecture, DRY, and deletion            | `ADR-0006`, `ADR-0008`, `ADR-0017`, `ADR-0022`                                                         | §35.7        |
+| `DF-RULE-007` | Concurrency, atomicity, and idempotency          | `ADR-0011`, `ADR-0013`, `ADR-0015`, `ADR-0019`, `ADR-0020`, `ADR-0024`                             | §35.7        |
+| `DF-RULE-007` | Orchestrated integration and worker isolation    | `ADR-0022`, `ADR-0025`                                                                                     | §35.7        |
+| `DF-RULE-010` | Paper authorship and publication                 | `ADR-0028`                                                                                                   | §35.10        |
 
 ---
 
@@ -2547,18 +2091,18 @@ description of what the system is.
 DarkFactory is not the first system to insist on a declarative description. This section is where
 the moat is either load-bearing or decorative, and where a difference is thin it is said to be.
 
-| Work | Shares | Differs |
-| --- | --- | --- |
-| **Terraform / OpenTofu** | desired state, convergence, plan-before-apply | HCL is a separate authored language; the plan is an artifact reviewed apart from the system; each resource type is a hand-written plugin. Here the description *is* the implementation. |
-| **Nix / NixOS** | one declarative description, reproducible output — the most disciplined instance of the idea | a DSL with a fixed evaluator, describing a *build* rather than a running system, with documentation outside it, and `mkDefault`/`mkForce` plumbing because the language is not the thing described. |
-| **Bazel / Buck2 / Pants** | hermetic, derived from source, fast | `BUILD` files are hand-written beside the source — the second site of meaning exactly. They also describe *how to build* rather than what a system means. |
-| **Dagger, CI-as-code** | programmable pipelines, code as configuration | the pipeline is a second description of the work. Here the graph is a projection of the same resolution. |
-| **Convergent design** | one declarative description, convergence, anti-entropy | nearly the same framing; the addition is extending the declarative description from *configuration* to *interfaces and documentation*, which is what makes surfaces free. |
-| **Category theory** (monoidal, CCC, monad) | the natural language for composition and swappable interpreters | algebraic composition fixes the product. Here composition is structural discovery and the tensor is a folder, so adding a capability changes no monoid instance. |
-| **Free monads, algebraic effects** | the standard encoding of a small vocabulary with several interpreters | a program still names its interpreter, and the composition set is assembled. Here a declaration names a backend and the set is discovered. |
-| **Protobuf / OpenAPI / GraphQL** | interface descriptions generated from code | the near miss this design rejects — see below. |
-| **MCP, plugin manifests** | published contracts for agent integration | authored per integration, so each is a second place to update. Here the forms are derived. |
-| **`tsc`, language servers** | why a systems layer need not invent syntax | adopted rather than extended: the systems layer is TypeScript, so all of it works unchanged. |
+| Work                                             | Shares                                                                                        | Differs                                                                                                                                                                                                  |
+| ------------------------------------------------ | --------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Terraform / OpenTofu**                   | desired state, convergence, plan-before-apply                                                 | HCL is a separate authored language; the plan is an artifact reviewed apart from the system; each resource type is a hand-written plugin. Here the description*is* the implementation.                 |
+| **Nix / NixOS**                            | one declarative description, reproducible output — the most disciplined instance of the idea | a DSL with a fixed evaluator, describing a*build* rather than a running system, with documentation outside it, and `mkDefault`/`mkForce` plumbing because the language is not the thing described. |
+| **Bazel / Buck2 / Pants**                  | hermetic, derived from source, fast                                                           | `BUILD` files are hand-written beside the source — the second site of meaning exactly. They also describe *how to build* rather than what a system means.                                           |
+| **Dagger, CI-as-code**                     | programmable pipelines, code as configuration                                                 | the pipeline is a second description of the work. Here the graph is a projection of the same resolution.                                                                                                 |
+| **Convergent design**                      | one declarative description, convergence, anti-entropy                                        | nearly the same framing; the addition is extending the declarative description from*configuration* to *interfaces and documentation*, which is what makes surfaces free.                             |
+| **Category theory** (monoidal, CCC, monad) | the natural language for composition and swappable interpreters                               | algebraic composition fixes the product. Here composition is structural discovery and the tensor is a folder, so adding a capability changes no monoid instance.                                         |
+| **Free monads, algebraic effects**         | the standard encoding of a small vocabulary with several interpreters                         | a program still names its interpreter, and the composition set is assembled. Here a declaration names a backend and the set is discovered.                                                               |
+| **Protobuf / OpenAPI / GraphQL**           | interface descriptions generated from code                                                    | the near miss this design rejects — see below.                                                                                                                                                          |
+| **MCP, plugin manifests**                  | published contracts for agent integration                                                     | authored per integration, so each is a second place to update. Here the forms are derived.                                                                                                               |
+| **`tsc`, language servers**              | why a systems layer need not invent syntax                                                    | adopted rather than extended: the systems layer is TypeScript, so all of it works unchanged.                                                                                                             |
 
 Two comparisons deserve more than a row, because they are the ones a reader will assume are
 equivalent.
