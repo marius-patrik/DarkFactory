@@ -9,7 +9,7 @@ import {
 	type VerificationActionResultSummary,
 } from "@darkfactory/protocol/result-capture";
 import type { AssistantMessage, Context } from "@earendil-works/pi-ai";
-import { z } from "zod";
+import type { z } from "zod";
 /** Supervisor capability required for structured judgement extraction. */
 export interface JudgementSupervisor {
 	extractJudgement<T>(options: {

@@ -47,7 +47,7 @@ describe("release artifact manifest", () => {
 			sourceCommit: "fedcba9876543210fedcba9876543210fedcba98",
 		});
 		const sums = renderSha256Sums(manifest);
-		expect(sums).toMatch(/^[0-9a-f]{64}  df\n$/u);
+		expect(sums).toMatch(/^[0-9a-f]{64} {2}df\n$/u);
 	});
 
 	test("rejects duplicate, absolute and escaping artifact inputs", async () => {
