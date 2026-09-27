@@ -1,11 +1,11 @@
 import type { CanonicalStatus } from "@darkfactory/protocol/workflow";
 import { issueUrl, repoAndNumberFromContent } from "./bindings.ts";
-import { BoardGroup, type BoardItemRecord, type BoardTarget, ProjectClient, type ReconcilableBoard } from "./client.ts";
+import { BoardGroup, type BoardTarget, ProjectClient, type ReconcilableBoard } from "./client.ts";
 import type { BoardGraphqlClient, BoardItemContent, BoardItemNode } from "./graphql.ts";
 import type { BoardRestClient, RestIssue } from "./rest.ts";
 import type { BoardRun } from "./run.ts";
-import { type BoardItem, expectedStatus, statusOfFieldValues } from "./status.ts";
-import { isStatusLabel, isTerminalStatus, STATUS_NAMES } from "./taxonomy.ts";
+import { expectedStatus, statusOfFieldValues } from "./status.ts";
+import { isStatusLabel, isTerminalStatus } from "./taxonomy.ts";
 
 /**
  * Self-healing: bringing the boards back into agreement with the repository.
@@ -324,8 +324,3 @@ export async function applyBoundIssueStatus(
 	await target.track(issueUrl(repo, number), status, { fastPath: true });
 	if (close) await target.closeIssue(repo, number, "completed");
 }
-
-/** A board item record, re-exported for the same reason. */
-export type { BoardItem, BoardItemRecord };
-/** Every canonical status name, re-exported so a caller comparing counters does not reach into `taxonomy.ts`. */
-export { STATUS_NAMES };
