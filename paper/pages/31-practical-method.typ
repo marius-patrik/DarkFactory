@@ -16,6 +16,8 @@
 
 Praktická část implementuje záměrně jednoduchou produkční pipeline, v níž je vývojovým prostředím přímo GitHub a harness produkční coding agent. Cílem je ukázat, jak lze spojit události GitHubu, automatizované plánování, izolovanou práci v kontejneru a lidskou integraci do jednoho opakovatelného procesu.
 
+Záznam je určen jedinou věcí: revizí repozitáře, z níž byl pořízen, a všechny popisy níže i v praktické části vycházejí z této revize, nikoli z jejího pozdějšího vývoje @darkfactory-d576ec8f. Bez tohoto určení by nebylo možné ověřit, zda popis odpovídá kódu, a právě na tomto místě se ukázalo, že několik dřívějších tvrzení o popsaném průběhu revizi neodpovídalo.
+
 Předmětem analýzy jsou čtyři navazující vrstvy:
 1. #emph[GitHub jako zdroj pravdy:] issue a jeho komentáře uchovávají požadavek, schválení, plán a zpětnou vazbu; větev, commit a pull request uchovávají změnu a její průběžnou revizi @github-branches @github-pull-requests.
 2. #emph[GitHub Actions jako výpočetní prostředí:] jednotlivé události spouštějí krátké workflow, které provede checkout pracovní kopie repozitáře, sestaví obraz, spustí agenta a následnou integraci provede.

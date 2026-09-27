@@ -4,11 +4,15 @@ Práce *Vzrůst Agentického AI: úvod do agentického inženýrství a implemen
 software factory* (DarkFactory). Zbývající body, o kterých je známo, že nejsou
 vyřešené. Nové položky přidat na konec příslušné sekce.
 
-Stav zkontrolován po commitu `2b2bab17`, 30 stran, sazba bez varování.
+Stav zkontrolován po commitu `4a378768`, 38 stran, sazba bez varování.
 
-**Celkem otevřeno: 8 položek** — všechny jsou už práce pro autora nebo kontrolu
-rodným mluvčím. Žádná nečeká na vedoucího: způsob citací byl s ním ověřen a
-zadaný rozsah písemně neexistuje.
+**Celkem otevřeno: 7 položek** — šest je práce pro autora nebo kontrolu rodným
+mluvčím (B1–B4, H1) a jedna (E2, umístění metodiky) je otevřená jen formálně: viz
+A5, kde je původní rozhodnutí zrušeno a metodika zůstává v 3.1. Žádná nečeká na
+vedoucího: způsob citací byl s ním ověřen a zadaný rozsah písemně neexistuje.
+
+Sekce J zaznamenává čtyři tvrzení, která o popsané revizi neplatila, a opravy,
+které z nich následovaly.
 
 ---
 
@@ -24,7 +28,7 @@ každý vlastním commitem.
 | A2 | `Výpis 1` chyběl v seznamu součástí | ✅ `487e0b06` |
 | A3 | Anotace 128 slov | ✅ `89109fc7` |
 | A4 | Šest klíčových slov | ✅ `1d0d4fe9` |
-| A5 | Metodika — rozhodnuto: přesun do kap. 1 jako epistemická podkapitola (Jak se zjistilo, jak pole vypadá), implementační metoda zůstává v kap. 3. Vyhovuje požadavku průvodce na oddělení metodické části od praktické a neduplikuje úvod praktické části. | ✅ rozhodnuto, provede se s přepisem |
+| A5 | Metodika — původně rozhodnuto přesunout do kap. 1 jako epistemickou podkapitolu. **Rozhodnutí zrušeno autorem:** teoretická část byla autorovi oznámena jako hotová a přesun by ji znovu otevřel. Metodika zůstává podkapitolou 3.1 uvnitř praktické části, jak uvádí `guide.md`, a nese tři podkapitoly: Protokol zdrojů, Tři kritéria, Otevřená otázka: složení vrstev. | ✅ zrušeno, viz E2 |
 | A6 | Chyběla výzkumná otázka a hypotéza (kap. 2.3) | ✅ `34ad2ca1` |
 | A7 | Závěr nehodnotil naplnění cíle a neměl doporučení (kap. 2.6) | ✅ `4b53cb88` |
 | A8 | Omezení výzkumu v Diskusi (kap. 2.5) | ✅ `fbbfb7b6` |
@@ -106,7 +110,7 @@ ale předmět zkoumání. Navazující práce má popsat konečnou architekturu 
 | H3 | `@bcg2026` a `@factory2026` zůstávají, ale jen pro definici a architekturu, nikoli pro číselné údaje. Jejich čísla jsoufootnotovaná na vendorské blogy. Průmyslové zprávy @anthropic-agents-2026 zůstávají jediným podkladem pro tvrzení o šíření agentů do výroby. | ✅ rozhodnuto |
 | H4 | **Šablona CSL `note` nevypisuje.** Poznámky v `references.bib` se v seznamu zdrojů neobjeví vůbec, takže provenanci musí nést text a popisky obrázků, ne bibliografická poznámka. Šablonu schválil vedoucí (E4), proto se jí nedotýkat bez domluvy; pokud se má provenance zobrazovat, je třeba to nejdřív říct. | ✅ zjištěno |
 | H5 | **Původ cílové smyčky opraven.** §2.3.3 připisovala goal loop ReActu (`@yao2022`), který o nadřazené smyčce s podmínkami přijetí nepíše. Nyní @huntley2025ralph jako původní text, @wiegold2026ralph jako popisná studie, @claude-goal a @openai-goals jako podklady k tomu, že je to dnes běžná funkce. `@yao2022` zůstává citováno v §2.2 u ReActu, kde patří. | ✅ |
-| H6 | `gradually.ai`, `guild.ai`, `bcg`, `factory.ai` zůstávají v bibliografii, ale jejich číselné údaje se nesmějí objevit v textu jako měření. U Wiegolda to už je výslovně řečeno. | ⏳ při přepisu |
+| H6 | `gradually.ai`, `guild.ai`, `bcg`, `factory.ai` zůstávají v bibliografii, ale jejich číselné údaje se nesmějí objevit v textu jako měření. U Wiegolda to už je výslovně řečeno. Ověřeno přepisem: jediná věta s procenty v celé práci jsou čísla Guildu v §2.4, a jsou v téže větě označena za vlastní měření; procenta v úvodu jsou výslovně odhady. | ✅ |
 
 ## I. Materiály z čtení, které zatím nejsou v textu
 
@@ -135,3 +139,20 @@ Nalezeno při čtení zdrojů, vyhovuje závěru práce, ale zatím nevsunuto. K
   slovník k plánování, než má práce dnes.
 - **Zralost.** Thoughtworks Technology Radar má Ralph jako Trial, nikoli Adopt
   @wiegold2026ralph.
+
+## J. Nepravdivá tvrzení o popsané reviz — opraveno
+
+Kód byl ověřen přímo v revizi `d576ec8f`, ne v pracovním stromu, který se od té doby posunul. Čtyři tvrzení o popsaném průběhu revizi neodpovídala. Všechna jsou nyní uvedena jako vlastnosti popisované revize, bez oddělu „opravy" a bez omluvy v textu; opravy jsou v `c23caa69`.
+
+| # | Co | Stav |
+| :-- | :--- | :--- |
+| J1 | §3.4 uváděla, že se opakovaný stejný nález bez progresu označí jako zablokovaný stav. Ve skutečnosti `Blocked` znamená **vyčerpanou kvótu**; porovnání digestů přišlo až v pozdější revizi (`21dfd85d`). Smyčka je ohraničena `MAX_REVIEW_ITERATIONS = 3`, oprava bez změny ukončí běh dřív a vyčerpání nezapíše žádný verdikt ani komentář. | ✅ `c23caa69` |
+| J2 | Pořadí dvou bran bylo obrácené. Revize nejprve předá diff modelové review, až pak porovná změněné soubory se schváleným plánem; kód sám čísluje kroky `# 11. Self-review loop` a `# 12. Plan alignment gate`. | ✅ `c23caa69` |
+| J3 | Schválení pull requestu bylo popsáno jako ověření autora issue nebo oprávněného člena. Je to **seznam dvou pevně zapsaných účtů** porovnávaný s `GITHUB_ACTOR` (`handle_pr_approval.py:216-225`) — ne autor issue, ne úroveň oprávnění. | ✅ `c23caa69` |
+| J4 | Práce tvrdila, že review a testy jsou skutečnou překážkou. `verify_repository` je definována jednou a **volána jednou** (`agent_runner.py:2088`); výstup jde do promptu `fix` a druhý běh nenastane, takže změna s neprocházejícími testy dorazí do draft pull requestu. | ✅ `c23caa69` |
+
+| # | Co | Stav |
+| :-- | :--- | :--- |
+| J5 | **Záznam opakovatelnosti nyní určuje revizi.** Bez určení revize nelze popis ověřit proti kódu, a právě na tomto místě se ukázalo, že čtyři výše uvedená tvrzení revizi neodpovídala. Věta je v §3.1, hned před výčtem čtyř vrstev. | ✅ `4a378768` |
+| J6 | **V Typstu značí `*...*` tučné, nikoli kurzívu** (kurzíva je `_..._`). Sedm míst v revizovaném textu používalo `*...*` v úmyslu kurzívy, takže tiskla tučně — mezi nimi název příspěvku *Attention Is All You Need* a heslo *schopen* v §1.2. Všechna nyní `#emph[]`. | ✅ `4a378768` |
+| J7 | Tři jazykové chyby nalezené čtením sazebného textu: „jako **tato** tři" v závěru, kolize pádu „považován **za** rovnocenný / první bráně" v §3.4 a chybné číslo korekce v komentáři §4.1. | ✅ `4a378768` |
