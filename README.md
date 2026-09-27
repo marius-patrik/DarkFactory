@@ -82,6 +82,10 @@
 - [29 Human authentication](#29-human-authentication)
 - [30 Documentation](#30-documentation)
 - [31 Renderer](#31-renderer)
+  - [31.1 One scene tree](#311-one-scene-tree)
+  - [31.2 What owning a renderer costs](#312-what-owning-a-renderer-costs)
+  - [31.3 Delegated regions](#313-delegated-regions)
+  - [31.4 Presentation](#314-presentation)
 - [32 Terminal](#32-terminal)
 - [33 Installation, release and versioning](#33-installation-release-and-versioning)
 - [34 Consuming df](#34-consuming-df)
@@ -653,6 +657,7 @@ with no check is an aspiration.
 | I6 | Discovery is structural only | a test adds a feature and asserts that no other file changed |
 | I7 | Drift is measured against derivation | convergence is exercised against derived inputs only, never against a recorded copy of intent |
 | I8 | The system is a fixed point | compiling the system by itself resolves to itself, byte-identical, with nothing reconciled between |
+| I9a | Every primitive declares a fallback | a primitive that cannot state how it degrades does not typecheck, so a feature that cannot degrade is a scene-tree problem rather than a renderer branch |
 | I9 | Presentation holds no behaviour | a surface cannot be imported by a non-surface |
 
 **Acceptance is the right-hand column.** These are not satisfied by review, and the system is not
@@ -789,9 +794,16 @@ it there is not a violation.
     │   ├── resolve/    ResolveCapability.df  BindCapability.df  RankCapabilities.df
     │   └── github/     OpenIssue.df  CommentOnIssue.df  ReconcileState.df …
     │
+    ├── SceneTree/                     the one primitive vocabulary every drawn thing emits into
+    │   ├── sources/                   cell-grid · widget layout · delegated content · 3D
+    │   └── scenetree.df               five primitive classes; every one declares its fallback
+    │
     └── Surfaces/                       projections; no behaviour of their own
         ├── Terminal/   terminal.df                 CLI and TUI
-        ├── Renderer/   renderer.df                 the human's window
+        ├── SceneTree/   scenetree.df · sources/    the one primitive vocabulary, and its sources
+        ├── Renderer/   renderer.df                 the compositor; no widget toolkit, no DOM
+        │   ├── wgpu/    backend.df                 native window
+        │   └── webgpu/  backend.df                 browser canvas
         ├── Docs/       docs.df
         ├── MCP/        mcp.df                      an agent's presenter, no window
         ├── Claude/     claude.df                    plugin and skill forms
@@ -1576,48 +1588,74 @@ this document is the canonical product-documentation homepage. the root document
 
 ## 31 Renderer
 
-`Surfaces/Renderer/` is the only first-party rendered interface.
+`Surfaces/Renderer/` is a **compositor**: it draws, and it owns no product logic. It is a projection
+of one derived resolution, so its feature set, its option schema and its effect log are the ones
+every other surface reads, and it cannot present a capability, a setting or an outcome another
+surface does not.
 
-It is a projection of one derived resolution and holds no per-feature implementation. Its feature
-set, its option schema and its effect log are the same ones every other surface reads, so it
-cannot present a capability, a setting or an outcome that another surface does not.
+**It is not built on a widget toolkit.** There is no React here, and no DOM, and that is a
+consequence rather than a preference. A general-purpose UI framework is a second description of
+what a surface is: it arrives with its own component vocabulary, its own theming model and its own
+opinion about layout, all of which have to be reconciled with the interface the system actually
+derives. Owning the compositor means the primitive vocabulary is the system's own, and the thing
+drawn is what the system resolved.
 
-It is a prebuilt React/TypeScript application released once per DarkFactory version and reused unchanged by consumer repositories.
+### 31.1 One scene tree
 
-Preferred design stack:
+Everything drawn is expressed in a **scene tree**, and there is exactly one. Cell-grid layout, widget
+layout, delegated web content and 3D are *sources* that emit into it; the compositor is the only
+thing that consumes it.
 
-- React;
-- TypeScript;
-- shadcn/ui;
-- lucide-animated;
-- Motion;
-- Dagre;
-- Wouter;
-- Dockview where a docking/workspace layout is materially useful.
+The tree has a small fixed vocabulary of primitive classes — quad, glyph run, texture, path, and a
+material layer — and **adding a source must never add a primitive class.** That constraint is what
+keeps the tree a shared representation rather than a union of everyone's requirements, and it is
+enforced at the type level rather than by review.
 
-A consumer does not rebuild the frontend. Its Pages artifact combines the released web bundle with repository-specific compiled content/data.
+**Every primitive declares a fallback.** A primitive that cannot state how it degrades cannot enter
+the tree, and the declaration is part of the type. This is the invariant that makes one tree
+sufficient: a primitive is admissible only if there is a known coarse representation of it, so a
+feature that cannot degrade is a scene-tree design problem to be solved by extending the tree, never
+by branching on the renderer.
 
-The application remains dynamic on GitHub Pages by reading live GitHub REST/GraphQL state through browser-safe GitHub/auth interfaces.
+### 31.2 What owning a renderer costs
 
-The target web surface includes, as shipped capabilities become available:
+This is stated plainly because it is the part that gets underestimated. Owning the compositor means
+owning **text shaping, hit-testing, input methods, and accessibility** — and a custom renderer
+publishes no native accessibility tree unless it is built to. Native accessibility is therefore in
+the acceptance criteria, not deferred as platform work: a rendered interface that cannot be read by
+a screen reader is not finished, and the tree must describe delegated regions even though their
+contents are opaque, or assistive technology meets an unexplained gap.
 
-- repository overview;
-- Requests and Planning;
-- Epics/dependencies;
-- recovery;
-- PRs/stacks;
-- checks/runs;
-- graph execution;
-- providers/accounts/quota status where safe;
-- releases;
-- capabilities;
-- project configuration;
-- audit;
-- documentation.
+The scene tree has to land before anything is drawn, and adding a primitive class is deliberately
+expensive because it is a change to every renderer at once. That expense is the feature: it is what
+makes the vocabulary stay small.
 
-`Surfaces/Renderer/` is the primary day-to-day operator interface. Direct use of the GitHub UI is optional for normal DarkFactory operation except where GitHub itself requires a consent/review surface.
+### 31.3 Delegated regions
 
-The web application is not a second state database or privileged mutation engine.
+Some content is not ours to draw: webviews, hardware-decoded video, a guest environment's window. The
+system **declares the region** — its geometry, its clip and its z-order — and the platform composites
+someone else's content there through its own path. The pixels never pass through us, which is exactly
+why it is permitted where screen capture is not. The region is still described in our tree, because a
+region we do not describe is a region assistive technology cannot explain.
+
+### 31.4 Presentation
+
+A **theme is colours**, in the VS Code colour-theme format, loadable unmodified, extended only
+where the system needs tokens that format lacks. A **profile** is a bundle — a theme, an icon theme,
+the presentation and layout axes, typography, and settings overrides.
+
+**No product code branches on a theme name or a profile name.** Adding either is a configuration
+change with zero code changes, because a renderer that special-cases appearance has a second opinion
+about what a thing looks like, and that opinion will drift from the interface.
+
+The terminal aesthetic — a fixed grid, monospace cells, pane navigation, command-palette-first
+interaction — is a **layout mode the compositor draws**, not a second surface and not a fallback to
+ANSI. `Surfaces/Terminal/` is the command line, and a command line is not a renderer.
+
+The Renderer is the primary day-to-day operator interface. Direct use of the GitHub UI is optional
+except where GitHub itself requires a consent or review surface. The renderer is not a second state
+database and not a privileged mutation engine; it draws the resolution and asks for effects through
+the same seam every other surface uses.
 
 ## 32 Terminal
 
