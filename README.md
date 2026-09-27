@@ -314,9 +314,11 @@ that works on a host with nothing installed, and such a binding delivers **less 
 `local/` binding that derives nothing and isolates nothing. Choosing it is location-dependent
 behaviour, which §12 forbids outright. The resolution follows the binding/selection split of §4.1:
 **each binding declares its own guarantee level, and a consumer selects one rather than the system
-guessing** — so the fact that a degraded binding exists is derived from the binding, and the choice
-of it is an ordinary selection like any other. What is forbidden is a resolution that silently
-substitutes the weaker one. Otherwise the same system runs everywhere and quietly means something different
+guessing.** That is a decision and not a derivation, and the document should mark it as one: nothing
+about one place of meaning requires a binding to be self-describing about its own strength. What
+follows from it is narrower — the fact that a degraded binding exists is then read from the binding
+rather than guessed, so choosing one is an ordinary selection like any other, and what is forbidden
+is a resolution that silently substitutes the weaker one. Otherwise the same system runs everywhere and quietly means something different
 in each place, which is the support matrix §12 names, arriving through the front door.
 
 ### 3.6 What the structure is not
@@ -458,9 +460,14 @@ manifest.
 So the procedures have a latency requirement attached: **deriving must be faster than authoring.**
 Not more correct — faster. If the disciplined path takes a week and the undisciplined one takes an
 afternoon, this is a preference and preferences do not survive contact with a release date. This is
-the procedure that converts the other five from intentions into properties, and it is the one that
-determines engineering priority, because it says the missing feature is almost always in the
-interpreter.
+the procedure that is supposed to convert the other five from intentions into properties, and the
+one that determines engineering priority, because it says the missing feature is almost always in the
+interpreter. **The "supposed to" is the honest part.** §5.3 and §40 both record that §4.6 has no
+mechanism behind it, which means the conversion does not actually happen: this is a preference with
+a latency requirement attached, and a preference does not become a property by asserting that it
+should. What makes the other five properties is that they have checks in the table above. §4.6
+decides which one to build first, and it earns its place by being the best predictor of where the
+interpreter is thin, not by being enforced.
 
 ## 5 The moat
 
@@ -471,23 +478,69 @@ constraint rather than a capability, and the difference is not semantic.
 
 ### 5.1 What follows from it
 
-The interface cannot drift, because there is nothing to drift from — and that is worth being exact
-about, because it is a weaker claim than it sounds. Drift is disagreement between two descriptions.
-Eliminating the second one does not make disagreement impossible; it makes it undefined, and the
-count of §5.3 is what keeps the second one absent. Nothing here checks that what remains is
-*true*, and §40 says so at the end. What is claimed is that there is nothing to be compared
-against, not that there is nothing to get wrong. Surfaces are nearly free,
-because after derivation there is nothing left to write per surface. Self-healing works, because
-intent is derived rather than recorded twice. Self-building works, because the system emits itself
-from the meaning it read. One semantic model spans machines, repositories and hosting types,
-because location is not a thing the model can express and therefore not a thing it can special-case.
-And the system is composable, because nothing about it is registered: a feature can be moved,
-combined, or dropped without anything else being told, which is the property §9 argues is the
-real reason to bind rather than own.
+**The interface cannot drift**, because there is nothing to drift from — and that is worth being
+exact about, because it is a weaker claim than it sounds. Drift is disagreement between two
+descriptions. Eliminating the second one does not make disagreement impossible; it makes it
+undefined, and the count of §5.3 is what keeps the second one absent. Nothing here checks that what
+remains is *true*, and §40 says so at the end. What is claimed is that there is nothing to be
+compared against, not that there is nothing to get wrong.
 
-None of these are separate achievements. They are what a single constraint produces when it is
-taken seriously and no exception is permitted, which is why the architecture in Part II is largely a
-consequence rather than a set of choices.
+**Surfaces are nearly free.** *Because* a surface holds no copy of the description (§6.3), its
+content is a *function* of the resolution; and because the resolution is derived from the tree
+(§4.3), the function is recomputed rather than written. So a surface costs a projection, and the
+*N+1*th capability costs nothing per surface at all — not because someone remembered to update each
+one, but because there is no per-surface document to update. The step this depends on, and which is
+easy to skip, is the first: if a surface held a copy, the rest would not follow.
+
+**Self-healing works.** Healing is operations 3 and 4 applied to drift: observe, compare against a
+target, converge. A comparison needs a target, and this is where the two readings of the constraint
+diverge. A *recorded* target fails, and fails quietly — the record can fall out of step with the
+artifact that is actually the intent, and nothing detects that, because checking the record requires
+the very thing it was recorded from. A *derived* target is recomputed from that artifact, so it
+cannot fall out of step with it. So drift is well-founded: the target is right by recomputation
+rather than by upkeep. Stated the other way, "intent is derived rather than recorded" is not the
+reason — read literally it says there is *no* recorded copy, which would make healing harder. The
+reason is which of the two can go stale.
+
+**Self-building works**, and this is the property the project is named for, so the derivation is
+worth doing rather than restating. Four steps, and the third is the one that is usually skipped:
+
+1. The normal form is stated universally — anything a system knows about itself is an interface
+   (§3.1), not a special property of DarkFactory.
+2. DarkFactory is a system that knows things about itself: a workspace *and* an application (§9).
+3. **Therefore DarkFactory's own tree is an instance of the normal form, and its meaning is derived
+   rather than authored.** This is an instance claim, and it is the load-bearing step. Without it,
+   self-building is a hope.
+4. The five operations of §3.2 are defined over the normal form rather than over a particular
+   system, so they apply to DarkFactory's own tree with no sixth operation, and compilation — derive
+   interfaces, select backends, emit surfaces — emits the system's own source as one of its surfaces.
+
+The limit is stated where it belongs rather than here: I8's fixed point is what checks step 4, and
+§36.2 names the seed that nothing else can rebuild as a permanent core outside the system's own
+guarantees. So the claim is not that the bootstrap is free, and anyone reading "the system builds
+itself" as "there is no core" has misread §36.2.
+
+**One semantic model spans machines, repositories and hosting types.** *Because* the derived
+interface is exactly five things — name, inputs, outputs, documentation, and position in the tree
+(§3.1) — and because none of those five can hold a path, a hostname, or whether the current run is
+in CI, the meaning read from a tree is invariant under *where* it is read. A declaration therefore
+resolves identically in every location. The consequence is stronger than a rule: location-dependent
+behaviour is not forbidden, it is **inexpressible**, because there is no field to put it in. §12's
+requirements are then a consequence rather than a regulation.
+
+**The system is composable**, because nothing about it is registered: a feature can be moved,
+combined, or dropped without anything else being told, which is the property §9 argues is the real
+reason to bind rather than own. §11 gives the three steps in full.
+
+**And a claim this section should not make.** An earlier version ended by saying the architecture of
+Part II is "largely a consequence rather than a set of choices". That is unfalsifiable as phrased —
+"largely" has no threshold — and it is false in identifiable cases. What can be said, and is
+defensible, is this: the three unifiers of §3 and the five operations of §3.2 are consequences of
+the constraint; so are the properties above. The concern names in §9.3, the type-level fallback rule
+of I9a, the identity scheme of I2a, and the requirement that derivation be faster than authoring
+(§4.6) are **independent premises** — adopted, argued elsewhere or in §45, and not derivable from
+one place of meaning. §45 lists what was adopted and why. A reader is better served by a short list
+of premises than by a claim that the premises are derivations.
 
 ### 5.2 Why a constraint is a moat
 
@@ -496,12 +549,17 @@ dearer for everyone else, and that compounds.
 
 A system which writes meaning twice pays for every second place forever, and the bill arrives as
 drift rather than as a line item. Here, one place is the correct number, the *N+1*th capability is
-cheaper to add than the *N*th because nothing has to be registered or kept in sync, and the corpus
-of meaning grows without anyone maintaining it by hand. A system beginning today has no corpus and
-every one of those second places still to invent, and will keep inventing them as it grows.
+cheaper to add than the *N*th because nothing has to be registered or kept in step, and the corpus
+of meaning grows without anyone keeping it **in step with anything**. That last clause is careful
+and the care is necessary: what follows from one place is that nothing needs *syncing*, not that
+nothing needs judging. A hand-tuned weight table is stated once, in the file that owns it, and still
+needs a human per new capability — which is why §40 records that the corpus failure has no
+instrument rather than claiming the count catches it.
 
-That is the compounding part, and it is the part a competitor cannot buy: the corpus is the asset,
-and it can only be accumulated by a system whose meaning is readable in the first place.
+The compounding part is separate, and it is a premise rather than a derivation: that the corpus is
+the asset, and that it can only be accumulated by a system whose meaning is readable. Nothing in
+one place of meaning implies that, and it is worth naming as an assumption rather than smuggling it
+in as a consequence.
 
 ### 5.3 The falsifier, and how the moat fails
 
@@ -526,16 +584,22 @@ description standing beside that system. It is the other half of that claim.
 **Which means this document is itself in scope, and it is not at zero.** That is the honest position
 and it is better than the alternative, which is an instrument that cannot see the specification, the
 interface tables or the concern tree — the three artefacts where duplication is most likely to
-accumulate. The places where this document states a fact more than once are: the per-entry
-descriptions in the concern tree, which restate the declarations the entries point at; the
+accumulate.
+
+**The count has not been run, and this section will not fake a score by listing the occurrences.**
+An earlier version named them exhaustively — the concern tree's per-entry descriptions, §11's
+interface table, and a handful of formulations recurring across §4, §5 and §8 — and an independent
+review showed the list was wrong in both directions: it omitted at least four further instances it
+should have caught, and the list itself was a hand-maintained enumeration of precisely what §4.2
+forbids, which is the failure it was disclosing wearing the disclosure's clothes. So the accurate
+statement is that **known instances exist and the total is unknown.** Among them: the per-entry
+descriptions in the concern tree, which restate the declarations their entries point at; the
 hand-written interface table in §11, which restates signatures that §3.1 and I3 require to be
-derived — which makes the table not merely counted duplication but a build error under I3, and it
-is left in place rather than deleted because §11's six-feature example is the clearest statement of
-what a capability is that the document contains;
-and the handful of formulations that recur across §4, §5 and §8, where one property is asserted once
-as a derivation and again later as a slogan. **A document that argued for zero duplication while
-containing several instances of it would be the failure it describes**, and naming the instances is
-the only disposition available that is not a worse version of the same problem.
+derived, making it a build error under I3 and not merely duplication; and a sentence in §7.7 and
+another in §15 that are nearly word for word the same, about a system making a change to itself.
+**A document arguing for zero duplication while containing instances of it is the failure it
+describes**, and the disposition that is not a worse version of the same problem is to say the
+measurement has not been taken.
 
 **What the count cannot see, stated plainly.** It counts statements of a fact, so it can be defeated
 by *bundling*: forty claims written as forty clauses of one paragraph are forty facts, each stated
@@ -562,10 +626,16 @@ Three further consequences, each closing a way the count used to be gamed:
   see it would be blind exactly where it matters.
 
 **Which part of this is a check, and which is a review obligation.** Only part of it, and §7.6 makes
-the distinction binding rather than stylistic. A doc comment that restates the signature it is
-attached to is decidable mechanically: the comment's content is compared against what the signature
-already carries, and a comment that adds nothing new is rejected. An enumeration-only file is
-likewise a shape a linter can see. **Deciding whether two English passages in different files assert
+the distinction binding rather than stylistic. A doc comment that adds nothing to the signature it is
+attached to is **close to** decidable mechanically: a comment that merely names the identifiers
+already in its own signature can be detected by form, and that residue is worth rejecting. It is not
+fully decidable, and the document should not pretend otherwise — `returns the first element` adds
+nothing, `yields the head of the list` adds something, and no string comparison separates them
+without a model of what the code does. **This is the same objection the next paragraph raises about
+the cross-file case, and it applies just as much here**; the honest position is that I1b catches the
+mechanical residue of a restating comment, not every one, and §8's row should be read as the weaker
+of the two claims. An enumeration-only file is more nearly decidable still, being a shape a linter
+can see. **Deciding whether two English passages in different files assert
 the same fact is not decidable, and this design does not pretend otherwise** — so the cross-file
 case is a review obligation, it is deliberately *not* in §8's table of invariants, and calling it a
 check would be exactly the "reviewed and agreed" substitution §7.6 forecloses. The consequence is
@@ -822,7 +892,9 @@ for the information to come from, and there is nowhere else. The practices are w
 from decaying: a derived description that is slow to produce is replaced by a written one within a
 quarter, not because anyone rejects the pattern but because a deadline is a deadline.
 
-Which means the failure is always the same failure. Someone reaches for a manifest under pressure, the
+Which means the most common failure is a recurring one. (An earlier version said it was *always*
+the same failure, which §40 contradicts — three of its nine modes are not someone reaching for a
+manifest.) The recurring one looks like this. Someone reaches for a manifest under pressure, the
 manifest works, and nothing announces it. This is the failure the count in §5.3 exists to catch,
 and it is worth being exact about how it works: the manifest does not add a *place*, it makes every
 fact it lists stated twice, and the second statement is now the one being maintained. That is why
@@ -857,8 +929,17 @@ cross-file duplication check is the worked example — it is a review obligation
 final while any of them can fail. Two are worth calling out as ordering constraints rather than
 aspirations: **I4 and I8 are structural and cheap to require now and expensive to retrofit.** Once
 effects bypass the seams, nothing resting on them can be enforced at all; once a second build
-description exists, the fixed point stops being reachable at any price. Every other invariant is
-downstream of those two, which is why they are the first pair to build and the last to relax.
+description exists, the fixed point stops being reachable at any price. They are the first pair to
+build and the last to relax.
+
+**An earlier version of this paragraph added that every other invariant is downstream of those two,
+and that was an assertion with no steps behind it, and it is false.** I1b is a rule about doc
+comments, I9a is a type-level rule about scene-tree primitives, and I2a's identity scheme is
+adopted rather than derived (§45 says so); no chain runs from "effects pass through a seam" or "the
+system compiles to itself" to any of them. The useful statement is the narrower true one: **four of
+the eleven are independent premises**, adopted for reasons given in §45 and §4.6, and the other
+seven are checkable properties. Naming four premises is more useful than claiming eleven
+derivations, because a premise can be argued about on its own terms.
 
 ## 9 Architecture
 
@@ -1125,7 +1206,17 @@ permeable seam that is not substitutable is worse — a single escape hatch with
 and discovery is structural (§17), the system's own features are composable inputs: a consumer can
 take one, move it, combine it with something of their own, and the system reads the new arrangement
 because it was never registered anywhere. So a seam is not a boundary around the system — it is a
-claim that **nothing in the system is privileged, including the seams.**
+claim that **nothing in the system is registered, including the seams.**
+
+**Registered and privileged are not the same word, and the difference is not a hedge.** Everything
+the steps above establish is about registration: a feature is found by structure, so it can be moved
+or dropped without anything else being told. What the steps do *not* reach is the guarantee set of
+§3.5 — a runtime, identity, execution, isolation — which §3.1 and §13.2 say the system *requires*.
+A required element is a fixed point of the system, and a fixed point is by definition not
+recombinable. So the accurate claim is that **nothing is registered, and a small set of things is
+required**; the stronger claim that nothing is privileged would have to show that the requirements
+are themselves discovered, and §3.1 deliberately makes them not be. An earlier version of this
+sentence said "privileged" and did not meet that objection.
 
 The payoff is an answer to every "this tool does not understand us" moment. A tool that cannot be
 configured for the system is **a system to bind, not a system to fork** — the formatter, the test
