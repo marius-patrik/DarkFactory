@@ -1,6 +1,8 @@
 import { describe, expect, test } from "bun:test";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import type { CapabilityHookContext, CapabilityRuntimeContext } from "@darkfactory/capability";
-import { branchName, capability, conventionalCommit, testsTouched } from "./capability.ts";
+import { branchName, capability, commitTypes, conventionalCommit, testsTouched } from "./capability.ts";
 
 const runtime: CapabilityRuntimeContext = {
 	repositoryRoot: "/repo",
@@ -75,6 +77,33 @@ describe("official hooks capability", () => {
 			expect(conventionalCommit(context({ commitMessage })).status).toBe("fail");
 		},
 	);
+
+	test.each([...commitTypes])("conventional-commit accepts the declared type %s", (type) => {
+		expect(conventionalCommit(context({ commitMessage: `${type}: description` }))).toEqual({ status: "pass" });
+		expect(conventionalCommit(context({ commitMessage: `${type}(area)!: description` }))).toEqual({ status: "pass" });
+	});
+
+	// `style`, `perf`, `build` and `revert` were accepted by the previous eleven-type pattern while
+	// DF-RULE-015 allows seven. They must now be rejected, or the hook contradicts the rule again.
+	test.each(["style", "perf", "build", "revert"])("conventional-commit rejects the undeclared type %s", (type) => {
+		expect(conventionalCommit(context({ commitMessage: `${type}: description` })).status).toBe("fail");
+	});
+
+	test("the hook's commit-type taxonomy is the taxonomy DF-RULE-015 declares", () => {
+		const rule = readFileSync(
+			join(import.meta.dir, "..", "..", ".agents", "rules", "015-repository-taxonomy.md"),
+			"utf8",
+		);
+		const declared = /^Allowed base types are (.+)\.$/mu.exec(rule);
+		// Fail closed: if the normative sentence is renamed or removed, this must fail rather than
+		// silently compare against nothing.
+		expect(declared?.[1]).toBeString();
+		const ruleTypes = [...(declared?.[1] ?? "").matchAll(/`([a-z]+)`/gu)]
+			.map((match) => match[1])
+			.filter((type): type is string => type !== undefined);
+		expect(ruleTypes.length).toBeGreaterThan(0);
+		expect([...commitTypes].sort()).toEqual([...ruleTypes].sort());
+	});
 
 	test.each(["feat/model-poller", "fix/windows-path-separators", "docs/harness-tsdoc-w2"])(
 		"branch-name accepts %s",
