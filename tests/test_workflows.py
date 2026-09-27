@@ -114,9 +114,9 @@ def test_agent_image_installs_from_the_checked_in_harness_lock():
         "cp /opt/darkfactory/packages/harness/scripts/df-wrapper.sh /usr/local/bin/df" in dockerfile
     )
     assert "ENV DF_SOURCE=/opt/darkfactory/packages/harness/src/cli.ts" in dockerfile
-    assert "exec bun /opt/darkfactory/packages/harness/src/cli.ts" not in dockerfile, (
-        "the printf shim is back; the wrapper is meant to be the single owner of the df contract"
-    )
+    assert (
+        "exec bun /opt/darkfactory/packages/harness/src/cli.ts" not in dockerfile
+    ), "the printf shim is back; the wrapper is meant to be the single owner of the df contract"
     assert "COPY pyproject.toml requirements-dev.txt" in dockerfile
     assert "pip install --no-cache-dir -r requirements-dev.txt" in dockerfile
 
