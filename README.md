@@ -527,8 +527,12 @@ interface is exactly five things — name, inputs, outputs, documentation, and p
 (§3.1) — and because none of those five can hold a path, a hostname, or whether the current run is
 in CI, the meaning read from a tree is invariant under *where* it is read. A declaration therefore
 resolves identically in every location. The consequence is stronger than a rule: location-dependent
-behaviour is not forbidden, it is **inexpressible**, because there is no field to put it in. §12's
-requirements are then a consequence rather than a regulation.
+behaviour has no field in the *interface* to live in — and the qualifier matters, because a binding
+choice is not interface data. §3.5's degraded binding and §40's `local/` are location-dependent and
+are not in conflict: neither is recorded in a feature's interface. So the honest form of the claim is
+that **a feature cannot be told where it is**, not that nothing can. §12's requirements follow for
+the features; the requirement to read a foreign format (§12) is a seam decision from §11.1 and is
+not a consequence of this.
 
 **The system is composable**, because nothing about it is registered: a feature can be moved,
 combined, or dropped without anything else being told, which is the property §9 argues is the real
@@ -595,7 +599,8 @@ instances while appearing to be the measure. So the accurate statement is that *
 exist and the total is unknown.** Among them: the per-entry
 descriptions in the concern tree, which restate the declarations their entries point at; the
 hand-written interface table in §11, which restates signatures that §3.1 and I3 require to be
-derived, making it a build error under I3 and not merely duplication; and a sentence in §7.7 and
+derived, making it the failure §24.1 names — a document describing what the system is — and not merely
+duplication; and a sentence in §7.7 and
 another in §15 that are nearly word for word the same, about a system making a change to itself.
 **A document arguing for zero duplication while containing instances of it is the failure it
 describes**, and the disposition that is not a worse version of the same problem is to say the
@@ -663,7 +668,9 @@ here and referred to elsewhere.
 
 **And the failure the instruments are weakest against is named first.** §40 holds what the counts do
 not see, and the honest statement is which of its modes the count can see at all: the ninth, whose
-residue is a second description, and the eighth, whose support matrix is a catalogue. Calling all
+residue is a second description, and no other. The eighth's instrument example is a hand-tuned weight
+table rather than a support matrix, and the support matrix §12 names is what the *sixth* failure
+produces — a record of where a binding was chosen, not a statement of what the choice is. Calling all
 nine invisible would be false in both directions, and §40 finds the count cannot see the eighth at
 all. The ninth it can: a residue left by self-hosting is a second
 description, which is the counted object. The eighth it cannot, because the corpus failure is
@@ -676,17 +683,18 @@ teeth is abandoned under pressure, and the pressure is always a deadline. The fa
 shipped capability is a hand-authored manifest, an added index, or a surface special case; it
 works, it ships, and the count never comes back down. The countermeasures are §4.6, the invariant
 that nothing is registered by being listed (I1, §8), and the habit of treating a requested
-exception as evidence that the interpreter is missing a capability. §4.6 is the load-bearing one,
-because it is the only counter that does not depend on anyone remembering.
+exception as evidence that the interpreter is missing a capability. §4.6 is the only counter that
+does not depend on anyone remembering, and that is also why it is the weakest: a counter nobody has
+to remember is a counter nothing enforces, and §40 counts this failure among the five that have no
+automatic counter.
 
-**And the honest position on all three is that none of them is a check.** §4.6 is a latency
-requirement with no mechanism behind it. I1 is enforced by rejecting enumeration-only files, which
-is a shape a linter can see, not a meaning a machine can compare. I1b — the doc-comment rule, which
-is the one mechanical piece of the count — rejects a comment that adds nothing; it cannot see a fact
-stated twice in two different files, because that judgement is not mechanical. The failure mode above
-— abandonment under deadline — is therefore the one failure in this document with no automatic
-counter at all, and naming I1b as the answer to §4.6 would be answering a question about duplication
-with an instrument that measures duplication.
+**And none of the three is a check of the thing it is aimed at.** §4.6 is a latency requirement with
+no mechanism behind it. I1 is a real check, and it catches a *shape* — an enumeration-only file —
+rather than a meaning a machine can compare. I1b is a real check on the doc-comment residue, and it
+cannot see a fact stated twice in two different files, because that judgement is not mechanical. The failure mode above
+— abandonment under deadline — is one of the failures in this document with no automatic counter,
+and §40 counts five. Naming I1b as the answer to §4.6 would be answering a question about
+duplication with an instrument that measures duplication.
 
 # Part II — The design
 
@@ -945,7 +953,7 @@ cross-file duplication check is the worked example — it is a review obligation
 | # | invariant | held by |
 | --- | --- | --- |
 | I1 | No file describes a feature except the feature | enumeration-only files are rejected; no barrel, registry, catalogue or manifest names what exists |
-| I1b | A doc comment states something its signature does not | a comment whose content adds nothing the signature already carries is a build error, and a comment admitting *why* is accepted; the cross-file case is a review obligation, not a check (§7.6) |
+| I1b | A doc comment states something its signature does not | a comment restating the identifiers of its own signature is a build error and a comment admitting *why* is accepted; this catches the mechanical residue only, and the cross-file case is a review obligation rather than a check (§5.3, §7.6) |
 | I2 | Derivation is total — every feature is derived, none dropped | a tree walk comparing the derived set against the discovered set, across overloads, re-exports and conditionals |
 | I2a | Identity is a function of inputs, never of time | an interface's identity is the hash of its content, its declared dependencies and the environment it resolves under, so a skip names the input that changed; an undeclared input is a correctness bug, not a missed optimisation |
 | I3 | The published interface is the code's own | a feature with no doc comment is a build error, and each surface is checked to render the comment its feature publishes |
@@ -1000,12 +1008,14 @@ comments are the declaration, and the interpreter reads meaning from them. Nothi
 feature except the feature.
 
 The rules that follow are stated with their reasoning across §10.1, §17, §7.1 and I3 — one askable thing per file,
-no privileged subset, no barrels, no registries, discovery by structure, and documentation as part
-of the contract. What is specific to *architecture* is only this: **there is no privileged
-top-level subset.** A folder declares a concern, and the set of concerns is itself content, so a
+nothing is registered, no barrels, no registries, discovery by structure, and documentation as part
+of the contract. What is specific to *architecture* is only this: **no concern is privileged as a
+home for content.** A folder declares a concern, and the set of concerns is itself content, so a
 concern can be added or removed without amending this document. The question "is this core or
-content?" is not asked, because what a thing needs is already answered by where it sits and what it
-sits beside.
+content?" is not asked of *content*, because what a thing needs is already answered by where it sits
+and what it sits beside. It **is** asked of the guarantees of §3.5, which §3.1 requires and §11
+concedes are therefore not recombinable — a fixed point is not, and no argument here pretends
+otherwise.
 
 ### 9.2 There is one kind of file, and it both declares and implements
 
@@ -1630,8 +1640,10 @@ of this document disagree, the rest wins; where the rest is silent, Part I is th
 ## 22 Capability architecture
 
 Agentic and product behaviour belongs in versioned capabilities under `Capabilities/`. Mechanisms belong to the
-concern that owns them, and there is no privileged subset: which concern a thing belongs to is answered by what
-it needs, not by an internal package boundary. Version control is reached through the `Change/` seam and is not a
+concern that owns them, and no concern is privileged *as a home for content*: which concern a thing
+belongs to is answered by what it needs, not by an internal package boundary. What §11 withdraws is
+the stronger form — a concern is not interchangeable with another, and the guarantees of §3.5 are
+required rather than removable, so a fixed point is not recombinable. Version control is reached through the `Change/` seam and is not a
 capability; neither is environment derivation or convergence, which are `Execution/`.
 
 The initial first-party capability set includes at least:
@@ -2165,10 +2177,10 @@ in this document being weaker is a rule that does not belong here.
 section uses. The scope is therefore **every
 obligation the document states, in the pattern of §6, the practices of §7, and the procedures of
 §4**, and nothing that is only hygiene. Three practices are unenforced by any rule — §7.4, §7.5 and
-§7.7 — and that is a gap rather than an oversight: bind-don't-own and one-thing-one-file are
-properties of the structure that §9.5 and I1 already check, while §7.7's prohibition on a privileged
-self-modification path is stated but has no mechanical counter anywhere in the document, which is
-worth knowing before relying on it.
+§7.7 — and that is a gap rather than an oversight. §7.5's granularity rule is what I6 and §9.5's
+file-isolation rule are about, but neither of them states it. §7.4's two halves are checks §40
+concludes have no mechanical form. §7.7's prohibition on a privileged self-modification path has no
+counter anywhere in the document. All three are worth knowing about before relying on them.
 
 | rule | enforces |
 | --- | --- |
@@ -2489,7 +2501,7 @@ do not reach.
 **The honest state of this section is that its nine failures are not equally testable, and the
 table below says which is which rather than dressing all nine as checks.** The standard is that a
 test is worth stating only if a system that failed in that way would fail it. Applying that
-standard honestly produces three kinds of entry, and only the first is a check:
+standard honestly produces four kinds of entry, and only the first is a check:
 
 | # | failure | instrument |
 | --- | --- | --- |
@@ -2507,7 +2519,7 @@ Three of the nine have no instrument, and §40 is more useful for saying so than
 **Not all nine carry a test, and giving them all one would be a way of avoiding the question.** Two
 of the tests this section could plausibly claim sit on review obligations, which §7.6 forecloses as
 evidence, and one would rest on a number that appears nowhere in this document. The failures themselves are not softened — they are the ways this design fails, and
-they are as real as the four that are checked.
+they are as real as the three that are checked and the one that is mechanically detectable.
 
 **Reading hardens into a wall.** Extension requires editing the interpreter, because the systems
 layer can only be written the way the first loader expected. This is the likeliest failure and the
