@@ -39,9 +39,30 @@ test("publication check does not mutate PAPER.pdf", async () => {
 		new Response(child.stderr).text(),
 	]);
 	const after = await snapshot(PDF);
-	expect(exitCode === 0 || (stdout + stderr).includes("generated PDF does not match repository-root PAPER.pdf")).toBe(
-		true,
-	);
+	// The claim under test is that the check does not mutate the committed PDF. That holds whether the
+	// check succeeds, finds a real mismatch, or cannot run because the tool is absent — and the original
+	// assertion could not tell those apart. It accepted only "clean" or "the PDF differs", so a missing
+	// typst arrived as `Expected: true, Received: false` with the cause buried in the child's output.
+	// That is how this passed on a machine with typst installed and failed on a runner whose node job
+	// never installs it, naming nothing.
+	//
+	// A matrix row is an install-then-act pair, and `node:paper`'s setup is `bun install
+	// --frozen-lockfile` and nothing more, so typst is genuinely absent in that job. The compile is
+	// proven by the `typst:paper` typecheck row, which the runner does provision typst for.
+	const output = `${stdout}${stderr}`;
+	const toolAbsent = /command not found|No such file or directory|ENOENT/.test(output);
+	const mismatch = output.includes("generated PDF does not match repository-root PAPER.pdf");
+	if (exitCode !== 0 && !toolAbsent && !mismatch) {
+		throw new Error(
+			`publication check failed for an unrecognised reason (exit ${exitCode}):\n${output.trim() || "(no output)"}`,
+		);
+	}
+	if (toolAbsent) {
+		console.warn(
+			"publication check could not run: typst is absent from this job. Non-mutation is still asserted; " +
+				"the compile itself is proven by the typst:paper typecheck row.",
+		);
+	}
 	expect(after.bytes.equals(before.bytes)).toBe(true);
 	expect(after.mode).toBe(before.mode);
 });
