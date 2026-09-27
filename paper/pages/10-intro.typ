@@ -9,17 +9,12 @@
 
 #emph[Šíření nástrojů založených na velkých jazykových modelech má tři stupně.] Nejprve doplňovaly kód
 v editoru @github-copilot-completion a člověk zůstával tím, kdo jej přijímá a spouští. Pak přišly
-konverzační chatboty @github-copilot-chat , v nichž model sestavuje odpověď, ale nástroje mu zpravidla
+konverzační chatboty @github-copilot-chat, v nichž model sestavuje odpověď, ale nástroje mu zpravidla
 nebyly k dispozici, takže i nadále všechno provedl uživatel. Třetí stupeň, #emph[coding agenti]
-@github-copilot-agent @openai-codex-2025 @openai-codex-app-2026 , dostal přístup k souborům, příkazům
+@github-copilot-agent @openai-codex-2025 @openai-codex-app-2026, dostal přístup k souborům, příkazům
 a běhovému prostředí. Tím se poprvé změnilo, kdo práci vlastně dělá, a to je změna, o kterou jde v
 této práci. Průmyslové zprávy o šíření agentů do výroby ji popisují jako probíhající
 @anthropic-agents-2026.
-editoru a člověk zůstával tím, kdo jej přijímal a spouští. Potom přišly konverzační chatboty, v nichž
-model sestavuje odpověď, ale nástroje mu zpravidla nebyly k dispozici, takže i nadále všechno provedl
-uživatel. Třetí stupeň, #emph[coding agenti], dostal přístup k souborům, příkazům a běhovému prostředí
-@github-copilot-completion @github-copilot-chat @github-copilot-agent @openai-codex-2025 @openai-codex-app-2026. Tím se poprvé změnilo, kdo práci vlastně dělá, a to je změna, o kterou jde v této práci.
-Průmyslové zprávy o šíření agentů do výroby ji popisují jako probíhající @anthropic-agents-2026.
 
 Rozsah veřejného použití je přitom stále úzký. Jeden ze zveřejněných odhadů klade počet
 uživatelů chatbotů na 28~% populace a pravidelné užití #emph[coding agenti] na
@@ -28,10 +23,7 @@ odlišuje.
 
 #figure(
   image("/components/img/gradually-ai-usage-2026.svg", width: 100%),
-  caption: [Odhad rozdělení uživatelů generativní AI podle typu. Obě uvedené hodnoty jsou
-  odhady, nikoli výsledek měření, a údaj o pravidelných uživatelích #emph[coding agenti]
-  je středem rozpětí, které zdroj uvádí mezi 25 a 35 miliony
-  @gradually-ai-usage-2026.],
+  caption: [Odhad rozdělení uživatelů generativní AI podle typu @gradually-ai-usage-2026.]
 ) <fig-gradually-usage>
 
 Aby takový agent mohl na projektu pracovat, nestačí generovat odpovědi. Potřebuje kontext
