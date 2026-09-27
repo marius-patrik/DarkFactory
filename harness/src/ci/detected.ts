@@ -34,6 +34,7 @@ export interface DetectedQualityExecution {
 	supported: boolean;
 	command?: string;
 	reason?: string;
+	notApplicable?: { ecosystem: string; reason: string };
 	result?: VerifyResult;
 }
 
@@ -53,6 +54,7 @@ export async function runDetectedQuality(
 					kind,
 					supported: false,
 					...(action.reason ? { reason: action.reason } : {}),
+					...(action.notApplicable ? { notApplicable: action.notApplicable } : {}),
 				});
 				continue;
 			}
