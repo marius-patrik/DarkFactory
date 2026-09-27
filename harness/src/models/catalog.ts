@@ -2,7 +2,7 @@ import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { defaultDfHome, FileCredentialStore } from "@darkfactory/keychain";
 import type { Credential, Model, Provider, ProviderHeaders } from "@earendil-works/pi-ai";
-import type { ModelListConfig, ProviderConfig } from "../providers/schema.ts";
+import type { ApiKeyAuthConfig, ModelListConfig, ProviderConfig } from "../providers/schema.ts";
 import { replaceFile } from "../storage/replace-file.ts";
 
 export const DEFAULT_MODEL_CATALOG_TTL_MS = 6 * 60 * 60 * 1000;
@@ -254,18 +254,52 @@ function parseCache(provider: string, value: unknown): CatalogFile {
 	return { version: 1, provider, fetchedAt: file.fetchedAt, models };
 }
 
+/**
+ * The key a model-catalog request must carry, resolved exactly the way the chat path resolves it in
+ * providers/runtime.ts: the stored credential, then the provider's declared environment variables,
+ * then the provider's declared anonymous value. A provider that declares none of those is anonymous.
+ */
+function apiKeySecret(credential: Credential | undefined, auth: ApiKeyAuthConfig | undefined): string | undefined {
+	if (credential?.type === "api_key" && credential.key) return credential.key;
+	for (const name of auth?.env ?? []) {
+		const value = process.env[name]?.trim();
+		if (value) return value;
+	}
+	return auth?.anonymousValue;
+}
+
 function authParts(
 	credential: Credential | undefined,
 	config: ProviderConfig | undefined,
 ): { headers: ProviderHeaders; query: Record<string, string> } {
-	if (!credential) return { headers: {}, query: {} };
-	const secret = credential.type === "oauth" ? credential.access : credential.key;
-	if (!secret) return { headers: {}, query: {} };
-	if (credential.type === "oauth") return { headers: { Authorization: `Bearer ${secret}` }, query: {} };
+	if (credential?.type === "oauth")
+		return { headers: credential.access ? { Authorization: `Bearer ${credential.access}` } : {}, query: {} };
 	const auth = config?.auth.find((entry) => entry.kind === "api_key");
-	if (auth?.placement === "header") return { headers: { [auth.name ?? "x-api-key"]: secret }, query: {} };
-	if (auth?.placement === "query") return { headers: {}, query: { [auth.name ?? "key"]: secret } };
+	if (!auth) return { headers: {}, query: {} };
+	const secret = apiKeySecret(credential, auth);
+	if (!secret) return { headers: {}, query: {} };
+	if (auth.placement === "header") return { headers: { [auth.name ?? "x-api-key"]: secret }, query: {} };
+	if (auth.placement === "query") return { headers: {}, query: { [auth.name ?? "key"]: secret } };
 	return { headers: { Authorization: `Bearer ${secret}` }, query: {} };
+}
+
+/**
+ * A provider that declares required credential slots has no anonymous catalog listing, so a request
+ * with nothing to authenticate with is a configuration fault, not a 401 to report as an upstream one.
+ */
+function assertCatalogCredential(
+	provider: Provider,
+	config: ProviderConfig,
+	auth: { headers: ProviderHeaders; query: Record<string, string> },
+	account: string | undefined,
+): void {
+	if ((config.requiredCredentialSlots ?? []).length === 0) return;
+	if (Object.keys(auth.headers).length > 0 || Object.keys(auth.query).length > 0) return;
+	const slots = config.requiredCredentialSlots.join(", ");
+	const env = config.auth.flatMap((entry) => (entry.kind === "api_key" ? (entry.env ?? []) : []));
+	throw new Error(
+		`Model catalog for ${provider.id} has no credential for account ${account ?? "(none)"} (slot ${slots}${env.length ? `, env ${env.join(", ")}` : ""})`,
+	);
 }
 
 function mergeHeaders(...sets: ProviderHeaders[]): Headers {
@@ -362,6 +396,7 @@ export class ModelCatalog {
 		const target = { url: `${config.baseUrl.replace(/\/$/u, "")}${mapping.path}`, method: mapping.method ?? "GET" };
 		const extras = account ? await this.store.requestHeaders(provider.id, account) : {};
 		const auth = authParts(credential, config);
+		assertCatalogCredential(provider, config, auth, account);
 		const headers = mergeHeaders(config.staticHeaders ?? {}, auth.headers, extras);
 		const bodyObject = mapping.body ? structuredClone(mapping.body) : undefined;
 		if (bodyObject)
