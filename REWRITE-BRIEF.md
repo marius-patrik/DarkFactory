@@ -102,44 +102,36 @@ which contradicts the survey framing and is an absolute novelty claim no source
 supports. Both phrases are deleted. Say what the sources converge on; pose the
 rest as questions.
 
-**Cíl (goal), use this wording:**
+**Cíl (goal), use this wording: [R5]**
 
 > Rozhodující součástí agentického vývoje softwaru není schopnost jazykového
 > modelu, ale návrh systému, v němž model pracuje. Cílem práce je tento názor
 > vyargumentovat z dostupných zdrojů a prověřit na záměrně minimální
-> implementaci, zda lze návrh systému oddělit od harnessu, který agenta
-> pohání, aniž by tím řízenost narušila.
+> implementaci, že právě tento návrh je nositelem schopnosti, o níž mluvíme.
 
-⚠️ Two reviewers independently flagged this sentence as the weakest Czech in the
-brief: the case after `na` and the unstated agent of `narušila`. **Write one of
-these, or propose your own and report both — your choice, and you are authorised
-to do so here. [R3]**
+**The goal mentions no separation from a harness, and neither may anything else.**
+Revision 2 asked the writer to test *„zda lze návrh systému oddělit od harnessu,
+který agenta pohání"*. That is not what this work does, and the author has
+removed it. The pipeline in chapter 3 **is** a harness — the runner, the gates and
+the stored state are its harness. It uses production harnesses underneath as its
+execution engines, for simplicity; a later thesis replaces them, and that fact is
+not part of this thesis's argument. **Do not describe the pipeline as a way of
+working without a harness, as a harness-free pipeline, or as a way of separating
+design from harness.** Those framings are wrong, not merely unused.
 
-> **A — minimal repair.** Rozhodující součástí agentického vývoje softwaru není
-> schopnost jazykového modelu, ale návrh systému, v němž model pracuje. Cílem
-> práce je tento názor vyargumentovat z dostupných zdrojů a **ověřit** na
-> záměrně minimální implementaci, zda lze návrh systému oddělit od harnessu,
-> který agenta pohání, **aniž by tím byla narušena** řízenost práce.
+**Hypotéza (hypothesis) — you must include this. [R2]** Revision 1 dropped it,
+which re-opens a defect `rules.md` records as fixed. Use this wording, which is
+also free of the separation framing:
 
-> **B — drops the coinage.** Rozhodující součástí agentického vývoje softwaru není
-> schopnost jazykového modelu, ale návrh systému, v němž model pracuje. Cílem
-> práce je tento názor vyargumentovat z dostupných zdrojů a **ověřit pomocí
-> záměrně minimální implementace**, zda lze návrh systému oddělit od harnessu,
-> který agenta pohání, **aniž by tím byla narušena** kontrola nad výsledkem.
-
-A keeps your vocabulary; B avoids `řízenost`, which is a coinage and therefore
-belongs in `1.2 Terminologie` rather than in the opening sentence.
+> Praktická autonomie je vlastností návrhu systému, který práci řídí, a nikoli
+> vlastností modelu, který v něm pracuje. Strukturu, kterou práce popisuje,
+> autor navrhuje sám; úsudek o tom, co je v jednotlivém kroku správné, však
+> přebírá od smyčky, kterou nevlastní — a právě v tomto rozdílu leží hranice,
+> za kterou teprve vlastní harness pomůže.
 
 **Výzkumná otázka (research question), use this wording:**
 
 > Které principy musí agentický systém splnit, aby vykonával inženýrskou práci?
-
-**Hypotéza (hypothesis) — you must include this. [R2]** Revision 1 dropped it,
-which re-opens a defect `rules.md` records as fixed. Use this wording:
-
-> Praktická autonomie je dosažitelná i bez vlastního harnessu, protože je
-> vlastností návrhu systému. Její hranicí je rozhodování, které autor nevlastní:
-> strukturu si navrhuje sám, úsudek o tom, co je hotovo, přebírá od cizí smyčky.
 
 **"Inženýrská práce" must be defined. [R2]** It is the object of the research
 question and it appears nowhere in the brief or the paper. One sentence, in 1.1:
@@ -243,12 +235,16 @@ reliably solo"* and became *„unnecessary overhead"* on a newer model.
   | `pages/41-discussion.typ:20` | *„Tato struktura je vůči tomu, kdo vykonává modelové kroky, invariantní"* |
   | `pages/50-conclusion.typ:12` | *„invariantní, což je tvrzení, z něhož lze prokazatelně vycházet"* |
 
-  Note the difference. The **discussion** makes a narrow, defensible claim: the
-  process structure does not depend on *who* executes the model steps. The
-  **conclusion and abstracts** inflate that into a general one and add
-  *„prokazatelně"* — provably. Under this thesis the narrow claim survives and
-  the inflated one does not, because cross-scaffold degradation is documented.
-  So: report this distinction, and do not repeat the inflated form anywhere.
+  Note the difference, because it is now the other way round. The **discussion**
+  makes a narrow claim: the process structure is the author's own and does not
+  depend on *who* executes the model steps. That is **true and is the thesis's own
+  property** — the runner, gates and stored state are the author's design, so this
+  independence is a fact about his own work, not a general law. The **conclusion
+  and both abstracts** inflate it into a general claim and add *„prokazatelně"* —
+  provably. That does not survive, because cross-scaffold degradation is
+  documented: what a model has internalised from *one* scaffold's conventions is
+  not portable to another. So: keep the narrow claim, attributed to this work;
+  drop the general one, and do not repeat *„prokazatelně"*.
 - **Not absolute necessity.** Conditional on the model's unaided ability.
 - **Not a negative result the survey may not return. [R2]** "The literature does
   not answer this" is a permitted result. A survey that can only return positive
@@ -300,9 +296,11 @@ beat zero.
 
 ## 6. The composition question
 
-The pipeline in chapter 3 wraps vendor harnesses inside its own control layer —
-the runner, the gates and the stored state *are themselves a harness*, and the
-vendor CLIs are used as inference engines underneath. So the model meets **two**
+**The pipeline in chapter 3 is a harness.** The runner, the gates and the stored
+state are its harness. It uses production harnesses underneath as its execution
+engines, because that is simpler; a later thesis replaces them, and this thesis
+makes nothing of it. The consequence for the argument is narrow and worth stating:
+because the outer layer is a harness in its own right, the model meets **two**
 sets of scaffold conventions at once.
 
 That is the situation `@thangarajah2026dcas` measures: open trajectory datasets
@@ -315,9 +313,9 @@ Planning separates into *explicit* (a plan as a first-class artefact) and
 controlled intervention found plan-quality gains *„exceeding the cross-scaffold
 drops we observe."*
 
-So the question chapter 3 answers: **when a harness is composed on top of another
-harness, whose conventions is the model following, and what does the outer layer
-cost?** Pose it in 1.1. **Do not answer it in chapter 2, and do not claim it is
+So the question chapter 3 answers: **this author's harness runs on top of other
+harnesses — whose conventions is the model following, and what does the outer
+layer cost?** Pose it in 1.1. **Do not answer it in chapter 2, and do not claim it is
 unpublished** — say the literature does not address composition, which is a claim
 you can support by what the sources cover.
 

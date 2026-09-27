@@ -656,11 +656,11 @@
               <text macro="page"/>
               <text macro="isbn"/>
               <text macro="url"/>
-              <text macro="note"/>
             </group>
           </else>
         </choose>
       </group>
+      <text macro="note" prefix=". "/>
     </layout>
   </bibliography>
 </style>
