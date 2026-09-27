@@ -460,18 +460,20 @@ class TestDeclarativeCredentials:
 class TestPlanIssuesAreNotInterpreted:
     """A Plan issue is the pipeline's own output, not a new request to be interpreted."""
 
-    def _payload(self, labels):
-        """Builds an `issues: opened` payload.
+    def _payload(self, labels, body="", action="opened"):
+        """Builds an `issues` payload.
 
         Args:
             labels: Label names on the issue.
+            body: Issue body, which is where a failure report carries its identity.
+            action: Webhook action.
 
         Returns:
             The webhook payload.
         """
         return {
-            "action": "opened",
-            "issue": {"number": 92, "labels": [{"name": n} for n in labels]},
+            "action": action,
+            "issue": {"number": 92, "labels": [{"name": n} for n in labels], "body": body},
             "repository": {"full_name": "marius-patrik/DarkFactory"},
         }
 
@@ -486,16 +488,22 @@ class TestPlanIssuesAreNotInterpreted:
         module.dispatch_event(str(path), "issues")
         assert called == [], "a Plan issue must not be interpreted"
 
-    def test_a_pipeline_failure_issue_is_not_interpreted(self, monkeypatch, tmp_path):
-        """The pipeline reporting on itself is not a request, and answering it re-fires automations."""
+    def test_a_pipeline_failure_issue_is_interpreted_after_claiming_its_effect(self, monkeypatch, tmp_path):
+        """#1193. This used to return without interpreting, which is what muted the whole loop: the
+        failure reporter files this issue for a red build and the runner then refused to act on it."""
         called = []
         module = agent_runner_module()
         monkeypatch.setattr(module, "handle_interpret", lambda n, r: called.append(n))
         monkeypatch.setattr(module, "run_gh", lambda *a, **k: "")
+        monkeypatch.setattr(module, "claim_failure_dispatch", lambda n, e, r: called.append(("claim", e)) or True)
         path = tmp_path / "event.json"
-        path.write_text(json.dumps(self._payload(["pipeline-failure"])), encoding="utf-8")
+        path.write_text(
+            json.dumps(self._payload(["pipeline-failure"], body=_failure_body("CI", "3600000001"))),
+            encoding="utf-8",
+        )
         module.dispatch_event(str(path), "issues")
-        assert called == [], "a pipeline-failure issue must not be interpreted"
+        assert ("claim", "CI@3600000001") in called, "the failing run's effect identity must be claimed"
+        assert 92 in called, "a red build must reach the agent, not be ignored"
 
     def test_a_request_issue_is_still_interpreted(self, monkeypatch, tmp_path):
         """The ordinary path must be untouched."""
@@ -507,6 +515,45 @@ class TestPlanIssuesAreNotInterpreted:
         path.write_text(json.dumps(self._payload(["Request"])), encoding="utf-8")
         module.dispatch_event(str(path), "issues")
         assert called == [92]
+
+
+class TestPipelineCanStartOnAnExistingIssue:
+    """v1 exit criterion 6. The graph's only entry edge carries the `Request` label, so an issue that
+    already existed when the trigger was written - including every failure report - could never enter
+    the pipeline: only `issues.opened` fired, and opening one is the one thing that had not happened."""
+
+    def _dispatch(self, monkeypatch, tmp_path, labels, action, applied="Request"):
+        called = []
+        module = agent_runner_module()
+        monkeypatch.setattr(module, "handle_interpret", lambda n, r: called.append(n))
+        monkeypatch.setattr(module, "claim_failure_dispatch", lambda *a: True)
+        monkeypatch.setattr(module, "run_gh", lambda *a, **k: "")
+        payload = {
+            "action": action,
+            "issue": {"number": 92, "labels": [{"name": n} for n in labels], "body": ""},
+            "label": {"name": applied},
+            "repository": {"full_name": "marius-patrik/DarkFactory"},
+        }
+        path = tmp_path / "event.json"
+        path.write_text(json.dumps(payload), encoding="utf-8")
+        module.dispatch_event(str(path), "issues")
+        return called
+
+    def test_labelling_an_existing_issue_as_a_request_starts_it(self, monkeypatch, tmp_path):
+        assert self._dispatch(monkeypatch, tmp_path, ["Request"], "labeled") == [92]
+
+    def test_a_failure_report_labelled_as_a_request_starts_it(self, monkeypatch, tmp_path):
+        """The failure reporter labels what it files, and a human can add `Request` to any open
+        failure; both are the only way to start the pipeline on a failure that already exists."""
+        assert self._dispatch(monkeypatch, tmp_path, ["pipeline-failure", "Request"], "labeled") == [92]
+
+    def test_an_unrelated_label_does_not_start_a_second_run(self, monkeypatch, tmp_path):
+        """`labeled` carries the issue's whole label set, so keying on that set would re-enter the
+        pipeline every time a triage label was added to a Request."""
+        assert (
+            self._dispatch(monkeypatch, tmp_path, ["Request", "Triage"], "labeled", applied="Triage")
+            == []
+        )
 
 
 def test_no_agent_output_names_another_project():
@@ -1394,6 +1441,7 @@ def _issue_comment_payload(
     issue_author="marius-patrik",
     number=91,
     is_pr=False,
+    issue_body="",
 ):
     """Builds an `issue_comment: created` payload.
 
@@ -1406,6 +1454,7 @@ def _issue_comment_payload(
         issue_author: Issue author login.
         number: Issue number.
         is_pr: Whether the issue is a pull request.
+        issue_body: Issue body, which is where a failure report carries its identity.
 
     Returns:
         The webhook payload.
@@ -1414,6 +1463,7 @@ def _issue_comment_payload(
         "number": number,
         "labels": [{"name": name} for name in labels],
         "user": {"login": issue_author},
+        "body": issue_body,
     }
     if is_pr:
         issue["pull_request"] = {"url": "https://github.com/o/r/pull/91"}
@@ -1429,7 +1479,25 @@ def _issue_comment_payload(
     }
 
 
-def _dispatch_issue_comment(monkeypatch, tmp_path, payload, plan_exists=False):
+def _failure_body(workflow, run_id):
+    """Builds the body report-failure.ts writes for a red build.
+
+    Args:
+        workflow: Failing workflow name.
+        run_id: The failing run's own id.
+
+    Returns:
+        The issue body, carrying the marker and the run identity.
+    """
+    return (
+        f"<!-- pipeline-failure: {workflow} -->\n\n"
+        f"The **{workflow}** workflow failed.\n\n"
+        f"- Run: https://github.com/o/r/actions/runs/{run_id}\n"
+        f"- Run id: `{run_id}`\n"
+    )
+
+
+def _dispatch_issue_comment(monkeypatch, tmp_path, payload, plan_exists=False, claim=True):
     """Dispatches a payload with every stage handler replaced by a recorder.
 
     Args:
@@ -1437,6 +1505,7 @@ def _dispatch_issue_comment(monkeypatch, tmp_path, payload, plan_exists=False):
         tmp_path: Pytest-provided empty directory.
         payload: Webhook payload.
         plan_exists: What `has_plan` reports.
+        claim: What the failure-dispatch election decides.
 
     Returns:
         Dict of recorded calls per handler name.
@@ -1467,6 +1536,7 @@ def _dispatch_issue_comment(monkeypatch, tmp_path, payload, plan_exists=False):
     monkeypatch.setattr(module, "unblock_entity", lambda *a, **k: calls["unblock"].append((a, k)))
     monkeypatch.setattr(module, "load_checkpoint", lambda **k: None)
     monkeypatch.setattr(module, "has_plan", lambda n, r: plan_exists)
+    monkeypatch.setattr(module, "claim_failure_dispatch", lambda *a: claim)
     monkeypatch.setattr(module, "run_gh", lambda *a, **k: (calls["gh"].append(a), "{}")[1])
     path = tmp_path / "event.json"
     path.write_text(json.dumps(payload), encoding="utf-8")
@@ -1475,14 +1545,19 @@ def _dispatch_issue_comment(monkeypatch, tmp_path, payload, plan_exists=False):
 
 
 class TestPipelineFailureComments:
-    """Comments on `pipeline-failure` issues must not run the agent."""
+    """A failure report is a trigger, not chatter. #1193 lifted the mute, so the interesting cases are
+    the ones that must still not start a second repair."""
 
     def test_an_ordinary_comment_runs_nothing(self, monkeypatch, tmp_path):
-        """No LLM call, no gate, no board move — the report is left alone."""
+        """No LLM call, no gate, no board move. The opening event already claimed the repair."""
         calls = _dispatch_issue_comment(
             monkeypatch,
             tmp_path,
-            _issue_comment_payload("what happened here?", labels=("pipeline-failure",)),
+            _issue_comment_payload(
+                "what happened here?",
+                labels=("pipeline-failure",),
+                issue_body=_failure_body("CI", "3600000001"),
+            ),
         )
         assert calls["respond"] == []
         assert calls["interpret"] == []
@@ -1495,7 +1570,11 @@ class TestPipelineFailureComments:
         calls = _dispatch_issue_comment(
             monkeypatch,
             tmp_path,
-            _issue_comment_payload("approve", labels=("pipeline-failure",)),
+            _issue_comment_payload(
+                "approve",
+                labels=("pipeline-failure",),
+                issue_body=_failure_body("CI", "3600000001"),
+            ),
         )
         assert calls["respond"] == []
         assert calls["plan"] == []
@@ -1506,9 +1585,192 @@ class TestPipelineFailureComments:
         calls = _dispatch_issue_comment(
             monkeypatch,
             tmp_path,
-            _issue_comment_payload("/df resume", labels=("pipeline-failure",)),
+            _issue_comment_payload(
+                "/df resume",
+                labels=("pipeline-failure",),
+                issue_body=_failure_body("CI", "3600000001"),
+            ),
         )
         assert len(calls["respond"]) == 1
+
+    def test_a_recurrence_from_the_pipeline_resumes_the_loop(self, monkeypatch, tmp_path):
+        """A red build that comes back after a repair is reported as `Failed again:` by the pipeline's
+        own token. A blanket bot-comment skip swallowed it, which is what kept the loop permanently
+        muted; it has to reach the agent even though its author is a bot."""
+        calls = _dispatch_issue_comment(
+            monkeypatch,
+            tmp_path,
+            _issue_comment_payload(
+                "Failed again: https://github.com/o/r/actions/runs/3600000009",
+                login="darkfactory-pipeline[bot]",
+                user_type="Bot",
+                labels=("pipeline-failure",),
+                issue_body=_failure_body("CI", "3600000001"),
+            ),
+        )
+        assert calls["interpret"] == [(91, "")]
+
+    def test_a_recurrence_of_the_run_already_being_repaired_is_claimed_not_dispatched(
+        self, monkeypatch, tmp_path
+    ):
+        """Same failing run reported twice is one repair; the election is exercised in
+        TestFailureDispatchElection, which drives the real claim rather than a stub."""
+        calls = _dispatch_issue_comment(
+            monkeypatch,
+            tmp_path,
+            _issue_comment_payload(
+                "Failed again: https://github.com/o/r/actions/runs/3600000001",
+                login="darkfactory-pipeline[bot]",
+                user_type="Bot",
+                labels=("pipeline-failure",),
+                issue_body=_failure_body("CI", "3600000001"),
+            ),
+            claim=False,
+        )
+        assert calls["interpret"] == []
+
+
+class TestFailureEffectIdentity:
+    """The identity that replaces the `pipeline-failure` label test. DF-RULE-018 asks for a
+    deterministic effect ID, and it has to come from what the reporter recorded, not from a
+    human-readable triage tag."""
+
+    def test_identity_is_the_workflow_and_the_failing_run(self):
+        module = agent_runner_module()
+        assert module.failure_effect_id(_failure_body("CI", "3600000001")) == "CI@3600000001"
+
+    def test_a_retitled_issue_keeps_its_identity(self):
+        """The marker lives in the body precisely so a human renaming the issue cannot fork it."""
+        module = agent_runner_module()
+        body = _failure_body("CI", "3600000001")
+        assert module.failure_effect_id(body.replace("Pipeline failure: CI", "ci is red again")) == (
+            "CI@3600000001"
+        )
+
+    def test_an_ordinary_issue_has_no_failure_identity(self):
+        module = agent_runner_module()
+        assert module.failure_effect_id("the label alone must never authorise a dispatch") is None
+
+    def test_a_marker_without_a_run_is_not_an_identity(self):
+        """A partial report must not be dispatched as if it named a failure."""
+        module = agent_runner_module()
+        assert module.failure_effect_id("<!-- pipeline-failure: CI -->\n\nno run recorded") is None
+
+    def test_a_recurrence_takes_its_run_from_the_comment(self):
+        module = agent_runner_module()
+        assert (
+            module.refailure_effect_id(
+                _failure_body("CI", "3600000001"),
+                "Failed again: https://github.com/o/r/actions/runs/3600000009",
+            )
+            == "CI@https://github.com/o/r/actions/runs/3600000009"
+        )
+
+    def test_a_recurrence_of_the_same_run_is_the_same_identity(self):
+        module = agent_runner_module()
+        effect = lambda url: module.refailure_effect_id(  # noqa: E731
+            _failure_body("CI", "3600000001"), f"Failed again: {url}"
+        )
+        assert effect("https://x/1") == effect("https://x/1")
+        assert effect("https://x/1") != effect("https://x/2")
+
+    def test_an_ordinary_comment_is_not_a_recurrence(self):
+        module = agent_runner_module()
+        assert module.refailure_effect_id(_failure_body("CI", "3600000001"), "looks bad") is None
+
+
+class TestFailureDispatchElection:
+    """Two runs racing one failure must not both enter the repair. DF-RULE-018 rules out a bare
+    check-then-act, so the winner is decided by the comment id GitHub itself assigned. Every stub
+    below returns the claims as the API would after the run's own claim was written, because that
+    is the only state the election ever observes."""
+
+    def test_a_lone_run_wins_and_dispatches(self, monkeypatch):
+        """The only claim on the issue is this run's own, so it enters the repair."""
+        module = agent_runner_module()
+
+        def fake_try_gh(args, repo=None, doing=""):
+            if args[0] == "issue" and args[1] == "comment":
+                return "https://github.com/o/r/issues/1#issuecomment-1"
+            return json.dumps([{"id": 99, "b": "<!-- df-dispatch: CI@1 -->"}])
+
+        monkeypatch.setattr(module, "try_gh", fake_try_gh)
+        assert module.claim_failure_dispatch(1, "CI@1", "o/r") is True
+
+    def test_a_later_run_loses_to_the_claim_already_on_the_issue(self, monkeypatch):
+        """This is the re-file-while-the-repair-is-in-flight case: an earlier claim for the same
+        failing run is still there, so the second run must not start a second repair."""
+        module = agent_runner_module()
+        claim = "<!-- df-dispatch: CI@1 -->"
+
+        def fake_try_gh(args, repo=None, doing=""):
+            if args[0] == "issue" and args[1] == "comment":
+                return "https://github.com/o/r/issues/1#issuecomment-2"
+            return json.dumps([{"id": 5, "b": claim}, {"id": 99, "b": claim}])
+
+        monkeypatch.setattr(module, "try_gh", fake_try_gh)
+        assert module.claim_failure_dispatch(1, "CI@1", "o/r") is False
+
+    def test_two_racing_runs_produce_exactly_one_winner(self, monkeypatch):
+        """The first claim GitHub recorded is the only one that may enter the mutation, whichever of
+        the two runs observes the pair first."""
+        module = agent_runner_module()
+        claim = "<!-- df-dispatch: CI@1 -->"
+
+        def fake_try_gh(args, repo=None, doing=""):
+            if args[0] == "issue" and args[1] == "comment":
+                return "ok"
+            return json.dumps([{"id": 5, "b": claim}, {"id": 9, "b": claim}])
+
+        monkeypatch.setattr(module, "try_gh", fake_try_gh)
+        # Both racers read the same pair, so both agree the lower id owns the repair.
+        assert module.claim_failure_dispatch(1, "CI@1", "o/r") is False
+
+    def test_claims_of_a_different_failure_do_not_silence_this_one(self, monkeypatch):
+        """Identity is per failing run, so a repaired-and-refailed run is not muted by the old claim."""
+        module = agent_runner_module()
+
+        def fake_try_gh(args, repo=None, doing=""):
+            if args[0] == "issue" and args[1] == "comment":
+                return "ok"
+            return json.dumps([{"id": 5, "b": "<!-- df-dispatch: CI@1 -->"}])
+
+        monkeypatch.setattr(module, "try_gh", fake_try_gh)
+        assert module.claim_failure_dispatch(1, "CI@2", "o/r") is True
+
+    def test_paginated_claim_reads_are_all_considered(self, monkeypatch):
+        """An older claim can sit on a later page than the run's own, and it still wins."""
+        module = agent_runner_module()
+        claim = "<!-- df-dispatch: CI@1 -->"
+
+        def fake_try_gh(args, repo=None, doing=""):
+            if args[0] == "issue" and args[1] == "comment":
+                return "ok"
+            return "\n".join(
+                [json.dumps([{"id": 99, "b": claim}]), json.dumps([{"id": 7, "b": claim}])]
+            )
+
+        monkeypatch.setattr(module, "try_gh", fake_try_gh)
+        assert module.claim_failure_dispatch(1, "CI@1", "o/r") is False
+
+    def test_a_claim_that_cannot_be_written_does_not_dispatch(self, monkeypatch):
+        module = agent_runner_module()
+        monkeypatch.setattr(module, "try_gh", lambda *a, **k: None)
+        assert module.claim_failure_dispatch(1, "CI@1", "o/r") is False
+
+    def test_unreadable_claims_fall_back_to_dispatching_rather_than_muting_forever(self, monkeypatch):
+        """The claim list is best-effort. Losing the election must never be the failure mode, because
+        that is the mute this change exists to remove."""
+        module = agent_runner_module()
+        calls = {"n": 0}
+
+        def fake(args, repo=None, doing=""):
+            calls["n"] += 1
+            # The comment write succeeds; the list read that follows it does not.
+            return "ok" if calls["n"] == 1 else None
+
+        monkeypatch.setattr(module, "try_gh", fake)
+        assert module.claim_failure_dispatch(1, "CI@1", "o/r") is True
 
 
 class TestRejectRoutesBack:

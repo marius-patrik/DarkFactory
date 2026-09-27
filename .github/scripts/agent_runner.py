@@ -4600,6 +4600,147 @@ def _comment_actor(comment: Dict[str, Any]) -> tuple:
     )
 
 
+#: Hidden marker ``report-failure.yml``'s runtime writes into every failure issue body. It is the
+#: identity of the failure, and it lives in the body rather than the title so a retitle cannot fork
+#: it (see ``harness/src/ci/report-failure.ts``).
+FAILURE_MARKER = re.compile(r"<!--\s*pipeline-failure:\s*(?P<workflow>[^>]+?)\s*-->")
+
+#: The failing run's own id, written into the same body. Together with the workflow name this is the
+#: deterministic external effect identity of one failure: two reports of the same run share it, and a
+#: re-run of the same workflow does not.
+FAILURE_RUN = re.compile(r"^-\s*Run id:\s*`(?P<run>[^`]+)`", re.MULTILINE)
+
+#: A re-failure is reported as a comment on the already-open issue rather than a second issue, so the
+#: new run's identity is only available in the comment body.
+FAILED_AGAIN = re.compile(r"^Failed again:\s*(?P<url>\S+)", re.MULTILINE)
+
+
+def failure_effect_id(body: str) -> Optional[str]:
+    """The deterministic effect identity of a pipeline-failure issue body.
+
+    The identity is the failing workflow plus the failing run's own id, both of which the failure
+    reporter writes into the body. It is deliberately not the ``pipeline-failure`` label: a label is
+    a human-readable triage tag a human can add to any issue, and gating dispatch on one is what made
+    the loop impossible to resume. DF-RULE-018 asks for a deterministic effect ID, and this is one.
+
+    Args:
+        body: Issue body text.
+
+    Returns:
+        ``"<workflow>@<run id>"``, or ``None`` when the text is not a failure report.
+    """
+    marker = FAILURE_MARKER.search(body or "")
+    run = FAILURE_RUN.search(body or "")
+    if not marker or not run:
+        return None
+    return f"{marker.group('workflow').strip()}@{run.group('run')}"
+
+
+def refailure_effect_id(issue_body: str, comment_body: str) -> Optional[str]:
+    """The effect identity of a `Failed again` re-report on a failure issue.
+
+    A red build that recurs after a repair is commented onto the still-open failure issue rather than
+    filed as a new one, so its run identity lives in the comment and the workflow identity only in the
+    issue body.
+
+    Args:
+        issue_body: Body of the issue the comment is on.
+        comment_body: Body of the comment.
+
+    Returns:
+        ``"<workflow>@<run url>"``, or ``None`` when this is not a re-failure report.
+    """
+    marker = FAILURE_MARKER.search(issue_body or "")
+    again = FAILED_AGAIN.search(comment_body or "")
+    if not marker or not again:
+        return None
+    return f"{marker.group('workflow').strip()}@{again.group('url')}"
+
+
+#: Claim marker left on the issue by whichever run won the election for an effect identity.
+CLAIM_PREFIX = "<!-- df-dispatch: "
+CLAIM_SUFFIX = " -->"
+
+
+def _claim_rows(listed: str) -> List[Dict[str, Any]]:
+    """Parses the per-page JSON arrays ``gh api --paginate --jq`` prints, one per line.
+
+    Args:
+        listed: Command stdout, one JSON array per line.
+
+    Returns:
+        Every comment row across all pages. A page that will not parse is skipped rather than
+        failing the run, because a malformed read must not turn into a mute.
+    """
+    rows: List[Dict[str, Any]] = []
+    for line in (listed or "").splitlines():
+        if not line.strip():
+            continue
+        try:
+            page = json.loads(line)
+        except json.JSONDecodeError:
+            continue
+        if isinstance(page, list):
+            rows.extend(row for row in page if isinstance(row, dict))
+    return rows
+
+
+def claim_failure_dispatch(issue_number: int, effect: str, repo: str) -> bool:
+    """Elects exactly one dispatcher for a failure effect identity, or reports that it lost.
+
+    A failure is repaired by committing, and committing turns CI red again, so an unbounded
+    "dispatch on failure" loop is the reason the ``pipeline-failure`` label was used as a mute. The
+    replacement bound is one repair in flight per failing run, decided by an election rather than a
+    check-then-act: every contender posts the same claim comment and the one GitHub assigned the
+    lowest comment id wins, so two runs racing the same failure cannot both enter the repair. That
+    keeps DF-RULE-018's "concurrent duplicates cannot both enter the mutation" without a new store.
+
+    Args:
+        issue_number: Issue the failure is reported on.
+        effect: Effect identity from :func:`failure_effect_id` or :func:`refailure_effect_id`.
+        repo: Repository slug.
+
+    Returns:
+        ``True`` when this run won the election and should dispatch.
+    """
+    wanted = f"{CLAIM_PREFIX}{effect}{CLAIM_SUFFIX}"
+    if try_gh(
+        ["issue", "comment", str(issue_number), "--body", wanted],
+        repo=repo,
+        doing=f"claim the repair of {effect}",
+    ) is None:
+        return False
+
+    listed = try_gh(
+        [
+            "api",
+            f"repos/{repo}/issues/{issue_number}/comments",
+            "--paginate",
+            "--jq",
+            "[.[] | {id: .id, b: .body}]",
+        ],
+        repo=repo,
+        doing=f"read the claims on #{issue_number}",
+    )
+    if listed is None:
+        return True
+
+    claims = sorted(
+        int(row["id"]) for row in _claim_rows(listed) if str(row.get("b", "")).strip() == wanted
+    )
+    # GitHub issues comment ids in creation order, so the lowest claim is the earliest writer and
+    # the highest is this run's own. A run that cannot tell them apart dispatches rather than
+    # mutes, because a mute is the failure mode this change exists to remove.
+    if claims and claims[0] != claims[-1]:
+        print(
+            f"Another run already claimed the repair of {effect} (claim {claims[0]}, "
+            f"this run is {claims[-1]}); not dispatching a second repair."
+        )
+        return False
+    print(f"Claimed the repair of {effect} on issue #{issue_number}.")
+    return True
+
+
 def dispatch_event(event_path: str, event_name: str):
     """Dispatches the event to the appropriate agent handler."""
     if not os.path.exists(event_path):
@@ -4657,7 +4798,7 @@ def dispatch_event(event_path: str, event_name: str):
         issue_num = issue.get("number")
         labels = [l.get("name") if isinstance(l, dict) else str(l) for l in issue.get("labels", [])]
 
-        if action == "opened" and issue_num:
+        if action in ("opened", "labeled") and issue_num:
             lowered = {str(lbl).lower() for lbl in labels}
 
             # A Plan issue is opened by the pipeline itself, as the child of a Request that has
@@ -4671,11 +4812,23 @@ def dispatch_event(event_path: str, event_name: str):
                 )
                 return
 
-            # A pipeline-failure issue is the pipeline reporting on itself. Interpreting it as a
-            # request answers a question nobody asked, and every comment it posts is another event
-            # that re-runs the automations whose failure it reports.
-            if "pipeline-failure" in lowered:
-                print(f"Issue #{issue_num} is a pipeline-failure report; not interpreting it.")
+            # `labeled` carries the issue's whole label set, so the label that was just applied is
+            # what decides, not the set: otherwise adding any second label to a Request re-entered
+            # the pipeline and started a duplicate run. The graph's only entry edge carries
+            # `Request`, so that is the label intake is keyed on.
+            if action == "labeled":
+                applied = payload.get("label")
+                applied_name = str(applied.get("name", "")).lower() if isinstance(applied, dict) else ""
+                if applied_name != "request":
+                    return
+
+            # A pipeline-failure issue is the pipeline reporting on a red build, and it is the only
+            # trigger that can repair one. It used to be skipped here, which meant the reporter filed
+            # it and this refused to act, so every failure was reported and then ignored forever.
+            # What bounds the loop is not a label but the effect identity of the failing run: one
+            # repair in flight per run, elected in `claim_failure_dispatch`.
+            effect = failure_effect_id(issue.get("body", "") or "")
+            if effect is not None and not claim_failure_dispatch(issue_num, effect, repo):
                 return
 
             if not lowered & {"request", "plan"}:
@@ -4704,26 +4857,38 @@ def dispatch_event(event_path: str, event_name: str):
 
         # Only process human comments from owner/collaborators, ignore bot/agent comments
         if action == "created" and issue_num:
+            labels = [
+                l.get("name") if isinstance(l, dict) else str(l) for l in issue.get("labels", [])
+            ]
+            issue_body = issue.get("body", "") or ""
+
+            # A pipeline-failure issue carries a red build, and the reporter reports a recurrence by
+            # commenting `Failed again: <run>` on the still-open issue rather than opening a second
+            # one. That comment is the one bot comment that is a trigger and not chatter, so it is
+            # recognised by shape and taken before the author check - which is what lets a failure
+            # recur after a repair instead of staying muted. It claims the same effect identity the
+            # opening event claims, so a run already being repaired does not start a second repair.
+            refailure = refailure_effect_id(issue_body, comment_body)
+            if refailure is not None:
+                if not claim_failure_dispatch(issue_num, refailure, repo):
+                    return
+                print(f"#{issue_num} failed again as {refailure}; dispatching the repair.")
+                handle_interpret(issue_num, repo)
+                return
+
             if is_bot_or_agent_comment(comment_user, comment_body):
                 print(f"Skipping comment on #{issue_num} authored by bot/agent ({comment_user}).")
                 return
 
-            labels = [
-                l.get("name") if isinstance(l, dict) else str(l) for l in issue.get("labels", [])
-            ]
-            lowered_labels = {str(lbl).lower() for lbl in labels}
-
-            # A pipeline-failure issue is the pipeline reporting on itself. Comments on it
-            # must not run the agent (an LLM call) — unless the comment resumes the run.
-            if "pipeline-failure" in lowered_labels:
-                if parse_issue_command(comment_body) != "resume":
-                    print(
-                        f"Skipping comment on pipeline-failure issue #{issue_num}; "
-                        "only a resume command resumes it."
-                    )
+            # Every other comment on a failure report is chatter about a red build, not an answer to
+            # a gate. The opening event already claimed and interpreted the issue, so re-reading it
+            # here would only start a second repair. A resume command still unblocks it.
+            if failure_effect_id(issue_body) is not None:
+                if parse_issue_command(comment_body) == "resume":
+                    unblock_entity(issue_num, repo, is_pr=is_pr)
+                    handle_respond(issue_num, comment_body, repo=repo, is_pr=is_pr)
                     return
-                unblock_entity(issue_num, repo, is_pr=is_pr)
-                handle_respond(issue_num, comment_body, repo=repo, is_pr=is_pr)
+                print(f"Skipping ordinary comment on failure issue #{issue_num}.")
                 return
 
             issue_author = ((issue.get("user", {}) or {}).get("login", "")) or ""

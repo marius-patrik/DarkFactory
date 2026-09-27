@@ -60,11 +60,35 @@ def test_ci_has_no_handwritten_language_quality_jobs():
         assert legacy not in jobs
 
 
-def test_autonomous_agent_skips_pipeline_failure_issues_and_comments():
+def test_autonomous_agent_still_ignores_its_own_bot_comments():
     workflow = _workflow(".github/workflows/agent.yml")
     condition = workflow["jobs"]["run-agent"].get("if", "")
     assert "!endsWith(github.event.comment.user.login, '[bot]')" in condition
-    assert "!contains(github.event.issue.labels.*.name, 'pipeline-failure')" in condition
+
+
+def test_autonomous_agent_does_not_mute_pipeline_failures():
+    """#1193. The `pipeline-failure` label used to skip the agent on exactly the issue report-failure.yml
+    files for a red build, so every failure was reported and then ignored forever. The loop is bounded by
+    the effect identity the runner claims instead, so the label must not gate dispatch."""
+    workflow = _workflow(".github/workflows/agent.yml")
+    assert "pipeline-failure" not in workflow["jobs"]["run-agent"].get("if", "")
+
+
+def test_autonomous_agent_admits_the_recurrence_report_that_resumes_a_muted_loop():
+    """A red build that recurs after a repair is commented onto the still-open failure issue by the
+    pipeline's own token, so a blanket bot-comment skip would swallow the only signal that resumes
+    the loop."""
+    workflow = _workflow(".github/workflows/agent.yml")
+    condition = workflow["jobs"]["run-agent"].get("if", "")
+    assert "startsWith(github.event.comment.body, 'Failed again:')" in condition
+
+
+def test_agent_can_be_started_on_an_issue_that_already_exists():
+    """v1 exit criterion 6. The graph's only entry edge carries the `Request` label, so a trigger of
+    `issues.opened` alone makes every pre-existing issue - including every failure report - unable to
+    enter the pipeline."""
+    workflow = _workflow(".github/workflows/agent.yml")
+    assert workflow[True]["issues"]["types"] == ["opened", "labeled"]
 
 
 def test_failure_observer_only_auto_files_default_branch_incidents():
