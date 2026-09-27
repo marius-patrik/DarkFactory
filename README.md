@@ -46,7 +46,7 @@
 - [8 Invariants](#8-invariants)
 - [9 Architecture](#9-architecture)
   - [9.1 Structure is the declaration](#91-structure-is-the-declaration)
-  - [9.2 Declaration and implementation are separate files](#92-declaration-and-implementation-are-separate-files)
+  - [9.2 There is one kind of file, and it both declares and implements](#92-there-is-one-kind-of-file-and-it-both-declares-and-implements)
   - [9.3 The tree](#93-the-tree)
   - [9.4 Identity is not scoped to a caller](#94-identity-is-not-scoped-to-a-caller)
   - [9.5 Rules the structure must satisfy](#95-rules-the-structure-must-satisfy)
@@ -60,7 +60,7 @@
   - [13.2 Why execution is separate from reading](#132-why-execution-is-separate-from-reading)
 - [14 Self-heal: convergence, not reversion](#14-self-heal-convergence-not-reversion)
 - [15 Self-building, and why it is a stronger claim](#15-self-building-and-why-it-is-a-stronger-claim)
-- [16 Declarable by nature](#16-declarable-by-nature)
+- [16 Declared where it lives](#16-declared-where-it-lives)
 - [17 Structure is the interface](#17-structure-is-the-interface)
 - [18 The systems layer: `.df`](#18-the-systems-layer-df)
 
@@ -696,60 +696,50 @@ concern can be added or removed without amending this document. The question "is
 content?" is not asked, because what a thing needs is already answered by where it sits and what it
 sits beside.
 
-### 9.2 Declaration and implementation are separate files
+### 9.2 There is one kind of file, and it both declares and implements
 
-A binding is a declaration beside its implementation. The declaration states what a thing is
-bound to; the implementation carries the code. Both are read by the same interpreter, and a
-binding with no implementation in the current backend is an error rather than a silent absence.
+**There is exactly one kind of file in the system. A `.df` file may declare, may implement, and
+usually does both. There is no other extension, and no file in the system is called anything
+else.**
 
-There are exactly two kinds of file in the system, and they are two kinds of *thing*:
+This is stronger than separating declaration from implementation, and the separation was a mistake
+worth naming. A binding — that `Change` is bound to git — is a fact about the system; the organ
+that implements it is the same fact. Splitting them across two file kinds put a second kind of file
+in the system, and a second kind of file is a second thing whose name has to be maintained, which
+is the failure this design exists to remove. So there is one kind, and **a declaration lives in the
+file of the thing it declares.**
 
-- **`*.dfconfig` — declaration.** A document of named blocks that says what the system *is*: its
-  identity, its pipeline, its providers, its models, and which backend each seam is bound to. It is
-  read. The filename is not part of its meaning — any stem is accepted and none is canonical.
-- **`.df` — implementation.** Every mechanism and every feature the system has. It is interpreted
-  and then run. There is no other extension, and no file in the system is called anything else.
+**A thing is declared where it is implemented.** The seam is named in the file that implements it.
+The pipeline is declared by the thing that composes it. The identity of a concern is declared by
+the concern. Nothing states what a system is except the system, and there is no second place to
+disagree with.
 
-**Declaration and implementation are separated by kind rather than by adjacency.** A seam's
-binding — that `Change` is bound to git — is a fact about the system and belongs in a `.dfconfig`
-block. The organ that implements it is a `.df` file. These are not two spellings of the same thing
-in neighbouring files; they are data and code, and the separation survives a backend being replaced
-because nothing in the `.df` knows which seam it serves.
+A feature that has semantics to state may state them in a file named `config.df`, beside what it
+configures — the graph of `Change/`, the identity of `Execution/`. That is a name, not a kind: a
+convention like any other, not a category, and nothing about the system depends on it. **A
+feature that has nothing to declare declares nothing**, and most do not. A `config.df` is permitted
+where there is semantics to record and is not required anywhere.
 
-**There is no `.ts`.** The repository contains no file under that extension, and the absence is
-the point: a third kind would reintroduce exactly the ambiguity this design removes, because
-"is this declaration or implementation?" would become a question about a filename rather than
-something the reader can see. `.df` is TypeScript, so `tsc`, every editor and every language server
-works on the whole system once `tsc` is told what `.df` is — one configuration, and then no
-per-file ceremony for the rest of the repository's life.
+**A `config.df` that stands apart from what it configures is forbidden.** A repository-root
+configuration document, describing things implemented elsewhere, is the second site of meaning
+under a different filename — the exact thing §7.1 rules out. If configuration describes the whole
+system from somewhere the system is not, then changing the system and changing its description are
+two actions, and they will diverge, and nothing will notice.
 
-Data that belongs to no system — fixtures, lockfiles, third-party manifests — stays `.json`, and a
-block is promoted from a `.dfconfig` to code only once something must *interpret* it rather than
-read it.
+**There is no `.ts`.** The repository contains no file under that extension. `.df` is TypeScript,
+so `tsc`, every editor and every language server works on the whole system once `tsc` is told what
+`.df` is — one configuration, and then no per-file ceremony for the rest of the repository's life.
 
-**Configuration is one convention.** Everything a scope declares is a block in one `*.dfconfig`
-document, so the only thing that varies between repositories is block *content*. Splitting it across
-a `*.dfconfig`, a graph file and two `.json` files would be three places to name a thing and three
-ways for a repository to spell a convention it inherited rather than chose.
-
-**The layers are process boundaries, not folder names.** A directory tree is a claim about naming;
-a process boundary is a claim about what can go wrong. Each concern below runs as its own thing and
-is reached only through a declared interface, so the guarantees are enforced by the runtime rather
-than by a convention everyone is trusted to follow. This is the difference between saying `Execution/`
-is separate and saying nothing inside it can be reached except through its seam — the first is
-satisfied by a good folder name, the second is not satisfied by anything except isolation.
-
-It also means a concern can be *removed* and take only itself with it. A folder name implies a
-convention that outliving the folder; a process boundary implies nothing left behind, which is what
-makes a backend removable along with its installation rather than merely substitutable.
+Data that belongs to no system — fixtures, lockfiles, third-party manifests — stays `.json`. That
+is not a third kind of system file: it is data the system does not own, and §6.5 says why recording
+it there is not a violation.
 
 ### 9.3 The tree
 
 ```
 /                                       any repository that adopts DarkFactory
-├── *.dfconfig                           one per scope, any filename; all declaration
-│                                         blocks: repo · graph · providers · models · docs ·
-│                                         bindings: which backend each seam is bound to
+│                                         (no root configuration document: a thing is declared
+│                                          where it is implemented — see §9.2)
 │
 └── darkfactory/
     │
@@ -1133,15 +1123,26 @@ The completion condition is a fixed point: **the system compiled by itself resol
 Not approximately, and not after a maintenance pass — the same resolution, which is only possible
 if there was never a second description to reconcile.
 
-## 16 Declarable by nature
+## 16 Declared where it lives
 
-**Anything config-shaped in nature must be declarable rather than coded.** If a competent
-operator could reasonably want to vary it without reading our source, it is data. If only someone
-who has read the implementation could want it, it is code and should be code.
+**If a competent operator could reasonably want to vary something without reading the source, it
+must be stated — and it is stated in the file that owns it.**
 
-The discipline this adds is that **every resolution layer is inspectable**, because "the user
-overrode the default" and "the default is this" are different facts, and an operator debugging a
-surprise needs the difference.
+The older form of this rule asked whether a thing was *declarable or coded*, and the dichotomy was
+wrong twice over. It forced a choice between two file kinds, which is what `.dfconfig` was and what
+§9.2 has now removed; and it let a thing be neither, by being buried in a function where the
+question never arises. The question is not declaration-versus-code. It is whether the semantics are
+stated at all, and where.
+
+So the test is about an operator's legitimate expectation, not about a category. If someone would
+want to vary it, it is stated in the file that owns it — as a default, a bound, or a named value.
+If only someone who has read the implementation could want it, it stays an implementation detail
+and nothing is owed. Most of a system is the second kind, and that is fine.
+
+**Every resolution layer is inspectable.** "The user overrode this" and "this is the default" are
+different facts, and an operator debugging a surprise needs the difference. That is the whole
+discipline the rule adds, and it is a property of where the statement lives rather than of what
+kind of file it is in.
 
 ## 17 Structure is the interface
 
@@ -1212,7 +1213,7 @@ are not replacing a mature system's language, we are making it reachable.
 1. this document defines product requirements and architecture.
 2. Current active Request/Planning records define approved feature-specific behavior and executable delivery scope.
 3. Accepted ADRs in §38 record durable decisions and rationale.
-4. The scope's `*.dfconfig` document and the blocks it declares are executable declarations. No filename is canonical; see §24.1.
+4. Every `.df` file in the system is an executable declaration, whether it also implements something or only states semantics. There is no separate configuration document; see §9.2 and §24.1.
 5. §37 defines mandatory contribution/governance behavior.
 6. Generated docs/web views and generated projections are projections, not independent sources of truth.
 
@@ -1348,33 +1349,30 @@ them is how a system ends up unable to say whether a difference is drift or an e
 
 ### 24.1 Configuration
 
-Configuration is one convention. A scope resolves exactly one `*.dfconfig` document, the document
-owns named blocks, and a consumer selects a block rather than a file.
+**A thing is declared where it is implemented.** There is no configuration document, no
+configuration kind, and no central place where the system is described. A concern that has
+semantics to state keeps them in a `config.df` beside what it configures; a concern with nothing to
+declare declares nothing. §9.2 states why, and the rule that governs is §7.1: a description beside
+the thing it describes is the second site of meaning.
 
-The rules are:
+The rules that follow from that:
 
-- **No filename is canonical.** Any stem is accepted. `repo.dfconfig` is a convention this repository
-  happens to follow, not a requirement, and a repository that names its configuration
-  `system.dfconfig` or `config.dfconfig` is not making a mistake.
-- The document owns named blocks — `repo`, `graph`, `providers`, `models`, `docs`, and whatever else
-  a declaration defines — and every consumer selects the block it needs. `repo` owns repository
-  identity and policy, `providers` owns runtime and provider settings, `models` owns the catalog and
-  preference order, `graph` owns the pipeline, and `docs` owns documentation configuration and output.
-- **The pipeline is the `graph` block, not a separate graph file.** Topology, nodes, edges and
-  convergence are configuration like anything else, and giving them their own format would be a
-  second convention for a repository to inherit rather than choose.
-- **An unknown block is an error, not a no-op.** A misspelled block must fail loudly rather than
-  silently disable a setting, because a block that does nothing and a block that is absent are
-  indistinguishable at runtime and only one of them is what the author meant.
-- When root candidates exist they are selected; otherwise candidates under `DF_CONFIG_DIR` (default
-  `.darkfactory`) are accepted for supported discovery. `.darkfactory` is a fallback and is not a
-  committed source in this repository.
-- **Two `*.dfconfig` in the selected scope, or candidates in both root and the configured folder,
-  fail closed as ambiguous.** A repository with two configuration documents is not a repository with
-  a rich configuration; it is a repository that has not decided. This is I1 applied to configuration.
-- Blocks are never merged across documents, for the reason §4.2 gives: merging two declarations is
-  how a second source of meaning appears.
-- `.df` and `.dfconfig` are filename extensions, never directories.
+- **A `config.df` that stands apart from what it configures is forbidden.** A repository-root
+  document describing things implemented elsewhere is the failure under another filename, and it
+  fails silently: changing the system and changing its description become two actions, and nothing
+  notices when they disagree.
+- **A binding is named in the file that implements it.** That `Change` is bound to git is stated by
+  the git backend, not by a declaration about the git backend elsewhere.
+- **The graph is declared by the thing that composes it.** Pipeline topology, nodes, edges and
+  convergence belong to `Change/` and `Execution/`, not to a document that describes them.
+- **An unknown declaration is an error, not a no-op.** A misspelled name must fail loudly, because
+  a declaration that does nothing and a declaration that is absent are indistinguishable at
+  runtime and only one of them is what the author meant.
+- **The filename is not part of the meaning.** `config.df` is a name, not a category, and a
+  consumer selects a *concern*, never a file. Nothing depends on the name.
+- **`.df` and `.json` are filename extensions, never directories.** `.json` holds data the system
+  does not own — fixtures, lockfiles, third-party manifests — and §6.5 explains why recording a
+  resolution is not the same as authoring a description.
 
 ### 24.2 Documentation configuration and output
 
@@ -1384,11 +1382,10 @@ Generated documentation sites and JSON content graphs are CI outputs and must no
 
 ### 24.3 State
 
-State is data the system observed, and data lives in a `*.dfconfig` block or a record beside the
-thing it records, never in a `.df` file — `.df` is implementation, and implementation that also
-holds mutable state is a second place meaning can drift to. Each artifact sits with its owning
-concern and carries a resolvable identity (I2a), so the record of a run is addressable and the
-record of a decision is diffable against the declaration that produced it.
+State is data the system observed, and it is a record beside the thing it records rather than a
+declaration of it. A record can be recomputed from what happened; a declaration cannot. Each
+artifact sits with its owning concern and carries a resolvable identity (I2a), so the record of a
+run is addressable and the record of a decision is diffable against the declaration that produced it.
 
 ## 25 Governed Request lifecycle
 
