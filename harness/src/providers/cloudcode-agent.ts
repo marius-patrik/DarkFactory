@@ -18,13 +18,15 @@ function contentText(content: Context["messages"][number]["content"]): string {
 }
 function serialize(context: Context): { userMessage: string; history?: Array<{ content: string }> } {
 	let userIndex = -1;
-	for (let index = context.messages.length - 1; index >= 0; index--)
-		if (context.messages[index]?.role === "user") {
-			userIndex = index;
-			break;
-		}
+	let userMessage = "";
+	for (let index = context.messages.length - 1; index >= 0; index--) {
+		const message = context.messages[index];
+		if (message?.role !== "user") continue;
+		userIndex = index;
+		userMessage = contentText(message.content);
+		break;
+	}
 	if (userIndex < 0) throw new Error("cloudcode-agent requires a user message");
-	const userMessage = contentText(context.messages[userIndex]?.content);
 	if (!userMessage) throw new Error("cloudcode-agent requires a non-empty user message");
 	const history = context.messages.flatMap((message, index) =>
 		index === userIndex ? [] : [{ content: `[${message.role}]\n${contentText(message.content)}` }],

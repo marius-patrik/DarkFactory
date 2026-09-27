@@ -408,13 +408,10 @@ export class ModelCatalog {
 	async get(providerId: string, options: { account?: string; refresh?: boolean } = {}): Promise<CatalogResult> {
 		const provider = this.providers.get(providerId);
 		if (!provider) throw new Error(`Unknown provider ${providerId}`);
+		const config = this.configs.get(providerId);
 		// Providers with no catalog endpoint have an upstream-maintained static catalog.
 		// Never let a prior cached static revision hide newly shipped models.
-		if (
-			this.configs.get(providerId) &&
-			!this.configs.get(providerId)?.models.list &&
-			!DIALECT_DEFAULTS[this.configs.get(providerId)?.dialect]
-		) {
+		if (config && !config.models.list && !DIALECT_DEFAULTS[config.dialect]) {
 			return {
 				provider: providerId,
 				models: provider.getModels().map((model) => ({ id: model.id, name: model.name })),
