@@ -7,8 +7,8 @@
 // the structure of the work: 1.1 and 1.2 Terminology.
 #heading(level: 1)[Úvod]
 
-#emph[Šíření nástrojů založených na velkých jazykových modelech má tři stupně.] Nejprve doplňovaly kód
-v editoru @github-copilot-completion a člověk zůstával tím, kdo jej přijímá a spouští. Pak přišly
+Nástroje založené na jazykových modelech se v krátké době drasticky zlepšily. Nejprve doplňovaly kód
+v editoru @github-copilot-completion. Pak přišly
 konverzační chatboty @github-copilot-chat, v nichž model sestavuje odpověď, ale nástroje mu zpravidla
 nebyly k dispozici, takže i nadále všechno provedl uživatel. Třetí stupeň, #emph[coding agenti]
 @github-copilot-agent @openai-codex-2025 @openai-codex-app-2026, dostal přístup k souborům, příkazům
@@ -16,15 +16,15 @@ a běhovému prostředí. Tím se poprvé změnilo, kdo práci vlastně dělá, 
 této práci. Průmyslové zprávy o šíření agentů do výroby ji popisují jako probíhající
 @anthropic-agents-2026.
 
-Rozsah veřejného použití je přitom stále úzký. Jeden ze zveřejněných odhadů klade počet
-uživatelů chatbotů na 28~% populace a pravidelné užití #emph[coding agenti] na
-0,36~% světové populace @gradually-ai-usage-2026; @fig-gradually-usage tyto dvě skupiny
-odlišuje.
-
 #figure(
   image("/components/img/gradually-ai-usage-2026.svg", width: 100%),
   caption: [Odhad rozdělení uživatelů generativní AI podle typu @gradually-ai-usage-2026.]
 ) <fig-gradually-usage>
+
+Rozsah veřejného použití je přitom stále úzký. Jeden ze zveřejněných odhadů klade počet
+uživatelů chatbotů na 28~% populace a pravidelné užití #emph[coding agenti] na
+0,36~% světové populace @gradually-ai-usage-2026; @fig-gradually-usage tyto dvě skupiny
+odlišuje.
 
 Aby takový agent mohl na projektu pracovat, nestačí generovat odpovědi. Potřebuje kontext
 z repozitáře, přístup k prostředí, nástroje pro spouštění příkazů, stav, který přežije
