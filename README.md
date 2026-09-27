@@ -212,9 +212,10 @@ A seam is not a suggestion: the system **requires** each one, because a system t
 resolved without its seams could be assembled without them, and that is the configuration the design
 exists to make impossible. **What is reserved is the requirement, not the implementation.** The
 system knows that it must be able to reach a version-controlled world, prove an identity, and execute
-something; it does not know how, and no part of the system says. That is why a required seam is not
-an exception to §11's claim that nothing is privileged — a requirement is not knowledge of a
-solution, and the implementations that satisfy one are discovered like everything else. §11 argues
+something; it does not know how, and no part of the system says. That is why a required seam is not a
+counter-example to the whole structural argument: a requirement is not knowledge of a solution, and
+the implementations that satisfy one are discovered like everything else. §11 draws the line this
+way and says why the stronger word cannot be used. §11 argues
 what the seam is for and what makes it worth having.
 
 ### 3.2 Five operations
@@ -305,9 +306,8 @@ the runtime is the declaration
 **Portability is a property of the depth, not of the top level.** A seam that bottoms out in one
 hard-wired engine is not portable however good the level above it is, which is the test to apply
 to every seam in the tree. This is also the answer to every "this tool does not understand us"
-moment: a tool that cannot be configured for the system is a system to bind, not a system to fork,
-and the surrounding system can host the binding precisely because it is built from recombinable
-parts.
+moment: a tool that cannot be configured for the system is a system to bind rather than to fork, and
+the surrounding system can host the binding precisely because it is built from recombinable parts.
 
 One consequence is a real tension rather than a free lunch. A fully portable system needs a binding
 that works on a host with nothing installed, and such a binding delivers **less guarantee** — a
@@ -403,7 +403,7 @@ compose — recomposition is, and §9 is where that is argued.
 
 The same procedure applies to language, which is why the interpreter is a seam and not a parser, and
 to the browser, to toolchains, and to every tool in the build that does not yet understand the
-system: a tool that cannot be configured for it is a system to bind, not a system to fork.
+system: a tool that cannot be configured for it is a system to bind rather than to fork.
 
 ### 4.2 One site of meaning
 
@@ -412,7 +412,8 @@ agree — a check is the admission that there are two.
 
 The consequence is that a manifest, an index, a registry, a schema, a catalogue, a per-surface
 adapter, a hand-written interface description and a hand-written build description are all the same
-mistake, and none of them is available as a design. What the design has instead is a count of
+mistake, and none of them is available as a design — which §6.3 states as the fourth clause of the
+shape rather than listing a second time. What the design has instead is a count of
 duplication, and §5.3 says what makes it falsifiable rather than merely virtuous.
 
 ### 4.3 Derive, do not author
@@ -465,7 +466,8 @@ one that determines engineering priority, because it says the missing feature is
 interpreter. **The "supposed to" is the honest part.** §5.3 and §40 both record that §4.6 has no
 mechanism behind it, which means the conversion does not actually happen: this is a preference with
 a latency requirement attached, and a preference does not become a property by asserting that it
-should. What makes the other five properties is that they have checks in the table above. §4.6
+should. What makes the other five properties is that they have checks, and those checks are in §8's
+table of invariants. §4.6
 decides which one to build first, and it earns its place by being the best predictor of where the
 interpreter is thin, not by being enforced.
 
@@ -530,7 +532,8 @@ requirements are then a consequence rather than a regulation.
 
 **The system is composable**, because nothing about it is registered: a feature can be moved,
 combined, or dropped without anything else being told, which is the property §9 argues is the real
-reason to bind rather than own. §11 gives the three steps in full.
+reason to bind rather than own — and §11 gives the argument in full, from derived interfaces and
+structural discovery to recombinability.
 
 **And a claim this section should not make.** The architecture of Part II is not "largely a
 consequence rather than a set of choices": that is unfalsifiable as phrased — "largely" has no
@@ -740,9 +743,9 @@ first time) yields no clause either — it is the cost the pattern incurs, and �
   and the documentation.
 - No consumer holds a copy. Every consumer — including every surface and every agent — reads the
   derivation, so a consumer cannot disagree with the system because it cannot have its own idea.
-- Nothing states what a thing is except the thing. A manifest, an index, a registry, a schema, a
-  per-consumer adapter, a hand-written interface description and a hand-written build description
-  are all the same mistake, and none of them is available.
+- Nothing states what a thing is except the thing. Every artefact §4.2 names — a manifest, an index,
+  a registry, a schema, a per-consumer adapter, a hand-written interface description, a hand-written
+  build description — is the same mistake, and none of them is available.
 
 ### 6.4 Consequences
 
@@ -965,8 +968,8 @@ build and the last to relax.
 assertion with no steps behind it, and it is false.** I1b is a rule about doc comments, I9a is a type-level rule about scene-tree primitives, and I2a's identity scheme is
 adopted rather than derived (§45 says so); no chain runs from "effects pass through a seam" or "the
 system compiles to itself" to any of them. The useful statement is the narrower true one: **four of
-the eleven are independent premises**, adopted for reasons given in §45 and §4.6, and the other
-seven are checkable properties. Naming four premises is more useful than claiming eleven
+the twelve are independent premises**, adopted for reasons given in §45 and §4.6, and the other nine
+are checkable properties. Naming three premises is more useful than claiming twelve
 derivations, because a premise can be argued about on its own terms.
 
 ## 9 Architecture
@@ -995,7 +998,7 @@ Meaning lives in exactly one place: the code. Folders, file names, function name
 comments are the declaration, and the interpreter reads meaning from them. Nothing describes a
 feature except the feature.
 
-The rules that follow are stated with their reasoning in §10.1 and §17 — one askable thing per file,
+The rules that follow are stated with their reasoning across §10.1, §17, §7.1 and I3 — one askable thing per file,
 no privileged subset, no barrels, no registries, discovery by structure, and documentation as part
 of the contract. What is specific to *architecture* is only this: **there is no privileged
 top-level subset.** A folder declares a concern, and the set of concerns is itself content, so a
@@ -1125,9 +1128,7 @@ obtains it through the same `Identity/` concern.
 
 An identity is a declaration plus one or more proofs, and a proof is not restricted to a
 stored secret. A proof may be stored, derived, or exist only for the duration of a flow. The
-system must support at minimum: long-lived bearer tokens, OAuth grants, mTLS client
-certificates, SSH keys, passkeys, time-based one-time codes, codes delivered to another
-channel, and opaque session cookies. An identity is acquired through a flow that may require a
+system must support the proof kinds §28 enumerates. An identity is acquired through a flow that may require a
 human or a second device, so acquisition is part of the concern and not an assumption of prior
 provisioning.
 
@@ -1208,9 +1209,9 @@ OpenChange:  <target, ref, title>     the only way to request review
 Identify:    <who>                    who is acting
 ```
 
-**Every line written to replace a mature tool is a line worse than what it replaces and one
-maintained forever.** But measured against the tool, binding looks like a tax, and that comparison
-is wrong: it assumes the only alternative to a seam is the organ it wraps. The real alternatives are
+§4.1's objection applies here verbatim: a line written to replace a mature tool is a line worse than
+what it replaces and one maintained forever. Measured against the tool, binding looks like a tax, and
+that comparison is wrong: it assumes the only alternative to a seam is the organ it wraps. The real alternatives are
 the tool, another binding, and a composition of bindings, so the comparison is against **the best
 construction available**. Measured that way, binding is usually cheaper — which is the honest reason
 for it rather than the virtuous one.
@@ -1246,10 +1247,10 @@ required**; the stronger claim that nothing is privileged would have to show tha
 are themselves discovered, and §3.1 deliberately makes them not be. So the word is *registered*
 rather than *privileged*, and the difference is the objection met rather than avoided.
 
-The payoff is an answer to every "this tool does not understand us" moment. A tool that cannot be
-configured for the system is **a system to bind, not a system to fork** — the formatter, the test
+The payoff is an answer to every "this tool does not understand us" moment — the formatter, the test
 discovery, the coverage reporter — and the surrounding system can host the binding precisely because
-it is built from recombinable parts rather than a program with one fixed entry point.
+it is built from recombinable parts rather than a program with one fixed entry point. §4.1 and §3.5
+state the same payoff where the argument for it sits.
 
 ### 11.1 The interpreter is the same seam applied to language
 
@@ -1294,7 +1295,7 @@ limited to what a compiler can check, and that the limit is drawn at *derivabili
 the same resolution; a prose declaration that does not resolve has told the system something the
 system cannot do, which is exactly the information an author needed.
 
-**The consequence for the reader is real.** `§4.3` and `§7.1` require a feature to be documented,
+**The consequence for the reader is real.** §4.3 and §7.1 require a feature to be documented,
 and now a feature may be documented in the language its user speaks and resolved by a backend that
 reads it. Documentation stops being a description *of* the system and becomes a way of *declaring*
 to it — which is the same move as removing `.dfconfig`, one level down: the thing that states
@@ -1466,9 +1467,9 @@ that needed a *self-modification path* would be admitting that its ordinary path
 difference against itself, converges, and versions the result. There is no privileged tuner, no
 separate build-for-darkfactory routine, and no code path that exists only for the system to edit
 itself — and the reason to insist is that a privileged path produces changes with no author, no
-diff and no rollback, which is the precise failure §7.7 is written against. That it is the system
-rather than an external agent making the change does not improve the position; it makes it harder
-to notice.
+diff and no rollback, which is the precise failure §7.7 is written against and which is worth
+reading there rather than restating: the system making the change is not a mitigation, it is what
+makes the change harder to notice.
 
 **Every mutation, including the system's own, goes through the same escrow and the same record.** A
 runtime change is written to the declaration and applied by convergence — not as an overlay and not
@@ -1686,7 +1687,8 @@ GitHub surface, and external agent harnesses as MCP servers and plugin/skill for
 Compiling and releasing are one operation. Compilation binds the resolved system to a version and emits it in every surface form at that version, so a version is part of what compilation resolves rather than a label applied afterwards. There is no separate build description of the system that could disagree with the system.
 
 Official capabilities use the same loader/ABI as third-party capabilities. What a standard installation
-includes is specified in §33.
+includes is assembled from the official capability set, which §33 requires a standard installation to
+carry and §22 enumerates.
 
 The capability ABI is versioned independently from product SemVer.
 
@@ -1849,10 +1851,11 @@ The repository default branch is always discovered from repository state/config,
 ## 28 Identity
 
 Identity is a first-class concern of the system and is not scoped to any caller. An identity is a
-declaration plus one or more proofs.  A proof is not restricted to a stored secret: it may be
-stored, derived, or exist only for the duration of a flow. The system supports at minimum long-lived
-bearer tokens, OAuth grants, mTLS client certificates, SSH keys, passkeys, time-based one-time
-codes, codes delivered to another channel, and opaque session cookies.
+declaration plus one or more proofs, and a proof is not restricted to a stored secret: it may be
+stored, derived, or exist only for the duration of a flow. **The proof kinds the system must support
+are enumerated once, here, and nowhere else:** long-lived bearer tokens, OAuth grants, mTLS client
+certificates, SSH keys, passkeys, time-based one-time codes, codes delivered to another channel,
+and opaque session cookies.
 
 Acquisition is part of the concern. An identity may be obtained through a flow that requires a
 human or a second device — a login, a device code, a push approval, a code presented for entry —
@@ -1929,8 +1932,10 @@ deduplication and confidentiality are mutually exclusive and one of them has to 
 convergent encryption is not sufficient either: identical plaintext then produces identical
 ciphertext globally, which lets anyone confirm whether a known file exists. Deriving the per-chunk
 key from a per-holder master secret restores deduplication within a holder without publishing
-equality across holders. §15's fixed point and §28's split custody both depend on this and neither
-invents it.
+equality across holders. §28's split custody depends on this and does not invent it, and §45 records it
+as adopted rather than derived. It is not a consequence of one place of meaning: nothing about
+that constraint implies that deduplication and confidentiality are mutually exclusive, and §45 is
+where that is said.
 
 **One option schema, three consumers.** Every option carries a type, a default, a description, an
 example, and whether changing it applies live or needs a restart. From that single definition the
@@ -2301,7 +2306,7 @@ several Requests only when shared Planning proves every active bound Request has
 epic membership or stack topology never implies completion by itself.
 
 One unified Planning artifact is produced from the verbatim Request and authoritative context, and is
-handed to the single review, approval and alignment lifecycle in §24. There is no separate
+handed to the single review, approval and alignment lifecycle in §25. There is no separate
 interpretation approval lifecycle and no second Planning gate.
 
 The active Request/Planning record is the single live work ledger; concrete steps, checkboxes,
@@ -2462,7 +2467,8 @@ projection is a second description of the rules, which is the thing §7.1 forbid
 document would otherwise be the clearest instance of.
 
 What an agent gets instead is the document itself — the pattern and the practice in §6 and §7, the
-mechanism in Part III, and the requirements in Part IV — which is a better onboarding surface than a
+mechanism in Part II, the requirements in Part III, and the governance in Part IV — which is a
+better onboarding surface than a
 restatement of ten rules would have been, because it explains *why* each obligation exists rather than
 only that it binds.
 
@@ -2491,8 +2497,8 @@ standard honestly produces three kinds of entry, and only the first is a check:
 
 Three of the nine have no instrument, and §40 is more useful for saying so than for inventing one.
 **Not all nine carry a test, and giving them all one would be a way of avoiding the question.** Two
-of the labels this section would otherwise carry sit on review obligations, which §7.6 forecloses as
-evidence, and one sits on a number that appears nowhere in this document. The failures themselves are not softened — they are the ways this design fails, and
+of the tests this section could plausibly claim sit on review obligations, which §7.6 forecloses as
+evidence, and one would rest on a number that appears nowhere in this document. The failures themselves are not softened — they are the ways this design fails, and
 they are as real as the four that are checked.
 
 **Reading hardens into a wall.** Extension requires editing the interpreter, because the systems
@@ -2536,11 +2542,11 @@ wearing the clothes of a test, so it is labelled one.
 worse. A menu constrains features that *do not exist yet*, so a test that runs on shipped
 capabilities cannot see it: `Change/` is a menu, the resolver constructs whichever backend was
 selected, and every shipped capability composes around it without complaint. *Test:* **is the
-organ for a new kind of case discovered structurally, or named in a list?** The first version of
-this test asked whether the seam *accepts* a caller-owned organ, and that was wrong, because
-accepting from a set of listed options is itself a selection — a generous menu passes it. The
-distinction is not acceptance but provenance: a seam finds the implementation because the tree says
-what the case is, and a menu finds it because it was on the list. A caller-owned organ that the
+organ for a new kind of case discovered structurally, or named in a list?** Acceptance is the wrong
+measure, because accepting from a set of listed options is itself a selection — a generous menu
+accepts anything shaped like its options. The distinction is provenance: a seam finds the
+implementation because the tree says what the case is, and a menu finds it because it was on the
+list. A caller-owned organ that the
 seam was never told about, for a case the seam has no branch for, is the test case.
 
 **The abstraction leaks into the interfaces.** A surface names, selects, configures or reports an
@@ -2561,8 +2567,7 @@ obvious test — any variant that exists in one location only — is **wrong**, 
 that obeyed the design: §9.3 mandates `Change/git` and `Change/local` as siblings, and binding a
 capability to the organ appropriate to a location is the designed answer. So the test separates
 binding from branching: a branch changes what the feature does, a binding changes which organ does
-it, and `if (inCi)` is a branch while a new host requiring a new binding is not. **Legibility does
-not settle it, and legibility alone does not settle it.** A feature reading `config.mode` and
+it, and `if (inCi)` is a branch while a new host requiring a new binding is not. **Legibility alone does not settle it.** A feature reading `config.mode` and
 signing commits differently is perfectly legible from its declaration and is exactly this failure,
 so legibility is necessary and not sufficient. What would decide it is the *shape* of the
 conditional's effect: a binding selects among organs that all satisfy one interface, a branch
@@ -2573,7 +2578,7 @@ location-chosen or unconditional — is the case this document currently fails.
 **Dynamic composition proves unaffordable.** Derivation costs something, paid at the worst moment.
 The obvious test — compare against what a barrel cost — **cannot be run**, because I1, §4.2, §17 and
 DF-RULE-012 all forbid building and keeping a barrel, so the control arm is the document's own named
-failure. The replacement was a ceiling "this design fixes", and **the design fixes no number**:
+failure. A ceiling "fixed by this design" would be a test, and **the design fixes no number**:
 §4.6 is comparative, and the only time figures in the document are a prose example and a bounded
 budget with no figure attached. So the test as written is unassigned — the implementer may not
 choose the number, because a self-chosen budget is not a test, and the design has not supplied it.
@@ -2585,15 +2590,14 @@ so the stale-cache question does not arise — and if a cache is ever added, I2a
 key a correctness bug rather than a missed optimisation.
 
 **The corpus does not compound.** Meaning should accumulate without anyone maintaining it by hand.
-*Test:* **none, and the tempting substitute measures the wrong thing.** The count of §5.3 looks
-like the instrument, and §5.3 does say this failure is one the count can see — but that is the
-count's *review* mode, not its mechanical one, and the claim does not survive contact with the
-failure. The failure is maintenance without duplication, and it does not require a second
-statement: a resolver carrying a hand-tuned per-category weight table, each fact stated once in the
-file that owns it, has a count of zero and still needs a human to find the right weight for every
-new capability. Bundling is the mirror image — many statements, no extra maintenance — and the
-count is blind to that too. **So the corpus failure and the duplication count are different
-properties, and §5.3 is wrong to claim the count sees this one.**
+*Test:* **none, and the count is not it.** The tempting instrument is §5.3's duplication count, and
+the two properties do not coincide in either direction. The failure is maintenance without
+duplication: a resolver carrying a hand-tuned per-category weight table, each fact stated once in
+the file that owns it, has a count of zero and still needs a human to find the right weight for
+every new capability. Bundling is the mirror image — many statements, no extra maintenance — and
+the count is blind to that too. **So a corpus can need hand maintenance at a count of zero, and a
+corpus can hit a high count while needing none, which is why §5.3 records that the count does not
+see this failure and this section records that nothing does.**
 
 **Self-hosting stalls just short.** The system builds itself most of the time and the residue is
 maintained by hand. The most seductive failure, because every step of progress is real and only the
@@ -2757,9 +2761,9 @@ split across several.
 
 **Recomputability** — whether the system could produce a file again by its own means, without a
 human doing the work again. If it could, the file
-  is a record and may be stored; if not, it is a description and may not. §6.5. This answers a different
-  question from the count, and the two can disagree: a file can be a record and still repeat a fact it
-  derived for a consumer that cannot read the system.
+  is a record and may be stored; if not, it is a description and may not — and a declaration is
+  neither, because it is derivation's input rather than its output. §6.5 states the test and §5.3
+  the way it interacts with the count.
 
 ## 44 Relationship to the paper
 
