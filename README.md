@@ -476,21 +476,54 @@ and it can only be accumulated by a system whose meaning is readable in the firs
 
 ### 5.3 The falsifier, and how the moat fails
 
-**Count the sites where meaning is authored rather than derived. The moat's strength is inversely
-proportional to that count, and the target is zero.**
+**The moat's strength is inversely proportional to the number of times a fact about the system is
+stated more than once. The target is zero.**
 
-The count is the only honest scoreboard, and stating it is what separates this from a principle.
-§40 holds the failures a count cannot see; that is the other half, and neither half is sufficient
-alone.
+Stating it that way rather than as a count of *sites* is the whole difference between a falsifier
+and a slogan, and the difference is worth spelling out because the obvious formulation is wrong.
+A count of sites is defeated by moving a description: a forty-entry feature index beside the code
+is one site, and forty such descriptions inside forty files are zero sites, and nothing material
+has changed — the same forty claims must still be kept current and can still disagree with the
+code. **Position is not the quantity. Multiplicity is.** The protected thing is that a fact is
+never stated twice, so the instrument counts statements and not places, and a statement cannot be
+relocated out of the measurement by moving it.
 
-The failure mode is specific and worth stating plainly, because it is the one that actually
-happens. A constraint with no teeth is abandoned under pressure, and the pressure is always a
-deadline. The fastest path to a shipped capability is a hand-authored manifest, an added index, or
-a surface special case; it works, it ships, and the count never returns to zero. The countermeasures
-are §4.6, the invariant that nothing is registered by being listed (I1, §8), and
-the habit of treating a requested exception as evidence that the interpreter is missing a
-capability. §4.6 is the load-bearing one, because it is the only counter that does not depend on
-anyone remembering.
+Three consequences, and each one closes a way the count used to be gamed:
+
+- **Documentation is inside the measurement, not outside it.** A doc comment is authored, and the
+  earlier definition of the counted thing — *written beside* the feature — put the largest body of
+  authored meaning in the system permanently out of scope. The test is now whether the comment
+  states anything the signature does not. A comment that says *why* is not a duplicate; a comment
+  that restates *what* is, and the second kind is what a compiler should reject.
+- **A prose declaration and its typed equivalent are one statement, not two or none.** §11.2 makes
+  prose a real declaration language. Translating a declaration into English does not retire it, and
+  writing it in English does not exempt it; it is still one fact about the system, and the count
+  is on the fact.
+- **A build description, a manifest and an interface schema are all counted**, because §15 calls
+  the second account of the system *the* test of self-building, and a scoreboard that could not
+  see it would be blind exactly where it matters.
+
+There is a second instrument and it answers a different question, so the two are not in tension.
+§6.5's **recomputability test** sorts a *file*: if its contents could be recomputed from the system
+it is a record and may be stored; if they could not, it is a description and may not. That is a
+test of what a file is for. **The duplication count is a test of whether a fact was stated twice**,
+and the two can disagree productively — a file can be a record and still repeat a fact it derived
+for a consumer that cannot read the system, which is the one case the recomputability test alone
+would wave through.
+
+So: two instruments, each doing one job, and §40's failures are neither of them. §40 holds what a
+count does not see, and the honest statement is which of its modes are visible to it — the ninth,
+whose residue is a second description, and the second, whose support matrix is a catalogue. Calling
+all nine invisible was false in both directions and is corrected there.
+
+**The failure mode is specific, and it is the one that actually happens.** A constraint with no
+teeth is abandoned under pressure, and the pressure is always a deadline. The fastest path to a
+shipped capability is a hand-authored manifest, an added index, or a surface special case; it
+works, it ships, and the count never comes back down. The countermeasures are §4.6, the invariant
+that nothing is registered by being listed (I1, §8), and the habit of treating a requested
+exception as evidence that the interpreter is missing a capability. §4.6 is the load-bearing one,
+because it is the only counter that does not depend on anyone remembering — and the weakness of
+that claim is that §4.6 has no check either, which is why the count is now I1b and has one.
 
 # Part II — The design
 
@@ -687,6 +720,7 @@ with no check is an aspiration.
 | # | invariant | held by |
 | --- | --- | --- |
 | I1 | No file describes a feature except the feature | enumeration-only files are rejected; no barrel, registry, catalogue or manifest names what exists |
+| I1b | No fact about the system is stated twice | a check compares the statements derivable from the tree against every other statement of the same fact, including inside doc comments, and rejects a comment that restates what its signature already says; the count is zero |
 | I2 | Derivation is total — every feature is derived, none dropped | a tree walk comparing the derived set against the discovered set, across overloads, re-exports and conditionals |
 | I2a | Identity is a function of inputs, never of time | an interface's identity is the hash of its content, its declared dependencies and the environment it resolves under, so a skip names the input that changed; an undeclared input is a correctness bug, not a missed optimisation |
 | I3 | The published interface is the code's own | a feature with no doc comment is a build error, and each surface is checked to render the comment its feature publishes |
@@ -2148,63 +2182,100 @@ only that it binds.
 
 ## 40 How to tell if this is wrong
 
-A design that cannot be falsified is a mood. §5.3 gives the countable half — the number of sites
-where meaning is authored. These are the failures a count cannot see, each stated as something that
-would be observed rather than felt.
+A design that cannot be falsified is a mood. Two instruments cover the countable half — §5.3's
+duplication count and §6.5's recomputability test — and this section holds the failures neither
+sees.
 
-**Reading hardens into a wall.** Extension means editing the interpreter, because the systems layer
-can only be written the way the first loader expected. This is the likeliest failure and the most
-damaging: it converts a forge into a frozen artefact while everything still looks like a forge.
-*Test:* how many features required a change to the interpreter rather than a new file. Zero, and a
-project where it is not has already become the thing it set out to replace.
+**Two of these nine are visible to the count**, and saying so is part of being honest about it.
+The ninth leaves a second description behind, which is a duplication; the second names a support
+matrix, which is a catalogue, and a catalogue is counted. The other seven are about cost,
+latency, shape and permission, and are not.
 
-**Derivation becomes slower than authoring.** A system's worth is its latency, not its elegance. If
-a hand-authored interface is quicker to produce than a derived one — or if derivation has a cliff
-where enough structure makes it non-linear, which is plausible and untested — then §4.6 has failed
-and the rest decays from there. This arrives late and is hard to attribute, because it looks like
-ordinary friction. *Test:* a slope, not a threshold. The wall-clock cost of the second feature of a
-kind must fall below the first. This is the one number in this document nobody has yet produced, and
-the claim rests on it.
+The rest of this section is deliberately hard to fake. **A test is only worth stating if a system
+that failed would fail it.** Each one below has been checked against that: where the obvious
+formulation would let a failure through, or would fail a system that obeyed the design, the
+obvious formulation is replaced. Three of the earlier drafts of these tests were uninformative for
+exactly that reason — a feature count that scored a hard-won second backend as a wall, a benchmark
+whose control arm the design forbids building, and a source grep that DF-RULE-001 prohibits — and
+they are gone rather than softened.
 
-**The seams prove insufficient.** Binding existing systems stops providing enough construction
-material and the project retreats into implementing organs. *Test:* can `Change/`, `Identity/` and
-the interpreter express a real change to DarkFactory without anything being owned twice? The
-temptation is always to add one organ "just for this", and it is always cheaper than the seam.
+**Reading hardens into a wall.** Extension requires editing the interpreter, because the systems
+layer can only be written the way the first loader expected. This is the likeliest failure and the
+most damaging: it converts a forge into a frozen artefact while everything still looks like a
+forge. *Test:* I2, not a feature count. Does the derived set still equal the discovered set for
+every file, including ones the interpreter has never parsed? A wall is exactly a file the
+resolution stops reaching, so I2 catches it and a count of interpreter changes does not — the
+second backend a project adds legitimately is not a wall.
 
-**A seam hardens into a menu.** The quiet one: substitutability keeps passing while the thing gets
-worse. A caller can choose a backend but cannot combine one with a capability of their own, route
-around a case the seam does not cover, or extend it without forking. This is the interpreter
-hardening one layer out, and it is why a seam is judged on permeability as well — permeability is
-what fails without anyone noticing. *Test:* did a real requirement arrive that the seam could only be
-stretched to cover, and was the stretch possible at all?
+**Derivation becomes slower than authoring.** A system's worth is its maintenance, not its
+milliseconds, and §41 excludes speed from the claim. So the test is not a stopwatch. *Test:* I6
+measured as a series rather than a point. I6 already asserts that adding a feature changes no
+other file; run it for the first ten features of each kind and compare the *number of files
+touched*, not the time taken. A system whose cost per feature is flat is failing this even if every
+individual addition is fast, and a system whose cost falls is passing it even if the tenth is
+slower in wall-clock than the first.
+
+**The seams prove insufficient.** Binding stops providing enough construction material and the
+project retreats into implementing organs. *Test:* the substituted organ is visible where the count
+is blind. Retreating adds implementation, not descriptions, so a duplication count **improves** as
+this failure worsens — the scoreboard points the wrong way and the test cannot be the count. The
+instrument is §11.1's: for every organ the system owns, is there a seam it could have been a
+binding of? An organ with no seam is the finding, and it is countable.
+
+**A seam hardens into a menu.** The quiet one — substitutability keeps passing while the thing gets
+worse. A menu is extensible by construction; that is what makes it a menu, so a test about
+extensibility passes by definition. The property that actually fails is permeability. *Test:* take
+a capability the system ships and place it inside something the caller also builds, without editing
+the seam. If it cannot be composed around, the seam is a wall. This is a construction, not a
+question, and it is runnable on any feature rather than only on features that once caused trouble.
 
 **The abstraction leaks into the interfaces.** A surface names, selects, configures or reports an
-agent; whatever the internals do, the seam has leaked where it matters most and §13.1 is false.
-*Test:* a grep. Worth including precisely because it is mechanical — a property that can be checked
-automatically should be, and its checkability is evidence the constraint is real rather than
-aspirational.
+agent. *Test:* not a source grep, which DF-RULE-001 prohibits and which §13.1's own vocabulary makes
+unreliable — "the agent handling this issue" is legitimate. The check is structural: **does any
+surface's declared interface contain a field whose type or name is an agent, a provider, a model or
+a harness?** A `model` field on a settings surface fails whether or not the word "agent" appears,
+and a compliant mention of an issue's assignee passes. A surface that has no agent-typed field
+cannot be selecting one.
 
-**Location-dependent behaviour reappears.** Machines and repositories become two modes, with
-per-location special cases, host-only capability variants, or a table of what works where. Each is
-individually reasonable and collectively fatal. *Test:* does any capability have a variant that
-exists only in one location, and is any new host a code change?
+**Location-dependent behaviour reappears.** Machines and repositories become two modes. The
+obvious test — any variant that exists in one location only — is **wrong**, and would fail a system
+that obeyed the design: §9.3 mandates `Change/git` and `Change/local` as siblings, and binding a
+capability to the organ appropriate to a location is the designed answer. So the test separates
+binding from branching. *Test:* for each location-specific path, is it a *binding selection* — a
+declaration naming which organ serves — or a *branch in behaviour*? A branch changes what the
+feature does; a binding changes which organ does it. `if (inCi)` is a branch and fails. A new host
+requiring a new binding passes, because §9.3 says that is how a new host is added.
 
-**Dynamic composition proves unaffordable.** Derivation is a real cost paid at the worst moment —
-during a failure, when clarity matters most. Discovery can be cached, but caching makes a stale set
-possible, which is a second source of meaning at miniature scale. *Test:* two halves, because the
-failure has two faces. Compare resolution time and load-diagnosis time against what a barrel cost;
-and ask whether an invalidated cache can ever be observably wrong, because if it can, §5.2 applies
-to it directly.
+**Dynamic composition proves unaffordable.** Derivation costs something, paid at the worst moment.
+The obvious test — compare against what a barrel cost — **cannot be run**, because I1, §4.2, §17 and
+DF-RULE-012 all forbid building and keeping a barrel, so the control arm is the document's own named
+failure. *Test:* the load-failure leg, measured against a stated budget rather than a deleted
+design. Time to *diagnose* a load failure must be under a fixed ceiling, and the ceiling is
+declared in configuration rather than chosen after the fact. Discovery is resolved by typing, not
+cached, so the stale-cache question does not arise — and if a cache is ever added, I2a makes a wrong
+cache key a correctness bug rather than a missed optimisation.
 
-**The corpus does not compound.** Adding the *N+1*th capability is not cheaper than the *N*th, and
-the moat's economics do not hold. *Test:* whether the second capability costs what the tenth did —
-and it should be reported publicly whether or not it flatters the design.
+**The corpus does not compound.** This is the same economic claim as the second failure, and it is
+tested by the same instrument, so it does not get a second slot. What it adds is the *shape* of the
+curve rather than its value: a system that fails the second test fails this one too, and reporting
+it separately would be two slots for one claim.
 
 **Self-hosting stalls just short.** The system builds itself most of the time and the residue is
 maintained by hand. The most seductive failure, because every step of progress is real and only the
-fixed point distinguishes the result from a well-automated pipeline. *Test:* is the output of
-compiling the system byte-identical to its input, with nothing reconciled in between? A system 95% of
-the way there has a second description containing 5%, and that fraction does not stay put.
+fixed point distinguishes the result from a well-automated pipeline. *Test:* I8, and the second
+clause is the one that matters — is the output byte-identical to the input **with no reconciling
+step in between**? A build that compiles and then reconciles satisfies the first and fails the
+second, and that is precisely the failure. Non-determinism that is not semantic (map iteration
+order, embedded timestamps, absolute paths) is excluded by declaration, because a system 95% of the
+way there has a second description containing 5%, and that fraction does not stay put.
+
+**What no test here can reach.** Whether a derived interface is *true* — whether it says what the
+feature does. I1b makes a doc comment that only restates its signature a build error, and no check
+here asks whether the remaining comments are accurate, because nothing in this design knows how to
+ask. That is the limit of the instrument, and §1 raises it: a single description cannot be compared
+to anything, so eliminating the second one eliminates the cross-check along with the drift. The
+mitigation is that the system knows what it can do, so a *declaration* that cannot be resolved is
+loud — which catches a wrong claim about capability, and catches nothing about a wrong comment.
 
 ## 41 Non-goals
 
@@ -2338,8 +2409,15 @@ split across several.
 **Presenter** — a surface bound to a session so that a human and an agent see the same resolution.
 §13.
 
-**Authored meaning** — any description of a feature written beside the feature. The thing the count
-in §5.3 measures, and the only number this design is honest about.
+**Duplicated meaning** — a fact about the system stated more than once, wherever the statements live.
+  This is what §5.3 counts, and it is counted by fact rather than by position, so a statement cannot be
+  relocated out of the measurement by moving it. A doc comment that says *why* is not a duplicate; one that
+  restates *what* is.
+
+**Recomputability** — whether a file's contents could be recomputed from the system. If they could, the file
+  is a record and may be stored; if not, it is a description and may not. §6.5. This answers a different
+  question from the count, and the two can disagree: a file can be a record and still repeat a fact it
+  derived for a consumer that cannot read the system.
 
 ## 44 Relationship to the paper
 
