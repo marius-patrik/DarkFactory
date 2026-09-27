@@ -242,7 +242,7 @@ completion condition is a fixed point: the version it produces resolves to the v
 This is the strongest available framing of self-hosting, because it makes it structural rather than
 ambitious. A design that needed a *self-modification mechanism* would be admitting that its normal
 path could not express "change me." Here it can, and a change to DarkFactory is an ordinary change
-that happens to be proposed by the thing being changed. §13 is the claim; §40 is the failure.
+that happens to be proposed by the thing being changed. §7.7 is the claim; §40 is the failure.
 
 The same argument makes three properties that are usually treated as features into statements
 about the structure. **Self-healing** is operations 3 and 4 applied to drift, which is why
@@ -664,8 +664,8 @@ here and referred to elsewhere.
 **And the failure the instruments are weakest against is named first.** §40 holds what the counts do
 not see, and the honest statement is which of its modes the count can see at all: the ninth, whose
 residue is a second description, and the eighth, whose support matrix is a catalogue. Calling all
-nine invisible was false in both directions, and in the opposite direction §40 found the count
-cannot see the eighth at all. The ninth it can: a residue left by self-hosting is a second
+nine invisible would be false in both directions, and §40 finds the count cannot see the eighth at
+all. The ninth it can: a residue left by self-hosting is a second
 description, which is the counted object. The eighth it cannot, because the corpus failure is
 *maintenance* of meaning and maintenance does not require a second statement — a hand-tuned table
 that states each fact once has a count of zero and still needs a human per capability. The count
@@ -984,7 +984,8 @@ capability it uses is one it could obtain. The DarkFactory repository is therefo
 first consumer, and any behaviour that works only because of something specific to this
 repository is a defect in the framework rather than a property of the application.
 
-This is the structural form of §20's self-hosting requirement. Self-hosting is not only a claim
+This is the structural form of the self-hosting requirement §36.2 states, and §20 deliberately does
+not restate it. Self-hosting is not only a claim
 that df can build df; it is a requirement that the workspace and the application are the same
 shape, so that "df built this" and "a consumer built this" are the same statement.
 
@@ -1548,7 +1549,7 @@ nicety; it is the mechanism.
 ## 18 The systems layer: `.df`
 
 `.df` is TypeScript with a framework-provided standard library, and it is the only extension the
-system's own code carries. There is no `.ts` anywhere in the tree, so the whole of DarkFactory is
+system's own code carries, and no file it merely reads changes that. So the whole of DarkFactory is
 one language under one name, and `tsc` is configured once to treat `.df` as what it is.
 
 **We invent no syntax.** If a construct cannot be expressed in TypeScript it does not go in
@@ -2178,11 +2179,11 @@ worth knowing before relying on it.
 | `DF-RULE-003` | §6.3, §19 — one description, and the direction of specification |
 | `DF-RULE-006` | §4.6, §6.4 — derivation must be faster than authoring, or it decays |
 | `DF-RULE-007` | §7.2, §25 — a change is a declared difference, captured verbatim |
-| `DF-RULE-009` | §7.2 — one integration authority, so a version has one author |
+| `DF-RULE-009` | §7.2, ADR-0025 — one integration authority, so a version has one author |
 | `DF-RULE-010` | §22, §6.3 — agentic behaviour is content, and is derived like anything else |
 | `DF-RULE-011` | §3.1, §28 — custody is a seam, not a file beside the code |
 | `DF-RULE-012` | §9.1 — one owner per concern, and the old owner is deleted |
-| `DF-RULE-013` | §26, §7.3 — convergence is only safe if the world it moves is under a lock |
+| `DF-RULE-013` | §26, §7.3 — convergence is only safe if the world it moves is under a lock, which is this rule's own text and the serialisation §26 performs |
 
 ### 37.1 DF-RULE-001 — Tests prove invariants
 
@@ -2218,7 +2219,7 @@ product-documentation homepage; the rules and decisions below are the canonical 
 rules would be a second description of the rules. Discovery surfaces are never authorities and are
 never edited directly. CI MUST fail on deterministic drift in a generated documentation projection
 and on missing or orphaned rule↔decision relations — the former about documentation, the latter
-about this table, and neither about a projection of this table.
+about §38's table, and neither about a projection of this table.
 
 A repository/tool discovery alias may point at a canonical document or generated projection only when
 it serves a current external or conventional entry point. Aliases remain links rather than copied
@@ -2443,8 +2444,8 @@ second copy of either would be a second description of something already stated.
 **This table is the cross-reference index for both directions, and its completeness is what §37.2's
 check tests.** Every decision names the rules it constrains and every rule in §37 is constrained by
 at least one decision here; a decision constraining no rule and a rule with no decision behind it are
-both currentness failures. Spreading `ADR-0021` through the prose instead would state the same fact in
-several places, which is the failure §4.2 forbids — so the index is the right shape, and a reader
+both currentness failures. Spreading eighteen identifiers through the prose instead would state the same fact in several
+places, which is the failure §4.2 forbids — so the index is the right shape, and a reader
 looking for the link between a decision and the text it governs should look here rather than in the
 body.
 
@@ -2804,11 +2805,11 @@ declaration and never to an overlay; that one option schema serves the settings 
 documentation and the agent's vocabulary at once; and that content-addressed custody needs
 convergent encryption keyed per holder or deduplication and confidentiality are mutually exclusive.
 
-Two of them changed this document rather than filling a gap in it. The distinction between a surface
-and a layout mode is sharper than what was here, because a rendering technology is not a place meaning
-is read; and the treatment of a guarantee as a requirement rather than a discovered binding — §3.1 and
-§13.2 — is sharper, because a folder name is a claim about naming where a boundary is a claim about
-failure. The structural frame in §3 — three unifiers and five operations — is also not new: it is the
+Two of them are not gaps in this design but conclusions it takes further than its sources did. The
+distinction between a surface and a layout mode is drawn strictly, because a rendering technology is
+not a place meaning is read; and a guarantee is treated as a requirement rather than a discovered
+binding — §3.1 and §13.2 — because a folder name is a claim about naming where a boundary is a claim
+about failure. The structural frame in §3 — three unifiers and five operations — is also not new: it is the
 shape those decisions had in common, which is why it is stated once instead of being rediscovered per
 section.
 
