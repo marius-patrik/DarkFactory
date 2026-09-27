@@ -651,6 +651,15 @@ that the load-bearing instrument is one mechanical rule plus a human obligation,
 falsifier than this section would like and is stated here rather than hidden inside a table row
 whose presence implies more.
 
+**And the implication follows from that, rather than being left for the reader: the count as
+specified cannot be run.** Not by a machine, because the cross-file case is not decidable, and not
+by hand, because a hand-run enumeration is the hand-maintained list §4.2 forbids and the paragraph
+above declines to write. So the Abstract's claim that the moat is falsifiable by a count describes a
+procedure that does not exist in any form, and a target of zero is a specification rather than a
+measurement. That is a larger admission than the rest of this document makes and it is the one that
+matters most: an instrument that has never been run has not been shown to work, and this document's
+central claim has not yet been tested by anything at all.
+
 **The second instrument, and what it needs to be one.** §6.5's **recomputability test** sorts a
 *file*: if its contents could be recomputed **by the system, without a human doing the work again**,
 it is a record and may be stored; if they could not, it is a description and may not. The
