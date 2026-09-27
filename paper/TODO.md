@@ -24,7 +24,7 @@ každý vlastním commitem.
 | A2 | `Výpis 1` chyběl v seznamu součástí | ✅ `487e0b06` |
 | A3 | Anotace 128 slov | ✅ `89109fc7` |
 | A4 | Šest klíčových slov | ✅ `1d0d4fe9` |
-| A5 | Metodika jako 3.1 místo samostatné kapitoly (kap. 2.4) | ⏳ viz E2 — totéž |
+| A5 | Metodika — rozhodnuto: přesun do kap. 1 jako epistemická podkapitola (Jak se zjistilo, jak pole vypadá), implementační metoda zůstává v kap. 3. Vyhovuje požadavku průvodce na oddělení metodické části od praktické a neduplikuje úvod praktické části. | ✅ rozhodnuto, provede se s přepisem |
 | A6 | Chyběla výzkumná otázka a hypotéza (kap. 2.3) | ✅ `34ad2ca1` |
 | A7 | Závěr nehodnotil naplnění cíle a neměl doporučení (kap. 2.6) | ✅ `4b53cb88` |
 | A8 | Omezení výzkumu v Diskusi (kap. 2.5) | ✅ `fbbfb7b6` |
