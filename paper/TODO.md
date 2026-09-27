@@ -105,3 +105,33 @@ ale předmět zkoumání. Navazující práce má popsat konečnou architekturu 
 | H2 | `@guild2026` (34 % autonomních pull requestů, 56 % oprav, 91 % bez zásahu inženýra) sestoupá do pozadí jako vlastní měření společnosti. V §2.4 se už nesmí podpírat tvrzení o tom, že popsaný průběh je běžná praxe. | ⏳ |
 | H3 | `@bcg2026` a `@factory2026` zůstávají, ale jen pro definici a architekturu, nikoli pro číselné údaje. Jejich čísla jsoufootnotovaná na vendorské blogy. Průmyslové zprávy @anthropic-agents-2026 zůstávají jediným podkladem pro tvrzení o šíření agentů do výroby. | ✅ rozhodnuto |
 | H4 | **Šablona CSL `note` nevypisuje.** Poznámky v `references.bib` se v seznamu zdrojů neobjeví vůbec, takže provenanci musí nést text a popisky obrázků, ne bibliografická poznámka. Šablonu schválil vedoucí (E4), proto se jí nedotýkat bez domluvy; pokud se má provenance zobrazovat, je třeba to nejdřív říct. | ✅ zjištěno |
+| H5 | **Původ cílové smyčky opraven.** §2.3.3 připisovala goal loop ReActu (`@yao2022`), který o nadřazené smyčce s podmínkami přijetí nepíše. Nyní @huntley2025ralph jako původní text, @wiegold2026ralph jako popisná studie, @claude-goal a @openai-goals jako podklady k tomu, že je to dnes běžná funkce. `@yao2022` zůstává citováno v §2.2 u ReActu, kde patří. | ✅ |
+| H6 | `gradually.ai`, `guild.ai`, `bcg`, `factory.ai` zůstávají v bibliografii, ale jejich číselné údaje se nesmějí objevit v textu jako měření. U Wiegolda to už je výslovně řečeno. | ⏳ při přepisu |
+
+## I. Materiály z čtení, které zatím nejsou v textu
+
+Nalezeno při čtení zdrojů, vyhovuje závěru práce, ale zatím nevsunuto. Kandidáti na
+§2.3.3 a na omezení výzkumu:
+
+- **Rozhodující model je jiný než pracující.** Claude Code: `/goal` „adds a separate
+  evaluator that checks your condition after every turn, so completion is decided by a
+  fresh model rather than the one doing the work" @claude-goal. To je nezávislé
+  potvrzení vlastního návrhu práce.
+- **Hodnotitel nevidí do repozitáře.** „It does not call tools, so it can only judge
+  what Claude has already surfaced in the conversation" @claude-goal. Cílová smyčka
+  tedy nenahrazuje deterministickou bránu, protože posuzuje jen to, co pracující model
+  sám ukázal. Nejsilnější materiál pro omezení, protože přiznává sám dodavatel.
+- **Tři druhy bran v jedné větě.** „A Stop hook … can run a script for deterministic
+  checks or a prompt for model-evaluated ones" @claude-goal. Přesně rozlišení, o které
+  šlo v korekci brán.
+- **Tři verdikty hodnotitele.** Not yet met / Met / Impossible @claude-goal. Model tedy
+  může i běh ukončit záporným verdiktem, a existuje proto detekce zacyklení.
+- **Lidská brána jako architektura.** „Pausing, resuming, clearing, and
+  budget-limited transitions remain controlled by the user or the system"
+  @openai-goals. A „Reaching a budget limit is not the same as completing the
+  objective."
+- **Smlouva o cíli o šesti položkách.** Outcome, Verification surface, Constraints,
+  Boundaries, Iteration policy, Blocked stop condition @openai-goals. Přesnější
+  slovník k plánování, než má práce dnes.
+- **Zralost.** Thoughtworks Technology Radar má Ralph jako Trial, nikoli Adopt
+  @wiegold2026ralph.
