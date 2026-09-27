@@ -59,3 +59,9 @@ packages/harness/.*-test-*/
 # Installed by `df ci install` from packages/harness/assets/skills/. Tracked copies would be a
 # second source of truth for the same content (DF-RULE-015 single-declaration).
 .agents/skills/
+
+# Relocated to packages/harness in #1227. Nothing belongs at this path any more;
+# tracked entries here were test debris swept in by an over-broad `git add`.
+harness/
+.licence-test-*/
+.cli-test-*/
