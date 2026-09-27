@@ -9,7 +9,7 @@
     "./login": "./src/login.ts",
     "./vault-store": "./src/vault-store.ts",
     "./import/reader": "./src/import/reader.ts",
-    "./import/shared": "./src/import/shared.ts",
+    "./import/slugify": "./src/import/slugify.ts",
     "./import/keyring": "./src/import/keyring.ts",
     "./import/codex": "./src/import/codex.ts",
     "./import/claude": "./src/import/claude.ts",

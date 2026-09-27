@@ -1,5 +1,5 @@
 import { parentPort } from "node:worker_threads";
-import { resizeImageInProcess } from "../../node_modules/@earendil-works/pi-coding-agent/dist/utils/image-resize-core.js";
+import { resizeImageInProcess } from "../node_modules/@earendil-works/pi-coding-agent/dist/utils/image-resize-core.js";
 
 interface ResizeRequest {
 	inputBytes: Uint8Array;

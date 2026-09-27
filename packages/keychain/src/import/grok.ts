@@ -1,6 +1,9 @@
 import { accountId, type FileCredentialStore } from "../credentials.ts";
+import { epochMsFromSeconds, epochMsFromText } from "./epochMs.ts";
+import { parseJson } from "./parseJson.ts";
+import { jwtClaims } from "./parseJwt.ts";
 import type { HomeReader } from "./reader.ts";
-import { epochMsFromSeconds, epochMsFromText, jwtClaims, parseJson, record, stringField } from "./shared.ts";
+import { record, stringField } from "./record.ts";
 
 export interface ImportedGrokEntry {
 	sourceEntry: string;

@@ -1,7 +1,9 @@
 import { accountId, type FileCredentialStore } from "../credentials.ts";
+import { epochMsFromMilliseconds } from "./epochMs.ts";
 import { CLAUDE_CREDENTIALS_SERVICE_PREFIX, type ClaudeKeyring, decodeKeychainPayload } from "./keyring.ts";
+import { parseJson } from "./parseJson.ts";
 import type { HomeReader } from "./reader.ts";
-import { epochMsFromMilliseconds, parseJson, record, stringField } from "./shared.ts";
+import { record, stringField } from "./record.ts";
 
 export const ANTHROPIC_TOKEN_ENDPOINT = "https://console.anthropic.com/v1/oauth/token";
 

@@ -4,6 +4,7 @@ import { $ } from "bun";
 import { packageAssets } from "./package-assets.ts";
 import { releaseAssetName, requireReleaseTarget, resolveHostTarget } from "./release-targets.ts";
 
+
 const args = process.argv.slice(2);
 
 function flag(name: string): string | undefined {
@@ -23,10 +24,11 @@ const asset = releaseAssetName(target.name);
 
 // Bun appends `.exe` for a Windows target, so the requested and produced names have to be compared
 // rather than assumed. A name that drifts would publish an asset no installer resolves.
-await $`bun build ./src/cli.ts ./src/utils/image-resize-worker.ts --compile --target=${target.bunTarget} --outfile ${join("dist", asset)}`;
+await $`bun build ./src/cli.ts ./src/image-resize-worker.ts --compile --target=${target.bunTarget} --outfile ${join("dist", asset)}`;
 if (!existsSync(join("dist", asset))) {
 	throw new Error(`bun build reported success but produced no dist/${asset} for target ${target.name}.`);
 }
 
 await packageAssets(process.cwd(), target.platform, target.arch);
 console.log(`built dist/${asset} for ${target.name} (${target.bunTarget})`);
+

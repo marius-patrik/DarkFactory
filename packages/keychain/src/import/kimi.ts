@@ -1,6 +1,8 @@
 import { accountId, type FileCredentialStore } from "../credentials.ts";
+import { epochMsFromMilliseconds, epochMsFromSeconds } from "./epochMs.ts";
+import { parseJson } from "./parseJson.ts";
 import type { HomeReader } from "./reader.ts";
-import { epochMsFromMilliseconds, epochMsFromSeconds, parseJson, stringField } from "./shared.ts";
+import { stringField } from "./record.ts";
 
 export async function importKimiAccount(
 	store: FileCredentialStore,
