@@ -967,10 +967,10 @@ build and the last to relax.
 **It is tempting to add that every other invariant is downstream of those two. That would be an
 assertion with no steps behind it, and it is false.** I1b is a rule about doc comments, I9a is a type-level rule about scene-tree primitives, and I2a's identity scheme is
 adopted rather than derived (§45 says so); no chain runs from "effects pass through a seam" or "the
-system compiles to itself" to any of them. The useful statement is the narrower true one: **four of
-the twelve are independent premises**, adopted for reasons given in §45 and §4.6, and the other nine
-are checkable properties. Naming three premises is more useful than claiming twelve
-derivations, because a premise can be argued about on its own terms.
+system compiles to itself" to any of them. The useful statement is the narrower true one: **at least three of
+the twelve are independent premises** — I1b, I9a and I2a, adopted for reasons given in §45 and §4.6
+— and the document does not claim to have found them all, which is the point. A premise can be
+argued about on its own terms; an unnamed one cannot.
 
 ## 9 Architecture
 
@@ -1036,7 +1036,8 @@ under a different filename — the exact thing §7.1 rules out. If configuration
 system from somewhere the system is not, then changing the system and changing its description are
 two actions, and they will diverge, and nothing will notice.
 
-**There is no `.ts`.** The repository contains no file under that extension. `.df` is TypeScript,
+**There is no `.ts`.** No file the system authors carries that extension, and a file the system
+merely reads keeps the extension of the system that owns it. `.df` is TypeScript,
 so `tsc`, every editor and every language server works on the whole system once `tsc` is told what
 `.df` is — one configuration, and then no per-file ceremony for the rest of the repository's life.
 
@@ -2438,6 +2439,14 @@ constraint — the language convention is the second kind, and a rule every cont
 not a statement about the system.
 The full rationale for the *thinking* is §45, and the current requirement text is Part III, so a
 second copy of either would be a second description of something already stated.
+
+**This table is the cross-reference index for both directions, and its completeness is what §37.2's
+check tests.** Every decision names the rules it constrains and every rule in §37 is constrained by
+at least one decision here; a decision constraining no rule and a rule with no decision behind it are
+both currentness failures. Spreading `ADR-0021` through the prose instead would state the same fact in
+several places, which is the failure §4.2 forbids — so the index is the right shape, and a reader
+looking for the link between a decision and the text it governs should look here rather than in the
+body.
 
 | #        | decision                                                                   | why                                                                                                                                                                                                     | constrains                                           |
 | -------- | -------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------- |
