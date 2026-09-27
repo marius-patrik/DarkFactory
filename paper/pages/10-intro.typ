@@ -7,24 +7,22 @@
 // the structure of the work: 1.1 and 1.2 Terminology.
 #heading(level: 1)[Úvod]
 
-Nástroje založené na velkých jazykových modelech prošli za posledních několik let třemi
-stupni. Nejprve doplňovaly kód v editoru a rozhodoval o něm člověk. Potom přišly
-konverzační chatboty, v nichž model sestavuje odpověď, ale nástroje mu zpravidla nebyly k
-dispozici, takže všechno provedl uživatel. Teprve třetí stupeň, #emph[coding agents],
-dostal přístup k souborům, příkazům a běhovému prostředí @github-copilot-completion
-@github-copilot-chat @github-copilot-agent @openai-codex-2025 @openai-codex-app-2026. Zasáhla
-tím věta, kdo právě jedná, a to je změna, o kterou v této práci jde. Průmyslové zprávy o
-šíření agentů do výroby ji popisují jako probíhající @anthropic-agents-2026.
+#emph[Šíření nástrojů založených na velkých jazykových modelech má tři stupně.] Nejprve doplňovaly kód v
+editoru a člověk zůstával tím, kdo jej přijímal a spouští. Potom přišly konverzační chatboty, v nichž
+model sestavuje odpověď, ale nástroje mu zpravidla nebyly k dispozici, takže i nadále všechno provedl
+uživatel. Třetí stupeň, #emph[coding agenti], dostal přístup k souborům, příkazům a běhovému prostředí
+@github-copilot-completion @github-copilot-chat @github-copilot-agent @openai-codex-2025 @openai-codex-app-2026. Tím se poprvé změnilo, kdo práci vlastně dělá, a to je změna, o kterou jde v této práci.
+Průmyslové zprávy o šíření agentů do výroby ji popisují jako probíhající @anthropic-agents-2026.
 
 Rozsah veřejného použití je přitom stále úzký. Jeden ze zveřejněných odhadů klade počet
-uživatelů chatbotů na 28~% populace a pravidelné užití #emph[coding agents] na
+uživatelů chatbotů na 28~% populace a pravidelné užití #emph[coding agenti] na
 0,36~% světové populace @gradually-ai-usage-2026; @fig-gradually-usage tyto dvě skupiny
 odlišuje.
 
 #figure(
   image("/components/img/gradually-ai-usage-2026.svg", width: 100%),
   caption: [Odhad rozdělení uživatelů generativní AI podle typu. Obě uvedené hodnoty jsou
-  odhady, nikoli výsledek měření, a údaj o pravidelných uživatelích #emph[coding agents]
+  odhady, nikoli výsledek měření, a údaj o pravidelných uživatelích #emph[coding agenti]
   je středem rozpětí, které zdroj uvádí mezi 25 a 35 miliony
   @gradually-ai-usage-2026.],
 ) <fig-gradually-usage>

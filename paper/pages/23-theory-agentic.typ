@@ -27,7 +27,7 @@ Pokud mají podúlohy jasné hranice a jejich výsledky lze znovu integrovat, ro
 
 #figure(
   image("/components/img/antigravity-cli-subagents.jpg", width: 72%),
-  caption: [Koordinátor definuje tři specializované subagenty a spouští je souběžně; každý běží vlastním kontextem. Převzato z dokumentace produktu jako ilustrace rozhraní, nikoli jako záznam běhu popsané pipeline @antigravity-cli.],
+  caption: [Rozhraní Google Antigravity CLI, tedy harnessu agenta běžícího v terminálu: koordinátor definuje tři specializované subagenty a spouští je souběžně; každý běží vlastním kontextem. Převzato z dokumentace produktu jako ilustrace, nikoli jako záznam běhu popsané pipeline @antigravity-cli.],
 ) <fig-antigravity-subagents>
 
 

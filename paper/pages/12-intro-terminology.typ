@@ -30,3 +30,11 @@ postupů, jimiž se staví systémy s takovým chováním, nikoli stavbu samotn�
 @willison-agentic-engineering. Z toho plyne i pořadí, v němž práce hledá vysvětlení:
 praktickou autonomii má buď návrh prostředí, v němž model pracuje, nebo samotný model, a
 rozhodnout mezi nimi je úkolem dalších kapitol.
+
+Práce ponechává několik pojmů v angličtině, protože tak je označuje obor:
+#strong[harness], #strong[workflow], #strong[prompt], #strong[token],
+#strong[scaffold], #strong[coding agent]. Český ekvivalent u nich není jednoznačný, a překlad by čtenáře
+nutil odhadovat, co termín znamená, místo aby si jeho význam mohl ověřit v téže
+podobě, v jaké jej používá zdroj. Pojmy spojené s repozitářem — issue, commit, větev,
+pull request — mají vlastní názvy v uživatelském rozhraní GitHubu a jsou přebírány
+odtud.

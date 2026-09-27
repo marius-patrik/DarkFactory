@@ -6,33 +6,45 @@ volný text: repozitář nabízí předlohu, která vyžaduje vyplnit několik p
 ta určují, co pipeline dostane. @fig-issue-template uvádí předlohu i vyplněný
 požadavek, který odpovídá jednomu běhu popsanému v této kapitole.
 
-#figure(
-  table(
-    columns: (auto, auto, 1fr),
-    align: (left, center, left),
+// Shaped like the GitHub issue form rather than a data grid: the field name reads as a
+// label, the filled value sits in a bordered box like a form field, and required fields
+// are marked on the label instead of taking a column of their own.
+#let field(body) = block(
+  stroke: 0.5pt + luma(72%),
+  radius: 3pt,
+  inset: (x: 5pt, y: 4pt),
+  width: 100%,
+  body,
+)
+#let req(name) = [#strong[#raw(name)] #text(size: 8pt, fill: luma(45%))[povinné]]
+#let opt(name) = [#strong[#raw(name)] #text(size: 8pt, fill: luma(45%))[volitelné]]
+#figure(  table(
+    columns: (auto, 1fr),
+    align: (left + top, left + top),
+    inset: (x: 6pt, y: 5pt),
+    stroke: none,
     table.header(
-      [#emph[Pole předlohy]], [#emph[Povinné]], [#emph[Vyplněný požadavek, který spustil běh]],
+      [#text(size: 9pt, fill: luma(35%))[Pole předlohy issue]],
+      [#text(size: 9pt, fill: luma(35%))[Jak je vyplněné v požadavku, který spustil běh]],
     ),
-    [Verbatim User Request],
-    [ano],
-    [„Když review opakovaně nachází to samé, běh se zablokuje. Chtěl bych, aby se po třech neúspěších zastavil a napsal to výslovně do issue.“],
-    [Area / Component],
-    [ano],
-    [`ci` — GitHub Actions, kontejner, runner],
-    [Request Type],
-    [ano],
-    [`feat`],
-    [Proposed Acceptance Criteria],
-    [ne],
-    [☐ Běh skončí po třetím opakování stejného nálezu.
-     ☐ Do issue vznikne komentář s počtem pokusů.
-     ☐ Test pokrývá nové ukončení.
-     ☐ `bun run check` projde bez chyb.],
-    [Additional Context],
-    [ne],
-    [`block on repeated finding` — tři po sobě jdoucí běhy skončily stavem `blocked` bez změny nálezu.],
+    req("Verbatim User Request"),
+    field[„Když review opakovaně nachází to samé, běh se zablokuje. Chtěl bych, aby se po třech neúspěších zastavil a napsal to výslovně do issue.“],
+    req("Area / Component"),
+    field[`ci` — GitHub Actions, kontejner, runner],
+    req("Request Type"),
+    field[`feat`],
+    opt("Proposed Acceptance Criteria"),
+    field[☐ Běh skončí po třetím opakování stejného nálezu. \
+      ☐ Do issue vznikne komentář s počtem pokusů. \
+      ☐ Test pokrývá nové ukončení. \
+      ☐ `bun run check` projde bez chyb.],
+    opt("Additional Context"),
+    field[`block on repeated finding` — tři po sobě jdoucí běhy skončily stavem `blocked` bez změny nálezu.],
   ),
-  caption: [Vybrané pole předlohy požadavku a příklad jejího vyplnění. Předloha jich má šest; vynecháno je pole Parent Epic, které pro tento běh zadání neurčuje. Runner předává modelu titulek a tělo issue; pole předlohy tedy určují, co se do zadání dostane @darkfactory-d576ec8f.],
+  caption: [Vybrané pole předlohy požadavku a příklad jejího vyplnění, uspořádané podle formuláře
+    na GitHubu. Předloha jich má šest; vynecháno je pole Parent Epic, které pro tento běh zadání
+    neurčuje. Runner předává modelu titulek a tělo issue; pole předlohy tedy určují, co se do
+    zadání dostane @darkfactory-d576ec8f.],
 ) <fig-issue-template>
 
 Příklad je záměrně malý a měřitelný: rozsah se vejde do jednoho kontextového okna a
