@@ -28,9 +28,8 @@ Metodika sama se řídí tvrzením práce. pythonovský runner, o kterém tato �
 
 Zjednodušení je záměrné a má svou cenu. Systém bez vlastního stavového serveru, bez databáze a bez trvalého běžícího procesu je na první pohled méně schopný než plnohodnotná platforma, oproti níž je však reprodukovatelný, dohledatelný a jehož každé rozhodnutí zůstává vidět v issue, commitu nebo průběhu kontroly. Zároveň umožňuje zvyšovat složitost postupně: každý nový prvek pipeline byl přidán až poté, co bylo na konkrétní úloze zřejmé, že současná podoba nestačí. Samotná pipeline se tak stala nástrojem, kterým byla psána i další její část.
 
-#heading(level: 3)[Protokol zdrojů]
+Druhy zdrojů a to, z čeho se v práci čerpá, jsou uvedeny v úvodu. Zde zbývá jedno pravidlo: citovat lze jen text, který autor otevřel.
 
-Použité zdroje se dělí na čtyři druhy a z každého lze tvrdit jen to, co v něm je. Z dokumentace výrobců práce čerpá pojmenování a hranice mechanismu. Z průmyslových zpráv týchž firem čerpá architekturu, nikoli jejich čísla, protože ta si měřili sami. Z odborných prací, které architekturu měří nebo rozkládají, čerpá odpověď na otázku, zda se návrh systému od modelu oddělit dá. Z původních dokumentů čerpá vznik pojmu. Citovat lze jen text, který autor otevřel. Tvrzení o tom, jak se architektura chová, musí mít zdroj otevřitelný v prohlížeči bez účtu. Kde takový zdroj není, zní to jen jako zjištění jediné nerecenzované studie, ne jako tvrzení. Předběžný výtisk tedy nese žádné tvrzení o výkonnosti.
 
 #heading(level: 3)[Tři kritéria]
 

@@ -1,25 +1,10 @@
 // 2.2 Agent and harness.
 //
-// Everything here is about the harness rather than the model, which is why it moved out
-// of 2.1: what the model cannot do, the context it has to fit in, and the loop it runs
-// in are all properties of the layer around it. The opening also develops the three-step
-// progression the introduction states in one sentence, because that is the reader's
-// first contact with it and the distinction it turns on — who acts — is the one the rest
-// of the chapter depends on.
+// The three-step progression and the model/harness distinction are stated once, in the
+// introduction, because they are the reader's first contact with both. What is left here is
+// the harness itself: what it gives the model, how it is bounded, and what it lets the agent
+// do — the three subsections.
 #heading(level: 2)[Agent: model a harness]
-
-Nástroje založené na jazykových modelech se v krátké době drasticky zlepšily a jejich vývoj lze členit do tří stupňů. Nejprve doplňovaly kód v editoru, potom přišly konverzační chatboty, v nichž model sestavuje odpověď, ale nástroje mu zpravidla nebyly k dispozici, takže i nadále všechno provedl uživatel. #figure(
-  image("/components/img/vscode-copilot-inline-suggestions.png", width: 100%),
-  caption: [Doplňování kódu přímo v editoru: model navrhuje pokračování řádku, které člověk
-  přijme nebo odmítne @github-copilot-completion.],
-) <fig-copilot-inline>
-
-Až třetí stupeň, coding agenti, dostal přístup k souborům, příkazům a běhovému prostředí — a tím se poprvé změnila věta, kdo právě jedná.
-
-Tuto hranici lze pojmenovat přesněji: #strong[agent je model plus harness] @langchain-harness. Harness je všechen kód, konfigurace a vykonávací logika, která není samotným modelem. Model sám o sobě neumí udržet stav mezi kroky, spustit kód, přistupovat k údajům, které se po jeho tréninku změnily, ani připravit si prostředí — a právě to všechno mu musí dodat harness. Hrubý model tedy agentem je teprve tehdy, když mu harness dodá stav, vykonávání nástrojů, zpětné vazby a vynutitelná omezení.
-
-Praktickou hranicí mezi konverzačním chatbotem a agentem je právě míra delegovaného provádění. Samotná #strong[inference] však nemění soubory, nespouští příkazy ani neuchovává stav mezi kroky. Tyto činnosti zajišťuje harness, který modelu zpřístupňuje nástroje, vyřizuje oprávnění a sestavuje prompt z přepisu konverzace. Rozdělení modelu a harnessu je tedy věcí odpovědnosti, nikoli pouhé implementace: první navrhuje, druhý jedná.
-
 
 #heading(level: 3)[Context window a kompakce]
 
