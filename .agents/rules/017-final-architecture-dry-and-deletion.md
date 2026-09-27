@@ -38,7 +38,7 @@ contract.
 
 ## Enforcement
 
-`harness/test/workspace-boundaries.test.ts` verifies that the first-party package dependency graph
+`packages/harness/test/workspace-boundaries.test.ts` verifies that the first-party package dependency graph
 read from package manifests is closed and acyclic, and the documentation currentness check rejects
 retired documentation paths and broken discovery aliases.
 

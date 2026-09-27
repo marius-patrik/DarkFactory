@@ -59,7 +59,7 @@ The final first-party package boundaries are:
 - `@darkfactory/cli` — `df` command, command composition and interactive TUI ownership;
 - `@darkfactory/web` — the sole first-party web application/renderer.
 
-Any remaining implementation under `harness/` is deletion-bound source during the rebuild. It is not a public package, documentation surface, or final architecture boundary.
+Any remaining implementation under `packages/harness/` is deletion-bound source during the rebuild. It is not a public package, documentation surface, or final architecture boundary.
 
 Package dependencies must remain acyclic. Browser-safe entrypoints cannot import machine-secret/private-key/runtime-only implementations.
 
