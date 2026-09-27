@@ -15,44 +15,46 @@ Reproducing its sentences is a failure, not fidelity.
 ```
 1 Úvod
   1.1 Cíl, výzkumná otázka, hypotéza a vymezení
-  1.2 Metodika                    ← NEW: source protocol (§5)
-  1.3 Terminologie               ← KEEP, unchanged, cross-referenced
+  1.2 Terminologie               ← KEEP, unchanged, cross-referenced
 2 Teoretická část
   2.1 Softwareová továrna         ← promoted, was 2.4
   2.2 Model a harness             ← absorbs the old 2.1
   2.3 Agentické inženýrství
   2.4 Co posunuli agenti          ← promoted from a 2.4 subsection
-3 Praktická část
-  3.1 Metodika                    ← **UNCHANGED. DO NOT TOUCH.** (§5)
-  3.2–3.5
-4 Výsledky a diskuse · 5 Závěr
+3 Metodická část                 ← NEW top-level chapter, the guide's own
+                                  structure, NOT a subsection of the practical
+4 Praktická část
+5 Výsledky a diskuse
+6 Závěr
 ```
 
-**Two different things are both called Metodika, and they are not substitutes.**
-1.2 is the **source protocol** — how sources were found, screened, typed and
-weighted. 3.1 is the **reproducibility record** — what was built and under what
-conditions, so the research can be repeated. `guide.md` weights *metody* highest
-of any content item and asks "is it described well enough that the research could
-be repeated?" 3.1 is what earns those marks. **It is not superseded by 1.2, must
-not be shortened to make room for it, and is not yours to write.** A reviewer
-warned that 1.2's "not a description of the implementation" could be read as
-licence to absorb 3.1. It is not.
+**Methodology is its own top-level chapter, positioned between theory and
+practice** — which is the structure `guide.md`'s own table describes. It is
+numbered 3, so the practical part moves to 4, results to 5 and the conclusion
+to 6. The current deviation (methodology buried as 3.1 inside the practical
+part) is abandoned in favour of the guide's structure, so the documented
+deviation disappears rather than multiplying.
 
-**This is a second deviation from `guide.md`'s table, not the one recorded
-there**, and it places the methodological section *before* the theory rather than
-between theory and practice. It needs the supervisor's sign-off. In the same
-pass, `guide.md`'s "Odchylka: metodika" section and `TODO.md` A5/E2 must be
-updated — both currently describe the 3.1 arrangement and will be false.
+**This pass writes chapters 1 and 2 only.** Chapter 3 is designed here so the
+structure is settled, but it is written in a later pass — §5 below is its
+specification, not your assignment.
 
-**Also now false and needing the same pass:** `components/metadata.typ` lines 24
+**Chapter 1 relies on Terminologie for every specific term.** `1.2 Terminologie`
+declares the coinages; `1.1` points to it and does not define terms itself. The
+existing `10-intro.typ:14` cross-reference (`sezbrán v @terminologie`) must
+survive — **removing the section breaks the Typst build.**
+
+**Also now false and needing a later pass:** `components/metadata.typ` lines 24
 and 27 (the annotation and the English abstract) both state the old research
 question and a hypothesis you are replacing, and both claim the process structure
 is "invariant to the choice of tool". `rules.md` A9 records the annotation and
 abstract matching the scope as a *previously fixed* defect, so this is a repeat
 of a logged error unless it is fixed. `rules.md` A6 records the hypothesis's
-absence as fixed too — which is why you must write one.
+absence as fixed too — which is why you must write one. Chapter and section
+numbers change throughout, including in the annotation, the abstract, the
+contents, the list of figures, and every cross-reference.
 
-**Report the cross-file consequences. Do not edit those files yourself** (§1).
+**Report these consequences. Do not edit those files yourself** (§1).
 
 ## 1. What you produce
 
@@ -109,10 +111,24 @@ rest as questions.
 > pohání, aniž by tím řízenost narušila.
 
 ⚠️ Two reviewers independently flagged this sentence as the weakest Czech in the
-brief, and it is locked: `prověřit na záměrně minimální implementaci` takes the
-wrong case after `na`, and `aniž by tím řízenost narušila` leaves the agent of
-the passive unstated. **Write it as given, flag it in your report, and do not
-silently improve it** — it is the supervisor's sentence.
+brief: the case after `na` and the unstated agent of `narušila`. **Write one of
+these, or propose your own and report both — your choice, and you are authorised
+to do so here. [R3]**
+
+> **A — minimal repair.** Rozhodující součástí agentického vývoje softwaru není
+> schopnost jazykového modelu, ale návrh systému, v němž model pracuje. Cílem
+> práce je tento názor vyargumentovat z dostupných zdrojů a **ověřit** na
+> záměrně minimální implementaci, zda lze návrh systému oddělit od harnessu,
+> který agenta pohání, **aniž by tím byla narušena** řízenost práce.
+
+> **B — drops the coinage.** Rozhodující součástí agentického vývoje softwaru není
+> schopnost jazykového modelu, ale návrh systému, v němž model pracuje. Cílem
+> práce je tento názor vyargumentovat z dostupných zdrojů a **ověřit pomocí
+> záměrně minimální implementace**, zda lze návrh systému oddělit od harnessu,
+> který agenta pohání, **aniž by tím byla narušena** kontrola nad výsledkem.
+
+A keeps your vocabulary; B avoids `řízenost`, which is a coinage and therefore
+belongs in `1.2 Terminologie` rather than in the opening sentence.
 
 **Výzkumná otázka (research question), use this wording:**
 
@@ -138,9 +154,14 @@ distinction is the thesis: the answer is **necessity relative to what the model
 achieves unaided**. State it once, explicitly, in 1.1 — and do not let chapter 2
 quietly slide into "always necessary", which is refutable by a better model.
 
-**The three criteria for "řízená" — you must state these. [R2]** Revision 1 told
-you to state them without ever giving them to you; they exist nowhere in the
-repository. They are the author's, and the thesis must say so:
+**The three criteria for "řízená" — the author has approved these. [R3]** They
+exist nowhere in the repository; the brief previously demanded them without
+supplying them. They are the author's operationalisation, not the field's, and
+**§5 places them in chapter 3, which is a later pass.** For chapters 1–2 you need
+only to establish that `řízenost` is a defined term: say once, in `1.1`, that the
+thesis uses it in a specific sense and that the sense is set out in the
+methodological chapter, and leave the detail there. Do not define the criteria
+inline.
 
 1. **Stav je mimo model a dohledatelný** — the run's state lives in the repository
    and is inspectable without asking the model.
@@ -149,9 +170,6 @@ repository. They are the author's, and the thesis must say so:
    code), a model call (a review or plan another model makes), a human decision.
 3. **O tom, co vstoupí do produkce, rozhoduje člověk** — merging is not the
    pipeline's call.
-
-These are the author's operationalisation, not the field's. Say that in one
-clause.
 
 ## 3. The finding
 
@@ -236,11 +254,24 @@ reliably solo"* and became *„unnecessary overhead"* on a newer model.
   not answer this" is a permitted result. A survey that can only return positive
   findings reads as advocacy.
 
-## 5. Chapter 1, Metodika **[R2]**
+## 5. Chapter 3, Metodická část — specification only, NOT this pass **[R3]**
 
-Revision 1 gave three *lines of evidence*. That is a philosophy of reading, not a
-protocol, and a commission cannot verify it. Restructure as a **protocol**, in
-this order. Three numbers beat zero.
+Revision 2 put this in `1.2`; the author has moved it to its own top-level
+chapter between theory and practice. You are not writing it. It is specified
+here so the structure is settled and so chapter 1 knows what to point forward to.
+
+It has two halves, and they are **not** substitutes for each other:
+
+- **the source protocol** — how sources were found, screened, typed and weighted;
+- **the reproducibility record** — what was built and under what conditions, so
+  the research can be repeated. This is currently `pages/31-practical-method.typ`
+  and it is the content `guide.md` weights highest of any item, asking whether
+  the method is *"poplána tak, že podle ní lze výzkum opakovat?"*. **It must be
+  carried over substantially unchanged, not shortened to make room, and the
+  source protocol does not replace it.**
+
+Restructure the source protocol as a **protocol**, in this order. Three numbers
+beat zero.
 
 1. **Corpus.** State the search space (which indexes, venues and vendors), the
    window (*sources published up to [date]; nothing later was consulted*), the
@@ -264,12 +295,8 @@ this order. Three numbers beat zero.
    Revision 1 asserted a negative ("neither citing the other's design") that you
    cannot establish by reading two product documents. Write instead *"nemají
    společný primární zdroj"*, which you can.
-5. **What the practice establishes and what it does not.** Say it plainly. The
-   practice instantiates the principles in one deliberately minimal pipeline and
-   instantiates a *composed* harness (§6). It is **not** an ablation study. State
-   the three criteria for *řízená* from §2 and say they are the author's.
-
-Do not describe the implementation here. See §0 on 3.1.
+5. **The three criteria for *řízená*** (§2), stated here as the author's
+   operationalisation, not a definition of the field.
 
 ## 6. The composition question
 
@@ -546,12 +573,21 @@ check scope against.
   as evidence. Also `24-theory-factory.typ:20` (*„odpovídá tomu, co popisují i
   systémy postavené mimo tuto práci"*, citing `@factory2026 @bcg2026`) **is** the
   trend claim §10 restricts those two sources from making. Self-defeating.
-- **`@gradually-ai-usage-2026` is an AI-marketing blog** whose adoption numbers are
-  the author's own editorial range. Three defensible outcomes exist; the
-  recommendation is to **drop the figure and the numbers from chapter 1 entirely**,
-  since §6 says not to open with adoption statistics and the figure is the weakest
-  thing in the current opening. Dropping means the reference, the label and the
-  figure-list entry go together — say so in your report.
+- **`@gradually-ai-usage-2026` — KEEP the figure. [R3]** The author has decided:
+  the visualisation stays. It carries no argument; it motivates the introduction,
+  and the numbers are an estimate the caption already says they are. So:
+  - keep `@fig-gradually-usage` and keep it in the introduction;
+  - **the caption must keep stating the figures are an estimate**, because the
+    bibliography's `note` does not print (§8) and the caption is the only place
+    that reaches the reader;
+  - keep the in-text reference **and** the figure-list entry — a component
+    without a reference is a graded defect (`rules.md`: *odkaz v textu je
+    povinný*);
+  - the numbers must still not be used to support any claim. If the only sentence
+    containing them is the one introducing the figure, that is the whole extent
+    of their use.
+  Do not open the chapter with them; they sit after the statement of what
+  changed.
 - **The CSL silently drops `note` fields** (verified: `text macro="note"` appears
   only in the fallback branch of the CSL). Provenance must live in the prose.
 - **Never write a claim no source supports.** The old text asserted a factory
@@ -568,9 +604,12 @@ check scope against.
   keep the cross-reference. Add one sentence that *agentické inženýrství* means the
   set of practices — it exists today at `10-intro.typ:19` and would otherwise be
   lost.
-- **`governance` has no settled Czech term. [R2]** It carries half the finding and
-  is undefined. Proposed: *řízení a ověřování*. Use it consistently if you adopt
-  it, define it at first use, and flag it for the native-speaker pass.
+- **`governance` stays untranslated. [R3]** The author has decided this. Set it in
+  `#emph[]` on first use, consistently with the paper's existing practice of
+  keeping English terms (`review smyčka`, `spec-driven development`,
+  `coordinator/subagent`), and **define it once at first use** — it carries half
+  the finding and currently appears undefined. Suggested gloss: *řízení a
+  ověřování*. Keep the gloss as a gloss; do not substitute it for the term.
 - **Your own voice.** §1 says third person; several verified quotations are
   first-person vendor prose. Quoting them is fine. Do not adopt the register.
 
