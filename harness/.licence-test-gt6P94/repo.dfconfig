@@ -1,0 +1,10 @@
+{
+  "repo": {
+    "$comment": "x",
+    "license": {
+      "spdx": "GPL-3.0",
+      "holder": "Patrik Marius",
+      "year": "2026"
+    }
+  }
+}

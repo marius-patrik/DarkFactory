@@ -1,0 +1,10 @@
+{
+  "repo": {
+    "$comment": "x",
+    "license": {
+      "spdx": "MIT",
+      "holder": "Ada",
+      "year": "2026"
+    }
+  }
+}

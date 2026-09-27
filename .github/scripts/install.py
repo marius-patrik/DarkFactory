@@ -18,9 +18,9 @@ import manifest
 
 PIPELINE_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 DIRECT_WORKFLOW_TEMPLATES = {
-    "ci": os.path.join(PIPELINE_ROOT, "harness", "assets", "workflows", "ci.yml.tmpl"),
+    "ci": os.path.join(PIPELINE_ROOT, "packages", "harness", "assets", "workflows", "ci.yml.tmpl"),
     "verify-pr-issue": os.path.join(
-        PIPELINE_ROOT, "harness", "assets", "workflows", "verify-bound-issue.yml.tmpl"
+        PIPELINE_ROOT, "packages", "harness", "assets", "workflows", "verify-bound-issue.yml.tmpl"
     ),
 }
 

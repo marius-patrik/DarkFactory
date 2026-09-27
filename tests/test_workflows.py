@@ -102,10 +102,10 @@ def test_failure_observer_only_auto_files_default_branch_incidents():
 def test_agent_image_installs_from_the_checked_in_harness_lock():
     dockerfile = pathlib.Path("docker/Dockerfile.agent").read_text(encoding="utf-8")
     assert "COPY package.json /opt/darkfactory/" in dockerfile
-    assert "COPY harness/ /opt/darkfactory/harness/" in dockerfile
     assert "COPY packages/ /opt/darkfactory/packages/" in dockerfile
     assert "COPY capabilities/ /opt/darkfactory/capabilities/" in dockerfile
-    assert "bun install --frozen-lockfile --cwd /opt/darkfactory/harness" in dockerfile
+    assert "bun install --frozen-lockfile --cwd /opt/darkfactory/packages/harness" in dockerfile
+    assert "exec bun /opt/darkfactory/packages/harness/src/cli.ts" in dockerfile
     assert "COPY pyproject.toml requirements-dev.txt" in dockerfile
     assert "pip install --no-cache-dir -r requirements-dev.txt" in dockerfile
 

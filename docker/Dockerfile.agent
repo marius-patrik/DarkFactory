@@ -40,15 +40,14 @@ RUN curl -fsSL https://bun.sh/install | BUN_INSTALL=/usr/local bash -s -- "bun-v
 #
 # The runner resolves every agent call through the `df` binary, which owns model choice and
 # in-flight failover across its own chain itself — external coding-agent CLIs are not installed.
-# The harness source ships with the pipeline checkout (`harness/`, landed separately), so it is
-# copied in and its dependencies installed frozen. There is no compile step: df's assets resolve
-# relative to the source tree, which the wrapper below executes in place.
+# The harness source ships with the pipeline checkout (`packages/harness/`, landed separately), so
+# it is copied in and its dependencies installed frozen. There is no compile step: df's assets
+# resolve relative to the source tree, which the wrapper below executes in place.
 COPY package.json /opt/darkfactory/
-COPY harness/ /opt/darkfactory/harness/
 COPY packages/ /opt/darkfactory/packages/
 COPY capabilities/ /opt/darkfactory/capabilities/
-RUN bun install --frozen-lockfile --cwd /opt/darkfactory/harness
-RUN printf '#!/bin/sh\nexec bun /opt/darkfactory/harness/src/cli.ts "$@"\n' > /usr/local/bin/df \
+RUN bun install --frozen-lockfile --cwd /opt/darkfactory/packages/harness
+RUN printf '#!/bin/sh\nexec bun /opt/darkfactory/packages/harness/src/cli.ts "$@"\n' > /usr/local/bin/df \
     && chmod +x /usr/local/bin/df \
     && df --help >/dev/null
 

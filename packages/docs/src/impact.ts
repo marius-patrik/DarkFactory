@@ -80,7 +80,7 @@ function isGovernanceFile(path: string): boolean {
 		path.startsWith(".agents/rules/") ||
 		path.startsWith(".agents/adr/") ||
 		path.startsWith(".github/workflows/") ||
-		path.startsWith("harness/assets/workflows/")
+		path.startsWith("packages/harness/assets/workflows/")
 	);
 }
 

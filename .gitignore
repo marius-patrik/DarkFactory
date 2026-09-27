@@ -54,8 +54,8 @@ event.json
 uv.lock
 
 # Test fixtures create temporary trees beside the suite; they are not repository content.
-harness/.*-test-*/
+packages/harness/.*-test-*/
 
-# Installed by `df ci install` from harness/assets/skills/. Tracked copies would be a
+# Installed by `df ci install` from packages/harness/assets/skills/. Tracked copies would be a
 # second source of truth for the same content (DF-RULE-015 single-declaration).
 .agents/skills/

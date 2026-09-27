@@ -87,12 +87,12 @@ stdenvNoCC.mkDerivation {
 
     # Every workspace must have produced links that resolve against the manifests
     # that came in with this derivation, for every @darkfactory/* it declares --
-    # not just the harness's. `cp -a` copied the relative links verbatim
-    # (../../../packages/<x>), which is what makes the closure relocatable, and is
-    # also why nix/agent-env.nix has to place it next to packages/. Checking every
-    # workspace is what catches a layout that is half-copied, and it fails the
-    # build rather than surfacing as a module-not-found when the agent first needs
-    # the import.
+    # not just the runtime package's. `cp -a` copied the relative links verbatim
+    # (packages/<x>/node_modules/@darkfactory/<y> -> ../../../<y>), which is what
+    # makes the closure relocatable, and is also why nix/agent-env.nix has to place
+    # it next to packages/. Checking every workspace is what catches a layout that is
+    # half-copied, and it fails the build rather than surfacing as a
+    # module-not-found when the agent first needs the import.
     for manifest in $(find . -name package.json -not -path "*/node_modules/*" | sort); do
       dir=$(dirname "$manifest")
       for name in $(jq -r '(.dependencies // {}) | keys[]' "$manifest"); do
