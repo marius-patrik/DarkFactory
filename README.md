@@ -583,9 +583,12 @@ relocated out of the measurement by moving it.
 
 **What is inside the measurement, and what is not.** The scope is the declaration and the system the
 declaration describes — every statement of a fact about the system, in the system or in its
-specification. The specification is in scope rather than exempt, and the reason is §24.1's: a thing
-is declared where it is implemented, so a document that *is* the declaration of a system is not a
-description standing beside that system. It is the other half of that claim.
+specification. The specification is in scope rather than exempt, and the reason is deliberately the
+conservative one rather than the flattering one. §19 says this document defines requirements and
+architecture, not that it is a system's semantics in §24.1's sense, so it cannot claim the
+protection of being the declaration. It is in scope because it is where a large class of facts about
+the system is first stated, and exempting it would exempt the first statement of every fact the
+document owns — which is the shape of the hole the falsifier exists to detect.
 
 **Which means this document is itself in scope, and it is not at zero.** That is the honest position
 and it is better than the alternative, which is an instrument that cannot see the specification, the
