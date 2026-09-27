@@ -67,7 +67,7 @@
 **Part III — Requirements**
 
 - [19 Authority](#19-authority)
-- [20 Product vision](#20-product-vision)
+- [20 The product](#20-the-product)
 - [21 Actors](#21-actors)
 - [22 Capability architecture](#22-capability-architecture)
 - [23 Domains, ecosystems and project detection](#23-domains-ecosystems-and-project-detection)
@@ -643,29 +643,28 @@ it, which is why §5.3 is a number rather than a principle.
 
 ## 8 Invariants
 
-Properties rather than features, each paired with the thing that catches its violation. A property
-with no check is an aspiration, so each names its enforcement. Every one of these is a statement
-about the finished system, and each is checkable.
+Properties rather than features, each paired with the check that catches its violation. A property
+with no check is an aspiration.
 
-| #                                                                                                             | invariant                                                          | held by                                                                                                         |
-| ------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------- |
-| I1                                                                                                            | No file describes a feature except the feature                     | enumeration-only files are rejected; no barrel, registry, catalogue or manifest names what exists               |
-| I2                                                                                                            | Derivation is total — every feature is derived, with none dropped | a tree walk comparing the derived set against the discovered set, across overloads, re-exports and conditionals |
-| I2a                                                                                                           | Identity is a function of inputs, never of time                    | an interface's identity is the hash of what                                                                     |
-| determines it — its content, its declared dependencies, and the environment it resolves under — so a        |                                                                    |                                                                                                                 |
-| skip is explainable by naming the input that changed. Input declaration must be complete, and an              |                                                                    |                                                                                                                 |
-| **undeclared input produces a wrong cache hit** — the same class of failure as a dropped feature under |                                                                    |                                                                                                                 |
-| I2, so detecting undeclared inputs is part of the work rather than an extra                                   |                                                                    |                                                                                                                 |
-| I3                                                                                                            | The published interface is the code's own                          | a feature with no doc comment is an error, not a blank; surfaces render the derived comment                     |
-| I4                                                                                                            | Effects pass through a seam                                        | a check rejecting direct filesystem, network and process access outside the seams                               |
-| I5                                                                                                            | Nothing is published that was not compiled from a resolution       | every artifact carries its resolution identity, verified before publish                                         |
-| I6                                                                                                            | Discovery is structural only                                       | a test that adding a feature requires editing no other file                                                     |
-| I7                                                                                                            | Drift is measured against derivation                               | convergence accepts only derived inputs, never a recorded copy of intent                                        |
-| I8                                                                                                            | The system is a fixed point                                        | self-hosting acceptance: compiling the system with itself yields the same resolution                            |
-| I9                                                                                                            | Presentation holds no behaviour                                    | a surface cannot be imported by a non-surface                                                                   |
+| # | invariant | held by |
+| --- | --- | --- |
+| I1 | No file describes a feature except the feature | enumeration-only files are rejected; no barrel, registry, catalogue or manifest names what exists |
+| I2 | Derivation is total — every feature is derived, none dropped | a tree walk comparing the derived set against the discovered set, across overloads, re-exports and conditionals |
+| I2a | Identity is a function of inputs, never of time | an interface's identity is the hash of its content, its declared dependencies and the environment it resolves under, so a skip names the input that changed; an undeclared input is a correctness bug, not a missed optimisation |
+| I3 | The published interface is the code's own | a feature with no doc comment is a build error, and each surface is checked to render the comment its feature publishes |
+| I4 | Effects pass through a seam | direct filesystem, network and process access is rejected outside the seams |
+| I5 | Nothing is published uncompiled | every released artifact carries its resolution identity, verified before publish |
+| I6 | Discovery is structural only | a test adds a feature and asserts that no other file changed |
+| I7 | Drift is measured against derivation | convergence is exercised against derived inputs only, never against a recorded copy of intent |
+| I8 | The system is a fixed point | compiling the system by itself resolves to itself, byte-identical, with nothing reconciled between |
+| I9 | Presentation holds no behaviour | a surface cannot be imported by a non-surface |
 
-I4 is the one everything above it depends on. While effects can bypass a seam, the seams are
-documentation rather than boundaries, and nothing resting on them can be enforced or relied upon.
+**Acceptance is the right-hand column.** These are not satisfied by review, and the system is not
+final while any of them can fail. Two are worth calling out as ordering constraints rather than
+aspirations: **I4 and I8 are structural and cheap to require now and expensive to retrofit.** Once
+effects bypass the seams, nothing resting on them can be enforced at all; once a second build
+description exists, the fixed point stops being reachable at any price. Every other invariant is
+downstream of those two, which is why they are the first pair to build and the last to relax.
 
 ## 9 Architecture
 
@@ -1223,29 +1222,38 @@ are not replacing a mature system's language, we are making it reachable.
 
 A material deviation from this document requires owner approval and an accepted ADR.
 
-## 20 Product vision
+## 20 The product
 
-DarkFactory is one system that is at once a library, a framework, a pipeline, a developer tool, a workspace manager and an operator of machines. Those are not products sharing a name; they are one capability — act on a system through a declared interface — observed at several scales: a function call, a file, a repository, a pipeline, a machine, a fleet.
+DarkFactory is one system that is at once a library, a framework, a pipeline, a developer tool, a
+workspace manager and an operator of machines. Those are not products sharing a name; they are one
+capability — act on a system through a declared interface — observed at several scales: a function
+call, a file, a repository, a pipeline, a machine, a fleet.
 
-A human supplies intent and approvals. DarkFactory performs planning, implementation, deterministic verification, review/fix iteration, alignment, Git/GitHub mutation, CI coordination, merge/reconciliation, release and audit through one production engine.
+A human supplies intent and approvals. The system performs planning, implementation, deterministic
+verification, review/fix iteration, alignment, mutation, CI coordination, merge and reconciliation,
+release and audit through one production engine.
 
-The system must be:
+The properties below are the ones that belong to the product. The architectural ones — self-hosting,
+AI-first, location-independence, extensibility, and declarability — are not restated here, because
+Part I states them once at full resolution and Part III specifies them; a shorter restatement at a
+lower resolution is a second description that can disagree.
 
-- **self-hosting** — df is implemented in df and maintained by df via df, so a change to DarkFactory is proposed, interpreted, planned, implemented, reviewed, verified and merged by DarkFactory with humans approving rather than authoring;
-- **both tool and platform** — usable directly, and extensible by code DarkFactory has never seen, so the capability surface and `.df` are published contracts carrying a compatibility promise that internal refactors do not;
-- **governed** — explicit approval gates bind human intent;
-- **resumable** — interruption, quota exhaustion and conflicts do not lose completed effects;
-- **truthful** — completion/mutation claims come from observed state, not agent prose;
-- **AI-first** — the agent is a first-class operator of the same abstractions as any other caller, its capability set is presented rather than fixed, and its mutations are staged and reversible. Removing the agent must leave the system incomplete, otherwise this is a system with an agent attached;
-- **extensible** — new project-specific behavior can be added as capabilities rather than rebuilding the framework;
-- **unfrictional across machines, repositories and hosting types** — one semantic model with no location-dependent behaviour. A capability behaves identically in a working tree, on a host or in CI, and a declaration means the same thing in a repository and on a machine. Support matrices are not sufficient: each row is a promise to maintain and each per-location special case is a place an abstraction has leaked;
-- **multi-domain** — one repository may contain code, papers, mathematics and other supported package types;
-- **declarable** — anything config-shaped in nature is data rather than code, resolved through inspectable layers, and bound systems are reached through seams rather than reimplemented;
-- **GitHub-native** — GitHub remains the durable issue/PR/check/project/event/authorization control plane;
-- **source-free in production** — released df installs and runs without a DarkFactory source checkout.
+- **Governed.** Explicit approval gates bind human intent, and a proposal to change the system is a
+  proposal like any other.
+- **Resumable.** Interruption, quota exhaustion and conflicts do not lose completed effects.
+- **Truthful.** Completion and mutation claims come from observed state, never from the prose of
+  whatever did the work.
+- **Multi-domain.** One repository may contain code, papers, mathematics and other supported package
+  types, and the mechanism does not notice the difference.
+- **GitHub-native.** GitHub remains the durable issue, pull-request, check, project, event and
+  authorization control plane.
+- **Source-free in production.** A released system installs and runs without a source checkout.
+- **Both tool and platform.** Usable directly, and extensible by code the system has never seen, so
+  the capability surface and the `.df` layer are published contracts that internal refactors do not
+  break.
 
-Part I records why the system is shaped this way and is non-normative. Where it and the rest of this document disagree, the rest wins.
-
+Part I states the pattern and the practice this product is an instance of. Where Part I and the rest
+of this document disagree, the rest wins; where the rest is silent, Part I is the position.
 ## 21 Actors
 
 | Actor                    | Responsibility                                                                                                                                                       |
@@ -1652,7 +1660,7 @@ Initial installation must not require Python, a source checkout or a pre-existin
 
 Before a release-affecting delivery PR merges, an unpublished source-free candidate built from its exact head/tree must pass the applicable DarkFactory and consumer acceptance contract. Final publication occurs from canonical after merge without behavioral source changes; the published artifacts must reproduce the proven candidate behavior/assets aside from canonical source-provenance metadata.
 
-The standard installation includes official capabilities while allowing third-party capabilities through the same loader.
+A standard installation includes the official capability set, so it is batteries-included, and third-party capabilities load through the same contract.
 
 ## 34 Consuming df
 
@@ -1712,30 +1720,9 @@ DarkFactory is final only when the exact pre-merge candidate has passed the decl
 
 ### 36.1 Invariant acceptance
 
-The thesis's invariants are not aspirations and are not satisfied by review. Each is a check that runs, and
-DarkFactory is not final while any of them can fail:
-
-- **I1 — no authored meaning.** A check rejects any file whose purpose is to enumerate what exists, and the
-  count of sites where meaning is authored rather than derived is zero.
-- **I2 — derivation is total.** A tree walk compares the derived feature set against the discovered set across
-  overloads, re-exports and conditionals, and any asymmetry between what a surface shows and what the system
-  can invoke fails the build.
-- **I3 — the published interface is the code's own.** A feature with no doc comment is a build error, and each
-  surface is checked to render the comment its feature publishes.
-- **I4 — effects pass through a seam.** A check rejects direct filesystem, network and process access outside
-  the seams. This is the precondition for the rest and is accepted first.
-- **I5 — nothing is published uncompiled.** Every released artifact carries its resolution identity and is
-  verified against it before publish.
-- **I6 — discovery is structural.** A test adds a feature and asserts that no other file changed.
-- **I7 — drift is measured against derivation.** Convergence is exercised against derived inputs only; a
-  recorded copy of intent that can be compared instead of re-derivation fails the build.
-- **I8 — the system is a fixed point.** The system compiled by itself resolves to itself, byte-identical, with
-  no maintenance pass between.
-- **I9 — presentation holds no behaviour.** A surface cannot be imported by a non-surface.
-
-I4 and I8 are the two that are expensive to add later and cheap to require now, because both are structural:
-once effects bypass the seams, nothing resting on them can be enforced, and once a second build description
-exists, the fixed point stops being reachable at any price.
+Every invariant in §8 is accepted by the check in its right-hand column, and the system is not final
+while any of them can fail. That is the whole of it: there is no second statement of the invariants
+here, because a restatement is a second description and would be the failure §7.1 names.
 
 ### 36.2 Self-hosting acceptance
 
