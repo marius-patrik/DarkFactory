@@ -28,6 +28,15 @@ jobs:
   verify-bound-issue:
     runs-on: ubuntu-latest
     steps:
+      # The check used to be a `python3 -c` heredoc, which needed nothing but the interpreter this
+      # repository is removing. It now runs a file in the tree, so the job needs the tree. Without
+      # this step the job runs in an empty workspace and fails with "module not found" on a file
+      # that is committed -- which reads like a missing file rather than a missing checkout.
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
       - name: Set up Bun
         uses: oven-sh/setup-bun@v2
 

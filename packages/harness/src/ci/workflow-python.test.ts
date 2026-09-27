@@ -145,3 +145,34 @@ function resolverAccepts(name: string): boolean {
 		rmSync(root, { recursive: true, force: true });
 	}
 }
+
+/**
+ * A step that runs a file out of the repository needs the repository.
+ *
+ * `verify-pr-issue.yml` ran a `python3 -c` heredoc, so its job needed no checkout. Converting the
+ * heredoc to `packages/harness/src/ci/bound-issue.ts` made the job depend on a file in the tree
+ * without adding the checkout, and the job failed with "module not found" naming a file that was
+ * committed. The message points at the wrong cause, so nothing about the log invites the right fix.
+ * This is the assertion that would have caught it.
+ */
+describe("a step that runs a file from the tree has a checkout before it", () => {
+	const RUNS_REPO_FILE = /(^|[\s|;&(])(bun|node|bunx)\s+(?:run\s+--cwd\s+\S+\s+)?[\w./-]*\b[\w-]+\.ts\b/m;
+
+	for (const name of workflowNames()) {
+		it(`${name} checks out before running a repository file`, () => {
+			const steps = allSteps(parseWorkflow(name));
+			const offenders: string[] = [];
+			let checkedOut = false;
+			for (const { job, step } of steps) {
+				if (step.uses?.startsWith("actions/checkout")) {
+					checkedOut = true;
+					continue;
+				}
+				if (step.run && RUNS_REPO_FILE.test(step.run) && !checkedOut) {
+					offenders.push(`${job} / ${step.name ?? "(unnamed)"}`);
+				}
+			}
+			expect(offenders).toEqual([]);
+		});
+	}
+});
