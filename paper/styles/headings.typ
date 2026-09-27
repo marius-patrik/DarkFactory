@@ -8,11 +8,6 @@
 #let apply(body) = {
   set heading(numbering: "1.1")
 
-  // Level-1 heading that continues its part instead of opening a new page.
-  // <results-section> is defined on the chapter-4 opener in 40-results.typ; without this
-  // exemption the results would begin a page of their own.
-  let continuing-section = <results-section>
-
   // Level-2 headings that must not be pushed onto a fresh page, because they open
   // the first subsection of their part. Every entry here must name a label that
   // actually exists: a stale entry silently stops exempting anything, and a missing
@@ -25,9 +20,7 @@
   )
 
   show heading.where(level: 1): it => {
-    if it.at("label", default: none) != continuing-section {
-      pagebreak(weak: true)
-    }
+    pagebreak(weak: true)
     block(above: 21pt, below: 10pt, sticky: true, text(size: 16pt, weight: "bold", it))
   }
 

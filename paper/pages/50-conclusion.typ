@@ -5,7 +5,7 @@
 // false for the described revision and now says what the revision does. And the closing
 // research direction points at the open question of @slozeni instead of restating it,
 // so that the question has exactly one owner in the document.
-#heading(level: 1)[Závěr]
+#heading(level: 2)[Shrnutí]
 
 Jazykový model sám o sobě pouze generuje výstup v závislosti na vstupním kontextu. Agent z něj vzniká až propojením s nástroji, prostředím, stavem a pozorováním, které zajišťuje harness @anthropic2024tooluse @anthropic-harness-design. Ani toto propojení však pro účinné nasazení ve vývoji softwaru nestačí bez postupů agentického inženýrství, které vymezují rozsah autonomie, určují body lidského rozhodnutí a zajišťují ověřování výsledků. Na výzkumnou otázku, které principy musí agentický systém splnit, aby vykonával inženýrskou práci, odpovídá tato práce třemi principy: stav mimo model a zjistitelný, brány s druhy rozhodnutí, které se nerozplývají, a rozhodnutí člověka o tom, co vstoupí do produkce. Podmíněná nutnost znamená, že nutné je to, dokud model sám danou práci spolehlivě nevykoná; s rostoucí schopností modelů se tato hranice posouvá, ale ne mizí.
 

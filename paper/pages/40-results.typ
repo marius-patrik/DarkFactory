@@ -6,7 +6,7 @@
 // their original shape, four of them following the stages of the run, and a fifth is
 // added: the record contradicts three claims the description used to make, and a survey
 // that can only return positive findings reads as advocacy.
-#heading(level: 1)[Výsledky a diskuse] <results-section>
+#heading(level: 1)[Závěr]
 
 #heading(level: 2)[Zjištění] <results-first>
 
