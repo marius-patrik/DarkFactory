@@ -83,17 +83,17 @@ describe("repository evidence and capability actions", () => {
 		expect(python.actions.test.command).toBe("pytest");
 		expect(python.actions.test.metadata).toEqual({ versions: ["3.12"] });
 		expect(python.actions.docs_extract.supported).toBe(false);
-		expect(resolution.gaps.some((gap) => gap.packageId === "python:python" && gap.kind === "docs_extract")).toBe(true);
+		expect(resolution.gaps.some((gap) => gap.packageId === "python:python" && gap.kind === "typecheck")).toBe(true);
 
 		const paper = resolution.packages.find((entry) => entry.package.id === "typst:paper")!;
-		expect(paper.actions.test.command).toContain("typst compile");
+		expect(paper.actions.typecheck.command).toContain("typst compile");
 		const math = resolution.packages.find((entry) => entry.package.id === "lean:proofs")!;
 		expect(math.actions.test.command).toBe("lake build");
 
 		const matrix = qualityMatrix(resolution);
 		expect(matrix.filter((entry) => entry.packageId === "python:python" && entry.kind === "test")).toHaveLength(1);
 		expect(matrix.find((entry) => entry.packageId === "python:python" && entry.kind === "test")?.version).toBe("3.12");
-		expect(matrix.some((entry) => entry.packageId === "typst:paper" && entry.kind === "test")).toBe(true);
+		expect(matrix.some((entry) => entry.packageId === "typst:paper" && entry.kind === "typecheck")).toBe(true);
 		expect(matrix.some((entry) => entry.packageId === "lean:proofs" && entry.kind === "test")).toBe(true);
 	});
 
