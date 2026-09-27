@@ -32,7 +32,7 @@ požadavek, který odpovídá jednomu běhu popsanému v této kapitole.
     [ne],
     [`block on repeated finding` — tři po sobě jdoucí běhy skončily stavem `blocked` bez změny nálezu.],
   ),
-  caption: [Předloha požadavku a příklad jejího vyplnění. Runner předává modelu titulek a tělo issue; pole předlohy tedy určují, co se do zadání dostane @darkfactory-d576ec8f.],
+  caption: [Vybrané pole předlohy požadavku a příklad jejího vyplnění. Předloha jich má šest; vynecháno je pole Parent Epic, které pro tento běh zadání neurčuje. Runner předává modelu titulek a tělo issue; pole předlohy tedy určují, co se do zadání dostane @darkfactory-d576ec8f.],
 ) <fig-issue-template>
 
 Příklad je záměrně malý a měřitelný: rozsah se vejde do jednoho kontextového okna a
