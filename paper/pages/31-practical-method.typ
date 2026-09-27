@@ -22,7 +22,7 @@ Předmětem analýzy jsou čtyři navazující vrstvy:
 1. #emph[GitHub jako zdroj pravdy:] issue a jeho komentáře uchovávají požadavek, schválení, plán a zpětnou vazbu; větev, commit a pull request uchovávají změnu a její průběžnou revizi @github-branches @github-pull-requests.
 2. #emph[GitHub Actions jako výpočetní prostředí:] jednotlivé události spouštějí krátké workflow, které provede checkout pracovní kopie repozitáře, sestaví obraz, spustí agenta a následnou integraci provede.
 3. #emph[Python a Docker jako izolační vrstva:] workflow předá událost a pracovní strom pythonovskému runneru v kontejneru; runner volá harness a předává mu nástroje, přihlašovací údaje a stav úlohy.
-4. #emph[Review smyčka jako podmínka integrace:] automatická revize diffu, opravy a další revize se opakují do té doby, než se uzavře poslední nález; teprve poté je pull request předán člověku.
+4. #emph[Review smyčka jako podmínka integrace:] automatická revize diffu, opravy a další revize se opakují, dokud poslední nález nezmizí, v popsané revizi však nejvýše třikrát; teprve poté je pull request předán člověku.
 
 Metodika sama se řídí tvrzením práce. Pythonovský runner, o kterém tato část pojednává, byl napsán co nejjednodušeji pomocí produkčních coding agentů, tedy právě těm nástroji, které následně popisuje. Cílem nebyla stavba co nejucelenějšího systému, ale co nejmenší uzavřená smyčka, na níž lze ukázat, jak se navzájem ovlivňují agent, harness a lidský recenzent. Pozornost je proto soustředěna na tuto interakci a na její členění, nikoli na šíři nabízených funkcí.
 
