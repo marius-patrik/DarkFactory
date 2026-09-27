@@ -40,7 +40,7 @@ Sloveso výzkumné otázky je #emph[musí] a je míněno podmíněně: nutné js
 
 #emph[Člověk rozhoduje, co vstoupí do produkce.] Kritérium staví práce jako nepodléhající vyjednávání: v popsaném systému musí existovat pojmenovaný okamžik, v němž rozhodne určený člověk o určené věci, a nesmí existovat žádná jiná cesta, která by ke stejnému bodu vedla. Podmínka „určený“ je ostrá: musí jít o osobu, kterou lze pojmenovat, nikoli o kohokoli, kdo v okamžiku klikne. Kritérium je jediné, které práce neváže na výsledek měření a neoslabuje, protože systém, který je nesplňuje, neprovádí podle ní inženýrskou práci, ale automatizovanou výrobu změn bez odpovědného člověka — a to je přesně ta věc, kterou konference v Garmischi odmítla bez důvodu @nato1969.
 
-#heading(level: 3)[Otevřená otázka] <slozeni>
+#heading(level: 3)[Otevřená otázka: složení vrstev] <slozeni>
 
 Úvod ponechává tuto otázku otevřenou a metodická část ji přebírá, protože souvisí s tím, co zde bylo postaveno. Popsaný systém má dvě vrstvy harnessu nad sebou: vnější vrstva — runner, brány a uložený stav — je harnessem sama o sobě, vnitřní vrstvu tvoří produkční CLI, která modelové kroky vykonává. Během jednoho běhu se tedy model setkává se dvěma soubory konvencí současně. Kterých z nich v takovém uspořádání následuje a co vnější vrstva stojí, je otázka, na kterou teoretická část neodpovídá.
 

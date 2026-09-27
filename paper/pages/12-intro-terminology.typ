@@ -19,7 +19,7 @@ Anglické #strong[agentic] nemá v češtině ustálený překlad; pro potřeby 
 mu přiřazeno tvořené přídavné jméno #strong[agentické]. Rozdíl mezi dvěma výrazy,
 které se v běžném užívání zaměňují, je přitom zásadní. #strong[Agentní] označuje
 vlastnost agenta, tedy toho, kdo jedná; #strong[agentický] označuje vlastnost
-systému, tedy toho, kdo je *schopen* jednat. Jazykový základ tomu odpovídá: anglické
+systému, tedy toho, kdo je #emph[schopen] jednat. Jazykový základ tomu odpovídá: anglické
 #strong[agentic] je odvozeno od podstatného jména #strong[agent] příponou
 #strong[-ic] a znamená mající schopnost, prostředky nebo pravomoc jednat, nikoli
 samo jednajícího @mw-agentic.

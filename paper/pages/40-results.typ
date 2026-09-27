@@ -1,12 +1,12 @@
 // Chapter 4 opener and 4.1 Findings.
 //
-// The third correction is here: the pipeline runs self-review first and plan alignment
-// second, and the committed text had them the other way round. The findings keep their
-// original shape — four of them, following the stages of the run — and a fifth is added,
-// because the record contradicts three claims the description used to make and a survey
+// Two of the four corrections land here. The gate order was the other way round in the
+// committed text — self-review runs first, plan alignment second — and the approval gate
+// is a two-entry allowlist rather than a check on the issue author. The findings keep
+// their original shape, four of them following the stages of the run, and a fifth is
+// added: the record contradicts three claims the description used to make, and a survey
 // that can only return positive findings reads as advocacy.
 #heading(level: 1)[Výsledky a diskuse] <results-section>
-
 
 #heading(level: 2)[Zjištění] <results-first>
 

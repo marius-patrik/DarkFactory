@@ -17,15 +17,15 @@ Praktickou hranicí mezi konverzačním chatbotem a agentem je právě míra del
 
 #heading(level: 3)[Context window a kompakce]
 
-#strong[Kontextové okno] (*context window*) tvoří pracovní kontext jednoho volání modelu. Může obsahovat instrukce, části repozitáře, historii volání nástrojů i výsledky předchozích kroků. Jeho kapacita však sama o sobě nezaručuje, že model všechny podstatné informace správně využije: úspěšnost jejich vybavení závisí také na umístění v kontextu a může s rostoucí délkou vstupu klesat @liu2024. Toto postupné zhoršování práce s nahromaděným kontextem se označuje jako #strong[context rot] @anthropic-context-engineering.
+#strong[Kontextové okno] (#emph[context window]) tvoří pracovní kontext jednoho volání modelu. Může obsahovat instrukce, části repozitáře, historii volání nástrojů i výsledky předchozích kroků. Jeho kapacita však sama o sobě nezaručuje, že model všechny podstatné informace správně využije: úspěšnost jejich vybavení závisí také na umístění v kontextu a může s rostoucí délkou vstupu klesat @liu2024. Toto postupné zhoršování práce s nahromaděným kontextem se označuje jako #strong[context rot] @anthropic-context-engineering.
 
-Kompakce (*compaction*) po překročení stanoveného limitu nahrazuje starší průběh strukturovaným souhrnem klíčových rozhodnutí a dosažených výsledků. Do dalšího volání tak není nutné vkládat celý přepis předchozí interakce @anthropic-context-engineering.
+Kompakce (#emph[compaction]) po překročení stanoveného limitu nahrazuje starší průběh strukturovaným souhrnem klíčových rozhodnutí a dosažených výsledků. Do dalšího volání tak není nutné vkládat celý přepis předchozí interakce @anthropic-context-engineering.
 
 
 #heading(level: 3)[Smyčka]
 
 Základním mechanismem agentického systému je #strong[agentická smyčka], tedy konkrétní implementace
-vzoru #strong[ReAct] (*Reasoning and Acting*) @yao2022 v daném harnessu: model střídá uvažování
+vzoru #strong[ReAct] (#emph[Reasoning and Acting]) @yao2022 v daném harnessu: model střídá uvažování
 s akcí a harness mezi jednotlivými kroky vrací pozorování, čímž z jednotité generace vzniká
 souvislá konverzace @anthropic2024tooluse. V každém kroku model nejprve zdůvodní, co hodlá
 udělat, a vyjádří to jako požadavek na nástroj. Harness akci provede v běhovém prostředí a

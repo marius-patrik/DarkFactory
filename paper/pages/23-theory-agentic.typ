@@ -6,7 +6,7 @@ Agentické inženýrství (#strong[Agentic Engineering]) označuje soubor postup
 
 #heading(level: 3)[Zadání a kontext]
 
-Spolehlivé delegování práce začíná explicitním vymezením cíle, rozsahu, omezení a podmínek přijetí. Specifikace popisuje nejen požadovaný výsledek, ale také části systému, které se měnit nemají, a způsob, jakým bude výsledek ověřen. Tento přístup, označovaný jako #strong[spec-first] nebo *spec-driven development*, dává agentovi před implementací měřitelné hranice a člověku podklad pro posouzení výsledku. Přitom jde o postup používaný i v klasickém vývoji softwaru.
+Spolehlivé delegování práce začíná explicitním vymezením cíle, rozsahu, omezení a podmínek přijetí. Specifikace popisuje nejen požadovaný výsledek, ale také části systému, které se měnit nemají, a způsob, jakým bude výsledek ověřen. Tento přístup, označovaný jako #strong[spec-first] nebo #emph[spec-driven development], dává agentovi před implementací měřitelné hranice a člověku podklad pro posouzení výsledku. Přitom jde o postup používaný i v klasickém vývoji softwaru.
 
 V praxi to znamená, že se plán nevzniká až během práce agenta, ale před ní: jeho znění se nejprve dohodnou s člověkem, zapíše do souboru v repozitáři a teprve potom se agent pustí do změn. Takový plánový soubor je zároveň stav, na který se lze vracet při dalším běhu, a harness ho na začátku běhu připomíná agentu jako použitelnou pomůcku @langchain-harness. Rozdíl mezi plánem, který si agent sepsal sám, a plánem, který člověk schválil, je přitom právě rozdílem mezi návrhem a oprávněním měnit kód.
 
