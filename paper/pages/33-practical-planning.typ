@@ -15,7 +15,7 @@ požadavek, který odpovídá jednomu běhu popsanému v této kapitole.
     ),
     [Verbatim User Request],
     [ano],
-    [„Když review opakovaně nachází to samé, běh se zablokuje. Chtěl bych, aby se po třech neúspěších zastavil a napsal to výslovně do issue."],
+    [„Když review opakovaně nachází to samé, běh se zablokuje. Chtěl bych, aby se po třech neúspěších zastavil a napsal to výslovně do issue.“],
     [Area / Component],
     [ano],
     [`ci` — GitHub Actions, kontejner, runner],
