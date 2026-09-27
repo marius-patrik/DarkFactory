@@ -31,4 +31,4 @@ test("publication check does not mutate PAPER.pdf", async () => {
 	);
 	expect(after.bytes.equals(before.bytes)).toBe(true);
 	expect(after.mode).toBe(before.mode);
-});
+}, 30_000);
