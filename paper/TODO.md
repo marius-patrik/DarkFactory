@@ -4,7 +4,7 @@ Práce *Vzrůst Agentického AI: úvod do agentického inženýrství a implemen
 software factory* (DarkFactory). Zbývající body, o kterých je známo, že nejsou
 vyřešené. Nové položky přidat na konec příslušné sekce.
 
-Stav zkontrolován po commitu `1c5099d2`, 28 stran, sazba bez varování.
+Stav zkontrolován po commitu `2b2bab17`, 30 stran, sazba bez varování.
 
 **Celkem otevřeno: 8 položek** — všechny jsou už práce pro autora nebo kontrolu
 rodným mluvčím. Žádná nečeká na vedoucího: způsob citací byl s ním ověřen a
@@ -37,9 +37,10 @@ každý vlastním commitem.
 | B1 | **Nejvyšší priorita.** Procházet celý text s rodným mluvčím. Jazyková úroveň nese 15 ze 200 bodů (5 gramatická správnost, 10 stylistická). Žádný nástroj nerozezná kolokaci od chyby. | celá práce | ⏳ |
 | B2 | Hlasová kontrola dvojic „podstatné jméno + rozvinutá příčka“, např. *přijetí a plánování požadavku*. | `pages/30`–`35` | ⏳ |
 | B3 | **Rozhodnutí o hlasu.** `review smyčka` a další anglické technické výrazy jsou užity souvisle a odpovídají popiskům *uvnitř* obrázků. Změnit jen text bez změny diagramů by dokument zhoršilo. Buď ponechat, nebo přejít na české ekvivalenty a překreslit popisky v SVG. | celá práce + `components/img/*.svg` | ⏳ autor |
-| B4 | Procházet teoretickou část s rodným mluvčím. Mechanický sken našel přes 100 nálezů, z nichž drtivá většina byly falešné poplachy (odsazení v Typstu, záměrné dvojice `claude claude` ve výpisu rozhraní), ale regex nerozezná kolokaci od chyby. | `pages/21`–`24` | ⏳ |
+| B4 | Procházet teoretickou část s rodným mluvčím. Mechanický sken našel přes 100 nálezů, z nichž drtivá většina byly falešné poplachy (odsazení v Typstu, dvojice `claude claude` ve vyřazeném výpisu rozhraní), ale regex nerozezná kolokaci od chyby. | `pages/21`–`24` | ⏳ |
 | B5 | Věta se třemi podřadicími členy bez interpunkce a s chybějící mezerou v `kdybyse`; relativní věta, která pohltila hlavní větu; `checkoutují` jako sloveso. | `pages/23-theory-agentic.typ` aj. | ✅ `1c5099d2` |
 | B6 | Nadbytečná mezera na začátku odstavce (Typst ji vykreslí jako mezeru mezi slovy) a odkaz na obrázek stojící samostatně jako věta. | `pages/23-theory-agentic.typ`, `pages/22-theory-harness.typ` | ✅ `1c5099d2` |
+| B7 | **Nález při čtení zdrojového textu.** V §2.3.2 zůstala za větou o hook middleware viset druhá polovina předchozí věty: sazba na str. 11 obsahovala „…pro deterministický běh. udělat. Druhou skupinu zajišťuje harness…", tedy duplikát i osiřelé „udělat.". | `pages/23-theory-agentic.typ` | ✅ |
 
 Tvrzení o 28 % chatbotů a 0,36 % coding agentů ponecháno záměrně — je to
 argument práce, ne chyba. Průvodce v kap. 3.9 žádá u statistik uvedení zdroje a
@@ -56,7 +57,7 @@ ale předmět zkoumání. Navazující práce má popsat konečnou architekturu 
 | :-- | :--- | :--- |
 | C1 | Kterou revizi praktická část popisuje | ✅ rozhodnuto: `d576ec8f`, vymezení v §1.1 a §3.5 |
 | C2 | Pasáž o pozdější konsolidaci byla `draft[]` a odporovala novému vymezení | ✅ `af23eaeb` — nahrazena odkazem na rozsah |
-| C3 | Zachycené výpisy `--help` jako samostatný obrázek. Výpis 1 dnes obsahuje jen deklarované argv; plné `--help` by ukázalo rozdíl mezi tím, co pipeline tvrdí, a tím, co nástroje skutečně nabízejí. Všech osm nástrojů již je ověřeno spuštěním, takže by šlo o doplňení, ne o nový důkaz. | ⏳ nabídka, nepřijata |
+| C3 | Tabulka rozhraní osmi harnessů jako obrázek. **Rozhodnuto autorem: vyřazena.** Místo ní je v §2.3.3 jedna převzatá ilustrace rozhraní @fig-antigravity-subagents. Tabulka byla dokladem zachyceným spuštěním `--help`; argv deklarace zůstávají jedině v registru harnessů v repozitáři. | ✅ rozhodnuto |
 | C4 | Položka `darkfactory` v bib byla necitovaná. Nyní je repozitář zmíněn v textu §3.5, tedy citován, a odkazuje na repozitář jako celek místo na konkrétní revizi. | ✅ `6b3e85f7` |
 
 ## D. Repozitář
@@ -81,7 +82,7 @@ ale předmět zkoumání. Navazující práce má popsat konečnou architekturu 
 | # | Co | Proč |
 | :-- | :--- | :--- |
 | F1 | Nechat zkontrolovat cizím okem celou práci, nejen jazykově. | Několikrát se ukázalo, že kontrola odhalí věci, které vlastní oko přestalo vidět. |
-| F2 | Znovu srovnat výpisy proti nainstalovaným nástrojům. Všechny osm je ověřeno 27. září 2026, `claude` byl do té doby rozbitý a byl opraven. Každá revize CLI může změnit přepínač. | `pages/32-practical-architecture.typ` |
+| F2 | Výpis rozhraní byl z práce vyřazen (C3), takže se v ní už nesrovnává s nainstalovanými nástroji. Registry v repozitáři zůstávají jediným místem, kde jsou argv deklarována, a je třeba je občas srovnat s nainstalovanými CLI. Všech osm nástrojů bylo ověřeno 27. září 2026, `claude` byl do té doby rozbitý a byl opraven; `agy` byl téhož dne ověřen znovu na `1.2.10`. | registr harnessů |
 | F3 | Požádat vedoucího o zpětnou vazbu k novému názvu, výzkumné otázce a oddělení dvou prací. Změna názvu a přesunutí praktické části jsou věcné krok. | práce jako celek |
 
 ## G. Předání

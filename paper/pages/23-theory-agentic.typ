@@ -15,8 +15,6 @@ V praxi to znamená, že se plán nevzniká až během práce agenta, ale před 
 #heading(level: 3)[Dovednosti]
 
 Zadání určuje, co má agent udělat; dovednosti určují, co je mu vůbec umožněno udělat. Druhou skupinu zajišťuje harness, a je proto vhodné ji od zadání oddělit: změna dovedností nemění úkol, změna zadání nemění oprávnění. Rozdělení není vlastní: odpovídá běžnému výčtu součástí harnessu, jak jej uvádí @langchain-harness — systémové prompty, nástroje a skills a MCP včetně jejich popisů, doprovodná infrastruktura pro souborový systém, sandbox a prohlížeč, orchestrační logika pro zakládání subagentů, předávání a směrování modelu, a hooky nebo middleware pro deterministický běh.
-udělat. Druhou skupinu zajišťuje harness, a je proto vhodné ji od zadání oddělit:
-změna dovedností nemění úkol, změna zadání nemění oprávnění.
 
 #strong[Nástroje] umožňují agentovi číst a upravovat soubory, vyhledávat nebo spouštět příkazy; #strong[Skills] spojují opakovaně použitelné instrukce, skripty a zdroje pro určitý typ úlohy @agentskills-spec. #strong[Hooks] reagují na události životního cyklu a mohou před akcí či po ní vynutit deterministickou kontrolu @openai-agents-lifecycle. #strong[Model Context Protocol] (#strong[MCP]) standardizuje napojení externích nástrojů a datových zdrojů prostřednictvím rozhraní klient--server @mcp-specification. Instrukce lze uchovat ve standardizovaném souboru #strong[`AGENTS.md`] @agents-md přímo v repozitáři (Anthropic ojedinele využívá #strong[CLAUDE.md]). Skilly, scripty a hooky lze uchovat pod složkou #strong[`.agents/`] v projektu nebo v konfigurační složce harnessu.
 
@@ -25,7 +23,13 @@ Tato dělba má přímý důsledek pro praxi. Oprávnění udělená nástroji a
 
 #heading(level: 3)[Orchestrace a lidská integrace]
 
-Pokud mají podúlohy jasné hranice a jejich výsledky lze znovu integrovat, rozsáhlou úlohu lze rozdělit do více agentních běhů. Ve vzoru #strong[coordinator/subagent] koordinátor deleguje dílčí úkol specializovanému subagentovi s vlastním kontextem a přebírá jeho výsledek. Nezávislé podúlohy mohou zpracovat paralelní pracovníci. #strong[Workflow graph] předem určuje závislosti, pořadí a větvení fází @openai-agent-orchestration. #strong[Agent Swarm] dynamicky rozkládá úlohu na heterogenní podproblémy a spouští specializované agenty paralelně pod řízením orchestrátoru @kimi-k25-swarm.
+Pokud mají podúlohy jasné hranice a jejich výsledky lze znovu integrovat, rozsáhlou úlohu lze rozdělit do více agentních běhů. Ve vzoru #strong[coordinator/subagent] koordinátor deleguje dílčí úkol specializovanému subagentovi s vlastním kontextem a přebírá jeho výsledek. Nezávislé podúlohy mohou zpracovat paralelní pracovníci. #strong[Workflow graph] předem určuje závislosti, pořadí a větvení fází @openai-agent-orchestration. #strong[Agent Swarm] dynamicky rozkládá úlohu na heterogenní podproblémy a spouští specializované agenty paralelně pod řízením orchestrátoru @kimi-k25-swarm. První dva vzory jsou běžně dostupné i v komerčních CLI harnessích, jak ukazuje @fig-antigravity-subagents.
+
+#figure(
+  image("/components/img/antigravity-cli-subagents.jpg", width: 72%),
+  caption: [Koordinátor definuje tři specializované subagenty a spouští je souběžně; každý běží vlastním kontextem. Převzato z dokumentace produktu jako ilustrace rozhraní, nikoli jako záznam běhu popsané pipeline @antigravity-cli.],
+) <fig-antigravity-subagents>
+
 
 Více agentů samo o sobě nezaručuje lepší výsledek. Paralelizace přináší užitek jen tehdy, když jsou omezeny vzájemné závislosti a koordinátor dokáže odhalit konflikty, ověřit dílčí výstupy a posoudit sloučený výsledek vůči společným podmínkám přijetí. Orchestrace proto zahrnuje nejen rozdělení práce, ale také správu kontextu, pořadí kroků, sdíleného stavu a integračních kontrol. Orchestrace je však nezbytná právě pro rozsáhlé úlohy, které se do jednoho kontextového okna nevejdou. Spoléhat se v takovém případě na kompakci by vedlo k tomu, že se ztrácí kontext, na kterém celé zadání stojí, a agent by navíc nebyl schopen pracovat na jednotlivých částech, které na sebe bezprostředně navazují.
 
