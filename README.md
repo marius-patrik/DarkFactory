@@ -2278,56 +2278,67 @@ A design that cannot be falsified is a mood. Two instruments cover the countable
 duplication count and §6.5's recomputability test — and this section holds the failures neither
 sees.
 
-**Two of these nine are visible to the count**, and saying so is part of being honest about it.
-The ninth leaves a second description behind, which is a duplication; the second names a support
-matrix, which is a catalogue, and a catalogue is counted. The other seven are about cost,
-latency, shape and permission, and are not.
+**Two of these nine are visible to the count**, and saying so is part of being honest about it:
+the eighth, whose support matrix is a catalogue and therefore one fact stated once per capability,
+and the ninth, whose residue is a second description. The other seven are about cost, shape and
+permission, and are not.
 
 The rest of this section is deliberately hard to fake. **A test is only worth stating if a system
-that failed would fail it.** Each one below has been checked against that: where the obvious
-formulation would let a failure through, or would fail a system that obeyed the design, the
-obvious formulation is replaced. Three of the earlier drafts of these tests were uninformative for
-exactly that reason — a feature count that scored a hard-won second backend as a wall, a benchmark
-whose control arm the design forbids building, and a source grep that DF-RULE-001 prohibits — and
-they are gone rather than softened.
+that failed would fail it**, and each one below was checked by constructing the system that failed
+and watching it pass. Where the obvious formulation would let a failure through, or would fail a
+system that obeyed the design, the obvious formulation is replaced — and where no formulation
+survives that, the failure says it has no test rather than being given one that cannot fail.
 
 **Reading hardens into a wall.** Extension requires editing the interpreter, because the systems
 layer can only be written the way the first loader expected. This is the likeliest failure and the
 most damaging: it converts a forge into a frozen artefact while everything still looks like a
-forge. *Test:* I2, not a feature count. Does the derived set still equal the discovered set for
-every file, including ones the interpreter has never parsed? A wall is exactly a file the
-resolution stops reaching, so I2 catches it and a count of interpreter changes does not — the
-second backend a project adds legitimately is not a wall.
+forge. *Test:* **add a feature of a new *kind*, and see whether any existing file has to change.**
+This is I6 applied to a kind rather than to a file, and the distinction is the whole test. I6 as
+written — adding a feature changes no other file — cannot see this wall at all, because a closed
+union of feature kinds is a file that *is* discovered and *is* derived; the resolution reaches it
+and the wall stands. The closed-union system passes I2 and fails here, and that is the correct
+verdict: the wall is not a file the resolution drops, it is a vocabulary the resolution has to be
+told about.
 
-**Derivation becomes slower than authoring.** A system's worth is its maintenance, not its
-milliseconds, and §41 excludes speed from the claim. So the test is not a stopwatch. *Test:* I6
-measured as a series rather than a point. I6 already asserts that adding a feature changes no
-other file; run it for the first ten features of each kind and compare the *number of files
-touched*, not the time taken. A system whose cost per feature is flat is failing this even if every
-individual addition is fast, and a system whose cost falls is passing it even if the tenth is
-slower in wall-clock than the first.
+**Derivation becomes slower than authoring.** *Test:* **does the count rise as features are added?**
+Not a stopwatch, and the reason is worth stating plainly: §41 excludes speed from the claim, so a
+wall-clock comparison is not a test of this design, and the earlier attempt to measure files-touched
+across ten additions was worse than nothing — I6 guarantees that adding a feature touches no other
+file, so the series is constant by construction and carries no information. The test is on the
+*residue* rather than the cause, because the way this failure ends is abandonment: a system too slow
+to use stops being used, and the first place that shows is a hand-written thing beside the derived
+one. A slow system that is still used passes, and should — it has not failed this way. A fast
+system whose count climbs still fails, and the cause is elsewhere. The instrument cannot tell you
+the derivation is slow; it can only tell you the cost was paid, which is the part the claim was ever
+about.
 
 **The seams prove insufficient.** Binding stops providing enough construction material and the
-project retreats into implementing organs. *Test:* the substituted organ is visible where the count
-is blind. Retreating adds implementation, not descriptions, so a duplication count **improves** as
-this failure worsens — the scoreboard points the wrong way and the test cannot be the count. The
-instrument is §11.1's: for every organ the system owns, is there a seam it could have been a
-binding of? An organ with no seam is the finding, and it is countable.
+project retreats into implementing organs. *Test:* **for every organ the system owns except the
+interpreter, is there a seam it could have been a binding of?** The exception is load-bearing and
+omitting it is how the obvious version of this test breaks: §11.1 and §18 defend the interpreter as
+deliberately owned, and a test that demanded a seam for it would fail a system that obeyed the
+design. What is countable here is the organ list minus that one entry, and what is a judgement is
+the classification of each entry — so this test is half mechanical and says so rather than
+presenting a counterfactual as though it were a measurement.
 
 **A seam hardens into a menu.** The quiet one — substitutability keeps passing while the thing gets
-worse. A menu is extensible by construction; that is what makes it a menu, so a test about
-extensibility passes by definition. The property that actually fails is permeability. *Test:* take
-a capability the system ships and place it inside something the caller also builds, without editing
-the seam. If it cannot be composed around, the seam is a wall. This is a construction, not a
-question, and it is runnable on any feature rather than only on features that once caused trouble.
+worse. A menu constrains features that *do not exist yet*, so a test that runs on shipped
+capabilities cannot see it: `Change/` is a menu, the resolver constructs whichever backend was
+selected, and every shipped capability composes around it without complaint. *Test:* **construct a
+feature whose implementation the caller owns, and check the seam accepts it without the caller
+implementing the seam's interface in full.** A seam takes an organ it was not written for; a menu
+demands that the caller's organ satisfy a shape chosen in advance, which is the difference. The
+construction is runnable, and it is the point at which the two are distinguishable.
 
 **The abstraction leaks into the interfaces.** A surface names, selects, configures or reports an
-agent. *Test:* not a source grep, which DF-RULE-001 prohibits and which §13.1's own vocabulary makes
-unreliable — "the agent handling this issue" is legitimate. The check is structural: **does any
-surface's declared interface contain a field whose type or name is an agent, a provider, a model or
-a harness?** A `model` field on a settings surface fails whether or not the word "agent" appears,
-and a compliant mention of an issue's assignee passes. A surface that has no agent-typed field
-cannot be selecting one.
+agent. *Test:* **does any surface's declared interface carry a field whose *type* is an agent, a
+provider, a model or a harness?** Not a source grep, which DF-RULE-001 prohibits and which §13.1's
+own vocabulary makes unreliable — "the agent handling this issue" is legitimate. The type and not
+the name, because a settings surface carrying a 3D mesh in a field named `model` is not naming an
+agent, and a test keyed on the noun fails it. The test is one-directional and its limit should be
+stated: an agent-typed field is a finding, but the *absence* of one is not a clearance, because a
+surface can select an agent with a plain `{ taskKind, handle }` and no agent in the type at all.
+Finding the leak is mechanical; proving there is none is not.
 
 **Location-dependent behaviour reappears.** Machines and repositories become two modes. The
 obvious test — any variant that exists in one location only — is **wrong**, and would fail a system
@@ -2336,30 +2347,45 @@ capability to the organ appropriate to a location is the designed answer. So the
 binding from branching. *Test:* for each location-specific path, is it a *binding selection* — a
 declaration naming which organ serves — or a *branch in behaviour*? A branch changes what the
 feature does; a binding changes which organ does it. `if (inCi)` is a branch and fails. A new host
-requiring a new binding passes, because §9.3 says that is how a new host is added.
+requiring a new binding passes, because §9.3 says that is how a new host is added. **And the
+selection must be legible from the declaration**, which is the part that catches the failure that
+actually occurs: an organ present for an invisible reason, chosen by a code path in the compiler
+rather than by anything a reader can see. `local/` in the tree of §9.3 is exactly that case, and
+naming it here is the point — a reader of `local.df` currently cannot tell whether its presence is
+location-chosen or unconditional.
 
 **Dynamic composition proves unaffordable.** Derivation costs something, paid at the worst moment.
 The obvious test — compare against what a barrel cost — **cannot be run**, because I1, §4.2, §17 and
 DF-RULE-012 all forbid building and keeping a barrel, so the control arm is the document's own named
-failure. *Test:* the load-failure leg, measured against a stated budget rather than a deleted
-design. Time to *diagnose* a load failure must be under a fixed ceiling, and the ceiling is
-declared in configuration rather than chosen after the fact. Discovery is resolved by typing, not
-cached, so the stale-cache question does not arise — and if a cache is ever added, I2a makes a wrong
-cache key a correctness bug rather than a missed optimisation.
+failure. *Test:* **time to complete a composition, against a ceiling this design fixes rather than
+the implementer.** A ceiling chosen by the tested party is not a test, which is why the number
+belongs in the design and not in the configuration of the thing being measured. The earlier attempt
+measured time to *diagnose* a load failure, which is the wrong moment: the failure is the cost of
+composing, not the cost of finding out that composing failed, and a system can make diagnosis
+instant while every composition re-resolves the whole graph for forty minutes. Discovery is resolved
+by typing rather than cached, so the stale-cache question does not arise — and if a cache is ever
+added, I2a makes a wrong cache key a correctness bug rather than a missed optimisation.
 
-**The corpus does not compound.** This is the same economic claim as the second failure, and it is
-tested by the same instrument, so it does not get a second slot. What it adds is the *shape* of the
-curve rather than its value: a system that fails the second test fails this one too, and reporting
-it separately would be two slots for one claim.
+**The corpus does not compound.** Meaning should accumulate without anyone maintaining it by hand.
+This is not the second failure restated — that one is the cost of deriving a single feature, and
+this is whether the accumulated body of meaning survives a year of changes. *Test:* **the
+duplication count of §5.3, taken over a growing corpus.** Which is why this failure is the one the
+count sees, along with the ninth: a corpus that needs hand maintenance has acquired a support
+matrix, and a support matrix is a fact stated once per capability. A system whose count stays at
+zero across a year of features is not maintaining anything by hand, because there is nothing to
+maintain.
 
 **Self-hosting stalls just short.** The system builds itself most of the time and the residue is
 maintained by hand. The most seductive failure, because every step of progress is real and only the
 fixed point distinguishes the result from a well-automated pipeline. *Test:* I8, and the second
 clause is the one that matters — is the output byte-identical to the input **with no reconciling
 step in between**? A build that compiles and then reconciles satisfies the first and fails the
-second, and that is precisely the failure. Non-determinism that is not semantic (map iteration
-order, embedded timestamps, absolute paths) is excluded by declaration, because a system 95% of the
-way there has a second description containing 5%, and that fraction does not stay put.
+second, and that is precisely the failure. The harness must run exactly one pass from a fixed point,
+because a harness that iterates until stable passes a build-then-reconcile system. Non-determinism
+that is not semantic — map iteration order, embedded timestamps, absolute paths — is excluded by
+declaration, and this design should be suspicious of that: the tested party authorising its own
+exclusions is the same self-certification as a chosen budget, and it is the weakest clause in the
+section.
 
 **What no test here can reach.** Whether a derived interface is *true* — whether it says what the
 feature does. I1b makes a doc comment that only restates its signature a build error, and no check
