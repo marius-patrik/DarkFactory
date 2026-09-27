@@ -1,18 +1,25 @@
-import { describe, expect, test } from "bun:test";
+import { afterAll, describe, expect, test } from "bun:test";
 import { existsSync } from "node:fs";
 import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { applyLicence, declaredLicence, licenceBody, NO_LICENCE, OFFERED_LICENCES } from "../src/ci/licensing.ts";
 import type { GitHubClient } from "../src/github/client.ts";
 
 const roots: string[] = [];
+// Under the OS temp directory, not the repository root. A run of this suite used to leave 17
+// `.licence-test-*` directories in the checkout, so a passing test run left the working tree dirty
+// and the next `git add -A` would have committed them. A test that writes into the repository it is
+// testing also makes the suite's behaviour depend on the directory it was launched from.
 async function root(): Promise<string> {
-	const dir = await mkdtemp(join(process.cwd(), ".licence-test-"));
+	const dir = await mkdtemp(join(tmpdir(), "df-licence-test-"));
 	roots.push(dir);
 	return dir;
 }
-process.on("exit", () => {
-	for (const dir of roots) void rm(dir, { recursive: true, force: true });
+// afterAll, not `process.on("exit")`: the exit handler was async and voided its own promise, so the
+// removals did not complete before the process ended — which is why the directories survived at all.
+afterAll(async () => {
+	for (const dir of roots) await rm(dir, { recursive: true, force: true });
 });
 
 /** Writes a manifest whose repo block declares the given licence. */
