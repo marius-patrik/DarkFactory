@@ -34,7 +34,7 @@ export interface RepositoryActionEvidence {
 			 * only escape from a required gap: DF-RULE-006 permits a not-applicable exception solely
 			 * from the canonical repository contract, and forbids inferring it from a missing tool.
 			 */
-			notApplicable?: Readonly<
+			not_applicable?: Readonly<
 				Partial<Record<CapabilityActionKind, Readonly<Record<string, NotApplicableDeclaration>>>>
 			>;
 		};
@@ -117,10 +117,13 @@ function overrideGroup(
  * package belongs to, or a missing reason are all configuration errors rather than exemptions.
  */
 function assertNotApplicableDeclarations(evidence: RepositoryActionEvidence): void {
-	const declarations = evidence.repoDf.environment?.notApplicable;
+	const declarations = evidence.repoDf.environment?.not_applicable;
 	if (declarations === undefined) return;
 	const detected = new Set(evidence.packages.map((pkg) => pkg.ecosystem));
 	for (const [kind, group] of Object.entries(declarations)) {
+		// `$comment` is this contract's established documentation key and appears in every other
+		// environment block, so it is prose rather than a declaration.
+		if (kind.startsWith("$")) continue;
 		if (!ACTION_KINDS.includes(kind as CapabilityActionKind))
 			throw new Error(`not_applicable declares unknown action kind ${kind}`);
 		if (!group || typeof group !== "object" || Array.isArray(group))
@@ -140,7 +143,7 @@ function notApplicableException(
 	pkg: CapabilityPackageContext,
 	kind: CapabilityActionKind,
 ): (NotApplicableDeclaration & { ecosystem: string }) | undefined {
-	const declaration = evidence.repoDf.environment?.notApplicable?.[kind]?.[pkg.ecosystem];
+	const declaration = evidence.repoDf.environment?.not_applicable?.[kind]?.[pkg.ecosystem];
 	return declaration ? { ...declaration, ecosystem: pkg.ecosystem } : undefined;
 }
 

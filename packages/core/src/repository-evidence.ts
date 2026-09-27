@@ -78,6 +78,12 @@ export interface RepositoryDfEvidence {
 		docs_check?: Readonly<Record<string, RepositoryActionOverride>>;
 		docs_extract?: Readonly<Record<string, RepositoryActionOverride>>;
 		setup?: Readonly<Record<string, RepositoryActionOverride>>;
+		/**
+		 * Actions the repository explicitly exempts per ecosystem, each with a reason. Keyed
+		 * snake_case to match the rest of the canonical contract (`docs_check`, `package_manager`);
+		 * an exemption for a tool that does not exist is the only escape from a required gap.
+		 */
+		not_applicable?: Readonly<Record<string, Readonly<Record<string, { reason: string; [key: string]: unknown }>>>>;
 		release?: Readonly<Record<string, RepositoryActionOverride>>;
 	};
 	[key: string]: unknown;

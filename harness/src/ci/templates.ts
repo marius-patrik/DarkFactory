@@ -113,10 +113,16 @@ export function parseManagedHeader(content: string): (ManagedHeader & { headerLi
 	}
 
 	const body = firstNewline === -1 ? "" : normalized.slice(firstNewline + 1);
+	// The pattern requires `sha256:` plus 64 hex digits, so group 3 participates whenever the whole
+	// match does. `noUncheckedIndexedAccess` cannot see that, so narrow it here rather than assert:
+	// if the pattern is ever loosened, this returns null instead of threading an undefined hash into
+	// buildManagedHeader and producing a `sha256:undefined` managed header.
+	const rawHash = match[3];
+	if (rawHash === undefined) return null;
 	return {
 		template: match[1]!,
 		version: match[2]!,
-		hash: match[3]?.toLowerCase(),
+		hash: rawHash.toLowerCase(),
 		headerLine: firstLine,
 		body,
 	};
