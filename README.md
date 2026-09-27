@@ -115,11 +115,10 @@
 
 ## Abstract
 
-DarkFactory is a kernel over meaning. It reduces everything it touches to three things: a **normal
-form**, in which anything a system knows about itself is an interface derived from the code that
-implements it; an **address**, by which every feature, setting, file, task and version is reachable
-by any surface, tool or agent; and a set of **seams** it guarantees rather than discovers and never
-owns. Five operations run over that structure and nothing lies beside them: derive structure into
+DarkFactory is a kernel over meaning. It reduces everything it touches to three things — a **normal form**, an
+**address space**, and a set of **guaranteed seams** — and runs five operations over them: derive,
+address, declare, converge, version. §3 states what those are; this document is about what they
+imply. Five operations run over that structure and nothing lies beside them: derive structure into
 meaning, address what exists, declare a difference, converge the world toward the declaration, and
 version the result with a parent, a diff and an author.
 
@@ -380,11 +379,9 @@ independently droppable, and independently nameable.
 Healing is one-directional. A declaration is intent; the system observes reality, compares, and
 converges the world toward what was meant.
 
-The boundary that makes this safe is that changing the declaration is not drift. A human editing a
-declaration has changed intent, and that is an ordinary governed mutation. Without this distinction
-a healing system silently reverts every deliberate change a person makes, which is worse than not
-healing at all. The second boundary is attribution: the system repairs drift it can attribute to
-itself and reports what it cannot.
+Two boundaries make this safe, and §14 states both in full: **changing the declaration is not drift**,
+and **attribution** bounds what may be repaired. A practice whose only content is that healing goes
+one way would be unfalsifiable, so the boundaries belong to it as much as the direction does.
 
 ### 4.6 Be faster, not merely correct
 
@@ -470,10 +467,10 @@ repository, a machine, a pipeline, a fleet.
 Such a system is described more than once. There is the thing, and there is a description of it: a
 manifest, a schema, a build file, a configuration layer, an adapter per consumer, a document, a set
 of instructions for how to assemble and ship it. The copies are not maintained together, and their
-disagreement is not a failure of discipline. Two things existing is the normal condition, and drift
-is the default outcome rather than an event anyone guards against. The pattern addresses exactly
-that, and it addresses it structurally rather than procedurally, because every procedural answer has
-been tried: generate the second description, or check that the two agree.
+disagreement is not a failure of discipline, for the reason §1 gives: two things existing is the normal
+condition and drift is the default outcome. The pattern addresses that structurally rather than
+procedurally, because every procedural answer has been tried — generate the second description, or check
+that the two agree.
 
 ### 6.2 Forces
 
@@ -507,13 +504,12 @@ preference.
 
 ### 6.4 Consequences
 
-The pattern's benefits are all the same benefit seen from different angles.
-
-The description cannot drift, because there is nothing to drift from. Adding a consumer costs a
-renderer rather than an adapter, because after derivation there is nothing left for it to write.
-The system can act on itself, because it can already read itself — which is what makes self-building
-structural rather than ambitious. And a change to the system is an ordinary change, because the
-system's own code is subject to the same rules as anything else it touches.
+The pattern's benefits are all the same benefit seen from different angles, and §5.1 lists them: a
+description that cannot drift, consumers that cost a renderer rather than an adapter, a system that can
+act on itself because it can already read itself, and a change to the system that is an ordinary change.
+What the pattern adds to that list is the claim that the four are consequences of the *shape* — of one
+description derived from the thing it describes — rather than four separate properties anyone could adopt
+independently.
 
 The costs are equally real and belong in the same breath. **Authoring is prohibited, including by the
 author**, which is a rule people expect to be relaxed for themselves. **Documentation is
@@ -1324,7 +1320,8 @@ GitHub surface, and external agent harnesses as MCP servers and plugin/skill for
 
 Compiling and releasing are one operation. Compilation binds the resolved system to a version and emits it in every surface form at that version, so a version is part of what compilation resolves rather than a label applied afterwards. There is no separate build description of the system that could disagree with the system.
 
-Official capabilities use the same loader/ABI as third-party capabilities. The normal df distribution includes the official capability set so standard installation remains batteries-included.
+Official capabilities use the same loader/ABI as third-party capabilities. What a standard installation
+includes is specified in §33.
 
 The capability ABI is versioned independently from product SemVer.
 
@@ -2008,7 +2005,10 @@ simultaneous actors and fault injection.
 ## 38 Decision log
 
 An accepted decision that has been implemented is no longer a decision — it is the design. What is
-kept here is the log: what was decided, the one reason it was decided, and the rules it constrains.
+kept here is the log: what was decided, the one reason it was decided, and the rules it constrains. A
+decision that constrains no rule has been removed, because it was either superseded or was never a
+constraint — the language convention is the second kind, and a rule every contributor must satisfy is
+not a statement about the system.
 The full rationale for the *thinking* is §45, and the current requirement text is Part III, so a
 second copy of either would be a second description of something already stated.
 
@@ -2031,8 +2031,7 @@ second copy of either would be a second description of something already stated.
 | ADR-0024 | Effects are serializable and authoritative state is crash-consistent       | Crash recovery and concurrency safety are one protocol rather than separate best-effort features.                                                                                                       | §37.7                                              |
 | ADR-0025 | Each delivery branch has one integration authority                         | Parallelism improves throughput without introducing lost updates, shared-file races or evidence attached to obsolete heads.                                                                             | §37.5, §37.6, §37.7                              |
 | ADR-0026 | Verification proves invariants and fails closed                            | A green head means the declared invariants were actually evaluated.                                                                                                                                     | §37.1, §37.6, §37.6                               |
-| ADR-0027 | Repository-authored artifacts use English                                  | Human and agent contributors share one review language across source, GitHub and generated documentation without pretending that unreliable natural-language classification is a correctness gate.      | §37.4                                               |
-| ADR-0028 | Integrate Paper as a repository domain                                     | The thesis remains a first-class repository concern without creating a second documentation owner or a second product surface.                                                                          | §37.10                                              |
+| ADR-0028 | Integrate Paper as a repository domain                                     | The Paper remains a first-class repository concern without creating a second documentation owner or a second product surface.                                                                          | §37.10                                              |
 
 ## 39 Agent guidance
 
