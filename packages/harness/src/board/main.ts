@@ -3,7 +3,17 @@ import { BoardAutomation } from "./automation.ts";
 import type { WebhookPayload } from "./events.ts";
 
 /**
- * The entry point the board automation workflow runs.
+ * The board automation entry point.
+ *
+ * **Nothing runs this file.** It was written to replace a Python script, and no workflow invokes it:
+ * the fourteen workflows in `.github/workflows/` contain no board automation job, and none of them
+ * names this path. The comment used to say "the entry point the board automation workflow runs",
+ * which was a claim about a caller that does not exist — the same defect as a hook that is declared
+ * and never invoked, and it points the next reader at enforcement that is not there.
+ *
+ * So the file is staged, not live. It needs a caller, or it needs to be deleted, and this comment
+ * exists so that the choice is visible rather than assumed. The commit that wires it up should
+ * remove this paragraph.
  *
  * It takes the same three shapes the script it replaces took: reconcile everything on demand, or
  * handle the webhook named by `GITHUB_EVENT_NAME` and read from `GITHUB_EVENT_PATH`. A rate limit
