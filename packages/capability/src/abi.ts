@@ -147,7 +147,6 @@ export type CapabilityActionKind =
 	| "lint"
 	| "typecheck"
 	| "format_check"
-	| "docs_check"
 	| "docs_extract"
 	| "setup"
 	| "release";

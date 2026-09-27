@@ -55,6 +55,7 @@ export async function runCiCli(args: string[], context: CiCliContext = {}): Prom
 						ecosystems: state.evidence.ecosystems,
 						matrix: state.matrix,
 						gaps: state.resolution.gaps,
+						notApplicable: state.resolution.notApplicable,
 					},
 					null,
 					2,
@@ -71,7 +72,8 @@ export async function runCiCli(args: string[], context: CiCliContext = {}): Prom
 			} else {
 				for (const execution of executions) {
 					if (!execution.supported) {
-						log(`[unsupported] ${execution.packageId} ${execution.kind}: ${execution.reason ?? "missing action"}`);
+						const label = execution.notApplicable ? "not applicable" : "unsupported";
+						log(`[${label}] ${execution.packageId} ${execution.kind}: ${execution.reason ?? "missing action"}`);
 						continue;
 					}
 					const result = execution.result!;
