@@ -10,7 +10,7 @@ afterEach(async () => {
 });
 
 async function run(home: string, args: string[], extraEnv: Record<string, string> = {}) {
-	const child = Bun.spawn([process.execPath, "run", "src/cli.ts", ...args], {
+	const child = Bun.spawn([process.execPath, "run", join(import.meta.dir, "../src/cli.ts"), ...args], {
 		cwd: process.cwd(),
 		env: {
 			DF_HOME: home,
