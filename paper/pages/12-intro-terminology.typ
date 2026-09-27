@@ -53,7 +53,7 @@ stav s cílem a rozhodne, zda pokračovat; #strong[human-in-the-loop] (HITL) je
 brána vyžadující explicitní lidské rozhodnutí; #strong[orchestrace] je rozdělení
 úlohy mezi více běhů se správou jejich závislostí @openai-agent-orchestration.
 #strong[Koordinátor] je běh, který dílčí úkoly přiděluje specializovaným
-#strong[subagentům]; #strong[workflow graph] předem určuje pořadí a větvení fází.
+#strong[subagentům], #strong[workflow graph] předem určuje pořadí a větvení fází.
 
 
 #heading(level: 3)[Disciplína: agentní a agentické]
