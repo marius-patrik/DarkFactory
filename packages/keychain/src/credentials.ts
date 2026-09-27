@@ -613,21 +613,17 @@ export class AccountCredentialStore implements CredentialStore {
 			.then((account) => (account ? toPiCredential(account) : undefined));
 	}
 
+	/**
+	 * Removes the account and every slot it holds.
+	 *
+	 * pi models one credential per provider, so its `delete` is a logout. Stripping only the
+	 * primary oauth/api_key slot would leave the account row behind — listed by
+	 * {@link FileCredentialStore.listAccounts} and resolvable by a chain, yet unable to
+	 * authenticate — which is the residue a retired credential must not leave. This matches
+	 * `df logout`, which already deletes the whole record.
+	 */
 	delete(providerId: string, options?: AuthOperationOptions): Promise<void> {
 		this.assertProvider(providerId);
-		return this.store
-			.modifyAccount(
-				this.id,
-				async (current) => {
-					if (!current) return undefined;
-					const oauth = primarySlot(current, "oauth")?.[0];
-					const apiKey = primarySlot(current, "api_key")?.[0];
-					if (oauth) delete current.slots[oauth];
-					else if (apiKey) delete current.slots[apiKey];
-					return current;
-				},
-				options,
-			)
-			.then(() => undefined);
+		return this.store.deleteAccount(this.id, options).then(() => undefined);
 	}
 }
