@@ -13,7 +13,7 @@ konverzační chatboty @github-copilot-chat, v nichž model sestavuje odpověď,
 nebyly k dispozici, takže i nadále všechno provedl uživatel. Třetí stupeň, #emph[coding agenti]
 @github-copilot-agent @openai-codex-2025 @openai-codex-app-2026, dostal přístup k souborům, příkazům
 a běhovému prostředí. Tím se poprvé změnilo, kdo práci vlastně dělá, a to je změna, o kterou jde v
-této práci. Průmyslové zprávy o šíření agentů do výroby ji popisují jako probíhající
+této práci. Průmyslové zprávy o šíření agentů do výroby ji popisují jako probíhající přechod
 @anthropic-agents-2026.
 
 #figure(
@@ -22,7 +22,7 @@ této práci. Průmyslové zprávy o šíření agentů do výroby ji popisují 
 ) <fig-gradually-usage>
 
 Rozsah veřejného použití je přitom stále úzký. Jeden ze zveřejněných odhadů klade počet
-uživatelů chatbotů na 28~% populace a pravidelné užití #emph[coding agenti] na
+uživatelů chatbotů na 28~% populace a pravidelné užití #emph[coding agentů] na
 0,36~% světové populace @gradually-ai-usage-2026; @fig-gradually-usage tyto dvě skupiny
 odlišuje.
 
@@ -44,7 +44,7 @@ největší tam, kde byly výchozí výsledky nejhorší @chen2026harnessx. Ding
 spolupracovníci ukázali, že část toho, co harness přidává k výsledku, lze po tréninku
 převést do parametrů modelu @ding2026scaffold. Thangarajah a jeho spolupracovníci ukázali
 opačnou věc: co se převede, převádí se pouze v konvencích toho jediného scaffoldu, na němž
-se model trénoval @thangarajah2026dcas. Představitelné práce, která architekturu rozkládá na
+se model trénoval @thangarajah2026dcas. Představitelná práce, která architekturu rozkládá na
 vrstvy a mluví o ní jako o předmětu vlastního bádání, je poziční a dodává k tomu vlastní
 referenční implementaci, takže je citovatelná za slovník a za rámcování, nikoli za měření
 @gu2026harness.
@@ -53,7 +53,7 @@ Tvrzení, že návrh systému je důležitější než
 schopnost modelu, samo o sobě neplatí; pole, které této práci předchází, samo píše, že
 další pokrok bude záviset #emph[stejně] na návrhu systému jako na silnějších modelech, a
 nikoli místo nich @gu2026harness. Stejně tak není doloženo, že se návrh systému od modelu
-oddělit nedá. Zajímavá není součet těchto tvrzení, ale to, v čem se liší: co lze do modelu
+oddělit nedá. Zajímavé není, co tvrzení říkají jednotlivě, ale v čem se liší: co lze do modelu
 přenést, co zůstává venku a podle čeho se o tom rozhoduje. To je předmětem teoretické
 části, která proto nepočítá s tím, že by měla vyhrát, ale s tím, že bude muset říct, kde
 se shoduje a kde ne.
@@ -67,7 +67,7 @@ schopnosti, o níž mluvíme.
 
 Výzkumná otázka práce zní: #emph[Které principy musí agentický systém splnit, aby
 vykonával inženýrskou práci?] Inženýrskou prací se zde rozumí změna repozitáře, kterou
-může jiný člověk než její autor přezkoumat a sloučit, aniž by musel agenta na cokoliv ptát;
+může jiný člověk než její autor přezkoumat a sloučit, aniž by musel agenta na cokoli ptát;
 v tomto smyslu je měřena schopnost systému a v tomto smyslu je brána člověka
 nezaměnitelnou. Sloveso #emph[musí] je přitom míněno podmíněně: nutné jsou ty principy,
 které samotný model bez zásady okolí neposkytne. Které to jsou, se s rostoucí schopností
