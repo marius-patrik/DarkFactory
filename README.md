@@ -137,9 +137,9 @@ self-building rather than merely automated, and what makes a change to DarkFacto
 change rather than a special case. Self-healing is the same operations applied to drift, and free
 surfaces are a consequence of the normal form rather than a feature. Every capability is a seam
 with swappable implementations, and guarantees nest, so the system is as portable as its guarantees
-and no more bound than they are. The claim is falsifiable by a count — the sites where meaning is
-authored rather than derived, target zero — and it fails in one identifiable way, by becoming
-slower than the alternative.
+and no more bound than they are. The claim is falsifiable by a count — the number of times a fact about
+the system is stated more than once, target zero — and it fails in one identifiable way: a second
+account of the system appears, it works, and it stays.
 
 ## Keywords
 
@@ -386,8 +386,8 @@ agree — a check is the admission that there are two.
 
 The consequence is that a manifest, an index, a registry, a schema, a catalogue, a per-surface
 adapter, a hand-written interface description and a hand-written build description are all the same
-mistake, and none of them is available as a design. The count of such sites is the only honest
-scoreboard the design has, and §5.3 says what makes it falsifiable rather than merely virtuous.
+mistake, and none of them is available as a design. What the design has instead is a count of
+duplication, and §5.3 says what makes it falsifiable rather than merely virtuous.
 
 ### 4.3 Derive, do not author
 
@@ -447,7 +447,12 @@ constraint rather than a capability, and the difference is not semantic.
 
 ### 5.1 What follows from it
 
-The interface cannot drift, because there is nothing to drift from. Surfaces are nearly free,
+The interface cannot drift, because there is nothing to drift from — and that is worth being exact
+about, because it is a weaker claim than it sounds. Drift is disagreement between two descriptions.
+Eliminating the second one does not make disagreement impossible; it makes it undefined, and the
+count of §5.3 is what keeps the second one absent. Nothing here checks that what remains is
+*true*, and §40 says so at the end. What is claimed is that there is nothing to be compared
+against, not that there is nothing to get wrong. Surfaces are nearly free,
 because after derivation there is nothing left to write per surface. Self-healing works, because
 intent is derived rather than recorded twice. Self-building works, because the system emits itself
 from the meaning it read. One semantic model spans machines, repositories and hosting types,
@@ -488,13 +493,39 @@ code. **Position is not the quantity. Multiplicity is.** The protected thing is 
 never stated twice, so the instrument counts statements and not places, and a statement cannot be
 relocated out of the measurement by moving it.
 
-Three consequences, and each one closes a way the count used to be gamed:
+**What is inside the measurement, and what is not.** The scope is the declaration and the system the
+declaration describes — every statement of a fact about the system, in the system or in its
+specification. The specification is in scope rather than exempt, and the reason is §24.1's: a thing
+is declared where it is implemented, so a document that *is* the declaration of a system is not a
+description standing beside that system. It is the other half of that claim.
+
+**Which means this document is itself in scope, and it is not at zero.** That is the honest position
+and it is better than the alternative, which is an instrument that cannot see the specification, the
+interface tables or the concern tree — the three artefacts where duplication is most likely to
+accumulate. The places where this document states a fact more than once are: the per-entry
+descriptions in the concern tree, which restate the declarations the entries point at; the
+hand-written interface table in §11, which restates signatures that §24.1 requires to be derivable;
+and the handful of formulations that recur across §4, §5 and §8, where one property is asserted once
+as a derivation and again later as a slogan. **A document that argued for zero duplication while
+containing several instances of it would be the failure it describes**, and naming the instances is
+the only disposition available that is not a worse version of the same problem.
+
+**What the count cannot see, stated plainly.** It counts statements of a fact, so it can be defeated
+by *bundling*: forty claims written as forty clauses of one paragraph are forty facts, each stated
+once, and the count is zero while every one of them still has to be kept current. This is the same
+move whether the carrier is a file or a sentence, and changing the counted object from a place to a
+fact relocated that hole rather than closing it. The count also cannot judge whether a statement is
+*true*, and §40 says so at the end. Bundling is not defended here. It is named, because an
+instrument with a known way to be beaten is falsifiable and one without is not, and a reader is
+entitled to know which they are looking at.
+
+Three further consequences, each closing a way the count used to be gamed:
 
 - **Documentation is inside the measurement, not outside it.** A doc comment is authored, and the
   earlier definition of the counted thing — *written beside* the feature — put the largest body of
-  authored meaning in the system permanently out of scope. The test is now whether the comment
-  states anything the signature does not. A comment that says *why* is not a duplicate; a comment
-  that restates *what* is, and the second kind is what a compiler should reject.
+  authored meaning in the system permanently out of scope. The test is whether the comment states
+  anything the signature does not. A comment that says *why* is not a duplicate; a comment that
+  restates *what* is, and the second kind is what a compiler should reject.
 - **A prose declaration and its typed equivalent are one statement, not two or none.** §11.2 makes
   prose a real declaration language. Translating a declaration into English does not retire it, and
   writing it in English does not exempt it; it is still one fact about the system, and the count
@@ -503,18 +534,41 @@ Three consequences, and each one closes a way the count used to be gamed:
   the second account of the system *the* test of self-building, and a scoreboard that could not
   see it would be blind exactly where it matters.
 
-There is a second instrument and it answers a different question, so the two are not in tension.
-§6.5's **recomputability test** sorts a *file*: if its contents could be recomputed from the system
-it is a record and may be stored; if they could not, it is a description and may not. That is a
-test of what a file is for. **The duplication count is a test of whether a fact was stated twice**,
-and the two can disagree productively — a file can be a record and still repeat a fact it derived
-for a consumer that cannot read the system, which is the one case the recomputability test alone
-would wave through.
+**Which part of this is a check, and which is a review obligation.** Only part of it, and §7.6 makes
+the distinction binding rather than stylistic. A doc comment that restates the signature it is
+attached to is decidable mechanically: the comment's content is compared against what the signature
+already carries, and a comment that adds nothing new is rejected. An enumeration-only file is
+likewise a shape a linter can see. **Deciding whether two English passages in different files assert
+the same fact is not decidable, and this design does not pretend otherwise** — so the cross-file
+case is a review obligation, it is deliberately *not* in §8's table of invariants, and calling it a
+check would be exactly the "reviewed and agreed" substitution §7.6 forecloses. The consequence is
+that the load-bearing instrument is one mechanical rule plus a human obligation, which is a weaker
+falsifier than this section would like and is stated here rather than hidden inside a table row
+whose presence implies more.
 
-So: two instruments, each doing one job, and §40's failures are neither of them. §40 holds what a
-count does not see, and the honest statement is which of its modes are visible to it — the ninth,
-whose residue is a second description, and the second, whose support matrix is a catalogue. Calling
-all nine invisible was false in both directions and is corrected there.
+**The second instrument, and what it needs to be one.** §6.5's **recomputability test** sorts a
+*file*: if its contents could be recomputed **by the system, without a human doing the work again**,
+it is a record and may be stored; if they could not, it is a description and may not. The
+authorship condition is the whole test. Without it the test is vacuous, because a hand-authored
+manifest is perfectly recomputable — by the person who wrote it, again. With it, the test sorts what
+a linter can actually see. It also needs a third category, because a declaration is the *input* to
+derivation rather than its output and so is not recomputable from the system at all: a `.df` file
+that declares semantics is not a description standing beside the system, and the test's purpose is
+served by excluding it explicitly rather than by leaving it to be read either way.
+
+The two instruments are not in tension, because they answer different questions. The recomputability
+test asks **what a file is for**; the duplication count asks **whether a fact was stated twice**;
+and they can disagree productively, because a file can be a record and still repeat a fact it
+derived for a consumer that cannot read the system — which is the one case the recomputability test
+alone would wave through. §24.3 states the same distinction in provenance terms, and where the two
+phrasings appear to differ the difference is only which base is named, so the test is stated once
+here and referred to elsewhere.
+
+**And the failure the instruments are weakest against is named first.** §40 holds what the counts do
+not see, and the honest statement is which of its modes are visible to the count: the ninth, whose
+residue is a second description, and the eighth, whose support matrix is a catalogue and therefore
+one fact stated once per capability. Calling all nine invisible was false in both directions and is
+corrected there.
 
 **The failure mode is specific, and it is the one that actually happens.** A constraint with no
 teeth is abandoned under pressure, and the pressure is always a deadline. The fastest path to a
@@ -522,8 +576,16 @@ shipped capability is a hand-authored manifest, an added index, or a surface spe
 works, it ships, and the count never comes back down. The countermeasures are §4.6, the invariant
 that nothing is registered by being listed (I1, §8), and the habit of treating a requested
 exception as evidence that the interpreter is missing a capability. §4.6 is the load-bearing one,
-because it is the only counter that does not depend on anyone remembering — and the weakness of
-that claim is that §4.6 has no check either, which is why the count is now I1b and has one.
+because it is the only counter that does not depend on anyone remembering.
+
+**And the honest position on all three is that none of them is a check.** §4.6 is a latency
+requirement with no mechanism behind it. I1 is enforced by rejecting enumeration-only files, which
+is a shape a linter can see, not a meaning a machine can compare. I1b — the doc-comment rule, which
+is the one mechanical piece of the count — rejects a comment that adds nothing; it cannot see a fact
+stated twice in two different files, because that judgement is not mechanical. The failure mode above
+— abandonment under deadline — is therefore the one failure in this document with no automatic
+counter at all, and naming I1b as the answer to §4.6 would be answering a question about duplication
+with an instrument that measures duplication.
 
 # Part II — The design
 
@@ -580,7 +642,7 @@ preference.
 ### 6.4 Consequences
 
 The pattern's benefits are all the same benefit seen from different angles, and §5.1 lists them: a
-description that cannot drift, consumers that cost a renderer rather than an adapter, a system that can
+a description with nothing to disagree with, consumers that cost a renderer rather than an adapter, a system that can
 act on itself because it can already read itself, and a change to the system that is an ordinary change.
 What the pattern adds to that list is the claim that the four are consequences of the *shape* — of one
 description derived from the thing it describes — rather than four separate properties anyone could adopt
@@ -608,9 +670,29 @@ legitimate.
 
 And it does not make **every recorded fact** a violation. A lockfile, a checksum and a signature are
 records of a resolution, not copies of a description, and treating them as second descriptions would
-be the pattern misapplied rather than the pattern followed. The test is whether the file could be
-recomputed from the system: if it can, it is a record and it may be stored; if it cannot, it is a
-description and it may not.
+be the pattern misapplied rather than the pattern followed. The test is **whether the system could
+produce the file again by its own means**: if it can, it is a record and it may be stored; if it
+cannot, it is a description and it may not.
+
+The condition that makes the test worth stating is *by the system*. Without it the test is vacuous,
+because a hand-authored manifest is perfectly recomputable — by the author, again, which is the thing
+being prohibited. The word "again" also does the work for the cases that look like exceptions: a
+checksum is recomputable because hashing again yields it, even though what it hashes lives on a
+network and is not the system's. The test asks about the *procedure*, not about the provenance of the
+inputs.
+
+**A declaration is a third category, and the test does not reach it.** A `.df` file that declares
+semantics is the *input* to derivation, not its output, so it is not recomputable from the system and
+a two-way test would sort it as a description and forbid storing it — which would forbid `config.df`
+and every declaration the system's mechanism depends on. It is excluded explicitly: a declaration is
+neither a record nor a description, and the test sorts files the system *derives from* rather than
+files it derives.
+
+**And note what the published contract above costs the other instrument.** A wire contract states
+every interface fact a second time, so the duplication count of §5.3 is not zero for it, while the
+test here calls it a legitimate record. That is not a contradiction to be resolved but the case the
+two instruments exist to distinguish: the file is a record of what the system publishes, and it
+repeats facts the system derives. §5.3 says they can disagree; this is where they do.
 
 ## 7 DarkFactory as an engineering practice
 
@@ -627,7 +709,8 @@ that does not foreclose anything is a preference, and the exclusions are the par
 
 **Obliges.** Documentation is the contract, not decoration: what a feature publishes to every surface
 is its own doc comments, and a feature with no documentation is incomplete rather than undocumented.
-The count of authored descriptions is the only honest scoreboard for whether the practice is held.
+Whether the practice is held is then a question with a number attached: the count of duplication
+in §5.3, which no amount of good intentions moves.
 
 **Forecloses.** Hand-written schemas, manifests, indices, registries and per-consumer adapters.
 
@@ -709,18 +792,25 @@ from decaying: a derived description that is slow to produce is replaced by a wr
 quarter, not because anyone rejects the pattern but because a deadline is a deadline.
 
 Which means the failure is always the same failure. Someone reaches for a manifest under pressure, the
-manifest works, the count rises by one, and nothing announces it. The count is the check that catches
-it, which is why §5.3 is a number rather than a principle.
+manifest works, and nothing announces it. This is the failure the count in §5.3 exists to catch,
+and it is worth being exact about how it works: the manifest does not add a *place*, it makes every
+fact it lists stated twice, and the second statement is now the one being maintained. That is why
+§5.3 counts facts rather than files — a person adding a manifest has not added a file to a list,
+they have doubled the number of places a change has to be made, and only the second framing
+counts it.
 
 ## 8 Invariants
 
 Properties rather than features, each paired with the check that catches its violation. A property
-with no check is an aspiration.
+with no check is an aspiration. **The table is not exhaustive, and it is not the place for a review
+obligation**: §7.6 forecloses passing judgment for evidence, so an obligation that only a reader can
+discharge is stated as prose in the section that owns it rather than given a row here. §5.3's
+cross-file duplication check is the worked example — it is a review obligation and it is not here.
 
 | # | invariant | held by |
 | --- | --- | --- |
 | I1 | No file describes a feature except the feature | enumeration-only files are rejected; no barrel, registry, catalogue or manifest names what exists |
-| I1b | No fact about the system is stated twice | a check compares the statements derivable from the tree against every other statement of the same fact, including inside doc comments, and rejects a comment that restates what its signature already says; the count is zero |
+| I1b | A doc comment states something its signature does not | a comment whose content adds nothing the signature already carries is a build error, and a comment admitting *why* is accepted; the cross-file case is a review obligation, not a check (§7.6) |
 | I2 | Derivation is total — every feature is derived, none dropped | a tree walk comparing the derived set against the discovered set, across overloads, re-exports and conditionals |
 | I2a | Identity is a function of inputs, never of time | an interface's identity is the hash of its content, its declared dependencies and the environment it resolves under, so a skip names the input that changed; an undeclared input is a correctness bug, not a missed optimisation |
 | I3 | The published interface is the code's own | a feature with no doc comment is a build error, and each surface is checked to render the comment its feature publishes |
@@ -1491,7 +1581,9 @@ Generated documentation sites and JSON content graphs are CI outputs and must no
 ### 24.3 State
 
 State is data the system observed, and it is a record beside the thing it records rather than a
-declaration of it. A record can be recomputed from what happened; a declaration cannot. Each
+declaration of it. A record is something the system could produce again by its own means; a
+declaration is the input it derives from, and the two are sorted apart rather than by the two-way
+test §6.5 gives in full. Each
 artifact sits with its owning concern and carries a resolvable identity (I2a), so the record of a
 run is addressable and the record of a decision is diffable against the declaration that produced it.
 
@@ -2292,8 +2384,8 @@ did, it is a tool that grew a pipeline.
 **Not a faster build for any one workload.** A general mechanism will not beat a hand-tuned graph
 specialised to a repository. Trying would mean encoding per-project knowledge into the mechanism,
 which is the second site of meaning wearing a performance budget. The honest claim is about
-*maintenance*, not milliseconds: a system that describes itself once does not drift, and drift is
-what makes builds slow over time.
+*maintenance*, not milliseconds: a system that describes itself once has nothing that can fall
+behind, and a second account that falls behind is what makes maintenance expensive over time.
 
 **Not the system of record for problems others solve.** GitHub remains the durable control plane.
 Version control is git. Toolchains are Nix's. A general system that accumulated its own answer to
