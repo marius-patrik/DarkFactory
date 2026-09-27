@@ -6,9 +6,9 @@ vyřešené. Nové položky přidat na konec příslušné sekce.
 
 Stav zkontrolován po commitu `4a378768`, 38 stran, sazba bez varování.
 
-**Celkem otevřeno: 7 položek** — šest je práce pro autora nebo kontrolu rodným
-mluvčím (B1–B4, H1) a jedna (E2, umístění metodiky) je otevřená jen formálně: viz
-A5, kde je původní rozhodnutí zrušeno a metodika zůstává v 3.1. Žádná nečeká na
+**Celkem otevřeno: 6 položek** — pět je práce pro autora nebo kontrolu rodným mluvčím
+(B1–B4, H1) a jedna (E2, umístění metodiky) je otevřená jen formálně: viz A5, kde je
+původní rozhodnutí zrušeno a metodika zůstává v 3.1. Žádná nečeká na
 vedoucího: způsob citací byl s ním ověřen a zadaný rozsah písemně neexistuje.
 
 Sekce J zaznamenává čtyři tvrzení, která o popsané revizi neplatila, a opravy,
@@ -106,7 +106,7 @@ ale předmět zkoumání. Navazující práce má popsat konečnou architekturu 
 | # | Co | Stav |
 | :-- | :--- | :--- |
 | H1 | **Silnější zdroj pro údaje o adopci AI.** Rozhodnuto: `@gradually-ai-usage-2026` zůstává jako ilustrační zdroj a `@fig-gradually-usage` zůstává v úvodu, ale čísla nesmějí nést argument práce. Hledat primární či recenzovanou náhradu za podíl uživatelů chatbotů a coding agentů; pokud žádná není, ponechat formulaci výslovně jako odhad. Zdroj mimo jiné uvádí vlastní rozpětí 25–35 milionů a výslovně odmítá, aby bylo čteno jako údaj providera. | ⏳ |
-| H2 | `@guild2026` (34 % autonomních pull requestů, 56 % oprav, 91 % bez zásahu inženýra) sestoupá do pozadí jako vlastní měření společnosti. V §2.4 se už nesmí podpírat tvrzení o tom, že popsaný průběh je běžná praxe. | ⏳ |
+| H2 | `@guild2026` (34 % autonomních pull requestů, 56 % oprav, 91 % bez zásahu inženýra) sestoupá do pozadí jako vlastní měření společnosti. V §2.4 se už nesmí podpírat tvrzení o tom, že popsaný průběh je běžná praxe. Ověřeno v sazbě: čísla zůstávají, ale hned vedle nich stojí „jde ovšak o vlastní měření, nikoli o nezávislé ověření" a tvrzení o běžné praxi opírá @anthropic-agents-2026. | ✅ |
 | H3 | `@bcg2026` a `@factory2026` zůstávají, ale jen pro definici a architekturu, nikoli pro číselné údaje. Jejich čísla jsoufootnotovaná na vendorské blogy. Průmyslové zprávy @anthropic-agents-2026 zůstávají jediným podkladem pro tvrzení o šíření agentů do výroby. | ✅ rozhodnuto |
 | H4 | **Šablona CSL `note` nevypisuje.** Poznámky v `references.bib` se v seznamu zdrojů neobjeví vůbec, takže provenanci musí nést text a popisky obrázků, ne bibliografická poznámka. Šablonu schválil vedoucí (E4), proto se jí nedotýkat bez domluvy; pokud se má provenance zobrazovat, je třeba to nejdřív říct. | ✅ zjištěno |
 | H5 | **Původ cílové smyčky opraven.** §2.3.3 připisovala goal loop ReActu (`@yao2022`), který o nadřazené smyčce s podmínkami přijetí nepíše. Nyní @huntley2025ralph jako původní text, @wiegold2026ralph jako popisná studie, @claude-goal a @openai-goals jako podklady k tomu, že je to dnes běžná funkce. `@yao2022` zůstává citováno v §2.2 u ReActu, kde patří. | ✅ |
