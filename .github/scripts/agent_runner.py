@@ -1699,9 +1699,10 @@ ANSWER_CONTRACT = (
 )
 
 
-#: df exit codes, from ``exitCodeFor`` in the harness source (``harness/src/cli.ts``): 2 means
-#: quota was exhausted on every candidate in df's chain, 3 means every candidate failed to
-#: authenticate, and anything else nonzero is a genuine error.
+#: df exit codes, from ``exitCodeFor`` in the runtime source
+#: (``packages/harness/src/cli.ts``): 2 means quota was exhausted on every candidate in
+#: df's chain, 3 means every candidate failed to authenticate, and anything else nonzero
+#: is a genuine error.
 DF_EXIT_QUOTA_EXHAUSTED = 2
 DF_EXIT_AUTH_FAILED = 3
 
@@ -1808,7 +1809,7 @@ def df_failure_detail(exc: "subprocess.CalledProcessError", detail: str) -> str:
 
 #: Environment variables mapped onto ``df account set`` calls: ``(variable, account id, slot)``.
 #: The value travels on stdin, never in argv or logs. Provider ids and the ``provider:label``
-#: account syntax are df's own (see the harness source, ``harness/src/cli.ts`` and
+#: account syntax are df's own (see the runtime source, ``packages/harness/src/cli.ts`` and
 #: ``assets/providers.defaults.json``): ``google`` reads ``GEMINI_API_KEY``, ``openrouter`` reads
 #: ``OPENROUTER_API_KEY``, ``groq`` reads ``GROQ_API_KEY``.
 DF_ACCOUNT_SET_MAP = (

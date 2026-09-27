@@ -26,9 +26,10 @@ one that matters is a workflow this change does not own:
 And the obstacle is not the reference, it is the argument. That workflow runs
 `docker run --rm … darkfactory-agent dispatch`, which today reaches
 `.github/scripts/agent_runner.py` through the Python entrypoint. `df` has no
-top-level `dispatch` subcommand — `harness/src/cli.ts:1597`'s command switch has
-no such case. The nearest thing is `graph dispatch`
-(`harness/src/cli.ts:1525` → `harness/src/graph/dispatch.ts`), 181 lines that print
+top-level `dispatch` subcommand — `packages/harness/src/cli.ts:1597`'s command
+switch has no such case. The nearest thing is `graph dispatch`
+(`packages/harness/src/cli.ts:1525` → `packages/harness/src/graph/dispatch.ts`),
+181 lines that print
 a JSON plan naming the `df run --node <id>` commands to execute next; it does not
 run the agent, and `agent_runner.py` is 4969 lines.
 
@@ -86,8 +87,9 @@ bun install --frozen-lockfile     # the tree is not pre-installed; see below
 ```
 
 `nix develop` deliberately does not install `node_modules`. Bun lays workspace
-links out as relative symlinks (`harness/node_modules/@darkfactory/core ->
-../../../packages/core`, verified on origin/develop), which resolve only when
+links out as relative symlinks
+(`packages/harness/node_modules/@darkfactory/core -> ../../core`), which resolve
+only when
 `node_modules` sits beside the real `packages/`. Linking a Nix-built `node_modules`
 into a checkout would break every one of them, so the shell provides the pinned Bun
 and leaves the install to bun — reading the same committed `bun.lock` the
@@ -119,33 +121,34 @@ committing the result is what turns a correct pin into a verified one.
 
 | Path | What it is |
 | --- | --- |
-| `/opt/darkfactory` | the harness source, executed in place — `df` resolves its assets from `import.meta.url`, so there is no compile step |
+| `/opt/darkfactory` | the runtime source, executed in place — `df` resolves its assets from `import.meta.url`, so there is no compile step |
 | `/usr/local/bin/df` | wrapper pinning the Bun from the closure |
 | `/usr/local/bin/df-agent-entrypoint` | the entrypoint, `df` under `dbus-run-session` |
 | `/bin/sh`, `/bin/bash` | a Nix closure is not a filesystem; the wrappers are `#!/bin/sh` scripts and git execs `/bin/sh` |
 | `/nix/store` | the whole toolchain, read-only (store paths are mode 0555) |
 
 `/opt/darkfactory` is not a free choice. The workspace links bun writes into
-`harness/node_modules/@darkfactory` are relative (`../../../packages/core`), so the
-harness and the packages it imports have to sit side by side at that depth. The
-path is the one `docker/Dockerfile.agent` used, kept so it does not move in a log.
+`packages/harness/node_modules/@darkfactory` are relative (`../../core`), so the
+runtime and the packages it imports have to sit side by side under `packages/` at
+that depth. The path is the one `docker/Dockerfile.agent` used, kept so it does not
+move in a log.
 
 Executables on PATH, each present because something in this repository calls it:
 
 | Tool | Called by |
 | --- | --- |
 | `bun` | the runtime; `df` is TypeScript run by Bun |
-| `git` | `harness/src`, `packages/*/src`; the agent works on a checkout |
+| `git` | `packages/*/src`; the agent works on a checkout |
 | `secret-tool` (libsecret) | `packages/keychain/src/os-keychain.ts:79`, `.../import/antigravity.ts:26` |
 | `dbus-run-session` (dbus) | the entrypoint; `secret-tool` needs a session bus |
 | `gnome-keyring-daemon` | the Secret Service those calls need |
 | `bash` | the agent account's shell, and the interpreter the wrappers are |
 
 Not included, and deliberately: `jq` and `tmux` are used only by
-`harness/assets/workflows/*.tmpl`, which run in the Actions runner's shell rather
-than in this container; `gh` appears only in negative assertions in the Python
-suite, because `df` talks to GitHub over HTTPS
-(`harness/src/github/client.ts:64` `apiBase`) rather than through the CLI; `curl`,
+`packages/harness/assets/workflows/*.tmpl`, which run in the Actions runner's shell
+rather than in this container; `gh` appears only in negative assertions in the
+Python suite, because `df` talks to GitHub over HTTPS
+(`packages/harness/src/github/client.ts:64` `apiBase`) rather than through the CLI; `curl`,
 `unzip` and `gnupg` were build-time needs of the hand-pinned installers this
 derivation replaces. **Whoever ports `agent_runner.py` to a `df` subcommand
 (#1148) will need `gh` back** — it is one line in `nix/agent-env.nix`.
@@ -194,7 +197,8 @@ fixing harness type errors, which is not this change's subject.
   directory inside `/opt/darkfactory` would find no workflows to drift-check. The
   workflow sets the container's working directory to the bind-mounted
   `/workspace`, so the paths resolve against the operated repository. The templates
-  themselves are in `harness/assets/workflows/*.tmpl`, which the image does carry.
+  themselves are in `packages/harness/assets/workflows/*.tmpl`, which the image does
+  carry.
 
 ## File map
 

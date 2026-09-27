@@ -2122,7 +2122,7 @@ class TestScopeCheckKeepsTestsAndVaguePlans:
     def test_new_test_files_are_never_out_of_scope(self):
         """#267's plan named tests/test_commands.py; the implementation added tests/test_footers.py."""
         in_scope, out = agent_runner.check_scope(
-            [".github/scripts/commands.py", "tests/test_footers.py", "harness/test/router.test.ts"],
+            [".github/scripts/commands.py", "tests/test_footers.py", "packages/harness/test/router.test.ts"],
             {".github/scripts/commands.py", "tests/test_commands.py"},
         )
         assert out == []

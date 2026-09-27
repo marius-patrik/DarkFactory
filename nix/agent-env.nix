@@ -32,16 +32,16 @@ let
 
   # `df` resolves its assets relative to its own source file, so the tree is
   # copied in whole and executed in place. The path is not a free choice: the
-  # workspace links bun writes into harness/node_modules/@darkfactory are
-  # relative (../../../packages/...), so the harness and the packages it imports
-  # have to sit side by side at this depth. /opt/darkfactory is what
+  # workspace links bun writes into packages/harness/node_modules/@darkfactory are
+  # relative (../../cli and so on), so the runtime and the packages it imports
+  # have to sit side by side under packages/. /opt/darkfactory is what
   # docker/Dockerfile.agent used, kept so the path in a failing log does not move.
   dfRoot = "/opt/darkfactory";
 
   # The executables the agent may shell out to, each of them present because
   # something in this repository calls it:
   #
-  #   git         harness/src and packages/*/src spawn it throughout; the agent
+  #   git         packages/*/src spawn it throughout; the agent
   #               operates on a git checkout, and `df license` and `df submodules`
   #               act on one.
   #   libsecret   ships `secret-tool`, which packages/keychain/src/os-keychain.ts
@@ -56,9 +56,9 @@ let
   #               wrapped entry point is a /bin/sh script.
   #
   # Not here, and not invented: `jq` and `tmux` are used only by
-  # harness/assets/workflows/*.tmpl, which run in the Actions runner's shell rather
+  # packages/harness/assets/workflows/*.tmpl, which run in the Actions runner's shell
   # than in this container; `gh` appears only in a negative test assertion, because
-  # df talks to GitHub over HTTPS (harness/src/github/client.ts apiBase) rather
+  # df talks to GitHub over HTTPS (packages/harness/src/github/client.ts apiBase)
   # than through the CLI; `curl`, `unzip` and `gnupg` were build-time needs of the
   # hand-pinned installers this derivation replaces. Whoever ports
   # agent_runner.py to a subcommand of `df` (#1148) will need `gh` again, and adding

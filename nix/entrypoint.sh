@@ -10,9 +10,9 @@
 # What is NOT settled here: `docker run darkfactory-agent dispatch` is what
 # .github/workflows/agent.yml does, and today that argument reaches
 # .github/scripts/agent_runner.py, a 4969-line runner. `df` has no top-level
-# `dispatch` subcommand -- harness/src/cli.ts's command switch has no such case --
+# `dispatch` subcommand -- packages/harness/src/cli.ts's command switch has no such case --
 # so passing it here makes `df` report an unknown command and exit non-zero. The
-# nearest thing in `df` is `graph dispatch` (harness/src/graph/dispatch.ts), which
+# nearest thing in `df` is `graph dispatch` (packages/harness/src/graph/dispatch.ts), which
 # is 181 lines and prints a JSON plan; it does not run the agent. This script
 # therefore does not translate `dispatch` into `graph dispatch`: a shim that made
 # the image look compatible while printing a plan and exiting 0 would turn a loud
