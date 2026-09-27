@@ -58,10 +58,12 @@ describe("staging the df runtime", () => {
 
 	test("the staged wrapper is the repository wrapper, not a private copy", async () => {
 		const root = await harnessFixture();
-		await cp(join(process.cwd(), "scripts", "df-wrapper.sh"), join(root, "scripts", "df-wrapper.sh"));
+		// Derived from this file, not process.cwd(). The wrapper moved with the harness workspace, and a
+		// test that reads the repository through the working directory passes or fails depending on
+		// where it was launched from.
+		const repositoryWrapper = join(import.meta.dir, "..", "scripts", "df-wrapper.sh");
+		await cp(repositoryWrapper, join(root, "scripts", "df-wrapper.sh"));
 		const { bin } = await stage({ root, prefix: join(root, "prefix") });
-		expect(await readFile(join(bin, WRAPPER_NAME), "utf8")).toBe(
-			await readFile(join(process.cwd(), "scripts", "df-wrapper.sh"), "utf8"),
-		);
+		expect(await readFile(join(bin, WRAPPER_NAME), "utf8")).toBe(await readFile(repositoryWrapper, "utf8"));
 	});
 });
