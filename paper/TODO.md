@@ -146,16 +146,16 @@ Kód byl ověřen přímo v revizi `d576ec8f`, ne v pracovním stromu, který se
 
 | # | Co | Stav |
 | :-- | :--- | :--- |
-| J1 | §3.4 uváděla, že se opakovaný stejný nález bez progresu označí jako zablokovaný stav. Ve skutečnosti `Blocked` znamená **vyčerpanou kvótu**; porovnání digestů přišlo až v pozdější revizi (`21dfd85d`). Smyčka je ohraničena `MAX_REVIEW_ITERATIONS = 3`, oprava bez změny ukončí běh dřív a vyčerpání nezapíše žádný verdikt ani komentář. | ✅ `c23caa69` |
-| J2 | Pořadí dvou bran bylo obrácené. Revize nejprve předá diff modelové review, až pak porovná změněné soubory se schváleným plánem; kód sám čísluje kroky `# 11. Self-review loop` a `# 12. Plan alignment gate`. | ✅ `c23caa69` |
-| J3 | Schválení pull requestu bylo popsáno jako ověření autora issue nebo oprávněného člena. Je to **seznam dvou pevně zapsaných účtů** porovnávaný s `GITHUB_ACTOR` (`handle_pr_approval.py:216-225`) — ne autor issue, ne úroveň oprávnění. | ✅ `c23caa69` |
-| J4 | Práce tvrdila, že review a testy jsou skutečnou překážkou. `verify_repository` je definována jednou a **volána jednou** (`agent_runner.py:2088`); výstup jde do promptu `fix` a druhý běh nenastane, takže změna s neprocházejícími testy dorazí do draft pull requestu. | ✅ `c23caa69` |
+| J1 | **§3.4 uváděla, že se opakovaný stejný nález bez progresu označí jako zablokovaný stav.**. Ve skutečnosti `Blocked` znamená **vyčerpanou kvótu**; porovnání digestů přišlo až v pozdější revizi (`21dfd85d`). Smyčka je ohraničena `MAX_REVIEW_ITERATIONS = 3`, oprava bez změny ukončí běh dřív a vyčerpání nezapíše žádný verdikt ani komentář. | ✅ `c23caa69` |
+| J2 | **Pořadí dvou bran bylo obrácené.**. Revize nejprve předá diff modelové review, až pak porovná změněné soubory se schváleným plánem; kód sám čísluje kroky `# 11. Self-review loop` a `# 12. Plan alignment gate`. | ✅ `c23caa69` |
+| J3 | **Schválení pull requestu bylo popsáno jako ověření autora issue nebo oprávněného člena.**. Je to **seznam dvou pevně zapsaných účtů** porovnávaný s `GITHUB_ACTOR` (`handle_pr_approval.py:216-225`) — ne autor issue, ne úroveň oprávnění. | ✅ `c23caa69` |
+| J4 | **Práce tvrdila, že review a testy jsou skutečnou překážkou.**. `verify_repository` je definována jednou a **volána jednou** (`agent_runner.py:2088`); výstup jde do promptu `fix` a druhý běh nenastane, takže změna s neprocházejícími testy dorazí do draft pull requestu. | ✅ `c23caa69` |
 
 | # | Co | Stav |
 | :-- | :--- | :--- |
 | J5 | **Záznam opakovatelnosti nyní určuje revizi.** Bez určení revize nelze popis ověřit proti kódu, a právě na tomto místě se ukázalo, že čtyři výše uvedená tvrzení revizi neodpovídala. Věta je v §3.1, hned před výčtem čtyř vrstev. | ✅ `4a378768` |
 | J6 | **V Typstu značí `*...*` tučné, nikoli kurzívu** (kurzíva je `_..._`). Sedm míst v revizovaném textu používalo `*...*` v úmyslu kurzívy, takže tiskla tučně — mezi nimi název příspěvku *Attention Is All You Need* a heslo *schopen* v §1.2. Všechna nyní `#emph[]`. | ✅ `4a378768` |
-| J7 | Tři jazykové chyby nalezené čtením sazebného textu: „jako **tato** tři" v závěru, kolize pádu „považován **za** rovnocenný / první bráně" v §3.4 a chybné číslo korekce v komentáři §4.1. | ✅ `4a378768` |
+| J7 | **Tři jazykové chyby nalezené čtením sazebného textu: „jako **tato** tři" v závěru, kolize pádu „považován **za** rovnocenný / první bráně" v §3.4 a chybné číslo korekce v komentáři §4.1.**. | ✅ `4a378768` |
 
 | J8 | **Vysácená mezera za tečkou v anotaci.** V sazbě s `lang: "cs"` Typst nezkouší zlom řádku za tečkou, a když na konec řádku další slovo nevejde, mezera se místo zlomu smlčví — v tisku vyšlo „integraci změn.Strukturu", „přebírá od smyčky.kterou" a v anglickém abstraktu „integration.The". Anotace je nyní `#set par(justify: false)`, tedy na pravém okraji volná; text těla zůstává dvorečkovaný a v sazbě na str. 9 a 20 se vada neobjevuje. Podmínkou bylo, že blok nemá rezervu v šířce. | ✅ |
 | J9 | **Malé písmeno na začátku věty v anotaci.** „navrhuje autor sám. úsudek o tom" — zdroj měl `úsudek` s malým `ú`. Vzniklo to z neúspěšného nahrazení, jehož shoda nebyla ověřena; od té doby je každé nahrazení v této práci kontrolováno na shodu. | ✅ |
