@@ -532,10 +532,9 @@ requirements are then a consequence rather than a regulation.
 combined, or dropped without anything else being told, which is the property §9 argues is the real
 reason to bind rather than own. §11 gives the three steps in full.
 
-**And a claim this section should not make.** An earlier version ended by saying the architecture of
-Part II is "largely a consequence rather than a set of choices". That is unfalsifiable as phrased —
-"largely" has no threshold — and it is false in identifiable cases. What can be said, and is
-defensible, is this: the three unifiers of §3 and the five operations of §3.2 are consequences of
+**And a claim this section should not make.** The architecture of Part II is not "largely a
+consequence rather than a set of choices": that is unfalsifiable as phrased — "largely" has no
+threshold — and it is false in identifiable cases. What can be said, and is defensible, is this: the three unifiers of §3 and the five operations of §3.2 are consequences of
 the constraint; so are the properties above. The concern names in §9.3, the type-level fallback rule
 of I9a, the identity scheme of I2a, and the requirement that derivation be faster than authoring
 (§4.6) are **independent premises** — adopted, argued elsewhere or in §45, and not derivable from
@@ -587,12 +586,10 @@ interface tables or the concern tree — the three artefacts where duplication i
 accumulate.
 
 **The count has not been run, and this section will not fake a score by listing the occurrences.**
-An earlier version named them exhaustively — the concern tree's per-entry descriptions, §11's
-interface table, and a handful of formulations recurring across §4, §5 and §8 — and an independent
-review showed the list was wrong in both directions: it omitted at least four further instances it
-should have caught, and the list itself was a hand-maintained enumeration of precisely what §4.2
-forbids, which is the failure it was disclosing wearing the disclosure's clothes. So the accurate
-statement is that **known instances exist and the total is unknown.** Among them: the per-entry
+Any such list would be a hand-maintained enumeration of precisely what §4.2 forbids — the failure
+wearing the disclosure's clothes — and it would be wrong in both directions, under-reporting
+instances while appearing to be the measure. So the accurate statement is that **known instances
+exist and the total is unknown.** Among them: the per-entry
 descriptions in the concern tree, which restate the declarations their entries point at; the
 hand-written interface table in §11, which restates signatures that §3.1 and I3 require to be
 derived, making it a build error under I3 and not merely duplication; and a sentence in §7.7 and
@@ -610,10 +607,10 @@ fact relocated that hole rather than closing it. The count also cannot judge whe
 instrument with a known way to be beaten is falsifiable and one without is not, and a reader is
 entitled to know which they are looking at.
 
-Three further consequences, each closing a way the count used to be gamed:
+Three further consequences, each closing a way the count can be gamed:
 
 - **Documentation is inside the measurement, not outside it.** A doc comment is authored, and the
-  earlier definition of the counted thing — *written beside* the feature — put the largest body of
+  a definition of the counted thing as *written beside* the feature would put the largest body of
   authored meaning in the system permanently out of scope. The test is whether the comment states
   anything the signature does not. A comment that says *why* is not a duplicate; a comment that
   restates *what* is, and the second kind is what a compiler should reject.
@@ -829,8 +826,8 @@ produces an unusable system.
 Seven practices. Each is stated, then what it obliges, then what it forecloses — because a practice
 that does not foreclose anything is a preference, and the exclusions are the part that does the work.
 
-**These seven are not the same set as §4's six procedures, and an earlier version let a reader assume
-they were.** Four pair directly: §4.1 with §7.4, §4.3 with §7.1, §4.4 with §7.5, §4.5 with §7.3. The
+**These seven are not the same set as §4's six procedures, and the two lists are easy to conflate.**
+Four pair directly: §4.1 with §7.4, §4.3 with §7.1, §4.4 with §7.5, §4.5 with §7.3. The
 remaining two are procedures with no practice — §4.2, because one site of meaning *is* the constraint
 of §5 and is not something you practise, and §4.6, because a latency requirement is a property rather
 than a discipline. The remaining three are practices with no procedure: §7.2, §7.6 and §7.7 are all
@@ -925,9 +922,8 @@ for the information to come from, and there is nowhere else. The practices are w
 from decaying: a derived description that is slow to produce is replaced by a written one within a
 quarter, not because anyone rejects the pattern but because a deadline is a deadline.
 
-Which means the most common failure is a recurring one. (An earlier version said it was *always*
-the same failure, which §40 contradicts — three of its nine modes are not someone reaching for a
-manifest.) The recurring one looks like this. Someone reaches for a manifest under pressure, the
+Which means the most common failure is a recurring one rather than a universal one — §40 lists nine
+modes, and three of them are not someone reaching for a manifest. The recurring one looks like this. Someone reaches for a manifest under pressure, the
 manifest works, and nothing announces it. This is the failure the count in §5.3 exists to catch,
 and it is worth being exact about how it works: the manifest does not add a *place*, it makes every
 fact it lists stated twice, and the second statement is now the one being maintained. That is why
@@ -965,9 +961,8 @@ effects bypass the seams, nothing resting on them can be enforced at all; once a
 description exists, the fixed point stops being reachable at any price. They are the first pair to
 build and the last to relax.
 
-**An earlier version of this paragraph added that every other invariant is downstream of those two,
-and that was an assertion with no steps behind it, and it is false.** I1b is a rule about doc
-comments, I9a is a type-level rule about scene-tree primitives, and I2a's identity scheme is
+**It is tempting to add that every other invariant is downstream of those two. That would be an
+assertion with no steps behind it, and it is false.** I1b is a rule about doc comments, I9a is a type-level rule about scene-tree primitives, and I2a's identity scheme is
 adopted rather than derived (§45 says so); no chain runs from "effects pass through a seam" or "the
 system compiles to itself" to any of them. The useful statement is the narrower true one: **four of
 the eleven are independent premises**, adopted for reasons given in §45 and §4.6, and the other
@@ -1248,8 +1243,8 @@ or dropped without anything else being told. What the steps do *not* reach is th
 A required element is a fixed point of the system, and a fixed point is by definition not
 recombinable. So the accurate claim is that **nothing is registered, and a small set of things is
 required**; the stronger claim that nothing is privileged would have to show that the requirements
-are themselves discovered, and §3.1 deliberately makes them not be. An earlier version of this
-sentence said "privileged" and did not meet that objection.
+are themselves discovered, and §3.1 deliberately makes them not be. So the word is *registered*
+rather than *privileged*, and the difference is the objection met rather than avoided.
 
 The payoff is an answer to every "this tool does not understand us" moment. A tool that cannot be
 configured for the system is **a system to bind, not a system to fork** — the formatter, the test
@@ -1499,7 +1494,7 @@ must be stated — and it is stated in the file that owns it.**
 
 The older form of this rule asked whether a thing was *declarable or coded*, and the dichotomy was
 wrong twice over. It forced a choice between two file kinds, which is what `.dfconfig` was and what
-§9.2 has now removed; and it let a thing be neither, by being buried in a function where the
+§9.2 excludes; and it let a thing be neither, by being buried in a function where the
 question never arises. The question is not declaration-versus-code. It is whether the semantics are
 stated at all, and where.
 
@@ -1565,7 +1560,7 @@ be rewritten to join, and an experiment that does not work is a deleted file rat
 reverted design. What the single extension buys is that there is exactly one place a reader looks
 to learn what a file is, and exactly one convention to teach.
 
-The import attribute the design once required — `with { type: "df" }` — is gone with it. It
+There is no import attribute, and an import of a `.df` file requires none. It
 existed to mark a file as participating in composition, and the extension already says so; a marker
 repeated in two places is the thing §4.2 forbids.
 
@@ -2160,9 +2155,9 @@ guide rather than in the specification of a product.
 Each rule below names the obligation it enforces. A rule that could be deleted without some argument
 in this document being weaker is a rule that does not belong here.
 
-**An earlier version scoped this table to "the obligation set of §6 and §7, and nothing else", which
-its own rows contradicted** — they cite §3.1, §4.6, §9.1, §19, §22, §25, §26 and §28 as well, and
-those are obligations in exactly the sense this section uses. The scope is therefore: **every
+**The scope is not "§6 and §7, and nothing else"**, which the rows below contradict: they cite §3.1,
+§4.6, §9.1, §19, §22, §25, §26 and §28 as well, and those are obligations in exactly the sense this
+section uses. The scope is therefore **every
 obligation the document states, in the pattern of §6, the practices of §7, and the procedures of
 §4**, and nothing that is only hygiene. Three practices are unenforced by any rule — §7.4, §7.5 and
 §7.7 — and that is a gap rather than an oversight: bind-don't-own and one-thing-one-file are
@@ -2463,9 +2458,8 @@ second copy of either would be a second description of something already stated.
 ## 39 Agent guidance
 
 An agent reads §37 directly. There is no projection of the rules, and that is deliberate: a
-projection is a second description of the rules, which is the thing §7.1 forbids, and the earlier
-projection of this section was the clearest instance of the failure in the document arguing against
-it.
+projection is a second description of the rules, which is the thing §7.1 forbids and which this
+document would otherwise be the clearest instance of.
 
 What an agent gets instead is the document itself — the pattern and the practice in §6 and §7, the
 mechanism in Part III, and the requirements in Part IV — which is a better onboarding surface than a
@@ -2496,9 +2490,9 @@ standard honestly produces three kinds of entry, and only the first is a check:
 | 9 | Self-hosting stalls just short | check, once inputs are included |
 
 Three of the nine have no instrument, and §40 is more useful for saying so than for inventing one.
-An earlier version of this section gave all nine a `Test:` label; two of those labels sat on review
-obligations, which §7.6 forecloses as evidence, and one sat on a number that appears nowhere in
-this document. The failures themselves are not softened — they are the ways this design fails, and
+**Not all nine carry a test, and giving them all one would be a way of avoiding the question.** Two
+of the labels this section would otherwise carry sit on review obligations, which §7.6 forecloses as
+evidence, and one sits on a number that appears nowhere in this document. The failures themselves are not softened — they are the ways this design fails, and
 they are as real as the four that are checked.
 
 **Reading hardens into a wall.** Extension requires editing the interpreter, because the systems
@@ -2532,9 +2526,9 @@ project retreats into implementing organs. *Test:* **for every organ the system 
 interpreter, is there a seam it could have been a binding of?** The exception is load-bearing:
 §18 defends owning the systems layer and §4.1 states the interpreter is a seam rather than a
 parser, and organs held for custody guarantees are owned for the same kind of reason, so a version
-of this test without the exception would fail a system that obeyed the design. An earlier version
-of this sentence cited §11.1, which calls the interpreter a forge for declarations — that is a
-seam, and it is the reading the exception depends on not having. What remains is half mechanical and half a judgement — the organ list is
+of this test without the exception would fail a system that obeyed the design. Note that §11.1 is
+not the right citation and must not be used for one: it calls the interpreter a forge for
+declarations, which is a seam, and the exception depends on that reading not holding. What remains is half mechanical and half a judgement — the organ list is
 countable, the classification of each entry is a counterfactual — and this is a review obligation
 wearing the clothes of a test, so it is labelled one.
 
@@ -2568,7 +2562,7 @@ that obeyed the design: §9.3 mandates `Change/git` and `Change/local` as siblin
 capability to the organ appropriate to a location is the designed answer. So the test separates
 binding from branching: a branch changes what the feature does, a binding changes which organ does
 it, and `if (inCi)` is a branch while a new host requiring a new binding is not. **Legibility does
-not settle it, and the earlier claim that it did was wrong.** A feature reading `config.mode` and
+not settle it, and legibility alone does not settle it.** A feature reading `config.mode` and
 signing commits differently is perfectly legible from its declaration and is exactly this failure,
 so legibility is necessary and not sufficient. What would decide it is the *shape* of the
 conditional's effect: a binding selects among organs that all satisfy one interface, a branch
@@ -2585,8 +2579,7 @@ budget with no figure attached. So the test as written is unassigned — the imp
 choose the number, because a self-chosen budget is not a test, and the design has not supplied it.
 **This is a hole, and naming it is the honest response.** Either a ceiling belongs in §4.6 or this
 failure has no instrument; the document does not currently say which, and until it does the failure
-is real and unchecked. Note also that the earlier attempt measured time to *diagnose* a load
-failure, which is the wrong moment: a system can make diagnosis instant while every composition
+is real and unchecked. Note also that time to *diagnose* a load failure is the wrong measure: a system can make diagnosis instant while every composition
 re-resolves the whole graph for forty minutes. Discovery is resolved by typing rather than cached,
 so the stale-cache question does not arise — and if a cache is ever added, I2a makes a wrong cache
 key a correctness bug rather than a missed optimisation.
@@ -2627,9 +2620,7 @@ loud — which catches a wrong claim about capability, and catches nothing about
 The two review obligations above are unchecked in the sense §7.6 means — a reader could fail
 them, a machine cannot — and they are counted with the three that have no instrument at all. So
 **five of the nine have no automatic counter**, and the table at the top of this section is the
-honest accounting; an earlier version of this paragraph reported a second, overlapping set of three
-without saying the first set still stood, which made six failures sound like three. All of them
-turn on the same limit: they are properties of whether the system means what it says, and this
+honest accounting. All of them turn on the same limit: they are properties of whether the system means what it says, and this
 design has one description to mean it with.
 
 ## 41 Non-goals
@@ -2808,10 +2799,10 @@ failure. The structural frame in §3 — three unifiers and five operations — 
 shape those decisions had in common, which is why it is stated once instead of being rediscovered per
 section.
 
-**An earlier version of this paragraph credited the sources with a claim about process boundaries
-that appears nowhere in the document**, and which §9.5 contradicts: a file is discovered
-structurally, in process, and a feature exists the moment its file does. The claim has been removed
-rather than introduced, since §45 is provenance and is not the place a new design claim is made.
+**The sources are not credited with a claim about process boundaries**, because there is no such
+claim in this document and §9.5 contradicts it: a file is discovered structurally, in process, and a
+feature exists the moment its file does. §45 is provenance and is not the place a new design claim is
+made.
 
 The one place this document departs from its sources is deliberate and marked where it occurs:
 §11.1 and §18 argue that owning `.df` is not the same decision as owning a declaration language,
