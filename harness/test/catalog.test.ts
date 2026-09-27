@@ -441,4 +441,153 @@ describe("ModelCatalog integration boundary", () => {
 		expect(result.models.find((model) => model.id === "tools-model")?.tools).toBe(true);
 		expect(result.models.find((model) => model.id === "priced-model")?.pricing).toEqual({ prompt: "0", free: true });
 	});
+
+	test("missing credential: names the cause instead of probing the provider anonymously", async () => {
+		const root = await home();
+		const store = new FileCredentialStore(root);
+		const base = configured("openrouter");
+		const config: ProviderConfig = {
+			...base.config,
+			id: "sample-credentialless",
+			name: "Sample Credentialless",
+			baseUrl: "https://api.example.test/v1",
+			auth: [{ kind: "api_key", slot: "api_key", placement: "bearer", env: ["SAMPLE_CREDENTIALLESS_KEY"] }],
+		};
+		const catalog = new ModelCatalog({
+			home: root,
+			providers: [providerFromConfig(config)],
+			providerConfigs: [config],
+			store,
+			fetch: async () => {
+				throw new Error("an unauthenticated model-catalog probe must not be sent");
+			},
+		});
+		await expect(catalog.get("sample-credentialless", { account: "absent" })).rejects.toThrow(
+			"Model catalog for sample-credentialless has no credential for account absent (slot api_key, env SAMPLE_CREDENTIALLESS_KEY)",
+		);
+	});
+
+	test("no account: names the cause rather than sending an unauthenticated request", async () => {
+		const root = await home();
+		const base = configured("openrouter");
+		const config: ProviderConfig = { ...base.config, id: "sample-no-account", name: "Sample No Account" };
+		const catalog = new ModelCatalog({
+			home: root,
+			providers: [providerFromConfig(config)],
+			providerConfigs: [config],
+			store: new FileCredentialStore(root),
+			fetch: async () => {
+				throw new Error("an unauthenticated model-catalog probe must not be sent");
+			},
+		});
+		await expect(catalog.get("sample-no-account")).rejects.toThrow(
+			"Model catalog for sample-no-account has no credential for account (none)",
+		);
+	});
+
+	test("optional credential: an anonymous-capable provider still lists without a key", async () => {
+		const root = await home();
+		const base = configured("openrouter");
+		const config: ProviderConfig = {
+			...base.config,
+			id: "sample-anonymous",
+			name: "Sample Anonymous",
+			baseUrl: "https://api.example.test/v1",
+			requiredCredentialSlots: [],
+			auth: [{ kind: "api_key", slot: "api_key", placement: "bearer", optional: true }],
+		};
+		const catalog = new ModelCatalog({
+			home: root,
+			providers: [providerFromConfig(config)],
+			providerConfigs: [config],
+			store: new FileCredentialStore(root),
+			fetch: async (_input, init) => {
+				expect(new Headers(init?.headers).get("authorization")).toBeNull();
+				return Response.json({ data: [{ id: "anon-model", display_name: "Anon" }] });
+			},
+		});
+		expect(await catalog.get("sample-anonymous")).toMatchObject({
+			source: "live",
+			models: [{ id: "anon-model" }],
+		});
+	});
+
+	test("declared anonymousValue: the catalog request carries the same key the chat path uses", async () => {
+		const root = await home();
+		const setup = configured("opencode-zen");
+		const catalog = new ModelCatalog({
+			home: root,
+			providers: [setup.provider],
+			providerConfigs: [setup.config],
+			store: new FileCredentialStore(root),
+			fetch: async (input, init) => {
+				expect(String(input)).toBe("https://opencode.ai/zen/v1/models");
+				expect(new Headers(init?.headers).get("authorization")).toBe("Bearer public");
+				return Response.json({ data: [{ id: "zen-model", display_name: "Zen" }] });
+			},
+		});
+		expect(await catalog.get("opencode-zen", { account: "default" })).toMatchObject({
+			source: "live",
+			models: [{ id: "zen-model" }],
+		});
+	});
+
+	test("declared env: the catalog request resolves the provider's environment variable", async () => {
+		const root = await home();
+		const base = configured("openrouter");
+		const config: ProviderConfig = {
+			...base.config,
+			id: "sample-env",
+			name: "Sample Env",
+			baseUrl: "https://api.example.test/v1",
+			auth: [{ kind: "api_key", slot: "api_key", placement: "bearer", env: ["SAMPLE_ENV_KEY"] }],
+		};
+		const catalog = new ModelCatalog({
+			home: root,
+			providers: [providerFromConfig(config)],
+			providerConfigs: [config],
+			store: new FileCredentialStore(root),
+			fetch: async (_input, init) => {
+				expect(new Headers(init?.headers).get("authorization")).toBe("Bearer env-fixture");
+				return Response.json({ data: [{ id: "env-model", display_name: "Env" }] });
+			},
+		});
+		const previous = process.env.SAMPLE_ENV_KEY;
+		process.env.SAMPLE_ENV_KEY = "env-fixture";
+		try {
+			expect(await catalog.get("sample-env", { account: "default" })).toMatchObject({
+				source: "live",
+				models: [{ id: "env-model" }],
+			});
+		} finally {
+			if (previous === undefined) delete process.env.SAMPLE_ENV_KEY;
+			else process.env.SAMPLE_ENV_KEY = previous;
+		}
+	});
+
+	test("stored key wins over the environment variable and the anonymous value", async () => {
+		const root = await home();
+		const store = new FileCredentialStore(root);
+		await store.setSlot("sample-precedence:test", "api_key", { type: "api_key", value: "stored-key" });
+		const setup = configured("opencode-zen");
+		const config: ProviderConfig = { ...setup.config, id: "sample-precedence", name: "Sample Precedence" };
+		const catalog = new ModelCatalog({
+			home: root,
+			providers: [providerFromConfig(config)],
+			providerConfigs: [config],
+			store,
+			fetch: async (_input, init) => {
+				expect(new Headers(init?.headers).get("authorization")).toBe("Bearer stored-key");
+				return Response.json({ data: [{ id: "stored-model", display_name: "Stored" }] });
+			},
+		});
+		const previous = process.env.OPENCODE_API_KEY;
+		process.env.OPENCODE_API_KEY = "env-key";
+		try {
+			expect(await catalog.get("sample-precedence", { account: "test" })).toMatchObject({ source: "live" });
+		} finally {
+			if (previous === undefined) delete process.env.OPENCODE_API_KEY;
+			else process.env.OPENCODE_API_KEY = previous;
+		}
+	});
 });
