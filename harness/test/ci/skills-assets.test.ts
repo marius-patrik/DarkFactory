@@ -1,5 +1,6 @@
 import { describe, expect, test } from "bun:test";
-import { readdirSync, readFileSync, statSync } from "node:fs";
+import { execFileSync } from "node:child_process";
+import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import { join } from "node:path";
 import { checkSkillsDrift, discoverBundledSkills } from "../../src/ci/installer.ts";
 
@@ -63,17 +64,34 @@ describe("bundled skills", () => {
 	// is where `installSkills` writes, so a copy tracked there is install output, not a second
 	// source. These two tests are what keeps that distinction true: the first fails on a divergent
 	// second text for a skill name, the second on a skill that exists only at the destination.
-	test("every bundled skill is installed here as a byte-identical copy", async () => {
+	test("every installed skill here is a byte-identical copy of the bundled source", async () => {
+		// `.agents/skills` is gitignored install output. It is absent until `df ci install` runs
+		// here, so absence is the expected state, not a failure. When it does exist — a developer
+		// ran the installer, or a stale copy survived a branch switch — a divergent second text for
+		// any skill name is the failure this is here to catch.
+		if (!existsSync(join(repoDir, ".agents", "skills"))) return;
 		const drift = await checkSkillsDrift(repoDir);
 		expect(drift.filter((item) => item.status !== "in_sync")).toEqual([]);
 	});
 
 	test("no skill is installed here that the bundle does not ship", async () => {
+		if (!existsSync(join(repoDir, ".agents", "skills"))) return;
 		const bundled = new Set(await discoverBundledSkills());
 		const installed = readdirSync(join(repoDir, ".agents", "skills"), { withFileTypes: true })
 			.filter((entry) => entry.isDirectory())
 			.map((entry) => entry.name);
 		expect(installed.filter((name) => !bundled.has(name))).toEqual([]);
+	});
+
+	test("the installed skills directory is not a tracked second source", () => {
+		// The duplication this replaces: two byte-identical copies of darkfactory-auth and
+		// provider-onboarding, both tracked, with nothing reporting a divergence between them.
+		const tracked = new Set(
+			execFileSync("git", ["ls-files", ".agents/skills"], { cwd: repoDir, encoding: "utf8" })
+				.split("\n")
+				.filter(Boolean),
+		);
+		expect([...tracked]).toEqual([]);
 	});
 
 	test("the command check recognises unknown commands", () => {
