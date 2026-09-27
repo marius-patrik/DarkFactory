@@ -11,7 +11,7 @@ požadavek, který odpovídá jednomu běhu popsanému v této kapitole.
     columns: (auto, auto, 1fr),
     align: (left, center, left),
     table.header(
-      [*Pole předlohy*], [*Povinné*], [*Vyplněný požadavek, který spustil běh*],
+      [#emph[Pole předlohy]], [#emph[Povinné]], [#emph[Vyplněný požadavek, který spustil běh]],
     ),
     [Verbatim User Request],
     [ano],
@@ -22,7 +22,7 @@ požadavek, který odpovídá jednomu běhu popsanému v této kapitole.
     [Request Type],
     [ano],
     [`feat`],
-    [Acceptance Criteria],
+    [Proposed Acceptance Criteria],
     [ne],
     [☐ Běh skončí po třetím opakování stejného nálezu.
      ☐ Do issue vznikne komentář s počtem pokusů.
@@ -35,13 +35,16 @@ požadavek, který odpovídá jednomu běhu popsanému v této kapitole.
   caption: [Předloha požadavku a příklad jejího vyplnění. Runner předává modelu titulek a tělo issue; pole předlohy tedy určují, co se do zadání dostane @darkfactory-d576ec8f.],
 ) <fig-issue-template>
 
-Příklad je záměrně malý a měřitelný: rozsah se vejde do jednoho kontextového okna,
-podmínky dokončení jsou pozorovatelné a lze je přepsat na testy. To nejsou
-náročky pipeline, ale podmínky, za kterých je nasazení vůbec smysluplné —
-a právě proto je předloha součástí popisu, nikoli jen volný text v issue.
+Příklad je záměrně malý a měřitelný: rozsah se vejde do jednoho kontextového okna a
+podmínky dokončení lze přepsat na testy. To nejsou náročky pipeline, ale podmínky,
+za kterých je nasazení vůbec smysluplné — a právě proto je předloha součástí popisu.
+Je tu ale i věc, kterou předloha neumí: přijaté akceptační podmínky jsou text, který
+vstupuje do kontextu, a nikdo je v popsané revizi nepřevádí na spustitelnou kontrolu.
+Podmínka, kterou nelze spustit, se při prokazování chová stejně jako podmínka, která
+neplatí.
 
-Runner načte jeho titulek a text, vyžádá si od modelu interpretaci a zapíše výsledek jako komentář. Komentář má oddělit doslovné shrnutí požadavku, architektonický rozsah a návrh verifikace. Tím se z chatové odpovědi stane zkontrolovatelný návrh, který lze před dalším během přijmout nebo opravit.
+Runner načte jeho titulek a text, vyžádá si od modelu interpretaci a zapíše výsledek jako komentář. Komentář má oddělit doslovné shrnutí požadavku, architektonický rozsah a návrh verifikace. Tím se z chatové odpovědi stane zkontrolovatelný návrh, který lze před dalším během přijmout nebo opravit. Na rozdíl od prostého chatu je tu interpretace artefakt, který přežije běh a dá se k němu vrátit.
 
-Po schválení interpretace je workflow spuštěno znovu. Model nyní dostane schválený požadavek a sestaví implementační plán, ve kterém uvádí očekávané změny, soubory nebo oblasti repozitáře a kroky ověření. Plán se opět zobrazí v issue. Schválení je tak explicitní bránou: samotná schopnost agenta plán vytvořit neznamená oprávnění měnit kód.
+Po schválení interpretace je workflow spuštěno znovu a runner založí #emph[dítě] issue s názvem začínajícím na `Plan:`, nativně propojené s původním issue. Model dostane schválený požadavek a sestaví implementační plán s očekávanými změnami, soubory nebo oblastmi repozitáře a kroky ověření. Plán se opět zobrazí v issue a schvaluje se samostatně. Schválení je tak explicitní bránou: samotná schopnost agenta plán vytvořit neznamená oprávnění měnit kód. Obě brány před vznikem větve jsou lidské, a protože jsou oddělené, lze schválit porozumění zadání a odmítnout plán, který z něj vychází.
 
-Zpětná vazba člověka není součástí nového vývoje od začátku. Komentář se změnou nebo odmítnutím se předá zpět interpretaci nebo plánování, takže se opravuje rozhodnutí před vytvořením pracovní větve. Tento jednoduchý model odděluje porozumění zadání, plánování a vlastní implementaci bez potřeby složitého grafového orchestrátoru @darkfactory-d576ec8f.
+Zpětná vazba člověka není součástí nového vývoje od začátku. Komentář se změnou nebo odmítnutím se předá zpět interpretaci nebo plánování, takže se opravuje rozhodnutí před vytvořením pracovní větve. Tento jednoduchý model odděluje porozumění zadání, plánování a vlastní implementaci bez potřeby složitého grafového orchestrátoru @darkfactory-d576ec8f, což je volba, již literatura připouští jako legitimní: paralelní práce je užitečná tam, kde na sobě úlohy nezávisí, a jinde je to jen zdroj sporu @openai-agent-orchestration.

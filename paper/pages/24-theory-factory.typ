@@ -12,9 +12,6 @@ Konference se zabývala především softwarovou krizí, nikoli zavedením tohot
 Přitom se shodlo, že automatizace výroby sama o sobě úsudek neruší. „Human monitoring of production is very adaptive — the automated system may disguise some of what is happening“, upozorňoval Fraser @nato1969. „If you don't know what you're doing in producing software, then automating the system can be dangerous“, dodal Ross @nato1969. A McIlroy: „It would be immoral for programmers to automate everybody but themselves.“ @nato1969
 O devět let později Bemer sám upřesnil, co továrna kromě nástrojů potřebuje: „One does not build a successful factory with just tools and environment. The workers must be trained, and the assembly methodology (e.g., drawings, parts lists, inventory) must be in place.“ @bemer1977factory
 
-
-#heading(level: 3)[Co posunuli agenti]
-
 Agenti posunuli hranici, za kterou továrna končila. Zatímco klasická softwareová továrna automatizovala kroky, jejichž postup byl předem dán, agent vykoná i krok, jehož postup předem dán není: zadání přeformuluje, plán sestaví, chybu, kterou sám způsobí, opraví a rozhodne, zda je na řadě další nástroj. Automatizovatelná část se tím posouvá z provádění na úsudek, zatímco člověk zůstává tam, kde byl v každé dosavadní továrně — u určení, co je správné a co smí do výroby vstoupit.
 
 Právě proto se pojem vrací do užívání. Současné popisy této architektury ji označují právě jako software factory: systém, v němž agenti nepřetržitě nacházejí práci, plánují ji, implementují, revidují a předávají výsledek člověku @factory2026 @bcg2026. Popisovaný průběh — událost spustí plánování, implementace probíhá na izolované větvi, revizi provádí oddělený krok, sloučení zůstává lidskou bránou — odpovídá tomu, co popisují i systémy postavené mimo tuto práci.

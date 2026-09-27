@@ -27,6 +27,6 @@ samo jednajícího @mw-agentic.
 V této práci je proto #strong[agentické] užíváno výhradně v druhém smyslu, a
 #strong[agentické inženýrství] (#strong[Agentic Engineering]) tak znamená soubor
 postupů, jimiž se staví systémy s takovým chováním, nikoli stavbu samotných agentů
-@willison-agentic-engineering. Odtud také, že celou prací prostupuje jedna otázka:
-je-li praktická autonomie vlastností systému, má v ní poslední slovo návrh
-prostředí, v němž model pracuje, nebo samotný model.
+@willison-agentic-engineering. Z toho plyne i pořadí, v němž práce hledá vysvětlení:
+praktickou autonomii má buď návrh prostředí, v němž model pracuje, nebo samotný model, a
+rozhodnout mezi nimi je úkolem dalších kapitol.

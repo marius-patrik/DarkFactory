@@ -6,7 +6,7 @@
 // progression the introduction states in one sentence, because that is the reader's
 // first contact with it and the distinction it turns on — who acts — is the one the rest
 // of the chapter depends on.
-#heading(level: 2)[Agent a harness]
+#heading(level: 2)[Agent: Model a harness]
 
 Postupné šíření těchto nástrojů má tři stupně. Nejprve doplňovaly kód v editoru a člověk zůstával tím, kdo jej přijímal a spouští. Potom přišly konverzační chatboty, v nichž model sestavuje odpověď, ale nástroje mu zpravidla nebyly k dispozici, takže i nadále všechno provedl uživatel. Až třetí stupeň, coding agenti, dostal přístup k souborům, příkazům a běhovému prostředí — a tím se poprvé změnila věta, kdo právě jedná.
 
@@ -24,7 +24,7 @@ Kompakce (*compaction*) po překročení stanoveného limitu nahrazuje starší 
 
 #heading(level: 3)[Smyčka]
 
-Základním mechanismem agentického systému je #strong[agentní smyčka], tedy konkrétní implementace
+Základním mechanismem agentického systému je #strong[agentická smyčka], tedy konkrétní implementace
 vzoru #strong[ReAct] (*Reasoning and Acting*) @yao2022 v daném harnessu: model střídá uvažování
 s akcí a harness mezi jednotlivými kroky vrací pozorování, čímž z jednotité generace vzniká
 souvislá konverzace @anthropic2024tooluse. V každém kroku model nejprve zdůvodní, co hodlá
@@ -36,5 +36,5 @@ poznat, zda předchozí krok vůbec uspěl; průběh shrnuje @fig-react-loop.
 
 #figure(
   image("/components/img/react-loop.svg", width: 75%),
-  caption: [Agentní smyčka ReAct: model navrhne akci, harness ji provede v běhovém prostředí a pozorování se vrací do dalšího kroku. Ukončení nastává, když model místo další akce vydá závěrečnou odpověď @yao2022.],
+  caption: [Agentická smyčka ReAct: model navrhne akci, harness ji provede v běhovém prostředí a pozorování se vrací do dalšího kroku. Ukončení nastává, když model místo další akce vydá závěrečnou odpověď @yao2022.],
 ) <fig-react-loop>
