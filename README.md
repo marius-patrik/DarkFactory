@@ -712,8 +712,15 @@ that the two agree.
 
 ### 6.2 Forces
 
-Any pattern has to live with these, and the shape below is a consequence of them rather than a
-preference.
+Any pattern has to live with these. **Three of the five produce a clause of the shape in §6.3 and two
+do not**, and §6.4 gives the mapping in full — because the interesting result is not that the forces
+determine the shape, which they do not, but which force is doing the work when someone asks why a
+given clause is there. Force 1 (complete enough to act on) yields the first clause; force 2 (current
+without a human maintaining it) yields the second; force 4 (consumers heterogeneous and growing)
+yields the third. Force 3 (legible to a person and machine-readable from one text) yields no clause:
+it is met by choosing a language that is already both, and that choice is a premise of §13 rather
+than a consequence of anything here. Force 5 (a hand-written description is cheaper to produce the
+first time) yields no clause either — it is the cost the pattern incurs, and §4.6 exists to pay it.
 
 - The description must be **complete enough to act on**. A partial description is not a cheaper
   description; it is a wrong one.
@@ -742,12 +749,30 @@ preference.
 
 ### 6.4 Consequences
 
-The pattern's benefits are all the same benefit seen from different angles, and §5.1 lists them: a
-a description with nothing to disagree with, consumers that cost a renderer rather than an adapter, a system that can
-act on itself because it can already read itself, and a change to the system that is an ordinary change.
-What the pattern adds to that list is the claim that the four are consequences of the *shape* — of one
-description derived from the thing it describes — rather than four separate properties anyone could adopt
-independently.
+The pattern's benefits are all the same benefit seen from different angles, and §5.1 derives them. What
+the pattern adds is the claim that they are consequences of the *shape* — of one description derived
+from the thing it describes — rather than four properties anyone could adopt independently.
+
+**That claim needs the mapping, and one of the four does not survive it.** Force 1 (a description
+complete enough to act on) produces §6.3's first clause, because a partial description forces a
+second account of the remainder. Force 2 (current without a human) produces the second clause, since
+a description a human maintains is a description that will not be. Force 4 (consumers heterogeneous
+and growing) produces the third, since each consumer would otherwise need its own copy. Force 3
+(legible to a person and machine-readable from one text) produces **no clause at all** — it is
+satisfied by choosing a language that is already both, which is why one file kind does not follow
+from the shape but from §13's premise. Force 5 (a hand-written description is cheaper the first
+time) also produces no clause: it is the cost the pattern pays, and it is discharged by §4.6's
+latency requirement rather than by the shape. Two of five forces having no clause is the honest
+result, and it is why this section cannot claim the shape is fully determined by the forces.
+
+**The remaining benefit is a clause of the shape rather than a consequence of it.** "Consumers cost a
+renderer rather than an adapter" is §6.3's third sentence — no consumer holds a copy — restated as a
+benefit. A clause cannot be a consequence of the thing it constitutes, so the four benefits are three
+consequences and one tautology. "A change to the system is an ordinary change" does hold, and its
+steps are: a change is operations 3, 4 and 5 (§3.2); a feature is found by structure rather than
+registration (§17); so changing one is an instance of the ordinary path. The one step that does
+*not* generalise is execution, which §13.2 says is required rather than discovered — so a change
+that alters the guarantee set is a different kind of change, and the document says so.
 
 The costs are equally real and belong in the same breath. **Authoring is prohibited, including by the
 author**, which is a rule people expect to be relaxed for themselves. **Documentation is
