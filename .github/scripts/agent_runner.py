@@ -2907,7 +2907,13 @@ def resolve_base_refs(base: str, cwd: Optional[str] = None) -> List[str]:
         # The base endpoint is verified rather than the range: `git rev-parse --verify a...b`
         # reports failure for an empty range, which a base that equals HEAD legitimately produces.
         check = subprocess.run(
-            ["git", "rev-parse", "--verify", "--quiet", f"{ref.removesuffix('...HEAD')}^{{commit}}"],
+            [
+                "git",
+                "rev-parse",
+                "--verify",
+                "--quiet",
+                f"{ref.removesuffix('...HEAD')}^{{commit}}",
+            ],
             cwd=directory,
             capture_output=True,
             text=True,
@@ -4705,11 +4711,14 @@ def claim_failure_dispatch(issue_number: int, effect: str, repo: str) -> bool:
         ``True`` when this run won the election and should dispatch.
     """
     wanted = f"{CLAIM_PREFIX}{effect}{CLAIM_SUFFIX}"
-    if try_gh(
-        ["issue", "comment", str(issue_number), "--body", wanted],
-        repo=repo,
-        doing=f"claim the repair of {effect}",
-    ) is None:
+    if (
+        try_gh(
+            ["issue", "comment", str(issue_number), "--body", wanted],
+            repo=repo,
+            doing=f"claim the repair of {effect}",
+        )
+        is None
+    ):
         return False
 
     listed = try_gh(
@@ -4819,7 +4828,9 @@ def dispatch_event(event_path: str, event_name: str):
             # `Request`, so that is the label intake is keyed on.
             if action == "labeled":
                 applied = payload.get("label")
-                applied_name = str(applied.get("name", "")).lower() if isinstance(applied, dict) else ""
+                applied_name = (
+                    str(applied.get("name", "")).lower() if isinstance(applied, dict) else ""
+                )
                 if applied_name != "request":
                     return
 

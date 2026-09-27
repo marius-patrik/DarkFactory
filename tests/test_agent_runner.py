@@ -488,21 +488,29 @@ class TestPlanIssuesAreNotInterpreted:
         module.dispatch_event(str(path), "issues")
         assert called == [], "a Plan issue must not be interpreted"
 
-    def test_a_pipeline_failure_issue_is_interpreted_after_claiming_its_effect(self, monkeypatch, tmp_path):
+    def test_a_pipeline_failure_issue_is_interpreted_after_claiming_its_effect(
+        self, monkeypatch, tmp_path
+    ):
         """#1193. This used to return without interpreting, which is what muted the whole loop: the
-        failure reporter files this issue for a red build and the runner then refused to act on it."""
+        failure reporter files this issue for a red build and the runner then refused to act on it.
+        """
         called = []
         module = agent_runner_module()
         monkeypatch.setattr(module, "handle_interpret", lambda n, r: called.append(n))
         monkeypatch.setattr(module, "run_gh", lambda *a, **k: "")
-        monkeypatch.setattr(module, "claim_failure_dispatch", lambda n, e, r: called.append(("claim", e)) or True)
+        monkeypatch.setattr(
+            module, "claim_failure_dispatch", lambda n, e, r: called.append(("claim", e)) or True
+        )
         path = tmp_path / "event.json"
         path.write_text(
             json.dumps(self._payload(["pipeline-failure"], body=_failure_body("CI", "3600000001"))),
             encoding="utf-8",
         )
         module.dispatch_event(str(path), "issues")
-        assert ("claim", "CI@3600000001") in called, "the failing run's effect identity must be claimed"
+        assert (
+            "claim",
+            "CI@3600000001",
+        ) in called, "the failing run's effect identity must be claimed"
         assert 92 in called, "a red build must reach the agent, not be ignored"
 
     def test_a_request_issue_is_still_interpreted(self, monkeypatch, tmp_path):
@@ -520,7 +528,8 @@ class TestPlanIssuesAreNotInterpreted:
 class TestPipelineCanStartOnAnExistingIssue:
     """v1 exit criterion 6. The graph's only entry edge carries the `Request` label, so an issue that
     already existed when the trigger was written - including every failure report - could never enter
-    the pipeline: only `issues.opened` fired, and opening one is the one thing that had not happened."""
+    the pipeline: only `issues.opened` fired, and opening one is the one thing that had not happened.
+    """
 
     def _dispatch(self, monkeypatch, tmp_path, labels, action, applied="Request"):
         called = []
@@ -545,13 +554,17 @@ class TestPipelineCanStartOnAnExistingIssue:
     def test_a_failure_report_labelled_as_a_request_starts_it(self, monkeypatch, tmp_path):
         """The failure reporter labels what it files, and a human can add `Request` to any open
         failure; both are the only way to start the pipeline on a failure that already exists."""
-        assert self._dispatch(monkeypatch, tmp_path, ["pipeline-failure", "Request"], "labeled") == [92]
+        assert self._dispatch(
+            monkeypatch, tmp_path, ["pipeline-failure", "Request"], "labeled"
+        ) == [92]
 
     def test_an_unrelated_label_does_not_start_a_second_run(self, monkeypatch, tmp_path):
         """`labeled` carries the issue's whole label set, so keying on that set would re-enter the
         pipeline every time a triage label was added to a Request."""
         assert (
-            self._dispatch(monkeypatch, tmp_path, ["Request", "Triage"], "labeled", applied="Triage")
+            self._dispatch(
+                monkeypatch, tmp_path, ["Request", "Triage"], "labeled", applied="Triage"
+            )
             == []
         )
 
@@ -1643,9 +1656,9 @@ class TestFailureEffectIdentity:
         """The marker lives in the body precisely so a human renaming the issue cannot fork it."""
         module = agent_runner_module()
         body = _failure_body("CI", "3600000001")
-        assert module.failure_effect_id(body.replace("Pipeline failure: CI", "ci is red again")) == (
-            "CI@3600000001"
-        )
+        assert module.failure_effect_id(
+            body.replace("Pipeline failure: CI", "ci is red again")
+        ) == ("CI@3600000001")
 
     def test_an_ordinary_issue_has_no_failure_identity(self):
         module = agent_runner_module()
@@ -1758,7 +1771,9 @@ class TestFailureDispatchElection:
         monkeypatch.setattr(module, "try_gh", lambda *a, **k: None)
         assert module.claim_failure_dispatch(1, "CI@1", "o/r") is False
 
-    def test_unreadable_claims_fall_back_to_dispatching_rather_than_muting_forever(self, monkeypatch):
+    def test_unreadable_claims_fall_back_to_dispatching_rather_than_muting_forever(
+        self, monkeypatch
+    ):
         """The claim list is best-effort. Losing the election must never be the failure mode, because
         that is the mute this change exists to remove."""
         module = agent_runner_module()
@@ -2384,7 +2399,11 @@ class TestScopeCheckKeepsTestsAndVaguePlans:
     def test_new_test_files_are_never_out_of_scope(self):
         """#267's plan named tests/test_commands.py; the implementation added tests/test_footers.py."""
         in_scope, out = agent_runner.check_scope(
-            [".github/scripts/commands.py", "tests/test_footers.py", "packages/harness/test/router.test.ts"],
+            [
+                ".github/scripts/commands.py",
+                "tests/test_footers.py",
+                "packages/harness/test/router.test.ts",
+            ],
             {".github/scripts/commands.py", "tests/test_commands.py"},
         )
         assert out == []

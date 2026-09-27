@@ -61,7 +61,9 @@ packages/harness/.*-test-*/
 .agents/skills/
 
 # Relocated to packages/harness in #1227. Nothing belongs at this path any more;
-# tracked entries here were test debris swept in by an over-broad `git add`.
-harness/
+# Root-anchored. A bare `harness/` matches any directory of that name at any depth, which silently
+# gitignored packages/harness/ too — and biome honours .gitignore, so the largest source tree in the
+# repository became invisible to `biome ci .`.
+/harness/
 .licence-test-*/
 .cli-test-*/

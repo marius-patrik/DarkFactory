@@ -281,13 +281,9 @@ def test_the_workflow_gate_and_the_resolver_agree_on_the_candidate_matrix(tmp_pa
 
 def test_the_workflow_gate_and_the_resolver_name_the_same_candidates():
     script = _docs_gate_script()
-    declared = next(
-        line for line in script.splitlines() if line.startswith("CONFIG_FILENAMES=")
-    )
+    declared = next(line for line in script.splitlines() if line.startswith("CONFIG_FILENAMES="))
     gate_filenames = tuple(declared.split("=", 1)[1].strip().strip('"').split())
     assert set(gate_filenames) == set(resolver.CONFIG_FILENAMES)
 
-    default = next(
-        line for line in script.splitlines() if line.startswith("DEFAULT_CONFIG_DIR=")
-    )
+    default = next(line for line in script.splitlines() if line.startswith("DEFAULT_CONFIG_DIR="))
     assert default.split("=", 1)[1].strip().strip('"') == resolver.DEFAULT_CONFIG_DIR
