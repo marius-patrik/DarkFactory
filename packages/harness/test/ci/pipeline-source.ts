@@ -14,7 +14,7 @@ import { join } from "node:path";
  */
 
 /** Repository root. */
-export const repoRoot = join(import.meta.dir, "..", "..", "..");
+export const repoRoot = join(import.meta.dir, "..", "..", "..", "..");
 /** The workflows this repository ships. */
 export const workflowDir = join(repoRoot, ".github", "workflows");
 /** The pipeline's shared automation scripts. */

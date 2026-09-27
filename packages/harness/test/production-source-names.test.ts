@@ -2,9 +2,11 @@ import { describe, expect, test } from "bun:test";
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { extname, join } from "node:path";
 
-// Paths come from this file, never from process.cwd(): the suite runs from harness/ and from the repository root.
+// Paths come from this file, never from process.cwd(): the suite runs from the package and from the
+// repository root. The walk covers the whole repository, so it has to start at the root, which is one
+// level above `packages/` since the harness workspace moved under packages/ in #1227.
 const harnessDir = join(import.meta.dir, "..");
-const repoDir = join(harnessDir, "..");
+const repoDir = join(harnessDir, "..", "..");
 
 /**
  * Container names that describe the absence of a decision rather than a
@@ -163,10 +165,10 @@ describe("production source names", () => {
 		expect(paths.size).toBeGreaterThan(100);
 		expect(paths.has("file packages/keychain/src/index.ts")).toBe(true);
 		// Directories are candidates too, not just files.
-		expect(paths.has("dir harness/src")).toBe(true);
+		expect(paths.has("dir packages/harness/src")).toBe(true);
 		// The test-tree exemption is doing work, and is confined to test trees.
-		expect(paths.has("file harness/test/github/helpers.ts")).toBe(false);
-		expect(paths.has("file harness/src/cli.ts")).toBe(true);
+		expect(paths.has("file packages/harness/test/github/helpers.ts")).toBe(false);
+		expect(paths.has("file packages/harness/src/cli.ts")).toBe(true);
 		// The workspace-root exemption covers the root path only, not what is under it.
 		expect(paths.has("dir packages/core")).toBe(false);
 		expect(paths.has("file packages/core/src/index.ts")).toBe(true);
