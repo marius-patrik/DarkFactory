@@ -103,7 +103,10 @@ sloučení větve @github-pull-requests; má stavy #strong[draft] a #strong[read
 přičemž schválení znamená přechod do ready a následné #strong[merge] @github-pull-requests.
 #strong[Review] je posouzení změny; #strong[nález] je konkrétní zjištěný nedostatek
 a #strong[blokace] stav, v němž se opakovaný nález bez progresu zastaví.
-#strong[Scope kontrola] je deterministická kontrola, zda se změny drží v rozsahu
-schváleného plánu. #strong[Checkout] je získání pracovní kopie repozitáře.
+#strong[CI] (průběžná integrace) je automatické spouštění formátovacích nástrojů a
+testovacích sad při každé změně; výsledkem je pouze návratový kód, tedy
+pozorování, které se dá opakovat. #strong[Scope kontrola] je pak dotaz na model,
+zda se změny drží v rozsahu schváleného plánu — jde tedy o posouzení, nikoli o
+porovnání dvou sad souborů, a je proto stejně pravděpodobnostní jako review. #strong[Checkout] je získání pracovní kopie repozitáře.
 #strong[Deklarativní registr] je zápis vlastností nástroje — bináře, příkazové
 řádky a přihlášení — do dat, z nichž se sestaví jeho volání, místo kódu.
