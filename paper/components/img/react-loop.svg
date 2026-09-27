@@ -1,5 +1,5 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 430" role="img" aria-labelledby="t d">
-  <title id="t">Agentická smyčka ReAct</title>
+  <title id="t">Agentní smyčka ReAct</title>
   <desc id="d">Model navrhne akci, harness ji zprostředkuje a provede v běhovém prostředí, výsledek se stane pozorováním a vrací se do dalšího kroku. Smyčka může být kdykoli ukončena výsledkem, tedy závěrečnou odpovědí místo dalšího požadavku na nástroj.</desc>
   <defs>
     <marker id="a" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto">
