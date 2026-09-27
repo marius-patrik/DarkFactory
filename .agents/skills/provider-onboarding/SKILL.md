@@ -1,47 +1,58 @@
 ---
 name: provider-onboarding
-description: Add or configure a DarkFactory provider/account through the canonical config, keychain, catalog, quota, and routing contracts.
+description: Adding a model provider or a new account key to df.
 ---
 
 # Provider onboarding
 
-Providers are configuration/data plus shared runtime mechanisms, not provider-specific orchestration subsystems.
+This guide helps agents and operators add model providers or account keys to df.
 
-## Add an account
+## Adding a key for a configured provider
 
-Use the provider-declared login/credential-slot flow:
+df accounts are `<provider>:<label>` (for example `google:default`, `google:work`). To add an API key for an existing provider:
 
 ```sh
-df login <provider> --account <label>
-df account set <provider>:<label> <slot> --type <type>
-df models --provider <provider> --refresh
-df quota --json
+df account set google:work api_key --type api_key
 ```
 
-Never place secret values in the `providers` block, source, command arguments, issues or logs. Machine credentials belong to `@darkfactory/keychain`.
+The key value is read from standard input; pipe it from a secure source:
 
-## Add or change a provider
+```sh
+printf '%s' "$KEY" | df account set google:work api_key --type api_key
+```
 
-Provider/runtime configuration belongs to the combined configuration's `providers` block and first-party/installed capability data. Do not create a second `providers.json`, hard-coded provider registry or provider-specific harness.
+Validate the credential by refreshing the model catalog and checking quotas:
 
-A provider declaration supplies the data required by the shared runtime, such as:
+```sh
+df models --provider google --refresh
+df quota --json --provider google
+```
 
-- stable provider identity and API dialect/endpoint;
-- authentication flow and named credential slots;
-- model discovery/static fallback data;
-- capabilities required for routing;
-- declared/observed quota and error mapping;
-- data-collection/sensitivity policy;
-- optional routing eligibility/defaults.
+## Adding a provider
 
-The live model catalog is authoritative for current usable models; hand-maintained model inventories are not.
+To add a provider that isn't built into df, add an entry under `providers` in `providers.df` in the df home directory (`$DF_HOME`, default `~/.df`); it is merged over the built-in providers. There is no `providers.json` - df reads `providers.df` and nothing else. Required fields:
 
-## Routing and quota
+- `id` - the provider identifier used in accounts and chains (`<provider>:<label>`, `<provider>/<model>@<label>`)
+- `name` - display name
+- `dialect` - one of `openai-completions`, `openai-responses`, `openai-codex-responses`, `anthropic-messages`, `google-generative-ai`, `cloudcode-agent`
+- `baseUrl` - the API endpoint
+- `auth` - how credentials are sent (API key placement or OAuth) and which named slots an account needs
+- `models.static` - at least one declared model; `models.list` only overrides the dialect's default model-listing endpoint. `df models --provider <id> --usable` shows what df will actually route to from the live listing.
+- `capabilities` - tools, reasoning, images
 
-Provider eligibility is evaluated before model strength. Routing uses task requirements, sensitivity/data policy, live catalog/account state, atomic quota/capacity admission and configured capability tiers.
+Optional: `limits` (declared rate limits and learned-limit rules), `free` (free-tier facts: `kind` is `permanent`, `renewable-credits`, `trial-credits` or `anonymous`, plus `keyUrl`, `card`, `verification`, `credits`), and `routing` (`enabled: false` removes the provider from automatic routing; `exclude` lists model id globs df must not route to).
 
-Unknown quota/data-policy state remains explicit and fails closed where the policy requires known eligibility.
+## Data policy
 
-## Verify
+Every provider declares what it does with request data: `free.data.collection` (or `data.collection`) is `none`, `logging`, `training` or `unknown`, with the source of that claim. df routes work only to providers whose collection is allowed for its sensitivity: the df config `router.dataCollection.normal` and `router.dataCollection.sensitive` list the allowed values (sensitive work defaults to `none` only), and a provider with no declaration counts as `unknown`. Check a provider with `df providers` (the data-collection column).
 
-Run the canonical diagnostics and package/capability tests. Provider changes are complete only when config parsing, credential boundaries, catalog refresh, quota mapping and routing invariants are covered without network-dependent tests.
+## Security notes
+
+Never paste a key into a command argument, file, issue, or log. df never borrows logins from other tools. Account credentials live in df's credential store under the df home directory (file permissions restricted to the user) or in GitHub Actions secrets for the pipeline, and reach df only through standard input or environment variables.
+
+## Checking
+
+```sh
+df doctor identities    # verify all providers have identity entries
+df quota --json         # show state, limits, and usage for all providers
+```

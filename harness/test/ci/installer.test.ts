@@ -3,6 +3,7 @@ import { mkdir, mkdtemp, readFile, rm, stat, writeFile } from "node:fs/promises"
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import {
+	bundledSkillsDir,
 	checkSkillsDrift,
 	checkWorkflowsDrift,
 	discoverBundledSkills,
@@ -11,7 +12,12 @@ import {
 	updateWorkflows,
 } from "../../src/ci/installer.ts";
 
-const bundledSkillPath = (name: string) => join(import.meta.dir, "../../../.agents/skills", name, "SKILL.md");
+// The bundled skill, read from the directory df actually ships, not from an installed copy.
+function bundledSkillPath(name: string): string {
+	const dir = bundledSkillsDir();
+	if (!dir) throw new Error("df was installed without bundled skills");
+	return join(dir, name, "SKILL.md");
+}
 
 async function writeUpstream(temp: string, repo: string, ref: string): Promise<void> {
 	await writeFile(join(temp, "repo.dfconfig"), JSON.stringify({ repo: { upstream: { repo, ref } } }));
@@ -134,7 +140,7 @@ describe("Workflow installer & updater", () => {
 });
 
 describe("Bundled skills installer & drift", () => {
-	it("discovers first-party skills from canonical .agents/skills", async () => {
+	it("discovers first-party skills from the bundled skills directory", async () => {
 		const skills = await discoverBundledSkills();
 		expect(skills.length).toBeGreaterThanOrEqual(1);
 		expect(skills).toContain("darkfactory-auth");
