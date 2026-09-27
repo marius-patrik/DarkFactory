@@ -9,7 +9,7 @@ Implementace pipeline DarkFactory ukázala jednoduchou produkční realizaci tě
 
 Zjištění zároveň ukazují meze této realizace. Modelové review může být opakované, ale není deterministickou zárukou správnosti; opakovaný nález bez progresu vede k blokaci.
 
-Cíle práce se podařilo naplnit v rozsahu, který si sama vymezila. Hypotéza byla potvrzena, ovšem v užší podobě, než byla formulována: řízená autonomie je dosažitelná i bez vlastního harnessu, ale její kvalita zůstává omezena kvalitou cizí smyčky, kterou autor neovládá. Současně se potvrdilo, že popsaná struktura procesu je vůči volbě nástroje invariantní, což je tvrzení, z něhož lze prokazatelně vycházet.
+Cíle práce se podařilo naplnit v rozsahu, který si sama vymezila. Hypotéza se potvrdila: praktická autonomie je vlastností návrhu systému, který práci řídí, a nikoli vlastností modelu, který v něm pracuje. Strukturu, která práce popisuje, autor navrhuje sám; úsudek o tom, co je v jednotlivém kroku správné, však přebírá od smyčky, kterou nevlastní, a právě v tomto rozdílu leží hranice, za kterou by pomohlo vlastnit i tuto smyčku.
 
 Pro další výzkum z toho vyplývají tři směry. První je vlastní harness: popsat architekturu, kterou si tato práce záměrně neřešila, a porovnat její výsledky s výsledky cizích nástrojů na stejných úlohách. Druhý je měření: dosavadní zjištění jsou kvalitativní, chybí jim měření, která by umožnila říci, o kolik se cyklus zkrátil a kde přesně review smyčka nachází nejvíce nálezů. Třetí je přenositelnost: ověřit, zda popsaná struktura platí i pro jiný stavový podklad než issue, což by ukázalo, že je opravdu zásadní, a ne pouze vlastností GitHubu.
 
