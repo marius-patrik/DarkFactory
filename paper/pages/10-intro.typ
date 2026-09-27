@@ -7,7 +7,14 @@
 // the structure of the work: 1.1 and 1.2 Terminology.
 #heading(level: 1)[Úvod]
 
-#emph[Šíření nástrojů založených na velkých jazykových modelech má tři stupně.] Nejprve doplňovaly kód v
+#emph[Šíření nástrojů založených na velkých jazykových modelech má tři stupně.] Nejprve doplňovaly kód
+v editoru @github-copilot-completion a člověk zůstával tím, kdo jej přijímá a spouští. Pak přišly
+konverzační chatboty @github-copilot-chat , v nichž model sestavuje odpověď, ale nástroje mu zpravidla
+nebyly k dispozici, takže i nadále všechno provedl uživatel. Třetí stupeň, #emph[coding agenti]
+@github-copilot-agent @openai-codex-2025 @openai-codex-app-2026 , dostal přístup k souborům, příkazům
+a běhovému prostředí. Tím se poprvé změnilo, kdo práci vlastně dělá, a to je změna, o kterou jde v
+této práci. Průmyslové zprávy o šíření agentů do výroby ji popisují jako probíhající
+@anthropic-agents-2026.
 editoru a člověk zůstával tím, kdo jej přijímal a spouští. Potom přišly konverzační chatboty, v nichž
 model sestavuje odpověď, ale nástroje mu zpravidla nebyly k dispozici, takže i nadále všechno provedl
 uživatel. Třetí stupeň, #emph[coding agenti], dostal přístup k souborům, příkazům a běhovému prostředí
@@ -35,14 +42,7 @@ model pouze obaluje. Rozdíl mezi schopností modelu a návrhem systému, v něm
 je předmětem celé práce; význam pojmů, které ho vyjadřují a které se v češtině dosud
 neustálily, je sezbrán v @terminologie.
 
-Literatury o agentickém vývoji je několik let a obsahuje několik druhů textů, které mezi
-sebe nelze zaměňovat. Především jde o inženýrské příspěvky dodavatelů nástrojů, které
-popisují architektury svých vlastních produktů @anthropic2024tooluse
-@anthropic-harness-design @anthropic-context-engineering @openai-codex-2025 @claude-goal
-@openai-goals @langchain-harness @agents-md @agentskills-spec @mcp-specification; dále o
-průmyslové zprávy a názory společností, které takové systémy prodávají
-@anthropic-agents-2026 @factory2026 @bcg2026 @guild2026; a konečně o několik prací, které
-architekturu měří nebo rozkládají.
+Použitých zdrojů je několik druhů a z každého se v práci bere jiná věc. Od výrobců nástrojů jsou to inženýrské příspěvky popisující architekturu vlastního produktu: od Anthropic příspěvek o nástrojích @anthropic2024tooluse a o návrhu harnessu pro dlouhé běhy @anthropic-harness-design, od nichž i kontext @anthropic-context-engineering, od OpenAI příspěvek o Codexu @openai-codex-2025, od nichž příkaz `/goal` @claude-goal a cíle @openai-goals, a od LangChain rozbor, co všechno patří do harnesse @langchain-harness, včetně souboru AGENTS.md @agents-md, dovedností @agentskills-spec a protokolu MCP @mcp-specification. Průmyslové zprávy a názory společností, které takové systémy prodávají, slouží k pojmenování a architektuře: @anthropic-agents-2026 @factory2026 @bcg2026 @guild2026. Poslední skupinu tvoří práce, které architekturu měří nebo rozkládají.
 
 Z poslední skupiny jsou čtyři měřicí a jedna poziční. Harness-Bench prošel 5~194 běhových
 trajektorií a zjistil, že výslednost se podle dvojice model–harness mění výrazně, takže
@@ -109,5 +109,5 @@ konvencí model v takovém uspořádání následuje a co vnější vrstva stoj�
 kterou teoretická část neodpovídá.
 
 Rozsah práce je záměrně úzký a odpovídá jedné revizi repozitáře: popisuje počáteční
-implementaci, v níž je agentická smyčka provedena cizím nástrojem. Její rozsah slouží jako
+implementaci, v níž je agentní smyčka (#emph[Agent Loop]) provedena cizím nástrojem. Její rozsah slouží jako
 základ, na němž navazuje práce následující.

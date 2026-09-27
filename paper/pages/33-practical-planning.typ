@@ -3,9 +3,12 @@
 
 Výchozím bodem je issue s formulovaným požadavkem. Požadavek se však nevytváří jako
 volný text: repozitář nabízí předlohu, která vyžaduje vyplnit několik polí, a právě
-ta určují, co pipeline dostane. @fig-issue-template uvádí předlohu i vyplněný
-požadavek, který odpovídá jednomu běhu popsanému v této kapitole.
+ta určují, co pipeline dostane. @fig-issue-template uvádí předlohu vyplněnou podle skutečného
+požadavku z projektu.
 
+// Shaped like the GitHub issue form rather than a data grid: the field name reads as a
+// label, the filled value sits in a bordered box like a form field, and required fields
+// are marked on the label instead of taking a column of their own.
 // Shaped like the GitHub issue form rather than a data grid: the field name reads as a
 // label, the filled value sits in a bordered box like a form field, and required fields
 // are marked on the label instead of taking a column of their own.
@@ -18,33 +21,25 @@ požadavek, který odpovídá jednomu běhu popsanému v této kapitole.
 )
 #let req(name) = [#strong[#raw(name)] #text(size: 8pt, fill: luma(45%))[povinné]]
 #let opt(name) = [#strong[#raw(name)] #text(size: 8pt, fill: luma(45%))[volitelné]]
-#figure(  table(
+#figure(
+  table(
     columns: (auto, 1fr),
     align: (left + top, left + top),
     inset: (x: 6pt, y: 5pt),
     stroke: none,
     table.header(
       [#text(size: 9pt, fill: luma(35%))[Pole předlohy issue]],
-      [#text(size: 9pt, fill: luma(35%))[Jak je vyplněné v požadavku, který spustil běh]],
+      [#text(size: 9pt, fill: luma(35%))[Jak to vypadá v issue #727]],
     ),
     req("Verbatim User Request"),
-    field[„Když review opakovaně nachází to samé, běh se zablokuje. Chtěl bych, aby se po třech neúspěších zastavil a napsal to výslovně do issue.“],
+    field[#strong[restore the agent container build from the checked-in Bun lock owner]],
     req("Area / Component"),
-    field[`ci` — GitHub Actions, kontejner, runner],
+    field[`area:ci`],
     req("Request Type"),
-    field[`feat`],
-    opt("Proposed Acceptance Criteria"),
-    field[☐ Běh skončí po třetím opakování stejného nálezu. \
-      ☐ Do issue vznikne komentář s počtem pokusů. \
-      ☐ Test pokrývá nové ukončení. \
-      ☐ `bun run check` projde bez chyb.],
-    opt("Additional Context"),
-    field[`block on repeated finding` — tři po sobě jdoucí běhy skončily stavem `blocked` bez změny nálezu.],
+    field[`bug`],
+    field[#strong[Problem] — `Dockerfile.agent` kopíruje kořenový `bun.lock`, ale repozitář má jen `harness/bun.lock`; běh agenta tak padá ještě před spuštěním. Viz `### Contract` v issue.]
   ),
-  caption: [Vybrané pole předlohy požadavku a příklad jejího vyplnění, uspořádané podle formuláře
-    na GitHubu. Předloha jich má šest; vynecháno je pole Parent Epic, které pro tento běh zadání
-    neurčuje. Runner předává modelu titulek a tělo issue; pole předlohy tedy určují, co se do
-    zadání dostane @darkfactory-d576ec8f.],
+  caption: [Předloha požadavku a nejstarší požadavek projektu, issue #727 z 20. září 2026. Předloha má šest polí, z nichž tři povinná. Skutečný požadavek však template nevyplnil, ale napsal volně, pod nadpisy `Problem` a `Contract`; tabulka proto ukazuje tři povinná pole předlohy a to, jak požadavek ve skutečnosti vypadá. Runner předává modelu titulek i tělo issue, takže právě to rozhoduje, co se do zadání dostane @darkfactory-d576ec8f.],
 ) <fig-issue-template>
 
 Příklad je záměrně malý a měřitelný: rozsah se vejde do jednoho kontextového okna a

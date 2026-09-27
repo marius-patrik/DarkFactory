@@ -1,40 +1,27 @@
 // 1.2 Terminology.
 //
-// Reduced to the one term that genuinely needs declaring. Everything else used to be
-// defined here as well, and it was duplication: a glossary that restates the theory
-// gives the reader the same sentence twice and puts the definitions nowhere near the
-// argument that needs them. Each term is now defined in the section that uses it —
-// token and inference in 2.1, the loop and context window in 2.2, capabilities in 2.3.2,
-// the software factory in 2.4, and the repository vocabulary in chapter 3 as it comes
-// up.
-//
-// What stays is the exception. "Agentic" has no settled Czech equivalent, so the
-// adjective coined here has to be declared before anything else uses it, and the
-// distinction it turns on — a property of the agent against a property of the system
-// — is the one the thesis turns on throughout. That cannot be left implicit to a
-// section two chapters later.
+// Two declarations only, because only two things genuinely need one: how English
+// *agent* and *agentic* map onto Czech, and why a handful of terms stay in English.
+// Everything else is defined in the section that uses it, so that a glossary does not
+// give the reader the same sentence twice and put the definitions nowhere near the
+// argument that needs them.
 #heading(level: 2)[Terminologie] <terminologie>
 
-Anglické #strong[agentic] nemá v češtině ustálený překlad; pro potřeby této práce je
-mu přiřazeno tvořené přídavné jméno #strong[agentické]. Rozdíl mezi dvěma výrazy,
-které se v běžném užívání zaměňují, je přitom zásadní. #strong[Agentní] označuje
-vlastnost agenta, tedy toho, kdo jedná; #strong[agentický] označuje vlastnost
-systému, tedy toho, kdo je #emph[schopen] jednat. Jazykový základ tomu odpovídá: anglické
-#strong[agentic] je odvozeno od podstatného jména #strong[agent] příponou
-#strong[-ic] a znamená mající schopnost, prostředky nebo pravomoc jednat, nikoli
-samo jednajícího @mw-agentic.
+Překlad anglických výrazů v této práci sleduje jedno pravidlo. Co anglicky nazývá
+#strong[agent], je česky #strong[agentní] — agent, agentní krok, agentní smyčka. Co anglicky
+nazývá #strong[agentic], je česky #strong[agentické] — agentický systém, agentické
+inženýrství. Podstatné jméno #strong[agent] se tedy nepřekládá, protože označuje samotného
+jednajícího, zatímco přípona #strong[-ic] znamená majícího schopnost jednat, nikoli
+jednajícího @mw-agentic. Podle téhož pravidla je #emph[Agent Loop] česky
+#emph[agentní smyčka], protože jde o smyčku agenta, a nikoli o vlastnost systému.
 
-V této práci je proto #strong[agentické] užíváno výhradně v druhém smyslu, a
-#strong[agentické inženýrství] (#strong[Agentic Engineering]) tak znamená soubor
-postupů, jimiž se staví systémy s takovým chováním, nikoli stavbu samotných agentů
-@willison-agentic-engineering. Z toho plyne i pořadí, v němž práce hledá vysvětlení:
-praktickou autonomii má buď návrh prostředí, v němž model pracuje, nebo samotný model, a
-rozhodnout mezi nimi je úkolem dalších kapitol.
+#strong[Agentické inženýrství] (#strong[Agentic Engineering]) tak znamená soubor postupů,
+jimiž se staví systémy schopné jednat, nikoli stavbu samotných agentů
+@willison-agentic-engineering.
 
 Práce ponechává několik pojmů v angličtině, protože tak je označuje obor:
-#strong[harness], #strong[workflow], #strong[prompt], #strong[token],
-#strong[scaffold], #strong[coding agent]. Český ekvivalent u nich není jednoznačný, a překlad by čtenáře
-nutil odhadovat, co termín znamená, místo aby si jeho význam mohl ověřit v téže
-podobě, v jaké jej používá zdroj. Pojmy spojené s repozitářem — issue, commit, větev,
-pull request — mají vlastní názvy v uživatelském rozhraní GitHubu a jsou přebírány
-odtud.
+#strong[harness], #strong[workflow], #strong[prompt], #strong[token], #strong[scaffold],
+#strong[coding agent]. Český ekvivalent u nich není jednoznačný, a překlad by čtenáře nutil
+odhadovat, co termín znamená, místo aby si jeho význam mohl ověřit v téže podobě, v jaké jej
+používá zdroj. Pojmy spojené s repozitářem — issue, commit, větev, pull request — mají
+vlastní názvy v uživatelském rozhraní GitHubu a jsou přebírány odtud.

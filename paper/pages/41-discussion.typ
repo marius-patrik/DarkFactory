@@ -1,7 +1,7 @@
 // 4.2 Discussion.
 #heading(level: 2)[Diskuse] <diskuse>
 
-Zjištění lze interpretovat jako konkrétní podobu Agentického inženýrství: praktická autonomie není vlastností samotného modelu, ale výsledkem návrhu prostředí, v němž model pracuje. GitHub poskytuje trvalý kontext a lidskou odpovědnost, Python určuje přechody mezi kroky, Docker omezuje běhové prostředí a harness propojuje model s nástroji a pozorováními. Tato dělba odpovědnosti je v souladu s principy efektivního a kontrolovaného systému popsanými v teoretické části @anthropic-harness-design @anthropic-managed-agents @darkfactory-d576ec8f.
+Zjištění lze interpretovat jako konkrétní podobu Agentického inženýrství: praktická autonomie není vlastností samotného modelu, ale výsledkem návrhu prostředí, v němž model pracuje. GitHub poskytuje trvalý kontext a lidskou odpovědnost, Python určuje přechody mezi kroky, Docker omezuje běhové prostředí a harness propojuje model s nástroji a pozorováními @darkfactory-d576ec8f. Tato dělba odpovědnosti odpovídá tomu, jak obor takové systémy popisuje @anthropic-harness-design @anthropic-managed-agents.
 
 Review smyčka ukazuje výhodu a zároveň omezení průběžné kontroly. Testy a formátovací nástroje poskytují zpětnou vazbu, kterou lze opakovat, ale ani druhá brána — kontrola souladu s plánem — deterministická není: jde o druhý dotaz modelu, a je tedy stejně pravděpodobnostní jako review, které jí předchází. Opakované iterace zvyšují počet příležitostí k nálezu, nikoli záruku konečné správnosti. Zastavení po vyčerpání iterací je ochranou před nekonečným během, ale bez zaznamenaného verdiktu není ani touto ochranou úplně: kdo se později ptá na stav, nemá v issue co číst @darkfactory-d576ec8f.
 
@@ -15,7 +15,7 @@ Opakovatelná a pravděpodobnostní pozorování se proto doplňují, nenahrazuj
 
 Praktická část má omezení, která je třeba pojmenovat, protože se dotýkají platnosti závěrů. Spočívají ve dvou vrstvách.
 
-První je vlastnictví. Agentickou smyčku v popsané realizaci neautor navrhuje: sestavuje ji cizí harness, která spravuje kontext, volá nástroje a vyřizuje oprávnění. Co autor navrhuje, je vrstva nad ní, tedy stavový stroj, který rozhoduje, kdy se smyčka spustí, co smí agent změnit a kde práce skončí. Odpověď na výzkumnou otázku je tím užší, než kdyby smyčka byla implementována od začátku, a je takto i formulována.
+První je vlastnictví. Agentní smyčku v popsané realizaci autor nenavrhuje: sestavuje ji cizí harness, která spravuje kontext, volá nástroje a vyřizuje oprávnění. Co autor navrhuje, je vrstva nad ní, tedy stavový stroj, který rozhoduje, kdy se smyčka spustí, co smí agent změnit a kde práce skončí. Odpověď na výzkumnou otázku je tím užší, než kdyby smyčka byla implementována od začátku, a je takto i formulována.
 
 Druhé je rozsah. Zkoumaný stav je záměrně jen počáteční: řadič volá cizí harnessy a všechny agentní kroky vede přes ně. Jde tedy o míru autonomie dosažitelnou touto konkrétní konfigurací, nikoli o míru dosažitelnou s vlastní smyčkou, a tím záměrně neřeší otázku, kterou řeší práce následující. Tvrzení práce se proto vztahuje k této konfiguraci a je opřeno o konkrétní revizi @darkfactory-d576ec8f.
 
