@@ -11,6 +11,7 @@
     "typecheck": "tsc --noEmit",
     "build": "bun run ./scripts/build.ts",
     "format": "biome format --write .",
+    "format:check": "biome format .",
     "lint": "biome lint .",
     "check": "biome ci ."
   },
