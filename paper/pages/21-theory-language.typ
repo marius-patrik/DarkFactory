@@ -1,7 +1,9 @@
 // 2.1 The language model in an agentic system.
 #heading(level: 2)[Jazykový model v agentním systému] <theory-first>
 
-Jazykový model (#strong[LLM]) předpovídá další token na základě toho, co je před ním obsaženo v #strong[kontextu]. #strong[Transformer] využívá mechanismu attention @vaswani2017 @brown2020 pro zpracování vztahů mezi jednotlivými tokeny. Při inferenci model zpracuje obsah kontextového okna a vytvoří posloupnost výstupních tokenů. Samotná #strong[Inference] však nemění soubory, nespouští příkazy ani neuchovává stav mezi kroky. Tyto činnosti zajišťuje harness, který modelu zpřístupňuje nástroje a pomocí rekursivního procesu zvaného ReAct @yao2022 dělá z jednotné generace souvislou konverzaci @anthropic2024tooluse.
+Současný jazykový model stojí na jedné architektuře. V roce 2017 představili výzkumníci Googlu v příspěvku *Attention Is All You Need* novou neuronovou architekturu #strong[Transformer], která místo zpracovávání tokenů jeden po druhém přiřazuje význam každému tokenu současně se všemi ostatními. Mechanismus, který to umožňuje, se nazývá #strong[attention] @vaswani2017 a je dodnes používaný i v pozdějších generacích modelů @brown2020. Právě tato schopnost zpracovat celý kontext najednou je to, co umožňuje dnešní požadavky na délku a složitost konverzace.
+
+Na této architektuře je založen i jazykový model (#strong[LLM]), který předpovídá další token na základě toho, co je před ním obsaženo v #strong[kontextu]. Při #strong[inferenci] model zpracuje obsah kontextového okna a vytvoří posloupnost výstupních tokenů. Samotná #strong[Inference] však nemění soubory, nespouští příkazy ani neuchovává stav mezi kroky. Tyto činnosti zajišťuje harness, který modelu zpřístupňuje nástroje a pomocí rekursivního procesu zvaného ReAct @yao2022 dělá z jednotné generace souvislou konverzaci @anthropic2024tooluse.
 
 Vektorové reprezentace, označované jako #strong[embeddingy], zachycují sémantické vztahy ve vektorovém prostoru. Známým příkladem je vztah mezi vektory slov král, královna, muž a žena @mikolov2013linguistic. Tento vztah schematicky znázorňuje @fig-embedding-queen.
 
