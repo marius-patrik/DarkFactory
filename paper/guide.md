@@ -85,7 +85,7 @@ položky, které jsou přímo kontrolovatelné:
 | Anotace | 2 | Obsažena, přiměřený rozsah, správná struktura | ✅ 176 slov, doporučeno 150–250 (`rules.md` R3) |
 | Klíčová slova | 1 | Obsažena, přiměřený počet, správně zvolená | ✅ pět, doporučeno přibližně pět (`rules.md` R4) |
 | Obsah | 1 | Kompletní, automaticky generovaný, čísla stran | ✅ |
-| **Seznam obrázků, tabulek, …** | 1 | **Je obsažen, je kompletní** | ✅ sedm obrázků a jedna tabulka, generováno automaticky (`rules.md` R2) |
+| **Seznam obrázků, tabulek, …** | 1 | **Je obsažen, je kompletní** | ✅ šest obrázků a jedna tabulka, generováno automaticky (`rules.md` R2) |
 | Grafické zpracování | 3 | Jednotný styl v celé práci, estetický dojem | ✅ jeden systém ve všech obrázcích |
 
 Pozor: v hodnoticím protokolu je samostatná položka **Správné odkazování v textu**
