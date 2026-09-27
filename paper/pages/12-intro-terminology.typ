@@ -40,7 +40,11 @@ otázka bez omezení.
 #strong[Harness] je program, který agenta obalí: sestavuje kontext, předává modelu
 významy nástrojů, vykonává je, vyřizuje oprávnění a vrací modelu výsledky.
 #strong[ReAct] je vzor smyčky, v němž model střídá uvažování s akcí a harness mezi
-jednotlivými kroky vrací pozorování @yao2022. #strong[Kontextové okno] je
+jednotlivými kroky vrací pozorování @yao2022. #strong[Agentní smyčka] (*agent
+loop*) je konkrétní implementace tohoto vzoru v konkrétním harnessu: sestavený
+kontext, výzva nástroje, jeho provedení, pozorování a rozhodnutí, zda pokračovat.
+Vzorec tedy popisuje, jak smyčka vypadá, agentní smyčka je to, co v daném
+nástroji právě běží. #strong[Kontextové okno] je
 pracovní kontext jednoho volání; jeho zaplnění samo o sobě nezaručuje, že model
 podstatné informace využije, a postupné zhoršování kvality zaplněného kontextu se
 označuje jako #strong[context rot] @anthropic-context-engineering.
