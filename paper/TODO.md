@@ -42,10 +42,10 @@ každý vlastním commitem.
 | B6 | Nadbytečná mezera na začátku odstavce (Typst ji vykreslí jako mezeru mezi slovy) a odkaz na obrázek stojící samostatně jako věta. | `pages/23-theory-agentic.typ`, `pages/22-theory-harness.typ` | ✅ `1c5099d2` |
 | B7 | **Nález při čtení zdrojového textu.** V §2.3.2 zůstala za větou o hook middleware viset druhá polovina předchozí věty: sazba na str. 11 obsahovala „…pro deterministický běh. udělat. Druhou skupinu zajišťuje harness…", tedy duplikát i osiřelé „udělat.". | `pages/23-theory-agentic.typ` | ✅ |
 
-Tvrzení o 28 % chatbotů a 0,36 % coding agentů ponecháno záměrně — je to
-argument práce, ne chyba. Průvodce v kap. 3.9 žádá u statistik uvedení zdroje a
-metody; tabulka je opatřena citací @gradually-ai-usage-2026 a popiskem, takže
-podmínka je splněna.
+Tvrzení o 28 % chatbotů a 0,36 % coding agentů ponecháno, ale už ne jako argument
+práce, nýbrž jen jako představa o šíření nástrojů; viz H1. Průvodce v kap. 3.9 žádá
+u statistik uvedení zdroje a metody; obrázek je opatřen citací
+@gradually-ai-usage-2026 a popiskem, takže podmínka je splněna.
 
 ## C. Rozsah praktické části — vyřešeno rozdělením na dvě práce
 
@@ -90,4 +90,12 @@ ale předmět zkoumání. Navazující práce má popsat konečnou architekturu 
 | # | Co | Proč |
 | :-- | :--- | :--- |
 | G1 | `claude` CLI bylo v npm registrováno, ale nespustitelné: symlink ukazoval na neexistující cíl a nativní binárka se nikdy nestáhla, protože postinstall nikdy neběžel. Instalace byla opravena a rozhraní zachyceno z `--help` verze 2.1.283. | ✅ `6b3e85f7` |
-| G2 | Zachyty `--help` leží v dočasném adresáři a nejsou součástí repozitáře. Pokud C3 přijme, musí se uložit trvale. | ⏳ viz C3 |
+| G2 | Zachyty `--help` leží v dočasném adresáři a nejsou součástí repozitáře. C3 nebylo přijato, takže do práce nedešly; pro případné budoucí srovnání by je bylo nutné uložit trvale. | ✅ nepotřeba |
+
+## H. Provenance zdrojů
+
+| # | Co | Stav |
+| :-- | :--- | :--- |
+| H1 | **Silnější zdroj pro údaje o adopci AI.** Rozhodnuto: `@gradually-ai-usage-2026` zůstává jako ilustrační zdroj a `@fig-gradually-usage` zůstává v úvodu, ale čísla nesmějí nést argument práce. Hledat primární či recenzovanou náhradu za podíl uživatelů chatbotů a coding agentů; pokud žádná není, ponechat formulaci výslovně jako odhad. Zdroj mimo jiné uvádí vlastní rozpětí 25–35 milionů a výslovně odmítá, aby bylo čteno jako údaj providera. | ⏳ |
+| H2 | `@guild2026` (34 % autonomních pull requestů, 56 % oprav, 91 % bez zásahu inženýra) sestoupá do pozadí jako vlastní měření společnosti. V §2.4 se už nesmí podpírat tvrzení o tom, že popsaný průběh je běžná praxe. | ⏳ |
+| H3 | `@bcg2026` a `@factory2026` zůstávají, ale jen pro definici a architekturu, nikoli pro číselné údaje. Jejich čísla jsoufootnotovaná na vendorské blogy. Průmyslové zprávy @anthropic-agents-2026 zůstávají jediným podkladem pro tvrzení o šíření agentů do výroby. | ✅ rozhodnuto |
