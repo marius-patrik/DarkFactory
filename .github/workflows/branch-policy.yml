@@ -6,9 +6,14 @@ on:
     types: [opened, synchronize, reopened]
   push:
     branches: [develop]
+    # What the reconcile actually reads: the configuration document (default branch, development
+    # branch, required checks) and the two scripts that apply it. `repo.df` and `config.df` were
+    # named here and are not repository files, so the one file the policy is derived from was not
+    # in the filter and a change to the required checks reconciled nothing.
     paths:
-      - "repo.df"
-      - "config.df"
+      - "repo.dfconfig"
+      - "config.dfconfig"
+      - ".dfconfig"
       - ".github/scripts/manifest.py"
       - ".github/scripts/repo_settings.py"
       - ".github/workflows/branch-policy.yml"
