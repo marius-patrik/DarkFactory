@@ -171,10 +171,12 @@ its input, because at that point there is nothing left to reconcile. This is a s
 than a demonstration, and it is the only version of the claim that cannot be satisfied
 partially.
 
-Three things are deliberately excluded from the goal, and §41 states them at length: reaching
-general usefulness across arbitrary domains, matching the performance of a hand-tuned build for
-any single workload, and being the system of record for a problem another system already solves
-well.
+Deliberately excluded from the goal are reaching general usefulness across arbitrary domains,
+matching the performance of a hand-tuned build for any single workload, and being the system of
+record for a problem another system already solves well. Those three are the load-bearing ones and
+§41 states each at length, alongside four further non-goals that are narrower rather than
+competing: not a new language, not a permission model, not a debugger or package manager, and not a
+rendering technology per surface.
 
 ## 3 The shape
 
@@ -504,7 +506,10 @@ and it is better than the alternative, which is an instrument that cannot see th
 interface tables or the concern tree — the three artefacts where duplication is most likely to
 accumulate. The places where this document states a fact more than once are: the per-entry
 descriptions in the concern tree, which restate the declarations the entries point at; the
-hand-written interface table in §11, which restates signatures that §24.1 requires to be derivable;
+hand-written interface table in §11, which restates signatures that §3.1 and I3 require to be
+derived — which makes the table not merely counted duplication but a build error under I3, and it
+is left in place rather than deleted because §11's six-feature example is the clearest statement of
+what a capability is that the document contains;
 and the handful of formulations that recur across §4, §5 and §8, where one property is asserted once
 as a derivation and again later as a slogan. **A document that argued for zero duplication while
 containing several instances of it would be the failure it describes**, and naming the instances is
@@ -567,11 +572,12 @@ here and referred to elsewhere.
 **And the failure the instruments are weakest against is named first.** §40 holds what the counts do
 not see, and the honest statement is which of its modes the count can see at all: the ninth, whose
 residue is a second description, and the eighth, whose support matrix is a catalogue. Calling all
-nine invisible was false in both directions. **Both of those are visible to the count's *review*
-mode rather than its mechanical one, and §40 draws the distinction where it costs something:** the
-corpus failure is maintenance of meaning, and maintenance does not require a second statement, so a
-hand-tuned table that states each fact once has a count of zero and still needs a human per
-capability. The count and the corpus failure are different properties.
+nine invisible was false in both directions, and in the opposite direction §40 found the count
+cannot see the eighth at all. The ninth it can: a residue left by self-hosting is a second
+description, which is the counted object. The eighth it cannot, because the corpus failure is
+*maintenance* of meaning and maintenance does not require a second statement — a hand-tuned table
+that states each fact once has a count of zero and still needs a human per capability. The count
+and the corpus failure are different properties, and §40 gives the reason.
 
 **The failure mode is specific, and it is the one that actually happens.** A constraint with no
 teeth is abandoned under pressure, and the pressure is always a deadline. The fastest path to a
@@ -965,7 +971,6 @@ it there is not a violation.
     │
     └── Surfaces/                       projections; no behaviour of their own
         ├── Terminal/   terminal.df                 CLI and TUI
-        ├── SceneTree/   scenetree.df · sources/    the one primitive vocabulary, and its sources
         ├── Renderer/   renderer.df                 the compositor; no widget toolkit, no DOM
         │   ├── wgpu/    backend.df                 native window
         │   └── webgpu/  backend.df                 browser canvas
@@ -1579,7 +1584,11 @@ The rules that follow from that:
 
 The `docs` block in the combined configuration is the only DarkFactory documentation configuration contract.
 
-Generated documentation sites and JSON content graphs are CI outputs and must not be committed. The rules in §37 are the guidance an agent reads, and nothing projects themation currentness check.
+Generated documentation sites and JSON content graphs are CI outputs and must not be committed. The rules in §37 are the guidance an agent reads, and **nothing projects them**: they are canonical
+text, and a projection of them would be a second description of the rules, which §39 forbids and
+§7.1 names as the failure. What CI checks for currentness is a *different* artefact — the
+documentation projection of §30 — and the two must not be conflated, because a rule about one is
+not a rule about the other.
 
 ### 24.3 State
 
@@ -1775,7 +1784,10 @@ TypeDoc may be used internally as the TypeScript/TSDoc extractor.
 
 Documentation builds are deterministic, strict and zero-warning for required API surfaces.
 
-this document is the canonical product-documentation homepage. the root document is the canonical product document; there is no generated projection off canonical §37, with ADR links derived from §38. CI fails when the generated projection drifts from its canonical directory or when rule↔note relations are incomplete or contradictory.
+This document is the canonical product document and the canonical product-documentation
+homepage; the root document is this document rather than a copy of it. CI fails when a generated
+documentation projection drifts from the canonical source it was derived from, and when
+rule↔decision relations are incomplete or contradictory.
 
 ## 31 Renderer
 
@@ -2020,10 +2032,12 @@ public symbol.
 
 Documentation MUST be generated from canonical source and architecture records, and generated sites
 and content graphs are CI outputs that MUST NOT be committed. This document is the
-product-documentation homepage; the rules and decisions below are the canonical current note set;
-root `README.md` is a symlink to this document; §39 states that nothing is projected, and it
-projection. These discovery surfaces are never authorities and are never edited directly. CI MUST
-fail on deterministic projection drift and on missing or orphaned rule↔decision relations.
+product-documentation homepage; the rules and decisions below are the canonical current note set.
+§39 states that nothing is projected from them, and that is the whole point: a projection of the
+rules would be a second description of the rules. Discovery surfaces are never authorities and are
+never edited directly. CI MUST fail on deterministic drift in a generated documentation projection
+and on missing or orphaned rule↔decision relations — the former about documentation, the latter
+about this table, and neither about a projection of this table.
 
 A repository/tool discovery alias may point at a canonical document or generated projection only when
 it serves a current external or conventional entry point. Aliases remain links rather than copied
@@ -2333,9 +2347,11 @@ it cannot see the cost that causes it.**
 **The seams prove insufficient.** Binding stops providing enough construction material and the
 project retreats into implementing organs. *Test:* **for every organ the system owns except the
 interpreter, is there a seam it could have been a binding of?** The exception is load-bearing:
-§11.1 and §18 defend the interpreter as deliberately owned, and organs held for custody guarantees
-are owned for the same reason, so a version of this test without the exception would fail a system
-that obeyed the design. What remains is half mechanical and half a judgement — the organ list is
+§18 defends owning the systems layer and §4.1 states the interpreter is a seam rather than a
+parser, and organs held for custody guarantees are owned for the same kind of reason, so a version
+of this test without the exception would fail a system that obeyed the design. An earlier version
+of this sentence cited §11.1, which calls the interpreter a forge for declarations — that is a
+seam, and it is the reading the exception depends on not having. What remains is half mechanical and half a judgement — the organ list is
 countable, the classification of each entry is a counterfactual — and this is a review obligation
 wearing the clothes of a test, so it is labelled one.
 
@@ -2425,8 +2441,13 @@ ask. That is the limit of the instrument, and §1 raises it: a single descriptio
 to anything, so eliminating the second one eliminates the cross-check along with the drift. The
 mitigation is that the system knows what it can do, so a *declaration* that cannot be resolved is
 loud — which catches a wrong claim about capability, and catches nothing about a wrong comment.
-Three of the failures above are unchecked for the same underlying reason: they are properties of
-whether the system means what it says, and this design has one description to mean it with.
+The two review obligations above are unchecked in the sense §7.6 means — a reader could fail
+them, a machine cannot — and they are counted with the three that have no instrument at all. So
+**five of the nine have no automatic counter**, and the table at the top of this section is the
+honest accounting; an earlier version of this paragraph reported a second, overlapping set of three
+without saying the first set still stood, which made six failures sound like three. All of them
+turn on the same limit: they are properties of whether the system means what it says, and this
+design has one description to mean it with.
 
 ## 41 Non-goals
 
@@ -2473,13 +2494,6 @@ implementations of one interaction model and a parity contract to keep them hone
 changing is a renderer detail; a surface changing is a new place the system's meaning is read, and
 that is a bigger event than it looks. `Surfaces/Terminal` is therefore one surface with two
 presentations, not one surface and a half.
-**Not a renderer per surface.** A surface is a projection, and a projection is not the same thing as
-the technology it happens to be drawn with. The terminal aesthetic — a fixed grid, monospace cells,
-pane navigation, command-palette-first interaction — is a **layout mode**, not a second surface, and
-conflating them produces two implementations of one interaction model and a parity contract to keep
-them honest. A layout mode changing is a renderer detail; a surface changing is a new place the
-system's meaning is read. `Surfaces/Terminal` is one surface with two presentations.
-
 ## 42 Related work
 
 DarkFactory is not the first system to insist on a declarative description. This section is where
@@ -2565,7 +2579,8 @@ split across several.
   relocated out of the measurement by moving it. A doc comment that says *why* is not a duplicate; one that
   restates *what* is.
 
-**Recomputability** — whether a file's contents could be recomputed from the system. If they could, the file
+**Recomputability** — whether the system could produce a file again by its own means, without a
+human doing the work again. If it could, the file
   is a record and may be stored; if not, it is a description and may not. §6.5. This answers a different
   question from the count, and the two can disagree: a file can be a record and still repeat a fact it
   derived for a consumer that cannot read the system.
