@@ -2,34 +2,34 @@
 
 You are writing a **new** Czech academic text. You are not editing, patching or
 "improving" an existing text. Read `/Users/user/Projects/DarkFactory/PAPER.pdf`
-**only** for scope, register and intent — for what the thesis is trying to
-establish. Reproducing its sentences is a failure, not fidelity. Where the
-existing text is wrong (see §8), do not preserve it.
+**only** for scope and intent. Reproducing its sentences is a failure, not
+fidelity. Where the existing text is wrong (see §9), do not preserve it.
 
-**Output language: Czech.** Academic register, third person, past or present
-tense as the sentence requires. No contractions, no rhetorical questions, no
-"v této práci se budeme zamýšlet".
+**Output language: Czech.** Academic register, third person. No contractions, no
+rhetorical questions, no "v této práci se budeme zamýšlet".
 
 ## 1. What you produce
 
 Text only, for chapters 1 and 2 (theory). Nothing else.
 
 - **Do not** edit any file in the repository. No writes, no commits, no staging.
-- **Do not** write the practical part (ch. 3), results (ch. 4) or conclusion (ch. 5).
-  Those are a later pass. Ch. 1 must *set up* the practical part; it must not
-  describe it in detail.
-- Output one Markdown file per chapter, in order, with `#`/`##`/`###` matching
-  the heading levels required below.
+- **Do not** write the practical part (ch. 3), results (ch. 4) or conclusion
+  (ch. 5). Those are a later pass. Ch. 1 must *set up* the practical part; it
+  must not describe it in detail.
+- Output one Markdown file per chapter, with `#`/`##`/`###` matching the
+  headings required below.
 
-## 2. The argument you are writing towards
+## 2. This is a survey, and that is the method — not a retreat
 
-This is fixed. Do not renegotiate it; if something does not fit, flag it in your
-report instead of bending the argument.
+The thesis evaluates **what the field currently applies**, and derives what can
+be established objectively from that. The five principles are not presented as
+rules the field obeys. They are the working methods, named by the field itself
+and shown to work. The objectivity comes from the evidence, not from the
+taxonomy.
 
-**Thesis claim.** The load-bearing part of agentic software development is not
-the language model's capability but the design of the system the model runs
-inside. The system converts capability into reliable work — and cannot
-manufacture capability.
+This matters for how you write. A survey that only enumerates is a list. A survey
+that weighs evidence, names disagreement, and says which claims are measured and
+which are argued is a thesis. Hold the second standard.
 
 **Cíl (goal), use this wording:**
 
@@ -41,254 +41,346 @@ manufacture capability.
 
 **Výzkumná otázka (research question), use this wording:**
 
-> Lze získat **řízenou** autonomii ve vývoji softwaru kombinací cizích harnessů
-> tak, že struktura, která práci řídí, se při jejich výměně nemění — a **co
-> tímto oddělením získáme a co ztratíme**?
+> Které principy musí agentický systém splnit, aby vykonával inženýrskou práci?
 
-**Define "řízená" with three testable criteria** and say so explicitly, because
-the term is worthless without them:
+Not an open question, and do not write it as one. `Musí splnit` commits the thesis
+to necessity. A question shaped as "what makes such a system capable?" can be
+answered by listing the field's vocabulary, which is a survey without an
+argument. This one cannot: every principle named has to be argued, or the
+answer is a list.
 
-1. **Stav je mimo model a dohledatelný** — the run's state lives in the repository
-   and can be inspected without asking the model.
-2. **Brány jsou explicitní** — every transition has a named, reproducible check.
-   Keep three kinds of check **apart** and never blend them: a deterministic
-   check (CI, exit code), a model call (a review or plan that another model
-   makes), and a human decision (what enters production).
-3. **Člověk rozhoduje, co vstoupí do produkce** — merging is not the pipeline's call.
+## 3. The finding
 
-**Hypotéza (hypothesis), use this wording:**
+Three claims, in this order. Each is sourced; the sources are in §7.
 
-> Praktická autonomie je dosažitelná i bez vlastního harnessu, protože je
-> vlastností návrhu systému — trvalého stavu mimo model, explicitních bran a
-> oddělené kontroly výstupu. Její hranicí je však rozhodování, které autor
-> nevlastní: strukturu si navrhuje sám, ale úsudek o tom, co je hotovo a co dál,
-> přebírá od cizí smyčky. Právě to je jediná věc, kterou vlastní harness odstraní.
+**(a) The system layer is currently load-bearing.** Measured, not asserted:
+across 5194 execution trajectories there is substantial variation in completion,
+process quality, efficiency and failure behaviour across model–harness pairings,
+and the conclusion is that agent capability should be reported at the
+*model–harness configuration* level rather than attributed to the base model
+alone. `@yao2026harnessbench`
 
-## 3. The answer you must not overclaim
+**(b) What the harness does for performance can be learned by the model, and then
+the scaffold can be taken away.** This is measured twice, independently.
+Skills lifted a benchmark pass rate by 8.1 pp; after progressive distillation the
+model still reached a 27.7 % pass rate **without any external scaffold**, a
+retention rate of 85.2 %. `@ding2026scaffold` And the internalisation
+*generalises across scaffolds*: a model fine-tuned on planning-aware trajectories
+collected under a single scaffold gains consistently when deployed under
+scaffolds it never trained on. `@thangarajah2026dcas`
 
-**The answer is division of labour with a coupling — not "the system beats the
-model".** Three things are true at once, and the chapter must hold all three:
+**(c) The human gate is not an interim measure that better models will make
+obsolete.** Performance is always gated by what the model is given, and no model
+can be relied on to evaluate itself completely. The literature says this in the
+vendor's own voice: a stronger model *„does not remove the need for explicit
+mechanisms that govern what information is exposed, which actions are authorized,
+and how failures are traced"* `@gu2026harness` The evaluator in Claude Code's own
+goal loop *„does not call tools, so it can only judge what Claude has already
+surfaced in the conversation"* `@claude-goal` and self-evaluation is known to fail
+in a specific direction — agents *„respond by confidently praising the
+work"* `@anthropic-harness-design`
 
-1. Model capability sets the ceiling, and decides whether a scaffold is usable
-   at all. A weak model given a sophisticated scaffold still fails.
-2. System design determines how much of that ceiling is reached — **and can
-   degrade it**. Good scaffolding can make a model measurably worse.
-3. The system cannot close the gap on its own. Pure system-side fixes have been
-   measured and have done nothing.
+**So the finding, stated once:** what the system layer contributes to
+*performance* can be internalised into the model and the scaffold then removed;
+what it contributes to *governance and verification* cannot. That asymmetry is
+the thesis's own contribution, and it is what makes the human gate structural
+rather than decorative.
 
-There is a fourth actor, the human, and it is not decoration: specifying intent
-and judging output is a distinct kind of work from executing the loop.
+**Where the boundary sits.** The value of the scaffold is conditional on how far
+the task sits beyond what the model does unaided. HarnessX measures this
+directly: +14.5 % average across five benchmarks, *„with gains largest where
+baselines are lowest."* `@chen2026harnessx` Anthropic's own component ablation
+reached the same conclusion independently. `@anthropic-harness-design`
 
-**Where the boundary sits.** The value of the scaffold is *conditional on the
-task sitting beyond what the model does reliably on its own*. As models improve,
-that boundary moves outward and parts of the harness stop earning their cost.
-Write this as a finding, not as a slogan — see §7 for the vendor statements that
-support it, including ones that cut against the thesis.
+## 4. Do NOT claim these
 
-## 4. Chapter spine
+- **Not "the system beats the model."** The dichotomy is a category error; the
+  answer is a relation. The field's own position paper is careful about this and
+  you should be too: progress will depend *as much* on system design as on
+  stronger models, not instead of them.
+- **Not "we can make the agent do anything."** The literature raises this as an
+  objection and answers it: a stronger model *reduces* the frequency of some
+  failures, and *does not remove* the governance layer. Anything stronger is
+  refuted in one sentence. What you may say: anything we can design a harness
+  around can be performed by a model with well-placed human gates, and can then
+  be learned on.
+- **Not "the control structure is portable across harnesses."** Dropped. The
+  practical part does **not** show this, and claiming it would be wrong twice
+  over. What the practical part built is a harness *on top of* other harnesses,
+  using them as inference engines — see §5.
+- **Not absolute necessity.** Necessity is conditional on what the model
+  achieves unaided. Absolute necessity is refutable by a better model.
+
+## 5. The composition question — what the practical part is actually about
+
+This is the thesis's own angle, and it is worth developing. Nobody has published
+on it.
+
+The pipeline described in chapter 3 wraps vendor harnesses inside its own
+control layer — the runner, the gates and the stored state *are themselves a
+harness*, and the vendor CLIs are used as inference engines underneath it. So the
+model meets **two** sets of scaffold conventions at once.
+
+That is precisely the situation `@thangarajah2026dcas` measures, and it found:
+open trajectory datasets for fine-tuning are collected *"almost exclusively under
+OpenHands"*; models fine-tuned on them score well under that scaffold and
+*„degrade substantially when deployed under any non-training scaffold"*; and
+critically, *„Untrained base models do not show this divergence"* — the gap is
+induced by fine-tuning, not a property of the model. Planning separates into
+*explicit* (a plan as a first-class artefact) and *implicit* (structural
+conventions shaping execution through the loop), and a controlled intervention
+found plan-quality gains *„exceeding the cross-scaffold drops we observe."*
+
+So the open question the practice can speak to: **when a harness is composed on
+top of another harness, whose conventions is the model actually following, and
+what does the outer layer cost?** Chapter 1's Metodika should set this up as the
+question chapter 3 answers. Do not answer it in chapter 2.
+
+## 6. Chapter spine
 
 Chapter 1 — **Úvod**
 - Progression: editor completion → conversational chatbot → coding agent. One
   sentence on what changed: *who acts*. Do not open with adoption statistics.
-- **Cíl, výzkumná otázka a vymezení** (one subsection, as §2 above)
-- Terminology: keep it minimal. Define only what the argument needs at the point
-  of use. Do not build a glossary.
-- Scope: this thesis describes one specific revision of one deliberately minimal
-  pipeline in which the agent loop is executed by a foreign tool. A later thesis
-  covers the author's own harness.
+- **Cíl, výzkumná otázka a vymezení**
+- **Metodika** — see below. An epistemic section, not a description of the
+  implementation.
+- Terminology: minimal. Define only what the argument needs at the point of use.
+  Do not build a glossary.
+- Scope: one specific revision of one deliberately minimal pipeline. A later
+  thesis covers the author's own harness.
+
+### The Metodika subsection
+
+Establishes that the thesis describes the field as it is, not the author's private
+model. Three lines of evidence, all citation-based:
+
+**1. The source rule.** A principle counts as belonging to the field only if it is
+named in a **primary source from a laboratory or vendor that builds the product**.
+Not a blog about it, not commentary, not a summary. State why: a secondary summary
+can be too late (this work has already been burned by a 1970 text cited to
+establish a 1968 origin) or unreadable (an article cited that nobody can open).
+
+**2. Independent convergence.** The five principles count because independent labs
+arrived at them separately, without citing each other. That is what separates a
+working method from one vendor's product decision. Show it three ways:
+- *Independent naming.* Anthropic on context, harness and the goal loop; OpenAI on
+  prompt engineering and agent orchestration; Google's own CLI shipping skills,
+  MCP, hooks and subagents.
+- *Independent shipping in a short window.* Claude Code and Codex both ship
+  `/goal`; both ship subagent and handoff primitives, neither citing the other's
+  design. Anthropic credits the Ralph Wiggum method as community convergence.
+- *Institutional standardisation.* `AGENTS.md` is stewarded by the Agentic AI
+  Foundation under the Linux Foundation, with OpenAI Codex, Amp, Jules, Cursor and
+  Factory participating. `@agents-md`
+
+**3. What the practical part establishes, and what it does not.** Say it plainly
+and early — it is the question you will otherwise be asked, and volunteering it
+is stronger than conceding it. The practice instantiates the principles in one
+deliberately minimal pipeline and instantiates a *composed* harness (§5). It is
+**not** an ablation study and does not prove necessity. Also state the three
+criteria used to judge whether the pipeline is *řízená*.
+
+Do not describe the implementation here. The practical part does that, and the
+guide requires the methodological part to be separate from the practical one.
 
 Chapter 2 — **Teorie**
 - **2.1 Softwareová továrna** — FIRST, as lineage. Ground the term: 1968, not a
-  2026 marketing word. The conference report quotes Bemer's working paper on
-  its own page 94; the coinage claim rests on his biography, not on the report.
-  Then the part that carries the argument: the people who invented the term
-  worried that automation would remove judgement. McIlroy: *„It would be
-  immoral for programmers to automate everybody but themselves."* Bemer himself,
-  nine years later: *„One does not build a successful factory with just tools
-  and environment. The workers must be trained, and the assembly methodology …
-  must be in place."*
+  2026 marketing word. The conference report quotes Bemer's working paper on its
+  own page 94; the coinage claim rests on his biography, not on the report. Then
+  the part that carries the argument: the people who invented the term worried
+  that automation would remove judgement. McIlroy: *„It would be immoral for
+  programmers to automate everybody but themselves."* Bemer, nine years later:
+  *„One does not build a successful factory with just tools and environment. The
+  workers must be trained, and the assembly methodology … must be in place."*
 - **2.2 Model a harness** — what the model supplies, what the harness supplies,
-  and why the boundary is a question of responsibility rather than of
-  implementation. Then context window, context rot, compaction. Note that
-  compaction alone is not sufficient: Anthropic distinguishes compaction
-  (summarise in place, continuity preserved) from a context reset (clean slate,
-  requires a handoff artefact), and reports that compaction alone did not
-  suffice for long-task performance. Then the agentic loop.
-- **2.3 Agentické inženýrství** — the five areas, each developed, none a bare
-  list item: **Prompt, Context, Loop, Workflow/Graph, Harness engineering.**
-  This is the chapter the thesis is actually about; give it the most space.
-  Within it: goal loop, orchestration, and the human gate.
+  why the boundary is a question of responsibility rather than implementation.
+  Then context window, context rot, compaction. Note that compaction alone is not
+  sufficient: Anthropic distinguishes compaction from a context reset and reports
+  compaction alone did not suffice for long-task performance. Then the agentic loop.
+- **2.3 Agentické inženýrství** — the five principles, each developed, none a bare
+  list item: **Prompt, Context, Loop, Workflow/Graph, Harness.** Give each the
+  evidence that it is load-bearing. Within it: goal loop, orchestration, human gate.
 - **2.4 Co posunuli agenti** — the shift from automating predetermined steps to
   automating judgement, and what that does and does not remove.
 
-## 5. Length — this is a hard constraint
-
-Minimum for the whole thesis is 18,000 characters. Current total body is 33,285.
-**Do not grow it.** The existing chapter 2 is 12,984 characters; yours must be
-at or below that, and shorter is better.
-
-Rule: **write only what is necessary, while capturing everything we want to
-say.** Concretely — one governing claim per subsection, stated once; delete any
-sentence that only restates the heading; no throat-clearing; no paragraph that
-exists to reach the next one. If you feel you need a sixth paragraph, you
-probably need a better first one.
-
-Report the character count per chapter when you finish.
-
-## 6. Style
-
-Model it on how the field writes when it writes well — Geoffrey Huntley's Ralph
-post, Thomas Wiegold's explainer, the Claude Code and Codex documentation. Take
-the **techniques**, never the sentences.
-
-- Open a subsection with the concrete artefact or the claim, never with a
-  restatement of the heading.
-- One governing claim per subsection, early, as a single declarative sentence.
-- Prefer the source's actual wording over your paraphrase of it. Direct quotation
-  is the goal, not the exception.
-- Name the failure mode in the same subsection that makes the claim, not only in
-  a limitations section.
-- Concede the counter-evidence in the same breath as the claim.
-- Attribute every number to whoever measured it, and say when it is a
-  self-report. Never write a vendor's benchmark as a fact.
-- Tables for choices; prose for arguments.
-- Short declaratives. First person only where a judgement is genuinely being made.
+**Taxonomy warning.** Two different lists are in play and you must not merge
+them. Gu decomposes a harness into *components*: memory substrate, context
+constructor, skill-routing layer, orchestration loop, verification-and-governance
+layer. HarnessX defines the harness as *„the prompts, tools, memory, and control
+flow"*. The field's five are *discipline names* — how practitioners name the work.
+Different levels of description. Say so if you use more than one.
 
 ## 7. Source discipline
 
 **Read the sources. Do not work from memory of them.**
 
-- **Primary before secondary.** If a primary source exists, cite it. Bemer:
-  cite the conference report, not a blog about it. Wiegold is *secondary* to
-  Huntley and says so himself.
+- **Primary before secondary.** Cite the conference report, not a blog about it.
+  Wiegold is *secondary* to Huntley and says so himself.
 - **Every substantive claim needs a citation.** Use the existing `@key` names
-  from `paper/components/bib/references.bib`. If you need a source that is not
-  there, say so in your report — do not invent a key.
+  from `paper/components/bib/references.bib`. If you need a source not there, say
+  so in your report — do not invent a key.
 - **Never cite a source you have not read.** The bibliography already lost two
-  entries this way: an article behind a paywall, and a 1970 text that was two
-  years too late to establish a 1968 origin. That error is already made once.
-  Do not repeat it.
-- **Numeric citation order** is by first appearance in the text (ISO 690
-  numeric, style confirmed with the supervisor). `@key` handles that for you.
+  entries this way: a paywalled article, and a 1970 text two years too late to
+  establish a 1968 origin. Do not repeat it.
+- **Say what kind of paper each source is.** `@gu2026harness` is a position paper
+  with a reference implementation — citable for vocabulary and framing, **not**
+  for measured claims. `@yao2026harnessbench`, `@ding2026scaffold`,
+  `@chen2026harnessx` and `@thangarajah2026dcas` are measurement papers. A
+  reviewer will ask; answer before being asked.
+- **All five are 2026 arXiv preprints.** None of them is confirmed peer-reviewed.
+  `@thangarajah2026dcas` has an ASE '26 footer in its PDF but the arXiv record
+  lists no venue, so do **not** call it peer-reviewed. If a preprint is central to
+  an argument, say that it is a preprint.
+- **Numeric citation order** is by first appearance. `@key` handles that.
 
-**Produce a quotation ledger** at the end of your output. For every direct
-quotation: the exact words as they appear in the source, the `@key`, and where
-in the source it is (section, page). This is how your work will be checked, and
-an unverifiable quotation is worse than a paraphrase.
+**Produce a quotation ledger** at the end: for every direct quotation, the exact
+words, the `@key`, and where in the source it is. An unverifiable quotation is
+worse than a paraphrase.
 
-### Verified material you may use
+### Verified material — wording exact, read first-hand
 
-These I have read in full. Wording is exact; you may quote them directly.
+**On the system layer being load-bearing.** `@yao2026harnessbench` defines the
+harness as *„the system layer that manages context, tools, state, constraints,
+permissions, tracing, and recovery"*, and concludes that *„agent capability
+should be reported at the model-harness configuration level rather than
+attributed to the base model alone."* It also names a recurring failure mode:
+*„execution-alignment failures, where plausible reasoning becomes decoupled from
+tool feedback, workspace state, evidence, or verifiable output contracts."* That
+is a gift for chapter 2.2 — reasoning that looks fine and has drifted from
+reality is precisely the failure a deterministic gate catches.
 
-**The disconfirming one — you must engage with this, not route around it.**
-OpenAI, on codex-1: *„On coding evaluations and internal benchmarks, codex-1
-shows strong performance even without AGENTS.md files or custom scaffolding."*
-The sentence before it: *„Like human developers, Codex agents perform best when
-provided with configured dev environments, reliable testing setups, and clear
-documentation."* `@openai-codex-2025` — note this launch post now carries a
-banner saying it is outdated, which is itself worth one clause.
+**On the taxonomy.** `@gu2026harness`: *„Together, these components form the
+agent harness, which translates model capability into long-horizon agent
+behavior."* Also: evaluation is *„largely model-centric, often reducing agents to
+final-task success while treating memory, retrieval, tool use, orchestration,
+verification, and governance as secondary implementation details"*. Note the
+threshold condition: *„once models reach a sufficient capability threshold, many
+additional gains in long-horizon agent performance increasingly depend on how the
+system around the model is designed."*
 
-**The vendor confirming the thesis's own design.** Anthropic: *„When asked to
-evaluate work they've produced, agents tend to respond by confidently praising
-the work—even when, to a human observer, the quality is obviously mediocre."*
-And: *„Separating the agent doing the work from the agent judging it proves to
-be a strong lever to address this issue. The separation doesn't immediately
-eliminate that leniency on its own; the evaluator is still an LLM that is
-inclined to be generous towards LLM-generated outputs. But tuning a standalone
-evaluator to be skeptical turns out to be far more tractable than making a
-generator critical of its own work."* `@anthropic-harness-design`
+**On the boundary, measured.** `@chen2026harnessx`: *„the runtime harness,
+comprising the prompts, tools, memory, and control flow"*; *+14.5% average across
+five benchmarks, „with gains largest where baselines are lowest"*; and the
+diagnosis of the status quo — *„today's harnesses remain largely hand-crafted and
+static … the rich traces produced during execution are rarely distilled back into
+systematic improvement."*
 
-**The boundary — the most important passage in the whole file.** Same source:
-*„every component in a harness encodes an assumption about what the model can't
-do on its own, and those assumptions are worth stress testing, both because they
-may be incorrect, and because they can quickly go stale as models improve."*
-And: *„The practical implication is that the evaluator is not a fixed yes-or-no
+**On internalisation, measured.** `@ding2026scaffold`: *„Post-training of large
+language models optimizes only parameters, while inference-time procedural
+scaffolds are typically designed independently of parameter training. This
+disconnect makes it difficult to automatically acquire and internalize complex
+strategies."* Result: skills +8.1 pp; *„after progressive distillation the model
+still achieves a 27.7% passed rate without any external scaffold (distillation
+retention rate 85.2%)."* The mechanism has a name: co-evolution *„through
+discovery, distillation, and dynamic recompilation"*.
+
+**On portability, and the counter-result.** `@thangarajah2026dcas`: fine-tuning
+data is *„collected almost exclusively under OpenHands"*; models *„degrade
+substantially when deployed under any non-training scaffold"*; and the decisive
+control — *„Untrained base models do not show this divergence, indicating the gap
+is fine-tuning-induced and tied to the conventions of the training scaffold."*
+Planning splits into *„explicit planning, a pre-execution plan produced as a
+first-class artifact"* and *„implicit planning, the structural conventions that
+shape execution throughout the agent loop."* Their scaffold definition is usable:
+*„the harness that turns a language model into an autonomous coding agent: it
+manages the agent loop, exposes a set of tools to the model, structures multi-turn
+conversations, and decides when the agent has finished."* Also a small
+measurement worth quoting: *mini-swe-agent* reaches *„above 74% Pass@1 with a
+strong frontier model despite its minimal harness, illustrating that as model
+capability grows, scaffold complexity matters less."*
+
+**On the human gate, from the vendors.** `@anthropic-harness-design`: *„When asked
+to evaluate work they've produced, agents tend to respond by confidently praising
+the work—even when, to a human observer, the quality is obviously mediocre."* And
+the necessary-but-insufficient version: *„Separating the agent doing the work from
+the agent judging it proves to be a strong lever … The separation doesn't
+immediately eliminate that leniency on its own; the evaluator is still an LLM that
+is inclined to be generous towards LLM-generated outputs."* And the boundary:
+*„The practical implication is that the evaluator is not a fixed yes-or-no
 decision. It is worth the cost when the task sits beyond what the current model
-does reliably solo."* — followed by the observation that on a newer model the
-evaluator *„became unnecessary overhead"*, and the conclusion that *„the space of
-interesting harness combinations doesn't shrink as models improve. Instead, it
-moves."*
+does reliably solo."* Honest cost, same source: solo 20 min / $9 versus full harness
+6 hr / $200, *„over 20x more expensive, but the difference in output quality was
+immediately apparent"*; the simplified harness 3 hr 50 / $124.70. First-party
+admission: *„Out of the box, Claude is a poor QA agent. In early runs, I watched
+it identify legitimate issues, then talk itself into deciding they weren't a big
+deal and approve the work anyway."*
 
-**Honest cost.** Same source: solo run 20 min / \$9 versus full harness 6 hr /
-\$200 — *„over 20x more expensive, but the difference in output quality was
-immediately apparent"*; the simplified harness 3 hr 50 min / \$124.70. Also
-first-party: *„Out of the box, Claude is a poor QA agent. In early runs, I
-watched it identify legitimate issues, then talk itself into deciding they
-weren't a big deal and approve the work anyway."*
+`@claude-goal`: *„`/goal` adds a separate evaluator that checks your condition
+after every turn, so completion is decided by a fresh model rather than the one
+doing the work."* Three verdicts — not yet met / met / **impossible** — so a model
+can terminate a run negatively. A Stop hook *„can run a script for deterministic
+checks or a prompt for model-evaluated ones"*: Anthropic making the
+three-kinds-of-check distinction in one sentence.
 
-**Negotiated acceptance.** Same source: before each sprint the generator and
-evaluator *„negotiated a sprint contract: agreeing on what 'done' looked like
-for that chunk of work before any code was written"* — and the two iterated
-until they agreed. That is a plan file with a human in the loop, in 1968's
-vocabulary.
+`@openai-goals`: *„completion must be evidence-based"*; *„the evidence decides
+whether it's done"*; *„Reaching a budget limit is not the same as completing the
+objective."* And the human gate as architecture: *„Pausing, resuming, clearing,
+and budget-limited transitions remain controlled by the user or the system."*
+The six-part goal vocabulary — outcome, verification surface, constraints,
+boundaries, iteration policy, blocked stop condition — is sharper than anything
+the thesis currently has for planning.
 
-**The goal loop, and that it is now a shipped feature.** Claude Code: *„`/goal`
-adds a separate evaluator that checks your condition after every turn, so
-completion is decided by a fresh model rather than the one doing the work."*
-Codex: *„completion must be evidence-based"* and *„the evidence decides whether
-it's done."* `@claude-goal` `@openai-goals` The pattern's origin is Huntley's
-Ralph loop, July 2025, not ReAct. `@huntley2025ralph`
+`@openai-codex-2025`: *„It still remains essential for users to manually review
+and validate all agent-generated code before integration and execution."* And the
+one that cuts against everything: *„On coding evaluations and internal benchmarks,
+codex-1 shows strong performance even without AGENTS.md files or custom
+scaffolding."* Engage with it — it removes one artefact, not the control layer.
+Note the page now carries a banner saying the post is outdated, which is worth
+one clause.
 
-**The strongest limitation available, and it is the vendor's own.** Claude Code
-docs: the evaluator *„does not call tools, so it can only judge what Claude has
-already surfaced in the conversation."* So a goal loop is **not** a substitute
-for a deterministic gate — it grades what the worker chose to show it. Use this.
-Also from the same page: the Stop hook *„can run a script for deterministic
-checks or a prompt for model-evaluated ones"* — Anthropic making your
-three-kinds-of-check distinction in one sentence. And three verdicts — not yet
-met / met / **impossible** — meaning a model can terminate a run negatively.
+**On context.** `@anthropic-context-engineering`: *„LLMs have an 'attention
+budget' that they draw on when parsing large volumes of context. Every new token
+introduced depletes this budget by some amount"*; *„good context engineering means
+finding the smallest possible set of high-signal tokens that maximize the
+likelihood of some desired outcome."* On tools: *„If a human engineer can't
+definitively say which tool should be used in a given situation, an AI agent can't
+be expected to do better."* For the mechanism — the U-shaped degradation, the
+closed-book baseline, and that self-attention is *„technically equally capable of
+retrieving any token from their contexts"* — use `@liu2024`.
 
-**The human gate as architecture.** Codex: *„Pausing, resuming, clearing, and
-budget-limited transitions remain controlled by the user or the system."* And:
-*„Reaching a budget limit is not the same as completing the objective."*
-OpenAI, on the launch post: *„It still remains essential for users to manually
-review and validate all agent-generated code before integration and
-execution."*
+**On the goal loop's origin.** Huntley's Ralph loop, July 2025, not ReAct.
+`@huntley2025ralph` `@wiegold2026ralph` `@claude-goal` `@openai-goals`
 
-**Context.** Anthropic: *„LLMs have an 'attention budget' that they draw on when
-parsing large volumes of context. Every new token introduced depletes this
-budget by some amount"*; *„good context engineering means finding the smallest
-possible set of high-signal tokens that maximize the likelihood of some desired
-outcome."* On tools: *„If a human engineer can't definitively say which tool
-should be used in a given situation, an AI agent can't be expected to do
-better."* `@anthropic-context-engineering` For the mechanism — the U-shaped
-degradation, the closed-book baseline, and that self-attention is *„technically
-equally capable of retrieving any token from their contexts"* — use `@liu2024`.
+## 8. Length — hard constraint
 
-**The vocabulary for a plan, if you need it sharper than the thesis currently
-has.** Codex goals specify six things: outcome, verification surface,
-constraints, boundaries, iteration policy, blocked stop condition.
-`@openai-goals`
+Minimum for the whole thesis is 18,000 characters. Current body is 33,285.
+**Do not grow it.** Chapter 2 is currently 12,984 characters; yours must be at or
+below that, and shorter is better.
 
-## 8. Known traps in the existing text — do not reproduce
+Rule: **write only what is necessary, while capturing everything we want to say.**
+One governing claim per subsection, stated once. Delete any sentence that only
+restates the heading. No throat-clearing. If you think you need a sixth paragraph,
+you probably need a better first one. Report character counts per chapter.
 
-- The **goal loop was cited to ReAct**. ReAct is about interleaving reasoning
-  and acting; it says nothing about an outer loop with acceptance criteria.
-  `yao2022` belongs in §2.2 on the agentic loop, not here.
-- **Vaswani 2017 contains no agent, harness, tool or orchestration content.** The
+## 9. Known traps in the existing text — do not reproduce
+
+- **The goal loop was cited to ReAct.** ReAct is about interleaving reasoning and
+  acting; it says nothing about an outer loop with acceptance criteria.
+  `yao2022` belongs in §2.2, not here.
+- **The control structure was described as portable across harnesses.** It is not
+  what was shown. See §5.
+- **Vaswani 2017 contains no agent, harness, tool or orchestration content** — the
   words do not appear. Using it for an agent-systems claim is a category error.
-  Same for the 2013 Mikolov word-embedding paper: it is off-topic, and it
-  actually argues the other way.
-- `@gradually-ai-usage-2026` is an AI-marketing blog. Its adoption numbers are
-  the author's own editorial range and the source itself says so. You may keep
-  the figure, but the numbers must never carry an argument, and the text must
-  say they are an estimate.
-- `@guild2026`, `@bcg2026`, `@factory2026` are vendor marketing. Guild's
-  percentages are self-measured. Use them for definition and architecture, never
-  as evidence of an industry trend.
+  Same for the 2013 Mikolov word-embedding paper: off-topic, and it argues the
+  other way.
+- **`@gradually-ai-usage-2026` is an AI-marketing blog** whose adoption numbers
+  are the author's own editorial range. Keep the figure if you like it; the
+  numbers must never carry an argument and the text must say they are an estimate.
+- **`@guild2026`, `@bcg2026`, `@factory2026` are vendor marketing.** Guild's
+  percentages are self-measured. Definition and architecture only, never evidence
+  of an industry trend.
 - **The bibliography template silently drops `note` fields.** Provenance
-  qualifications must live in the prose, not in a bib note, or they will not
-  print.
-- Never write a claim that no source in the bibliography supports. The old text
-  asserted that a factory "automates execution, not decision" — Cusumano never
-  said that, and he could not be read. It is now sourced from the conference
-  debate instead.
+  qualifications must live in the prose, or they will not print. This matters
+  especially for the five preprints.
+- Never write a claim no source supports. The old text asserted a factory
+  "automates execution, not decision" — Cusumano never said that and he could not
+  be read. It is now sourced from the conference debate.
 
-## 9. Report back
+## 10. Report back
 
 - The two chapter files.
 - Character count per chapter.
 - The quotation ledger.
 - Anything you could not source, stated plainly.
-- Anything you think is wrong in §2 or §3 of this brief. If the argument does not
-  hold, say so — do not write around it.
+- Anything you think is wrong in §2, §3 or §5 of this brief. If the argument does
+  not hold, say so — do not write around it.
