@@ -56,7 +56,6 @@ RUN bun install --frozen-lockfile --cwd /opt/darkfactory/packages/harness
 # only a login shell reads would leave every agent call without a runtime to dispatch to.
 ENV DF_SOURCE=/opt/darkfactory/packages/harness/src/cli.ts
 RUN cp /opt/darkfactory/packages/harness/scripts/df-wrapper.sh /usr/local/bin/df \
-
     && chmod +x /usr/local/bin/df \
     && df providers >/dev/null
 

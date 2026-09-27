@@ -105,7 +105,18 @@ def test_agent_image_installs_from_the_checked_in_harness_lock():
     assert "COPY packages/ /opt/darkfactory/packages/" in dockerfile
     assert "COPY capabilities/ /opt/darkfactory/capabilities/" in dockerfile
     assert "bun install --frozen-lockfile --cwd /opt/darkfactory/packages/harness" in dockerfile
-    assert "exec bun /opt/darkfactory/packages/harness/src/cli.ts" in dockerfile
+    # The image installs the repository wrapper as `df` and points DF_SOURCE at the relocated
+    # entrypoint. A `printf`-generated shim that inlines `exec bun ...` was the previous contract;
+    # it re-implemented the PATH contract in a second place and assumed bun was on PATH whenever df
+    # was called, so this asserts the wrapper instead. DF_SOURCE has to name packages/harness, or
+    # the relocated entrypoint is bypassed.
+    assert (
+        "cp /opt/darkfactory/packages/harness/scripts/df-wrapper.sh /usr/local/bin/df" in dockerfile
+    )
+    assert "ENV DF_SOURCE=/opt/darkfactory/packages/harness/src/cli.ts" in dockerfile
+    assert "exec bun /opt/darkfactory/packages/harness/src/cli.ts" not in dockerfile, (
+        "the printf shim is back; the wrapper is meant to be the single owner of the df contract"
+    )
     assert "COPY pyproject.toml requirements-dev.txt" in dockerfile
     assert "pip install --no-cache-dir -r requirements-dev.txt" in dockerfile
 
