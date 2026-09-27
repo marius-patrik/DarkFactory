@@ -170,18 +170,27 @@ jobs:
         # Checked out with the App's token, so the branches the agent pushes are pushed by the App
         # and the checks on them run. A push made with GITHUB_TOKEN triggers no workflow at all,
         # which is why a person's token was reached for here in the first place.
+        #
+        # `fetch-depth: 0` is required, not a preference. The runner diffs the branch against its
+        # base to decide what is out of plan scope, and the default shallow checkout contains one
+        # commit and no other refs, so every `origin/<base>` it tried was unresolvable. The diff
+        # then returned nothing and the scope gate passed on an empty file list.
         if: steps.delegate.outputs.delegated != 'true'
         uses: actions/checkout@v4
         with:
           repository: ${{ steps.target-env.outputs.repo }}
           token: ${{ steps.app-token.outputs.token || secrets.GH_PROJECT_TOKEN || secrets.GITHUB_TOKEN }}
+          fetch-depth: 0
 
       - name: Check out the pinned pipeline
         if: steps.delegate.outputs.delegated != 'true' && (inputs.pipeline-ref != '' || steps.target-env.outputs.is_external == 'true')
         uses: actions/checkout@v4
         with:
           repository: ${{ inputs.pipeline-repo || 'marius-patrik/DarkFactory' }}
-          ref: ${{ inputs.pipeline-ref || 'darkfactory' }}
+          # `main` is the pipeline repository's default branch. The previous `darkfactory` default
+          # names a branch that no longer exists, so this checkout failed and the agent container
+          # was never built for an external run.
+          ref: ${{ inputs.pipeline-ref || 'main' }}
           path: .darkfactory-pipeline
 
       - name: Build agent container

@@ -1,8 +1,11 @@
 name: Verify Bound Issue
 
 on:
+  # No `branches` filter: it matches the pull request's *base* ref, and `verify-bound-issue` is a
+  # required status context, so scoping it to `develop` left a stacked pull request reporting no run
+  # of a required check at all. `edited` is already here because a base-only change invalidates the
+  # previous base's results and emits no `synchronize`.
   pull_request:
-    branches: [develop]
     types: [opened, edited, synchronize, reopened]
   workflow_dispatch:
 
