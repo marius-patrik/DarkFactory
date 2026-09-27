@@ -23,9 +23,7 @@ odlišuje.
 
 #figure(
   image("/components/img/gradually-ai-usage-2026.svg", width: 100%),
-  caption: [Odhad rozdělení uživatelů generativní AI podle typu @gradually-ai-usage-2026.
-  Kategorie se nepřekrývají a člověk je zařazen podle nejpokročilejší z nich, kterou používá;
-  údaj o coding agentech je redakční deduplikovaný odhad (25--35~mil.).]
+  caption: [Odhad rozdělení uživatelů generativní AI podle typu @gradually-ai-usage-2026.]
 ) <fig-gradually-usage>
 
 Aby takový agent mohl na projektu pracovat, nestačí generovat odpovědi. Potřebuje kontext

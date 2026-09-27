@@ -1,7 +1,7 @@
 // 2.1 The language model in an agentic system.
 #heading(level: 2)[Jazykový model v agentním systému] <theory-first>
 
-Současný jazykový model stojí na jedné architektuře. V roce 2017 představil Google v příspěvku #emph[Attention Is All You Need] novou neuronovou architekturu #strong[Transformer], která místo zpracovávání tokenů jeden po druhém přiřazuje význam každému tokenu současně se všemi ostatními. Mechanismus, který to umožňuje, se nazývá #strong[attention] @vaswani2017 a je dodnes používaný i v pozdějších generacích modelů @brown2020. Právě tato schopnost zpracovat celý kontext najednou je to, co umožňuje dnešní požadavky na délku a složitost konverzace.
+Současný jazykový model stojí na architektuře #strong[Transformer], kterou představil Google v roce 2017 v jejich nyní proslulé práci „Attention Is All You Need“. Místo zpracovávání tokenů jeden po druhém přiřazuje architektura význam každému tokenu současně se všemi ostatními. Mechanismus, na kterém je architektura postavená, se nazývá #strong[attention] @vaswani2017 a je dodnes používaný i v pozdějších generacích modelů @brown2020. Díky tomu model zpracovává celý kontext najednou, což odpovídá dnešním požadavkům na délku a složitost konverzace.
 
 Na této architektuře je založen i jazykový model (#strong[LLM]), který předpovídá další token na základě toho, co je před ním obsaženo v #strong[kontextu]. Při #strong[inferenci] model zpracuje obsah kontextového okna a vytvoří posloupnost výstupních tokenů.
 

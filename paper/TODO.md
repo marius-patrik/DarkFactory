@@ -4,7 +4,7 @@ Práce *Vzrůst Agentického AI: úvod do agentického inženýrství a implemen
 software factory* (DarkFactory). Zbývající body, o kterých je známo, že nejsou
 vyřešené. Nové položky přidat na konec příslušné sekce.
 
-Stav zkontrolován po commitu `9b5dee4a`, 41 stran, sazba bez varování.
+Stav zkontrolován po commitu `1c2233bf`, 43 stran, sazba bez varování.
 
 **Celkem otevřeno: 6 položek** — pět je práce pro autora nebo kontrolu rodným mluvčím
 (B1–B4, H1) a jedna (E2, umístění metodiky) je otevřená jen formálně: viz A5, kde je
@@ -51,6 +51,8 @@ každý vlastním commitem.
 | B12 | **Planá vada, po zpětném šetření vyvrácena.** Str. 16 má jen 29 znaků, což původně vypadalo jako prázdná strana. Ve skutečnosti je to záměrný titulní list oddílu „PRAKTICKÁ ČÁST / DarkFactory", který má textu málo z podstaty. Žádná vada, nic neopravovat. | — | ✅ |
 | B13 | **Rozhodnutí vedoucího, tři výrazy v přehledu zdrojů odstraněny.** V §1.2 zmizelo počítání „čtyři měřicí a jedna poziční“, celý odstavec o nepublikovaných předběžných výtiscích a vlastních výsledcích dodavatelů i odstavec o párování s primárním zdrojem; zůstaly jen popisy jednotlivých prací. |
 | B14 | **Přejmenováno na žádost.** §2.3.1 `Zadání a kontext` → `Zadání a plán (Prompt & Plan)`; §2.3.3 `Orchestrace a lidská integrace` → `Orchestrace a lidská integrace (Orchestration & HITL)`. |
+| B16 | **Rozestup odstavců nebyl skutečně nastaven.** `spacing: 12pt` v `styles/body.typ` vychází z nulové hodnoty: Typst měří `spacing` jako cílovou vzdálenost celého odstupového rozestupu, ne jako přírůstek k `leading`, a vůči použitému `leading` 19,6 pt se 12 pt zrušilo na 0,3 pt, tedy na žádný odstup. Změřeno v PDF: 24 pt dává skutečných 12,3 pt. Hodnota nastavena na 24 pt, důvod zapsán v `body.typ`, aby ji nikdo nezkrátil zpět. |
+| B17 | **Legenda grafu AI na jeden řádek.** Čtyři položky s barevnými značkami na jedné basální čáře, 9,5 pt; původně dvě řádky na položku ve dvou velikostech. Popisky zkráceny na `Nikdy nepoužili`, `Chatboty`, `Předplatné`, `Coding agenti`, protože na jeden řádek se s celými čísly vešly až při nečitelné velikosti. |
 | B15 | **Kritérium strán změněno.** Vedoucí rozhodl, že rozhoduje délka textu ve slovech a znacích a čitelnost, nikoli počet stran; rozestup 12 pt zůstává. |
 | B9 | Konec přímé citace byl ASCII `"`, který Typst vykreslil jako nízkou uvozovku; česká sazba vyžaduje vysokou. | `pages/24-theory-factory.typ`, `pages/33-practical-planning.typ` | ✅ |
 
