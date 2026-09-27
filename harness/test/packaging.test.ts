@@ -17,7 +17,7 @@ describe("standalone packaging", () => {
 
 	test("compiles the worker under the exact path used by pi at runtime", async () => {
 		expect(await readFile(new URL("../scripts/build.ts", import.meta.url), "utf8")).toContain(
-			"./src/utils/image-resize-worker.ts",
+			"./src/image-resize-worker.ts",
 		);
 	});
 });

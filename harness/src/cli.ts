@@ -1034,7 +1034,7 @@ async function packagingSmoke(): Promise<void> {
 	if ((typeof loaded !== "object" || loaded === null) && typeof loaded !== "function")
 		throw new Error("Packaged pi-tui native module did not load");
 
-	const worker = new Worker("./src/utils/image-resize-worker.ts");
+	const worker = new Worker("./src/image-resize-worker.ts");
 	try {
 		const png = Uint8Array.from(
 			Buffer.from(
