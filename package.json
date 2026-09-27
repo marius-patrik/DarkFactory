@@ -14,6 +14,8 @@
     "typecheck": "bun run --cwd harness typecheck",
     "check": "bun run --cwd harness check",
     "docs": "bun scripts/build-docs.ts",
+    "release:version": "bun scripts/versioning.ts",
+    "release:targets": "bun harness/scripts/release-targets.ts",
     "format:check": "biome format ."
   },
   "devDependencies": {
