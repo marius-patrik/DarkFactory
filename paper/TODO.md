@@ -4,7 +4,7 @@ Práce *Vzrůst Agentického AI: úvod do agentického inženýrství a implemen
 software factory* (DarkFactory). Zbývající body, o kterých je známo, že nejsou
 vyřešené. Nové položky přidat na konec příslušné sekce.
 
-Stav zkontrolován po commitu `4a378768`, 38 stran, sazba bez varování.
+Stav zkontrolován po commitu `9b5dee4a`, 41 stran, sazba bez varování.
 
 **Celkem otevřeno: 6 položek** — pět je práce pro autora nebo kontrolu rodným mluvčím
 (B1–B4, H1) a jedna (E2, umístění metodiky) je otevřená jen formálně: viz A5, kde je
@@ -49,6 +49,9 @@ každý vlastním commitem.
 | B10 | **Nepodložené tvrzení.** §2.4 tvrdila, že továrna „automatizuje provádění, nikoli rozhodování". Cusumano toto neuvádí; tvrzení nyní opřeno o skutečný záznam této diskuse ze zprávy konference (str. 95: Fraser, Ross, McIlroy) a o Bemera z roku 1977, podle něhož továrna potřebuje vycvičené lidi a metodiku, nejen nástroje. | `pages/24-theory-factory.typ` | ✅ |
 | B11 | **Nedohledatelné zdroje vyřazeny.** Zmizel `@cusumano1991factory` (platno jen přes předplatné, pracovní verze na MIT DSpace vrací 405) a `@bemer-software-factory` (překlep v roce 1970, tedy příliš pozdější pro zavedení pojmu). Ani Bemůr papír *Economics of Program Production* (Information Processing 68, 1969, s. 1626-1627) není dostupný. Pravidlo: zdroj, který nelze číst, se necituje. | `components/bib/references.bib` | ✅ |
 | B12 | **Planá vada, po zpětném šetření vyvrácena.** Str. 16 má jen 29 znaků, což původně vypadalo jako prázdná strana. Ve skutečnosti je to záměrný titulní list oddílu „PRAKTICKÁ ČÁST / DarkFactory", který má textu málo z podstaty. Žádná vada, nic neopravovat. | — | ✅ |
+| B13 | **Rozhodnutí vedoucího, tři výrazy v přehledu zdrojů odstraněny.** V §1.2 zmizelo počítání „čtyři měřicí a jedna poziční“, celý odstavec o nepublikovaných předběžných výtiscích a vlastních výsledcích dodavatelů i odstavec o párování s primárním zdrojem; zůstaly jen popisy jednotlivých prací. |
+| B14 | **Přejmenováno na žádost.** §2.3.1 `Zadání a kontext` → `Zadání a plán (Prompt & Plan)`; §2.3.3 `Orchestrace a lidská integrace` → `Orchestrace a lidská integrace (Orchestration & HITL)`. |
+| B15 | **Kritérium strán změněno.** Vedoucí rozhodl, že rozhoduje délka textu ve slovech a znacích a čitelnost, nikoli počet stran; rozestup 12 pt zůstává. |
 | B9 | Konec přímé citace byl ASCII `"`, který Typst vykreslil jako nízkou uvozovku; česká sazba vyžaduje vysokou. | `pages/24-theory-factory.typ`, `pages/33-practical-planning.typ` | ✅ |
 
 Tvrzení o 28 % chatbotů a 0,36 % coding agentů ponecháno, ale už ne jako argument
@@ -137,8 +140,8 @@ Nalezeno při čtení zdrojů, vyhovuje závěru práce, ale zatím nevsunuto. K
 - **Smlouva o cíli o šesti položkách.** Outcome, Verification surface, Constraints,
   Boundaries, Iteration policy, Blocked stop condition @openai-goals. Přesnější
   slovník k plánování, než má práce dnes.
-- **Zralost.** Thoughtworks Technology Radar má Ralph jako Trial, nikoli Adopt
-  @wiegold2026ralph.
+- **Zralost.** Thoughtworks Technology Radar má Ralph jako Trial, nikoli Adopt.
+  Odkaz byl z textu i bibliografie odstraněn jako nepřínosný.
 
 ## J. Nepravdivá tvrzení o popsané reviz — opraveno
 
@@ -174,3 +177,4 @@ Kód byl ověřen přímo v revizi `d576ec8f`, ne v pracovním stromu, který se
 
 | J17 | **V §3.4 chyběl mechanismus odchylky od plánu.** Když automatická review najde nález vyžadující zásah mimo plán, `handle_self_review` ho neodmítne: vygeneruje odůvodnění, zapíše `### Plan Deviation` na původní issue a plán doplní. Papír tedy mlčel, že schválený plán není neměnný, což je pro třetí kritérii i pro obranu závěrů podstatné. Doplněno. Tvrzení §3.5, že zpětná vazba člověka neputuje do plánu, zůstává správné: tuto cestu má jen automatická review, ne lidský požadavek na změnu. Místo uvolnilo zkrácení opakování průběžné integrace, kterou předchozí odstavec popisuje už jednou. | ✅ |
 | J18 | **Ověřeno v §3.3 a §3.5, nic tam nebylo v rozporu.** Vzor `request.yml` má přesně tři povinná pole, jak tvrdí Tabulka 1, a `Parent Epic` je nepovinný. Interpretace si žádá přesně tři oddíly, které §3.3 vyjmenovává, a předává titulek i tělo. Plánovací prompt žádá o Scope, Architectural & Code Changes a Verification Steps. Zástupné schválení v §3.5 je přesné: vyžaduje `BOT_TOKEN` odlišný od `GH_TOKEN`, protože pull requesty jsou otevírány tokenem správce, který GitHub odmítá schválit vlastní. | ✅ |
+| J19 | **Zdroj o dynamických workflow chyběl.** Tvrzení, že workflow graph určuje závislosti a větvení fází, stálo jen na `@openai-agent-orchestration`. Doplněn inženýrský příspěvek Anthropic o dynamických workflow `@anthropic-dynamic-workflows` a snímek jeho rozhraní jako @fig-dynamic-workflows; screenshot pochází z komunitního příspěvku, což je uvedeno v popisku i v poli `note`. |

@@ -36,7 +36,7 @@ neustálily, je sezbrán v @terminologie.
 
 Použitých zdrojů je několik druhů a z každého se v práci bere jiná věc. Od výrobců nástrojů jsou to inženýrské příspěvky popisující architekturu vlastního produktu: od Anthropic příspěvek o nástrojích @anthropic2024tooluse a o návrhu harnessu pro dlouhé běhy @anthropic-harness-design, od nichž i kontext @anthropic-context-engineering, od OpenAI příspěvek o Codexu @openai-codex-2025, od nichž příkaz `/goal` @claude-goal a cíle @openai-goals, a od LangChain rozbor, co všechno patří do harnesse @langchain-harness, včetně souboru AGENTS.md @agents-md, dovedností @agentskills-spec a protokolu MCP @mcp-specification. Průmyslové zprávy a názory společností, které takové systémy prodávají, slouží k pojmenování a architektuře: @anthropic-agents-2026 @factory2026 @bcg2026 @guild2026. Poslední skupinu tvoří práce, které architekturu měří nebo rozkládají.
 
-Z poslední skupiny jsou čtyři měřicí a jedna poziční. Harness-Bench prošel 5~194 běhových
+Harness-Bench prošel 5~194 běhových
 trajektorií a zjistil, že výslednost se podle dvojice model–harness mění výrazně, takže
 schopnost agenta se má podávat na úrovni této dvojice a nikoli samotného modelu
 @yao2026harnessbench. HarnessX změřil průměrné zlepšení o 14,5~% na pěti benchmarkech,
@@ -49,14 +49,7 @@ vrstvy a mluví o ní jako o předmětu vlastního bádání, je poziční a dod
 referenční implementaci, takže je citovatelná za slovník a za rámcování, nikoli za měření
 @gu2026harness.
 
-Všech pět je nepublikovaný předběžný výtisk. Dvě z nich vznikly v týmech, které prodávají
-vlastní implementaci, a výsledek je tedy jejich; totéž platí o měření, které provedl sám
-dodavatel @anthropic-harness-design. Každé tvrzení těchto prací proto práce opírá také o
-primární zdroj, který lze otevřít v prohlížeči bez účtu, a kde takové spárování neexistuje,
-formuluje závěr opatrněji, jako zjištění jediné nerecenzované studie. Ani jedno z nich
-není samo o sobě důkazem.
-
-Z toho zároveň plyne, co práce nepřebírá. Tvrzení, že návrh systému je důležitější než
+Tvrzení, že návrh systému je důležitější než
 schopnost modelu, samo o sobě neplatí; pole, které této práci předchází, samo píše, že
 další pokrok bude záviset #emph[stejně] na návrhu systému jako na silnějších modelech, a
 nikoli místo nich @gu2026harness. Stejně tak není doloženo, že se návrh systému od modelu
