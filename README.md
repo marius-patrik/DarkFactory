@@ -201,10 +201,21 @@ over one history rather than a feature of each surface.
 
 **Seams, guaranteed rather than discovered.** Where the system meets something it did not build —
 version control, the browser, the runtime environment, isolation, identity custody, the compositor —
-it owns a small vocabulary with several implementations, and a declaration names one. A seam is not
-a suggestion: the system has a reserved identity for each one, because a system that resolved its
-own seams could be assembled without them, and that is the configuration the design exists to make
-impossible. §11 argues what the seam is for and what makes it worth having.
+it owns a small vocabulary with several implementations. **What implements a seam is declared by
+each implementation, in its own file; which implementation a given consumer uses is a reference
+written where that consumer is.** Those are two different acts and keeping them apart is load
+bearing, because conflating them produces one of two failures: if a document lists the
+implementations, it is a registry, and if the organ's own file is not what declares it, the binding
+lives somewhere it can drift from. §4.1 states the rule and §24.1 states the other half.
+
+A seam is not a suggestion: the system **requires** each one, because a system that could be
+resolved without its seams could be assembled without them, and that is the configuration the design
+exists to make impossible. **What is reserved is the requirement, not the implementation.** The
+system knows that it must be able to reach a version-controlled world, prove an identity, and execute
+something; it does not know how, and no part of the system says. That is why a required seam is not
+an exception to §11's claim that nothing is privileged — a requirement is not knowledge of a
+solution, and the implementations that satisfy one are discovered like everything else. §11 argues
+what the seam is for and what makes it worth having.
 
 ### 3.2 Five operations
 
@@ -276,7 +287,11 @@ is the claim worth making.
 A guarantee is a seam whose interior is another guarantee. The system claims a small number of
 guarantees — the runtime is the declaration, composition is safe and teardownable, the world is
 reachable, identity is provable, the interface is navigable — and each is implemented by a seam
-whose own implementation may be a finer seam:
+whose own implementation may be a finer seam. **The tree below illustrates the shape of that
+nesting and is not the concern tree of §9.3**: a guarantee is a property of a binding, and the
+concern that owns environment derivation is `Execution/`, which is where `DeriveEnvironment.df`
+lives. Reading this diagram as a directory listing would put `Environment/` beside `Execution/` as
+though both owned it.
 
 ```
 the runtime is the declaration
@@ -296,10 +311,12 @@ parts.
 
 One consequence is a real tension rather than a free lunch. A fully portable system needs a binding
 that works on a host with nothing installed, and such a binding delivers **less guarantee** — a
-`local/` environment that derives nothing and isolates nothing. Choosing it is location-dependent
-behaviour, which §12 forbids outright. The resolution is that **bindings declare their guarantee
-level and the system never guesses**: a degraded binding is chosen by the declaration, which says
-what was given up. Otherwise the same system runs everywhere and quietly means something different
+`local/` binding that derives nothing and isolates nothing. Choosing it is location-dependent
+behaviour, which §12 forbids outright. The resolution follows the binding/selection split of §4.1:
+**each binding declares its own guarantee level, and a consumer selects one rather than the system
+guessing** — so the fact that a degraded binding exists is derived from the binding, and the choice
+of it is an ordinary selection like any other. What is forbidden is a resolution that silently
+substitutes the weaker one. Otherwise the same system runs everywhere and quietly means something different
 in each place, which is the support matrix §12 names, arriving through the front door.
 
 ### 3.6 What the structure is not
@@ -361,8 +378,13 @@ admit the exception.
 
 ### 4.1 Compose; bind only where it is cheaper
 
-Reach a mature system through a small vocabulary with several implementations, and a declaration
-names one. Own the seam; never the organ.
+Reach a mature system through a small vocabulary with several implementations. Each
+implementation declares that it implements the seam, in the file that implements it; a consumer
+names the one it wants by reference, in the file that wants it. **Binding and selection are
+different acts, and both are declarations — of different things.** A binding says what exists; a
+selection says what this caller wants, which is a use of the address space and not a registration,
+because the resolver finds it in the tree rather than in a list. §24.1 gives the binding half. Own
+the seam; never the organ.
 
 The reason this is a procedure rather than a preference is that it is testable in two directions,
 and only one of them is obvious. **Substitutability** asks whether a different implementation is
@@ -1248,10 +1270,11 @@ separation is what keeps the common operation cheap.
   is I/O-heavy and wants fault injection. Merged, both get worse tests.
 
 But execution is **integral**, and that is the part that matters: it is not discovered, it is
-*guaranteed*. The system has a reserved identity for it, the way it has a reserved identity for
-reading itself. A system that resolved execution the way it resolves a capability could be
-assembled without one, and that is exactly the configuration this design exists to make
-impossible.
+*guaranteed*. The system requires it, the way it requires to read itself. A system that resolved
+execution the way it resolves a capability could be assembled without one, and that is exactly the
+configuration this design exists to make impossible. Again this reserves the requirement and not
+the implementation: how a capability executes is derived from its structure like anything else, and
+the guarantee is that something must — not that the system knows what.
 
 ## 14 Self-heal: convergence, not reversion
 
@@ -1582,7 +1605,10 @@ The rules that follow from that:
 
 ### 24.2 Documentation configuration and output
 
-The `docs` block in the combined configuration is the only DarkFactory documentation configuration contract.
+Documentation settings are declared by `Docs/` itself, in the file that needs them, and there is
+no other place they can be: a combined configuration would be a document standing apart from what
+it configures, which §24.1 forbids, so the settings a documentation build reads are the ones the
+documentation concern declares.
 
 Generated documentation sites and JSON content graphs are CI outputs and must not be committed. The rules in §37 are the guidance an agent reads, and **nothing projects them**: they are canonical
 text, and a projection of them would be a second description of the rules, which §39 forbids and
@@ -1633,7 +1659,11 @@ Undeclared inference separates task subject from required capability; engineerin
 
 Routing respects sensitivity, data-collection policy, provider/account availability, capability requirements and capability tiers.
 
-Capability tiers prefer the lowest sufficient tier and escalate deterministically according to the shipped routing contract.
+Capability tiers prefer the lowest sufficient tier and escalate deterministically by the tier order
+each capability declares for itself. **There is no shipped routing contract and there is no table of
+cases:** a capability that declared no order, or a ranker that read an order from anywhere but the
+capability, would be a per-case table describing the system's behaviour — the support matrix §12
+names, written down instead of derived.
 
 Quota/provider failover is durable and does not repeat already-completed deterministic effects.
 
@@ -1955,7 +1985,8 @@ DarkFactory is final only when the exact pre-merge candidate has passed the decl
 - the supported consumer set passes governance, detection, capability, docs/web, release-candidate and drift checks before the integration merge;
 - `audit.df` is internally consistent;
 - installed acceptance is green across the supported consumer set before merge;
-- the declarable-graph product contract passes against the installed exact-head candidate and is re-smoked against the canonical publication.
+- the resolved graph is checked against the declaration it was derived from, for the installed
+  exact-head candidate, and re-smoked against the canonical publication.
 
 ### 36.1 Invariant acceptance
 
@@ -2069,13 +2100,16 @@ second workflow-specific command map: local verification and CI consume the same
 Lints are blocking where supported, and generated artifacts are excluded only by explicit canonical
 policy.
 
-CI derives **one** normalized quality contract from detected packages plus applicable capabilities, and
-fails closed when that contract has an unresolved required gap, ambiguity or unsupported action. A
-warning is not an acceptable substitute for required test, typecheck, lint, format or documentation
-coverage. Type safety is a first-class required action: every detected first-party package or
-capability MUST be accounted for exactly once by an owning package action or an explicit
-workspace-level action whose coverage can be proven, and incidental execution through an aggregate does
-not count. The aggregate check is green only when every applicable required action for the current
+CI derives **one** normalized set of required actions from detected packages plus applicable
+capabilities, and fails closed when that set has an unresolved required gap, ambiguity or unsupported
+action. The set is derived, not read: each detected package and each applicable capability is paired
+with the action **its own declaration** names, and a package whose declaration names no action is a
+gap rather than a default. A warning is not an acceptable substitute for required test, typecheck,
+lint, format or documentation coverage. Type safety is a first-class required action: every detected
+first-party package or capability MUST be accounted for exactly once by an owning package action or
+an explicit workspace-level action whose coverage can be proven, and incidental execution through an
+aggregate does not count. **A checked-in list of which package runs which action is forbidden for
+the reason §9.5 gives:** adding a package would then require editing a second file, and I6 fails. The aggregate check is green only when every applicable required action for the current
 head completed successfully; an action that is missing, stale, cancelled, skipped or neutral is not
 success unless the canonical contract marked it not applicable before matrix construction.
 
@@ -2548,8 +2582,10 @@ surfaces project, and what convergence compares against.
 **Interface declaration** — the derived description of one feature: name, inputs, outputs,
 documentation, and where it sits. What every surface publishes and what an agent reads.
 
-**Seam** — a small vocabulary with several implementations, chosen by a declaration. `Change/`,
-`Identity/`, `Browse/` and the interpreter are seams. §4.1.
+**Seam** — a small vocabulary with several implementations, each declared by the file that
+implements it and chosen by a consumer by reference. The seams are version control, identity
+custody, browsing, the language of the declarations, execution's environment and isolation, and the
+compositor. §4.1 states the rule and §3.1 the requirement.
 
 **Organ** — the implementation behind a seam: git, GitHub, an OS webview, Nix, Tauri. Never owned.
 
