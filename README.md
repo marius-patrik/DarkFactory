@@ -910,7 +910,7 @@ nobody could fail.
 
 **Obliges.** No code path exists only for the system to edit itself. Its proposals carry a diff, an
 author and the measurements that motivated them, and pass the same approval as anything else.
-Auto-approval is a declared policy, off by default and never for anything that removes or relocates.
+Auto-approval is a declared policy, off by default, as §3.4 states.
 
 **Forecloses.** The privileged tuner — the component that adjusts the system directly, which is
 simplest to build and produces changes with no author, no diff and no rollback. That it is the system
@@ -1128,8 +1128,7 @@ runtime. `df` on an unconfigured machine, the Renderer completing a GitHub App l
 external Claude or Codex plugin, and an agent in CI all need to prove who they are, and each
 obtains it through the same `Identity/` concern.
 
-An identity is a declaration plus one or more proofs, and a proof is not restricted to a
-stored secret. A proof may be stored, derived, or exist only for the duration of a flow. The
+An identity is the declaration-plus-proofs form §28 defines. The
 system must support the proof kinds §28 enumerates. An identity is acquired through a flow that may require a
 human or a second device, so acquisition is part of the concern and not an assumption of prior
 provisioning.
@@ -1177,7 +1176,7 @@ This is what lets the system span machines and repositories under one semantic m
 
 ### 10.1 One askable feature is one file
 
-A file is the unit a caller can request on its own. Not one step inside a larger operation, and
+§4.4's rule, applied here. Not one step inside a larger operation, and
 not an abstraction grouping several requests — the two mistakes are mirror images and the test
 distinguishes them. `Snapshot`, `Stage` and `Publish` are one file each, because a caller can
 ask for a snapshot without wanting a publish. `StoreCredential` and `RedactSecret` are one file
@@ -1251,7 +1250,7 @@ rather than *privileged*, and the difference is the objection met rather than av
 
 The payoff is an answer to every "this tool does not understand us" moment — the formatter, the test
 discovery, the coverage reporter — and the surrounding system can host the binding precisely because
-it is built from recombinable parts rather than a program with one fixed entry point. §4.1 and §3.5
+it is built from recombinable parts (§3.5) rather than a program with one fixed entry point. §4.1 and §3.5
 state the same payoff where the argument for it sits.
 
 ### 11.1 The interpreter is the same seam applied to language
@@ -1380,8 +1379,7 @@ changes.
 
 **The scope is anything, not only software engineering.** A system built to express "act on a
 system through a declared interface" has no domain built into it. Repository work is the first
-application, not the definition. If the system can only ever do what its first application did, it
-is a tool that grew a pipeline rather than a harness.
+application, not the definition, and §13.1 gives the test that decides it.
 
 And it is the same system a human surface reads. A later interface is a renderer over the same
 declarations, the same capability catalogue and the same effect log — not a second frontend with
@@ -1476,8 +1474,8 @@ makes the change harder to notice.
 **Every mutation, including the system's own, goes through the same escrow and the same record.** A
 runtime change is written to the declaration and applied by convergence — not as an overlay and not
 as a side channel — and applying any declaration produces a **generation** carrying a parent, a
-diff and an author. Audit without undo records damage already done; undo without audit is an
-approval with no history. They are one mechanism.
+diff and an author — which is the mechanism §13 argues, and the reason audit and undo are one
+thing rather than two.
 
 **Undo is a first-class operation over the system's own log, not a reconstruction from the
 backend's internals.** That distinction is what makes a backend *removable* rather than merely
