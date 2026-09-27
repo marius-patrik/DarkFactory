@@ -829,6 +829,14 @@ produces an unusable system.
 Seven practices. Each is stated, then what it obliges, then what it forecloses — because a practice
 that does not foreclose anything is a preference, and the exclusions are the part that does the work.
 
+**These seven are not the same set as §4's six procedures, and an earlier version let a reader assume
+they were.** Four pair directly: §4.1 with §7.4, §4.3 with §7.1, §4.4 with §7.5, §4.5 with §7.3. The
+remaining two are procedures with no practice — §4.2, because one site of meaning *is* the constraint
+of §5 and is not something you practise, and §4.6, because a latency requirement is a property rather
+than a discipline. The remaining three are practices with no procedure: §7.2, §7.6 and §7.7 are all
+about how a person works rather than about what the system must be, which is the dividing line
+between §4 and §7 and why the two lists are six and seven rather than either one number.
+
 ### 7.1 Derive, never author
 
 **Statement.** If a description of a thing exists beside that thing, it is wrong.
@@ -1256,10 +1264,19 @@ small vocabulary, several backends, and a declaration that names one — §11's 
 language rather than to version control. A language is a place in a composition, not a fixed
 vocabulary.
 
-**A declaration backend is per language, and the set of languages is not restricted to programming
-languages.** Nix modules get typed options, merge semantics, `mkDefault`/`mkForce` and nixpkgs for
-free, because a mature system already has a language and we do not own one. And prose is a
-declaration language too.
+**A declaration backend is per language, and the set of languages the system *reads* is not
+restricted to programming languages.** Nix modules get typed options, merge semantics,
+`mkDefault`/`mkForce` and nixpkgs for free, because a mature system already has a language and we do
+not own one. And prose is a declaration language too.
+
+**This is the read side, and §9.2's one-file-kind rule is the write side, and the document needs both
+to be true at once.** A `.nix` file in a bound repository is meaning-bearing, so it cannot be
+excused by the `.json` exemption, which covers data belonging to no system. The resolution is that the
+system reads foreign declarations through a backend and does not author them: one kind of file is one
+kind of file the system *writes*, and every file it reads is read through a declared backend that says
+how to interpret it. That is also why one extension is not a claim about what can be understood, only
+about what can be created — and it is a weaker claim than §9.2 makes, so §9.2's wording should be read
+with this sentence.
 
 ### 11.2 Prose is a backend
 
@@ -1336,6 +1353,13 @@ false without an agent. Five claims, each checkable:
 **The test:** *if the agent were removed, would the system still be complete?* If yes, this is a
 system with an agent attached. If no, something is missing that only an agent needs — and that
 something is the design.
+
+**This test is about the system; §36.2's is about one delivery, and the two answer different
+questions.** Here the subject is the design, so the expected answer is *no* and the test is a
+statement of the design's intention. There the subject is a representative delivery, so the expected
+answer is *yes* and the test is evidence that a specific pipeline was not secretly manual. A system
+can pass §36.2 and fail this, and neither is a surprise: a single delivery that happened not to need
+an agent says nothing about whether the design does.
 
 ### 13.1 What the harness is actually for
 
@@ -2133,9 +2157,18 @@ practice of DarkFactory** — something the system depends on, or something abou
 the system. Rules that are neither are hygiene, and hygiene belongs in a repository's contributing
 guide rather than in the specification of a product.
 
-What follows is therefore the obligation set of §6 and §7, and nothing else. Each rule names the
-pattern or practice it enforces. A rule that could be deleted without the argument in §6 or §7 being
-weaker is a rule that does not belong here.
+Each rule below names the obligation it enforces. A rule that could be deleted without some argument
+in this document being weaker is a rule that does not belong here.
+
+**An earlier version scoped this table to "the obligation set of §6 and §7, and nothing else", which
+its own rows contradicted** — they cite §3.1, §4.6, §9.1, §19, §22, §25, §26 and §28 as well, and
+those are obligations in exactly the sense this section uses. The scope is therefore: **every
+obligation the document states, in the pattern of §6, the practices of §7, and the procedures of
+§4**, and nothing that is only hygiene. Three practices are unenforced by any rule — §7.4, §7.5 and
+§7.7 — and that is a gap rather than an oversight: bind-don't-own and one-thing-one-file are
+properties of the structure that §9.5 and I1 already check, while §7.7's prohibition on a privileged
+self-modification path is stated but has no mechanical counter anywhere in the document, which is
+worth knowing before relying on it.
 
 | rule | enforces |
 | --- | --- |
@@ -2767,13 +2800,18 @@ declaration and never to an overlay; that one option schema serves the settings 
 documentation and the agent's vocabulary at once; and that content-addressed custody needs
 convergent encryption keyed per holder or deduplication and confidentiality are mutually exclusive.
 
-Two of them changed this document rather than filling a gap in it. The claim that the system's own
-parts are reached only across process boundaries, and the distinction between a surface and a
-layout mode, are both sharper than what was here — the first because a folder name is a claim about
-naming where a boundary is a claim about failure, and the second because a rendering technology is
-not a place meaning is read. The structural frame in §3 — three unifiers and five operations — is
-also not new: it is the shape those decisions had in common, which is why it is stated once instead
-of being rediscovered per section.
+Two of them changed this document rather than filling a gap in it. The distinction between a surface
+and a layout mode is sharper than what was here, because a rendering technology is not a place meaning
+is read; and the treatment of a guarantee as a requirement rather than a discovered binding — §3.1 and
+§13.2 — is sharper, because a folder name is a claim about naming where a boundary is a claim about
+failure. The structural frame in §3 — three unifiers and five operations — is also not new: it is the
+shape those decisions had in common, which is why it is stated once instead of being rediscovered per
+section.
+
+**An earlier version of this paragraph credited the sources with a claim about process boundaries
+that appears nowhere in the document**, and which §9.5 contradicts: a file is discovered
+structurally, in process, and a feature exists the moment its file does. The claim has been removed
+rather than introduced, since §45 is provenance and is not the place a new design claim is made.
 
 The one place this document departs from its sources is deliberate and marked where it occurs:
 §11.1 and §18 argue that owning `.df` is not the same decision as owning a declaration language,
