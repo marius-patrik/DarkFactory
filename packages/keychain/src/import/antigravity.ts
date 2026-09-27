@@ -81,6 +81,30 @@ export function parseAntigravityKeyring(raw: string): {
 	return { access: fields.access_token, refresh: fields.refresh_token, expires };
 }
 
+/**
+ * Imports an Antigravity (Gemini-via-Antigravity) login.
+ *
+ * Provider attribution is explicit, because the storage location is not. The Antigravity CLI keeps
+ * its token in the OS keyring under the service name `gemini`, and that name is historical: it
+ * identifies Antigravity, not Google AI Studio. Google AI Studio is the separate `google` provider
+ * and authenticates with a `GEMINI_API_KEY` api_key slot — it has no keyring login and is never
+ * discovered by this importer. A credential found here therefore always belongs to the
+ * `provider` argument; it is never written to `google`.
+ *
+ * Absent, rejected and unrelated upstream failures stay distinguishable: a missing keyring entry
+ * means the CLI is not logged in, a 401/403 means the stored token was rejected and the account
+ * needs re-authenticating, and anything else is a discovery failure. Only a successful discovery
+ * writes the account, so a rejected import never leaves a half-written record.
+ *
+ * @param store - Destination credential store.
+ * @param label - Account label to write.
+ * @param keyring - OS keyring reader for the Antigravity login.
+ * @param provider - Target provider id the credential belongs to.
+ * @param service - Keyring service holding the Antigravity login. Historically `gemini`.
+ * @param account - Keyring account name. Historically `antigravity`.
+ * @param fetcher - Injectable fetch, used to resolve the Antigravity project slot.
+ * @throws Error when no login is present, the stored token is rejected, or discovery fails.
+ */
 export async function importAntigravityAccount(
 	store: FileCredentialStore,
 	label: string,
@@ -91,7 +115,10 @@ export async function importAntigravityAccount(
 	fetcher: ImportFetch = globalThis.fetch,
 ): Promise<void> {
 	const raw = await keyring.read(service, account);
-	if (!raw) throw new Error("No configured CLI login was found in the OS keyring");
+	if (!raw)
+		throw new Error(
+			`No Antigravity login was found in the OS keyring (service ${service}, account ${account}); the ${provider} provider is absent, not rejected`,
+		);
 	const imported = parseAntigravityKeyring(raw);
 	const id = accountId(provider, label);
 	const response = await fetcher("https://cloudcode-pa.googleapis.com/v1internal:loadCodeAssist", {
@@ -106,7 +133,13 @@ export async function importAntigravityAccount(
 		}),
 		redirect: "error",
 	});
-	if (!response.ok) throw new Error(`Antigravity project discovery failed (HTTP ${response.status})`);
+	if (!response.ok) {
+		if (response.status === 401 || response.status === 403)
+			throw new Error(
+				`The ${provider} Antigravity credential was rejected (HTTP ${response.status}); it is present but needs re-authentication: run \`df login ${provider} --account ${label}\``,
+			);
+		throw new Error(`Antigravity project discovery failed (HTTP ${response.status})`);
+	}
 	const body = (await response.json().catch(() => null)) as Record<string, unknown> | null;
 	const project =
 		typeof body?.cloudaicompanionProject === "string" ? body.cloudaicompanionProject.replace(/^projects\//u, "") : "";
