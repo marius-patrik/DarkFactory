@@ -1,0 +1,8 @@
+{
+	"$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+	"name": "math",
+	"version": "1.0.0",
+	"description": "Mathematics repository detection and formal-math capability boundary.",
+	"license": "MIT",
+	"shipped": false
+}

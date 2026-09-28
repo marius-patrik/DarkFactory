@@ -9,7 +9,7 @@
  * Exit codes: 0 clean, 1 findings, 2 bad invocation.
  */
 import { existsSync, readdirSync, readFileSync } from "node:fs";
-import { join, relative, sep } from "node:path";
+import { join, relative, resolve, sep } from "node:path";
 
 const NAME_PATTERN = /^[a-z0-9]+(-[a-z0-9]+)*$/;
 const MAX_NAME = 64;
@@ -203,8 +203,19 @@ function validatePlugin(pluginDir: string, repoRoot: string, findings: Finding[]
 	}
 
 	const skillsDir = join(pluginDir, "skills");
-	if (!existsSync(skillsDir)) {
-		findings.push({ level: "warning", path: rel(pluginDir), rule: "plugin/skills", detail: "no skills/ directory" });
+	const manifest = existsSync(join(pluginDir, "plugin.json"))
+		? (JSON.parse(readFileSync(join(pluginDir, "plugin.json"), "utf-8")) as { shipped?: unknown })
+		: {};
+	// A plugin with no skills is legitimate when it is a declaration only - a capability is runtime
+	// code that happens to live beside the skills. It is not legitimate when df would ship it, since
+	// a released plugin with nothing for an agent to load is dead weight in every install.
+	if (manifest.shipped === true && !existsSync(skillsDir) && !existsSync(join(pluginDir, "hooks"))) {
+		findings.push({
+			level: "warning",
+			path: rel(pluginDir),
+			rule: "plugin/shipped-empty",
+			detail: "marked shipped but declares no skills and no hooks",
+		});
 	}
 }
 
@@ -218,7 +229,9 @@ if (args.includes("--help") || args.includes("-h")) {
 }
 
 const repoRoot = process.cwd();
-const pluginsRoot = rootArg ? join(repoRoot, rootArg) : join(repoRoot, ".darkfactory", "plugins");
+// `resolve`, not `join`: an absolute path handed in by a person or a hook would otherwise be
+// concatenated onto the working directory and reported as a missing directory.
+const pluginsRoot = rootArg ? resolve(repoRoot, rootArg) : resolve(repoRoot, ".darkfactory", "plugins");
 
 if (!existsSync(pluginsRoot)) {
 	process.stderr.write(`no plugins directory at ${pluginsRoot}\n`);

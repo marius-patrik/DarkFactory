@@ -1,0 +1,14 @@
+{
+	"name": "code",
+	"version": "1.0.0",
+	"description": "Code repository detection and agentic software-engineering capability boundary.",
+	"license": "MIT",
+	"shipped": false,
+	"author": {
+		"name": "DarkFactory"
+	},
+	"keywords": [
+		"code",
+		"capability"
+	]
+}
