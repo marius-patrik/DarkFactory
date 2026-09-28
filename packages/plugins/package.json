@@ -17,5 +17,8 @@
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "lint": "biome lint .",
     "format:check": "biome format ."
+  },
+  "dependencies": {
+    "@darkfactory/protocol": "workspace:*"
   }
 }

@@ -1,3 +1,4 @@
+import { darkFactoryDirectory } from "@darkfactory/protocol/config-document";
 import { existsSync, readdirSync } from "node:fs";
 import { dirname, join, relative, resolve, sep } from "node:path";
 
@@ -29,13 +30,15 @@ export interface Plugin {
 
 /**
  * Roots holding plugin declarations, most authoritative first: this repository's
- * `.darkfactory/plugins/`, then a `plugins/` directory beside the compiled `df` binary.
+ * `<darkfactory dir>/plugins/`, then a `plugins/` directory beside the compiled `df` binary. The
+ * directory is `.darkfactory` unless `DF_CONFIG_DIR` says otherwise, so a repository that keeps
+ * its configuration elsewhere still has its plugins found.
  *
  * A plugin appears in both when df runs from a checkout of the repository that declares it, so the
  * first root wins and the second is treated as the derived copy it is.
  */
 export function pluginRoots(repoRoot = process.cwd()): string[] {
-	return [resolve(repoRoot, ".darkfactory", "plugins"), resolve(dirname(process.execPath), "plugins")].filter(
+	return [resolve(repoRoot, darkFactoryDirectory(), "plugins"), resolve(dirname(process.execPath), "plugins")].filter(
 		(candidate) => existsSync(candidate),
 	);
 }

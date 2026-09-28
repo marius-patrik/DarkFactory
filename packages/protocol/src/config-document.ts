@@ -4,6 +4,19 @@ import { join, resolve } from "node:path";
 /** Recognized semantic blocks in a DarkFactory combined configuration document. */
 export type DarkFactoryConfigBlock = "repo" | "docs" | "providers";
 
+/**
+ * The DarkFactory directory holding plugins, skills and the configuration document, relative to the
+ * repository root and normalized to forward slashes without a leading `./` or trailing slash.
+ *
+ * `DF_CONFIG_DIR` is the single place this is decided, so a repository that keeps its configuration
+ * under another name does not need a code change to have its plugins found alongside it. Anything
+ * that reaches into the DarkFactory directory reads it from here rather than repeating the
+ * environment lookup, which is how three copies of this logic drifted apart.
+ */
+export function darkFactoryDirectory(env: Readonly<Record<string, string | undefined>> = process.env): string {
+	return (env.DF_CONFIG_DIR?.trim() || ".darkfactory").replaceAll("\\", "/").replace(/^\.\//u, "").replace(/\/$/u, "");
+}
+
 /** JSON document containing DarkFactory configuration blocks. */
 export interface DarkFactoryConfigDocument {
 	repo?: unknown;
@@ -18,8 +31,7 @@ export function resolveConfigDocumentPath(
 	env: Readonly<Record<string, string | undefined>> = process.env,
 ): string | undefined {
 	const repositoryRoot = resolve(root);
-	const configuredDirectory = env.DF_CONFIG_DIR?.trim() || ".darkfactory";
-	const configDirectory = resolve(repositoryRoot, configuredDirectory);
+	const configDirectory = resolve(repositoryRoot, darkFactoryDirectory(env));
 	const candidatesIn = (directory: string): string[] =>
 		["repo.dfconfig", "config.dfconfig", ".dfconfig"]
 			.map((name) => join(directory, name))

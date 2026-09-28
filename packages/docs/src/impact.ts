@@ -1,5 +1,6 @@
-import { RULES_PLUGIN } from "./content.ts";
+import { darkFactoryDirectory } from "@darkfactory/protocol/config-document";
 import type { RepositoryEvidence } from "@darkfactory/core/repository-evidence";
+import { RULES_PLUGIN } from "./content.ts";
 
 /** High-level kinds of change that can require canonical documentation updates. */
 export type DocumentationImpactKind = "public-api" | "product" | "governance";
@@ -38,10 +39,7 @@ function normalizePath(path: string): string {
 }
 
 function configDocumentPaths(): ReadonlySet<string> {
-	const directory = (process.env.DF_CONFIG_DIR?.trim() || ".darkfactory")
-		.replaceAll("\\", "/")
-		.replace(/^\.\//u, "")
-		.replace(/\/$/u, "");
+	const directory = darkFactoryDirectory();
 	return new Set(
 		[
 			"repo.dfconfig",

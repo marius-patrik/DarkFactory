@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, test } from "bun:test";
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, renameSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { discoverPlugins, discoverPluginSkills } from "../src/discover.ts";
@@ -94,6 +94,29 @@ describe("plugin discovery", () => {
 		roots.push(root);
 		mkdirSync(join(root, ".darkfactory", "plugins"), { recursive: true });
 		expect(discoverPlugins(root)).toEqual([]);
+	});
+
+	test("DF_CONFIG_DIR moves the plugin root, because the directory is configuration", () => {
+		// The root was spelled ".darkfactory/plugins" in both discovery and validation, which meant
+		// a repository keeping its configuration elsewhere had its plugins silently not found.
+		const root = repository([{ name: "alpha", skills: [{ dir: "one", frontmatter: goodSkill("one") }] }]);
+		const previous = process.env.DF_CONFIG_DIR;
+		try {
+			process.env.DF_CONFIG_DIR = "configuration";
+			expect(discoverPlugins(root)).toEqual([]);
+
+			mkdirSync(join(root, "configuration"), { recursive: true });
+			renameSync(join(root, ".darkfactory", "plugins"), join(root, "configuration", "plugins"));
+			const plugins = discoverPlugins(root);
+			expect(plugins.map((plugin) => plugin.name)).toEqual(["alpha"]);
+			// Validation scans for unrecognised directories too, so it has to follow the same root or
+			// it would report the relocated plugins as unknown.
+			expect(validatePlugins(root).findings).toEqual([]);
+			expect(validatePlugins(root).skillCount).toBe(1);
+		} finally {
+			if (previous === undefined) delete process.env.DF_CONFIG_DIR;
+			else process.env.DF_CONFIG_DIR = previous;
+		}
 	});
 });
 

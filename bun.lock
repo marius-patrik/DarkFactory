@@ -136,6 +136,9 @@
     "packages/plugins": {
       "name": "@darkfactory/plugins",
       "version": "0.0.0",
+      "dependencies": {
+        "@darkfactory/protocol": "workspace:*",
+      },
     },
     "packages/protocol": {
       "name": "@darkfactory/protocol",

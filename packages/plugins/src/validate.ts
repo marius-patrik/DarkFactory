@@ -1,6 +1,6 @@
-import { existsSync, readdirSync, readFileSync } from "node:fs";
+import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
-import { discoverPluginSkills, discoverPlugins, relativeToRepo, type Plugin } from "./discover.ts";
+import { discoverPluginSkills, discoverPlugins, pluginRoots, relativeToRepo, type Plugin } from "./discover.ts";
 
 const NAME_PATTERN = /^[a-z0-9]+(-[a-z0-9]+)*$/u;
 const MAX_NAME = 64;
@@ -230,9 +230,11 @@ export function validatePlugins(repoRoot = process.cwd()): {
 	}
 
 	// A directory beside the plugins that is neither a manifest nor a skill directory is invisible to
-	// discovery, so it is reported rather than left to be wondered about.
-	const root = join(repoRoot, ".darkfactory", "plugins");
-	if (existsSync(root)) {
+	// discovery, so it is reported rather than left to be wondered about. The directory comes from
+	// pluginRoots rather than being spelled again, so DF_CONFIG_DIR is honoured here too, and
+	// pluginRoots filters to directories that exist, so an absent entry means nothing to scan.
+	const root = pluginRoots(repoRoot)[0];
+	if (root !== undefined) {
 		for (const entry of readdirSync(root, { withFileTypes: true })) {
 			if (!entry.isDirectory() || entry.name.startsWith(".")) continue;
 			const known = plugins.some((plugin) => plugin.name === entry.name);
