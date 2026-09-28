@@ -31,8 +31,25 @@ describe("the agent image's entrypoint", () => {
 		expect(line).not.toMatch(/\bpython3?\b/u);
 	});
 
-	it("runs the ported entrypoint, so `docker run darkfactory-agent dispatch` reaches the runner", () => {
-		expect(entrypoint()).toContain("/packages/harness/src/pipeline/main.ts");
+	it("runs `df`, so the image's entrypoint is the command the image installs", () => {
+		// Not a path into the source tree. The image ships `df` a few lines above this and should run
+		// exactly that: a second executable or a source path makes the entrypoint depend on the source
+		// layout, so a file move breaks the container, and it puts a command surface outside the CLI that
+		// owns one.
+		expect(entrypoint()).toContain('"df"');
+	});
+
+	it("names no file under the source tree, so nothing bypasses the CLI", () => {
+		expect(entrypoint()).not.toMatch(/\.ts"/u);
+	});
+
+	it("still appends the image's arguments, which is how `docker run … dispatch` reaches the runner", () => {
+		// `dbus-run-session -- df` with exec form: `docker run image dispatch` becomes
+		// `dbus-run-session -- df dispatch`. The `--` has to stay, or dbus-run-session would read `df` as
+		// its own program name instead of the command to run under the session bus.
+		const line = entrypoint();
+		expect(line).toContain('"--"');
+		expect(line.endsWith('"df"]')).toBe(true);
 	});
 
 	it("keeps dbus-run-session, which is where the keyring's secret-tool gets a session bus", () => {
