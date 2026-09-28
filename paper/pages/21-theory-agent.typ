@@ -9,6 +9,8 @@
 // in the introduction, and are not repeated here.
 #heading(level: 2)[Agent: Co to je a jak funguje] <theory-first>
 
+#heading(level: 3)[Jazykový model (LLM)]
+
 Současný jazykový model stojí na architektuře #strong[Transformer], kterou představil Google v roce 2017 v jejich nyní proslulé práci #strong[#emph[„Attention Is All You Need“]] @vaswani2017. Místo zpracovávání tokenů jeden po druhém přiřazuje architektura význam každému tokenu současně se všemi ostatními. Mechanismus, na kterém je architektura postavená, se nazývá #strong[attention] a je dodnes používaný i v pozdějších generacích modelů @brown2020. Přitom ke každému tokenu připočítá vážený součet hodnot ostatních tokenů, takže jeho reprezentace nese informaci z celého kontextu a vzdálenost mezi pozicemi nemusí být pevně daná jejich pořadím. Právě to dovoluje zpracovat kontext najednou a vyhovět dnešním požadavkům na délku a složitost konverzace.
 
 Na této architektuře je založen i jazykový model (#strong[LLM]), který předpovídá další token na základě toho, co je před ním obsaženo v #strong[kontextu]. Při #strong[inferenci] model zpracuje obsah kontextového okna a vytvoří posloupnost výstupních tokenů.
