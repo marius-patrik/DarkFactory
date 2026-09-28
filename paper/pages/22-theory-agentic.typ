@@ -9,6 +9,14 @@ Spolehlivé delegování práce začíná explicitním vymezením cíle, rozsahu
 
 V praxi to znamená, že se plán nevzniká až během práce agenta, ale před ní: jeho znění se nejprve dohodnou s člověkem, zapíše do souboru a teprve potom se agent pustí do změn.
 
+#figure(
+  image("/components/img/claude-code-plan.png", width: 100%),
+  caption: [Plán, který model navrhne, než se začne psát kód: seznam kroků podle souborů, které se
+  mění, a otázka, zda se má pokračovat. Znění plánu je tak oddělené od jeho provádění — je to
+  rozhodnutí, které člověk schvaluje nebo odmítne, nikoli popis práce, která už běží. Screenshot
+  z Claude Code, převzato z @gallardo2025beyond.],
+) <fig-claude-code-plan>
+
 #strong[Prompt engineering] se soustředí na formulaci instrukcí, omezení, příkladů a očekávaného výstupu konkrétního inferenčního kroku @openai-prompt-engineering. #strong[Context engineering] řeší širší a průběžný výběr, uspořádání, obnovování a kompakci informací, které má model v daném kroku k dispozici @anthropic-context-engineering. 
 
 #heading(level: 3)[Orchestrace a lidská integrace (Orchestration & HITL)]
