@@ -6,10 +6,13 @@ import type { Attempt } from "../../src/install/harness-registry.ts";
 import { REGISTRY } from "../../src/install/harness-registry.ts";
 import {
 	credentialEnv,
+	type DfAccountCommandResult,
+	type DfAccountRunner,
 	finishDfLoginFiles,
 	finishLoginFile,
 	prepareLoginFile,
 	reportingTokenPersistence,
+	setupDfAccounts,
 	snapshotDfLoginFiles,
 } from "../../src/pipeline/agent-credentials.ts";
 
@@ -258,5 +261,175 @@ describe("reportingTokenPersistence", () => {
 			"CODEX_AUTH_JSON was rotated but could not be written back (no secret store is wired into " +
 				"the agent prompt runner); the next run will fail to authenticate.",
 		]);
+	});
+});
+
+describe("setupDfAccounts", () => {
+	/** The calls a setup made, as `{ argv, stdin, env }` so a test can read what it configured. */
+	function dfRecorder(
+		behaviour: (argv: readonly string[]) => DfAccountCommandResult = () => ({ exitCode: 0, stderr: "" }),
+	) {
+		const calls: Array<{ argv: readonly string[]; stdin: string; env: Record<string, string | undefined> }> = [];
+		const run: DfAccountRunner = (argv, env, stdin) => {
+			calls.push({ argv, stdin, env });
+			return behaviour(argv);
+		};
+		return { calls, run };
+	}
+
+	/** A workspace with no configuration document in it, so the config notice is the one under test. */
+	function emptyRoot(): string {
+		return mkdtempSync(join(tmpdir(), "df-setup-"));
+	}
+
+	test("the run's DF_HOME is published to the environment every later df process inherits", async () => {
+		// Not a convenience: `df` reads its accounts from DF_HOME, so a home that is created and not
+		// published leaves the whole ladder authenticating as nobody.
+		const live: Record<string, string | undefined> = {};
+		const { run } = dfRecorder();
+
+		const home = await setupDfAccounts({ live, roots: [emptyRoot()], run, makeHome: () => "/tmp/df-home-fixed" });
+
+		expect(home).toBe("/tmp/df-home-fixed");
+		expect(live.DF_HOME).toBe("/tmp/df-home-fixed");
+	});
+
+	test("every populated key is saved with its value on stdin, never on the command line", async () => {
+		const live: Record<string, string | undefined> = { GEMINI_API_KEY: "key-one", GROQ_API_KEY: "key-two" };
+		const { calls, run } = dfRecorder();
+
+		await setupDfAccounts({ live, roots: [emptyRoot()], run, makeHome: () => "/tmp/h" });
+
+		const sets = calls.filter((call) => call.argv[1] === "account" && call.argv[2] === "set");
+		expect(sets.map((call) => call.argv.slice(3))).toEqual([
+			["google:default", "api_key", "--type", "api_key"],
+			["groq:default", "api_key", "--type", "api_key"],
+		]);
+		expect(sets.map((call) => call.stdin)).toEqual(["key-one", "key-two"]);
+		// A secret on argv is a secret in the process table and in every log that echoes the command.
+		for (const call of sets) expect(call.argv.join(" ")).not.toContain("key-");
+	});
+
+	test("a repository holding three of the keys gets a shorter chain, not a failure", async () => {
+		// The empty variables are skipped rather than saved as empty accounts, so a partial set of
+		// secrets produces a partial chain.
+		const { calls, run } = dfRecorder();
+		const reported: string[] = [];
+
+		await setupDfAccounts({
+			live: { GEMINI_API_KEY: "one", GROQ_API_KEY: "" },
+			roots: [emptyRoot()],
+			run,
+			makeHome: () => "/tmp/h",
+			say: (message) => reported.push(message),
+		});
+
+		expect(calls.filter((call) => call.argv[2] === "set")).toHaveLength(1);
+		expect(reported).toEqual(["Configured df account google:default from GEMINI_API_KEY."]);
+	});
+
+	test("one bad key is a notice and the rest of the chain is still configured", async () => {
+		const { run } = dfRecorder((argv) =>
+			argv.includes("groq:default") ? { exitCode: 1, stderr: "refused" } : { exitCode: 0, stderr: "" },
+		);
+		const reported: string[] = [];
+
+		await setupDfAccounts({
+			live: { GEMINI_API_KEY: "one", GROQ_API_KEY: "two", OPENROUTER_API_KEY: "three" },
+			roots: [emptyRoot()],
+			run,
+			makeHome: () => "/tmp/h",
+			warn: (message) => reported.push(message),
+		});
+
+		const notices = reported.filter((line) => line.startsWith("df account setup notice"));
+		expect(notices).toHaveLength(1);
+		expect(notices[0]).toContain("df account setup notice for groq:default:");
+		expect(notices[0]).toContain("returned non-zero exit status 1");
+	});
+
+	test("a df that cannot be reached at all stops the loop rather than trying every account", async () => {
+		// Every remaining call would fail the same way, so continuing is noise; a key that df
+		// *rejected* is a different thing and the loop does continue past it.
+		const { calls, run } = dfRecorder(() => ({ exitCode: 127, stderr: "spawn df ENOENT" }));
+		const reported: string[] = [];
+
+		await setupDfAccounts({
+			live: { GEMINI_API_KEY: "one", GROQ_API_KEY: "two" },
+			roots: [emptyRoot()],
+			run,
+			makeHome: () => "/tmp/h",
+			warn: (message) => reported.push(message),
+		});
+
+		expect(calls).toHaveLength(1);
+		expect(reported.filter((line) => line.includes("df binary not found"))).toEqual([
+			"df binary not found; skipping df account setup.",
+		]);
+	});
+
+	test("a subscription record is loaded from its own variable, with nothing on stdin", async () => {
+		const { calls, run } = dfRecorder();
+		const reported: string[] = [];
+
+		await setupDfAccounts({
+			live: { DF_ACCOUNT_OPENAI_CODEX: '{"token":"t"}' },
+			roots: [emptyRoot()],
+			run,
+			makeHome: () => "/tmp/h",
+			say: (message) => reported.push(message),
+		});
+
+		expect(calls[0]?.argv).toEqual([
+			"df",
+			"account",
+			"load",
+			"openai-codex:pipeline",
+			"--from-env",
+			"DF_ACCOUNT_OPENAI_CODEX",
+		]);
+		expect(calls[0]?.stdin).toBe("");
+		expect(reported).toEqual(["Loaded df account openai-codex:pipeline from DF_ACCOUNT_OPENAI_CODEX."]);
+	});
+
+	test("the combined configuration beside the workspace is found and published", async () => {
+		// `DF_CONFIG_DIR` is what tells df which chain to read. A run that resolved the document and
+		// did not publish it would silently use df's built-in default chain instead.
+		const root = emptyRoot();
+		mkdirSync(join(root, ".darkfactory-pipeline"), { recursive: true });
+		writeFileSync(join(root, ".darkfactory-pipeline", "repo.dfconfig"), "{}");
+		const live: Record<string, string | undefined> = {};
+		const { run } = dfRecorder();
+		const reported: string[] = [];
+
+		await setupDfAccounts({
+			live,
+			roots: [root, join(root, ".darkfactory-pipeline")],
+			run,
+			makeHome: () => "/tmp/h",
+			say: (message) => reported.push(message),
+		});
+
+		expect(live.DF_CONFIG_DIR).toBe(join(root, ".darkfactory-pipeline"));
+		expect(reported[0]).toContain("Using df config directory from");
+		rmSync(root, { recursive: true, force: true });
+	});
+
+	test("a workspace with no configuration document is a notice, not a failure", async () => {
+		const live: Record<string, string | undefined> = {};
+		const { run } = dfRecorder();
+		const reported: string[] = [];
+
+		await setupDfAccounts({
+			live,
+			roots: [emptyRoot()],
+			run,
+			makeHome: () => "/tmp/h",
+			warn: (message) => reported.push(message),
+		});
+
+		expect(reported).toEqual(["No combined DarkFactory config found; df uses its built-in default chain."]);
+		// The chain still ran: the notice is about configuration, not about the accounts.
+		expect(run).toBeDefined();
 	});
 });

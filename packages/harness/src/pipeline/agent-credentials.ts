@@ -19,9 +19,11 @@
  * exchanges and forgets has spent the credential - this run works and every run afterwards fails.
  */
 
-import { chmodSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { spawnSync } from "node:child_process";
+import { chmodSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { homedir, tmpdir } from "node:os";
 import { dirname, join, normalize } from "node:path";
+import { resolveConfigDocumentPath } from "@darkfactory/protocol/config-document";
 import {
 	type Attempt,
 	type Auth,
@@ -31,7 +33,7 @@ import {
 	authSecretNames,
 	type Harness,
 } from "../install/harness-registry.ts";
-import { DF_ACCOUNT_LOAD_MAP } from "./df-events.ts";
+import { DF_ACCOUNT_LOAD_MAP, DF_ACCOUNT_SET_MAP } from "./df-events.ts";
 import type { PipelineEnv } from "./handler-context.ts";
 
 /** A subscription login materialised on disk for one attempt, and the secret that populated it. */
@@ -440,4 +442,174 @@ export function removePromptFile(path: string): void {
 	} catch {
 		// A leftover in the temporary directory is not worth failing an attempt over.
 	}
+}
+
+/**
+ * Configuring `df`'s accounts from the environment, which is all the `token-refresh` command does.
+ *
+ * Ported from `setup_df_accounts` in `.github/scripts/agent_runner.py`. It points `DF_HOME` at a
+ * fresh private directory, copies the combined configuration beside it, saves every populated API
+ * key with `df account set` - value on standard input, never on argv, never printed - and loads
+ * each populated subscription record with `df account load`. It runs once, before anything
+ * dispatches, because every agent call in the pipeline goes through `df`.
+ *
+ * Two failure rules are behaviour and are preserved exactly. A repository holding three of the
+ * mapped secrets gets a shorter chain rather than a failure, so one bad key or one unreadable login
+ * is a notice and the loop continues. A `df` that cannot be reached *at all* stops the loop
+ * immediately, because every remaining call would fail the same way.
+ *
+ * The Python memoised the directory in a module global so that `main` and `dispatch_event` shared
+ * one. The port has a single caller - the entrypoint, which sets this up before it dispatches - and
+ * the directory is published through the environment, so there is nothing left to memoise.
+ */
+
+/** The outcome of one `df account` invocation, as `subprocess.run` presented it. */
+export interface DfAccountCommandResult {
+	/** The process's exit status. */
+	readonly exitCode: number;
+	/** The process's standard error, which the notices quote. */
+	readonly stderr: string;
+}
+
+/**
+ * Runs one `df account` invocation to completion, with its value on standard input.
+ *
+ * Synchronous, because the Python's setup was synchronous and ran before the process had any
+ * asynchronous work to interleave with. A binary that could not be started is reported as
+ * {@link DfAccountCommandResult.exitCode} 127 with the `ENOENT` in `stderr`, which is the one
+ * condition the caller answers differently from a plain failure.
+ *
+ * @param argv - The command and its arguments, with no shell between them.
+ * @param env - The environment the command runs in.
+ * @param stdin - What the command reads; empty for a `load`, the secret for a `set`.
+ * @returns The exit status and the standard error.
+ */
+export type DfAccountRunner = (
+	argv: readonly string[],
+	env: Record<string, string | undefined>,
+	stdin: string,
+) => DfAccountCommandResult;
+
+/** The exit status reported when the binary itself could not be started, as `ENOENT` is not an exit. */
+const DF_BINARY_ABSENT = 127;
+
+/** The {@link DfAccountRunner} over a real process, with no shell and no argument-length limit. */
+export const spawnDfAccount: DfAccountRunner = (argv, env, stdin) => {
+	const result = spawnSync(argv[0] as string, argv.slice(1), {
+		env,
+		input: stdin,
+		encoding: "utf8",
+		windowsHide: true,
+	});
+	if (result.error) {
+		// A missing binary arrives as `error` rather than a status. Every other error is a real
+		// failure and keeps its own wording rather than being folded into the missing-binary notice.
+		const absent = (result.error as NodeJS.ErrnoException).code === "ENOENT";
+		return { exitCode: absent ? DF_BINARY_ABSENT : 1, stderr: result.error.message };
+	}
+	return { exitCode: result.status ?? 1, stderr: result.stderr ?? "" };
+};
+
+/** What the account setup needs from the outside world. */
+export interface DfAccountSetupOptions {
+	/**
+	 * The live process environment: read for the secrets, and written with the run's `DF_HOME` and
+	 * `DF_CONFIG_DIR` so that every `df` process the ladder later spawns inherits them.
+	 */
+	live: Record<string, string | undefined>;
+	/** The roots the combined configuration document is looked for in, in order. */
+	roots: readonly string[];
+	/** Runs one `df account` invocation; defaults to {@link spawnDfAccount}. */
+	run?: DfAccountRunner;
+	/** Writes a progress line; defaults to the console. */
+	say?: (message: string) => void;
+	/** Writes a warning or an error; defaults to the console. */
+	warn?: (message: string) => void;
+	/** Creates the run's `DF_HOME`; defaults to a fresh private temporary directory. */
+	makeHome?: () => string;
+}
+
+/**
+ * The first combined configuration document found in one of the roots, or `undefined` for none.
+ *
+ * The Python searched the workspace and then the checkout the pipeline makes beside it, and treated
+ * an ambiguous directory as a raised error rather than a skip. Both properties are kept: ambiguity
+ * reaches the caller as a notice, and a root that holds nothing moves on to the next.
+ */
+function dfConfigSource(roots: readonly string[]): string | undefined {
+	for (const root of roots) {
+		const selected = resolveConfigDocumentPath(root);
+		if (selected) return selected;
+	}
+	return undefined;
+}
+
+/** The failure `subprocess.run(check=True)` raised, in the wording the notices quote. */
+function commandFailed(argv: readonly string[], exitCode: number): Error {
+	return new Error(
+		`Command '[${argv.map((word) => `'${word}'`).join(", ")}]' returned non-zero exit status ${exitCode}.`,
+	);
+}
+
+/**
+ * Point `df` at this run's accounts.
+ *
+ * @param options - The environment, the configuration roots, and the process and reporting seams.
+ * @returns The `DF_HOME` the run uses.
+ */
+export async function setupDfAccounts(options: DfAccountSetupOptions): Promise<string> {
+	const { live, roots } = options;
+	const run = options.run ?? spawnDfAccount;
+	const say = options.say ?? ((message: string) => console.log(message));
+	const warn = options.warn ?? ((message: string) => console.error(message));
+
+	const home = options.makeHome?.() ?? mkdtempSync(join(tmpdir(), "df-home-"));
+	live.DF_HOME = home;
+	const childEnv: Record<string, string | undefined> = { ...live, DF_HOME: home };
+
+	try {
+		const source = dfConfigSource(roots);
+		if (source) {
+			live.DF_CONFIG_DIR = dirname(source);
+			childEnv.DF_CONFIG_DIR = dirname(source);
+			say(`Using df config directory from ${source}.`);
+		} else {
+			warn("No combined DarkFactory config found; df uses its built-in default chain.");
+		}
+	} catch (error) {
+		warn(`df config notice: ${errorMessage(error)}`);
+	}
+
+	for (const [variable, account, slot] of DF_ACCOUNT_SET_MAP) {
+		const value = live[variable] ?? "";
+		if (!value) continue;
+		const argv = ["df", "account", "set", account, slot, "--type", "api_key"];
+		const result = run(argv, childEnv, value);
+		if (result.exitCode === DF_BINARY_ABSENT) {
+			warn("df binary not found; skipping df account setup.");
+			return home;
+		}
+		if (result.exitCode !== 0) {
+			warn(`df account setup notice for ${account}: ${errorMessage(commandFailed(argv, result.exitCode))}`);
+			continue;
+		}
+		say(`Configured df account ${account} from ${variable}.`);
+	}
+
+	for (const [variable, account] of DF_ACCOUNT_LOAD_MAP) {
+		if (!live[variable]) continue;
+		const argv = ["df", "account", "load", account, "--from-env", variable];
+		const result = run(argv, childEnv, "");
+		if (result.exitCode === DF_BINARY_ABSENT) {
+			warn("df binary not found; skipping df account setup.");
+			return home;
+		}
+		if (result.exitCode !== 0) {
+			warn(`df account load notice for ${account}: ${errorMessage(commandFailed(argv, result.exitCode))}`);
+			continue;
+		}
+		say(`Loaded df account ${account} from ${variable}.`);
+	}
+
+	return home;
 }
