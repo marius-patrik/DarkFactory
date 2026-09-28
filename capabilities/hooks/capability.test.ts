@@ -121,3 +121,57 @@ describe("official hooks capability", () => {
 		expect(await hook?.execute?.(context({ commitMessage: "feat: valid" }), runtime)).toEqual({ status: "pass" });
 	});
 });
+
+describe("the declared hooks are reachable by the runner", () => {
+	// Every hook in this capability was callable from nowhere: the ABI validated that each one
+	// declared an event, and nothing in the repository ever called `execute`. A rule that cannot be
+	// invoked is not a rule, and a unit test of the function does not catch that. This asserts the
+	// capability's own hooks are reachable through the same path a real invocation would use, and
+	// that a hook which fails is reported rather than silently skipped.
+	test("every declared hook is selected and executed for each of its events", async () => {
+		const { runHooks } = await import("@darkfactory/capability");
+		const declared = (capability.hooks ?? []).flatMap((hook) =>
+			(hook.events ?? (hook.event ? [hook.event] : [])).map((event) => ({ id: hook.id, event })),
+		);
+		expect(declared.length).toBeGreaterThan(0);
+
+		for (const { id, event } of declared) {
+			const result = await runHooks(
+				[capability],
+				event,
+				// Evidence every hook in this capability can evaluate: a source file, its test, a
+				// conforming commit message and a conforming branch name.
+				context({
+					changedFiles: ["packages/harness/src/ci/detected.ts", "packages/harness/test/ci/detected.test.ts"],
+					sourceFiles: ["packages/harness/src/ci/detected.ts"],
+					testFiles: ["packages/harness/test/ci/detected.test.ts"],
+					commitMessage: "fix(ci): a conforming subject",
+					branch: "v1/hookenforce",
+				}),
+				runtime,
+			);
+			expect(result.outcomes.map((outcome) => outcome.hook)).toContain(id);
+			expect(result.ok).toBe(true);
+		}
+	});
+
+	test("a hook that rejects the evidence is reported as a failure through the runner", async () => {
+		const { runHooks } = await import("@darkfactory/capability");
+		const result = await runHooks(
+			[capability],
+			"pre-commit",
+			// The hook's first move is to pass when nothing changed, so the evidence has to name the
+			// changed files: sourceFiles and testFiles alone describe a tree, not a change.
+			context({
+				changedFiles: ["packages/harness/src/ci/detected.ts"],
+				sourceFiles: ["packages/harness/src/ci/detected.ts"],
+				testFiles: [],
+			}),
+			runtime,
+		);
+		expect(result.ok).toBe(false);
+		const rejected = result.outcomes.find((outcome) => outcome.hook === "tests-touched");
+		expect(rejected?.status).toBe("fail");
+		expect(rejected?.message).toContain("source changed without a test change");
+	});
+});
