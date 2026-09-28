@@ -5,7 +5,7 @@
   "type": "module",
   "workspaces": [
     "packages/*",
-    "capabilities/*",
+    ".darkfactory/plugins/*",
     "paper"
   ],
   "scripts": {

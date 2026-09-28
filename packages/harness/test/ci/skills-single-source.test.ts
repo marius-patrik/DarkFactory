@@ -6,8 +6,8 @@ import { shippedPlugins } from "../../scripts/package-assets.ts";
 import { discoverPluginSkills } from "../../src/ci/installer.ts";
 
 const root = join(import.meta.dir, "..", "..", "..", "..");
-const pluginsDir = join(root, ".agents", "plugins");
-const installedDir = join(root, ".agents", "skills");
+const pluginsDir = join(root, ".darkfactory", "plugins");
+const installedDir = join(root, ".darkfactory", "skills");
 const validator = join(pluginsDir, "plugin-builder", "scripts", "validate-skills.ts");
 
 function pluginDirs(): string[] {

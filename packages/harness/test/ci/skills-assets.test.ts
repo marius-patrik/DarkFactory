@@ -7,7 +7,7 @@ import { checkSkillsDrift, discoverBundledSkills } from "../../src/ci/installer.
 // Paths come from this file, never from process.cwd(): the suite runs from packages/harness/ and from the repository root.
 const harnessDir = join(import.meta.dir, "..", "..");
 const repoDir = join(harnessDir, "..", "..");
-const pluginsDir = join(repoDir, ".agents", "plugins");
+const pluginsDir = join(repoDir, ".darkfactory", "plugins");
 const operatorPlugin = "df-operations";
 const skillsDir = join(pluginsDir, operatorPlugin, "skills");
 
@@ -86,15 +86,15 @@ describe("bundled skills", () => {
 		// here, so absence is the expected state, not a failure. When it does exist — a developer
 		// ran the installer, or a stale copy survived a branch switch — a divergent second text for
 		// any skill name is the failure this is here to catch.
-		if (!existsSync(join(repoDir, ".agents", "skills"))) return;
+		if (!existsSync(join(repoDir, ".darkfactory", "skills"))) return;
 		const drift = await checkSkillsDrift(repoDir);
 		expect(drift.filter((item) => item.status !== "in_sync")).toEqual([]);
 	});
 
 	test("no skill is installed here that the bundle does not ship", async () => {
-		if (!existsSync(join(repoDir, ".agents", "skills"))) return;
+		if (!existsSync(join(repoDir, ".darkfactory", "skills"))) return;
 		const bundled = new Set(await discoverBundledSkills());
-		const installed = readdirSync(join(repoDir, ".agents", "skills"), { withFileTypes: true })
+		const installed = readdirSync(join(repoDir, ".darkfactory", "skills"), { withFileTypes: true })
 			.filter((entry) => entry.isDirectory())
 			.map((entry) => entry.name);
 		expect(installed.filter((name) => !bundled.has(name))).toEqual([]);

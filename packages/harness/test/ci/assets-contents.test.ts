@@ -51,7 +51,7 @@ describe("managed assets directory contains only known files", () => {
 		// `discoverPluginSkills` filters on exactly this shape, so a loose file here is invisible. The
 		// declaration moved out of this assets directory when skills became plugins; the copy under
 		// `dist/assets/plugins/` is release output, not something to edit here.
-		const pluginsDir = join(import.meta.dir, "..", "..", "..", "..", ".agents", "plugins");
+		const pluginsDir = join(import.meta.dir, "..", "..", "..", "..", ".darkfactory", "plugins");
 		for (const plugin of readdirSync(pluginsDir, { withFileTypes: true })) {
 			if (!plugin.isDirectory() || plugin.name.startsWith(".")) continue;
 			const skills = join(pluginsDir, plugin.name, "skills");

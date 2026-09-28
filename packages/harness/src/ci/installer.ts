@@ -71,7 +71,7 @@ export interface PluginSkill {
  */
 export function pluginRoots(): string[] {
 	const candidates = [
-		join(import.meta.dir, "../../../../.agents/plugins"),
+		join(import.meta.dir, "../../../../.darkfactory/plugins"),
 		join(dirname(process.execPath), "assets/plugins"),
 	];
 	return candidates.filter((candidate) => existsSync(candidate));

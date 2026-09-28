@@ -72,7 +72,7 @@ export async function packageAssets(
 	);
 	await cp(join(root, "assets"), join(dist, "assets"), { recursive: true });
 
-	const pluginsDir = join(root, "..", "..", ".agents", "plugins");
+	const pluginsDir = join(root, "..", "..", ".darkfactory", "plugins");
 	for (const plugin of shippedPlugins(pluginsDir)) {
 		await cp(join(pluginsDir, plugin), join(dist, "assets", "plugins", plugin), { recursive: true });
 	}

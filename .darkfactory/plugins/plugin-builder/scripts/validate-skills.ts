@@ -218,7 +218,7 @@ if (args.includes("--help") || args.includes("-h")) {
 }
 
 const repoRoot = process.cwd();
-const pluginsRoot = rootArg ? join(repoRoot, rootArg) : join(repoRoot, ".agents", "plugins");
+const pluginsRoot = rootArg ? join(repoRoot, rootArg) : join(repoRoot, ".darkfactory", "plugins");
 
 if (!existsSync(pluginsRoot)) {
 	process.stderr.write(`no plugins directory at ${pluginsRoot}\n`);

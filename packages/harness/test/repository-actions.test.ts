@@ -4,9 +4,9 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { qualityMatrix, resolveRepositoryActions } from "@darkfactory/capability/actions";
 import { detectRepositoryEvidence } from "@darkfactory/core/repository-evidence";
-import codeCapability from "../../../capabilities/code/capability.ts";
-import mathCapability from "../../../capabilities/math/capability.ts";
-import paperCapability from "../../../capabilities/paper/capability.ts";
+import codeCapability from "../../../.darkfactory/plugins/code/capability.ts";
+import mathCapability from "../../../.darkfactory/plugins/math/capability.ts";
+import paperCapability from "../../../.darkfactory/plugins/paper/capability.ts";
 
 const roots: string[] = [];
 

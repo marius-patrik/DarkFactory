@@ -120,7 +120,7 @@ export async function runDetectedVerification(
 	const evidence = await detectRepositoryEvidence(repoDir);
 	const resolution = await resolveDetectedRepositoryActions(
 		evidence,
-		options.capabilitiesRoot ?? resolve(import.meta.dir, "..", "..", "..", "..", "capabilities"),
+		options.capabilitiesRoot ?? resolve(import.meta.dir, "..", "..", "..", "..", ".darkfactory", "plugins"),
 	);
 	const actions = actionsForTouchedFiles(resolution, options.changedFiles);
 	const results: DetectedVerificationResult[] = [];

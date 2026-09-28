@@ -7,7 +7,9 @@ const harnessDir = join(import.meta.dir, "..");
 const repoDir = join(harnessDir, "..", "..");
 
 /** Directories whose markdown is a canonical source or ships to consumers. */
-const CANONICAL_DIRECTORIES = [join(".agents"), join("packages", "harness", "assets", "skills")];
+// `.agents` is a symlink to `.darkfactory`; a walker does not descend it, so the canonical
+// directories are named on the real path.
+const CANONICAL_DIRECTORIES = [join(".darkfactory"), join(".darkfactory", "plugins")];
 const CANONICAL_FILES = ["README.md", "CONTRIBUTING.md"];
 
 /** Code spans that are a claim about the tree rather than a name, pattern or placeholder. */
@@ -89,9 +91,9 @@ const missing = (document: string, claims: string[]): string =>
 describe("canonical documentation truth", () => {
 	test("the canonical document set is discovered rather than empty", () => {
 		expect(DOCUMENTS.length).toBeGreaterThan(20);
-		expect(DOCUMENTS).toContain(".agents/PRD.md");
-		expect(DOCUMENTS).toContain(".agents/rules/001-unit-tests.md");
-		expect(DOCUMENTS).toContain(".agents/plugins/df-operations/skills/darkfactory-auth/SKILL.md");
+		expect(DOCUMENTS).toContain(".darkfactory/PRD.md");
+		expect(DOCUMENTS).toContain(".darkfactory/rules/001-unit-tests.md");
+		expect(DOCUMENTS).toContain(".darkfactory/plugins/df-operations/skills/darkfactory-auth/SKILL.md");
 	});
 
 	test.each(DOCUMENTS)("%s names only repository paths that exist", (document) => {

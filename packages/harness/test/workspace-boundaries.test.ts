@@ -37,7 +37,7 @@ describe("publishable workspace boundaries", () => {
 		// ADR-0028: the Paper is a first-party domain, so `paper` is part of the final set.
 		// #1227 relocated the `df` runtime under `packages/`, so `harness` is no longer a
 		// separately-listed workspace: `packages/*` already covers it.
-		expect(rootPackage.workspaces).toEqual(["packages/*", "capabilities/*", "paper"]);
+		expect(rootPackage.workspaces).toEqual(["packages/*", ".darkfactory/plugins/*", "paper"]);
 
 		const directories = (await readdir(packageRoot, { withFileTypes: true }))
 			.filter((entry) => entry.isDirectory())
