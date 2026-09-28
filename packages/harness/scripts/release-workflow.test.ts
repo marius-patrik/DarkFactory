@@ -132,16 +132,21 @@ describe("release workflow", () => {
 
 	test("still resolves the notes, the project assets and the version record through the pipeline", () => {
 		expect(source).toContain("--notes-out");
-		expect(source).toContain("release.collect_assets");
+		expect(source).toContain("collectAssets");
 		expect(source).toContain("--record-version");
+		// All three run through the one release entry point, invoked from the tree rather than from a
+		// script directory that no longer exists.
+		expect(source).toContain("packages/harness/src/release/cli.ts");
 		// The notes and the pipeline scripts are per-runner, so the publish job has to be given
 		// them rather than assume the resolve job's temporary directory survived.
 		expect(source).toContain("name: release-notes");
 		expect(source).toContain("--notes-file notes/notes.md");
+		// `PIPELINE_SCRIPTS` existed to locate the Python scripts and was exported to the environment
+		// in both jobs. Nothing reads it now, and an exported path into a deleted directory is a trap
+		// for the next step, so neither job may set it.
 		for (const job of ["resolve", "publish"]) {
 			const sets = (workflow.jobs[job]?.steps ?? []).filter((step) => step.run?.includes("PIPELINE_SCRIPTS="));
-			expect(sets).toHaveLength(1);
-			expect(sets[0]?.run).toContain("$GITHUB_ENV");
+			expect(sets).toHaveLength(0);
 		}
 	});
 });

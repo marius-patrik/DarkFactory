@@ -53,6 +53,7 @@ import { sweepQuotaResumes } from "./limits/resume-sweep.ts";
 import { estimateTask } from "./limits/routing.ts";
 import { type CatalogResult, isRunnableCatalogModel, ModelCatalog } from "./models/catalog.ts";
 import { ModelPoller } from "./models/poller.ts";
+import { RUNNER_COMMANDS, type RunnerCommand, runnerMain } from "./pipeline/main.ts";
 import { ProviderRegistry } from "./providers/runtime.ts";
 import { loadProviderConfig } from "./providers/schema.ts";
 import { classifyFailure } from "./quota.ts";
@@ -583,23 +584,49 @@ async function logoutCommand(
 	console.log(`Logged out ${providerId}/${label}.`);
 }
 
+/**
+ * Resolves the models a one-off question may be answered by.
+ *
+ * The same routing a full run uses, so `ask` and `run` agree on which model would serve a prompt:
+ * asking a question must not silently pick a worse model than running the same prompt would.
+ *
+ * @param registry Provider registry.
+ * @param config Loaded configuration, carrying the routing preferences.
+ * @param prompt The question, which is routed on.
+ * @returns Candidates in preference order; empty when nothing is usable.
+ */
+async function routeForPrompt(registry: ProviderRegistry, config: DfConfig, prompt: string): Promise<Candidate[]> {
+	const models = buildRouterCatalog({
+		providers: registry.entries,
+		capabilityTiers: config.router?.capabilityTiers,
+		defaultTier: config.router?.defaultTier,
+	});
+	if (models.length === 0) return [];
+	const route = await routeTask({ prompt }, { config: config.router ?? DEFAULT_ROUTER_CONFIG, models });
+	return route.chain;
+}
+
 async function askCommand(
 	registry: ProviderRegistry,
 	store: FileCredentialStore,
 	config: DfConfig,
 	args: string[],
 ): Promise<void> {
+	// `--chain` is optional: an ad-hoc question should not require knowing the chain, and the
+	// router already resolves the whole live catalogue when no chain is pinned. Naming one still
+	// works, for when a question should only ever be answered by a particular model.
 	const chainValue = option(args, "--chain");
-	if (!chainValue) throw new Error("ask requires --chain");
 	const prompt = removeOptions(args, ["--chain"]).join(" ").trim();
 	if (!prompt) throw new Error("ask requires a prompt");
 	const json = args.includes("--json");
+	const chain = chainValue ? parseChain(chainValue) : await routeForPrompt(registry, config, prompt);
+	if (chain.length === 0) throw new Error("ask could not resolve a model: add an account, or pass --chain");
 	const supervisor = await createCliSupervisor(
 		registry,
 		store,
 		config,
 		["run", ...args],
-		parseChain(chainValue),
+		chain,
 		json,
 		estimateTask(prompt),
 	);
@@ -1577,8 +1604,23 @@ async function secretsCli(home: string, args: string[]): Promise<void> {
  * @throws {ChainExhaustedError} If all candidates in the chain are unavailable during a run
  * @throws {Error} If an unknown command is provided or a command handler fails
  */
+
 export async function main(args = process.argv.slice(2)): Promise<void> {
 	if (args[0] === "graph") return graphCommand(args.slice(1));
+	// The nine runner commands are reached through `df` itself, not through a second executable.
+	//
+	// The agent image installs `df` and runs it, so a command only this binary can run is a command
+	// the image cannot reach. Pointing ENTRYPOINT at a file inside the source tree instead would work
+	// and would be wrong twice over: it bypasses the CLI that owns the command surface, and it makes
+	// the image's entrypoint depend on the source layout, so a file move breaks the container.
+	//
+	// `nix/entrypoint.sh` refused to shim `dispatch` into `graph dispatch` for the same reason it gave:
+	// a shim that makes the image look compatible turns a loud failure into a silent one. The fix was
+	// never a better shim. It was a real `df dispatch`, which is what this is.
+	if (RUNNER_COMMANDS.includes(args[0] as RunnerCommand)) {
+		process.exitCode = await runnerMain(args);
+		return;
+	}
 	const home = defaultDfHome();
 	const config = await loadDfConfig(process.cwd());
 	const providerConfig = await loadProviderConfig(home);

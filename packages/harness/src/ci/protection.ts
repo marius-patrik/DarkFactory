@@ -11,7 +11,16 @@ export interface ProtectionVerificationReport {
 }
 
 export interface ApplyProtectionOptions {
-	branch?: string;
+	/** The branch to protect. Required: the policy is declared, not guessed. */
+	branch: string;
+	/** Whether branches must be up to date before merging. */
+	strict?: boolean;
+	/** Approvals required before a merge. */
+	approvals?: number;
+	/** Whether the lane applies to administrators as well. */
+	enforceAdmins?: boolean;
+	/** Whether conversations must be resolved before merging. */
+	resolveConversations?: boolean;
 	dryRun?: boolean;
 }
 
@@ -45,10 +54,10 @@ interface RulesetItem {
 export async function applyBranchProtection(
 	repo: GitHubRepository,
 	contexts: string[],
-	options: ApplyProtectionOptions = {},
+	options: ApplyProtectionOptions,
 ): Promise<ApplyProtectionResult> {
 	const dryRun = options.dryRun === true;
-	const branch = options.branch ?? "main";
+	const { branch } = options;
 
 	if (dryRun) {
 		return {
@@ -75,8 +84,11 @@ export async function applyBranchProtection(
 				target: "branch",
 				enforcement: "active",
 				conditions: {
+					// The lane's own branch, not the default-branch alias. Which branch is protected is
+					// declared in the configuration, and a ruleset that follows the repository default
+					// protects a branch nobody asked for.
 					ref_name: {
-						include: ["~DEFAULT_BRANCH"],
+						include: [branch],
 						exclude: [],
 					},
 				},
@@ -84,10 +96,22 @@ export async function applyBranchProtection(
 					{
 						type: "required_status_checks",
 						parameters: {
-							strict_required_status_checks_policy: true,
+							strict_required_status_checks_policy: options.strict === true,
 							required_status_checks: contexts.map((c) => ({ context: c })),
 						},
 					},
+					...(options.approvals !== undefined && options.approvals > 0
+						? [
+								{
+									type: "pull_request",
+									parameters: {
+										required_approving_review_count: options.approvals,
+										enforce_admins: options.enforceAdmins === true,
+										required_conversation_resolution: options.resolveConversations === true,
+									},
+								},
+							]
+						: []),
 				],
 			};
 
@@ -121,10 +145,34 @@ export async function applyBranchProtection(
 		"PUT",
 		`/repos/${encodeURIComponent(owner)}/${encodeURIComponent(repoName)}/branches/${encodeURIComponent(branch)}/protection/required_status_checks`,
 		{
-			strict: true,
+			strict: options.strict === true,
 			contexts,
 		},
 	);
+	// The classic API splits protection across endpoints, so a lane that requires approvals needs its
+	// own call. `required_approving_review_count: 0` is not the same as omitting the call: sending zero
+	// would turn approvals off on a branch whose lane declares them, so the endpoint is only touched
+	// when the lane actually asks for a reviewer.
+	if (options.approvals !== undefined && options.approvals > 0) {
+		await repo.client.rest(
+			"POST",
+			`/repos/${encodeURIComponent(owner)}/${encodeURIComponent(repoName)}/branches/${encodeURIComponent(branch)}/protection/required_pull_request_reviews`,
+			{
+				dismiss_stale_reviews: true,
+				require_code_owner_reviews: options.enforceAdmins === true,
+				required_approving_review_count: options.approvals,
+			},
+		);
+	}
+	if (options.resolveConversations === true) {
+		await repo.client.rest(
+			"PUT",
+			`/repos/${encodeURIComponent(owner)}/${encodeURIComponent(repoName)}/branches/${encodeURIComponent(branch)}/protection`,
+			{
+				required_conversation_resolution: true,
+			},
+		);
+	}
 
 	return {
 		success: true,
@@ -137,7 +185,7 @@ export async function applyBranchProtection(
 export async function verifyBranchProtection(
 	repo: GitHubRepository,
 	expectedContexts: string[],
-	branch = "main",
+	branch: string,
 ): Promise<ProtectionVerificationReport> {
 	const owner = repo.owner;
 	const repoName = repo.repo;

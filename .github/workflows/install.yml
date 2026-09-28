@@ -83,11 +83,6 @@ jobs:
       - name: Install DarkFactory runtime
         run: bun install --frozen-lockfile --cwd .darkfactory-pipeline
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
-
       - name: Describe the target
         id: target
         env:
@@ -100,14 +95,15 @@ jobs:
       - name: Generate the installation
         id: generate
         env:
-          PYTHONPATH: ${{ github.workspace }}/.darkfactory-pipeline/.github/scripts
           TARGET_ROOT: ${{ github.workspace }}/target
           TARGET_REPOSITORY: ${{ inputs.repository }}
           TARGET_BRANCH: ${{ steps.target.outputs.branch }}
           TARGET_DESCRIPTION: ${{ steps.target.outputs.description }}
           PIPELINE_REPO: ${{ github.repository }}
           PIPELINE_REF: ${{ inputs.ref || github.sha }}
-        run: python3 .darkfactory-pipeline/.github/scripts/install.py
+        run: |
+          cd .darkfactory-pipeline
+          bun packages/harness/src/install/main.ts
 
       - name: Apply the declared licence
         # A df subcommand rather than a pipeline script. The licence text is fetched from GitHub's
@@ -201,7 +197,6 @@ jobs:
         if: steps.generate.outputs.written == 'true'
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token || secrets.GH_PROJECT_TOKEN || secrets.GITHUB_TOKEN }}
-          PYTHONPATH: ${{ github.workspace }}/.darkfactory-pipeline/.github/scripts
           TARGET_REPOSITORY: ${{ inputs.repository }}
           PIPELINE_REPO: ${{ github.repository }}
           TARGET_ROOT: ${{ github.workspace }}/target
@@ -213,39 +208,36 @@ jobs:
             echo "Configuration issue already open at #$EXISTING."
             exit 0
           fi
-          python3 - > "$RUNNER_TEMP/config-issue.md" <<'PY'
-          import os
-          import install
-
-          print(
-              install.configuration_issue(
-                  os.environ["TARGET_REPOSITORY"],
-                  os.environ["PIPELINE_REPO"],
-                  needs_submodules=os.path.isfile(
-                      os.path.join(os.environ["TARGET_ROOT"], ".gitmodules")
-                  ),
-              )
-          )
-          PY
+          cd .darkfactory-pipeline
+          TARGET_ROOT="$TARGET_ROOT" TARGET_REPOSITORY="$TARGET_REPOSITORY" \
+            PIPELINE_REPO="$PIPELINE_REPO" \
+            bun -e '
+            import { existsSync } from "node:fs";
+            import { configurationIssue } from "./packages/harness/src/install/configuration-issue.ts";
+            console.log(configurationIssue(
+              process.env.TARGET_REPOSITORY,
+              process.env.PIPELINE_REPO,
+              existsSync(process.env.TARGET_ROOT + "/.gitmodules"),
+            ));
+            ' > "$RUNNER_TEMP/config-issue.md"
           gh issue create --repo "${{ inputs.repository }}" \
             --title "Configure the DarkFactory pipeline" \
             --body-file "$RUNNER_TEMP/config-issue.md"
 
       - name: Reconcile labels, board and settings
         if: inputs.apply-settings
-        working-directory: target
         env:
-          # Both tokens, because this step needs both. `repo_settings` picks per call: Projects v2,
+          # Both tokens, because this step needs both. `repo-settings` picks per call: Projects v2,
           # `/pages` and secret listing need permissions the App does not hold, and everything else
           # is the App's work and should not spend a person's quota - rate limits are per user and
           # shared across every token they hold.
           GH_TOKEN: ${{ steps.app-token.outputs.token || secrets.GH_PROJECT_TOKEN || secrets.GITHUB_TOKEN }}
           GH_PROJECT_TOKEN: ${{ secrets.GH_PROJECT_TOKEN }}
-          # Which repository is being configured. `repo_settings.py` reads this and otherwise falls
-          # back to the directory it lives in - the pipeline checkout - so without it every install
-          # reconciled DarkFactory against itself and reported success.
+          # Which repository is being configured. Without it the command falls back to its own
+          # directory - the pipeline checkout - so every install reconciled DarkFactory against
+          # itself and reported success. This step runs from the pipeline checkout, because that is
+          # where the code is; the consumer is named by this variable rather than by the cwd.
           DARKFACTORY_REPO_ROOT: ${{ github.workspace }}/target
-          PYTHONPATH: ${{ github.workspace }}/.darkfactory-pipeline/.github/scripts
         run: |
-          python3 "${{ github.workspace }}/.darkfactory-pipeline/.github/scripts/repo_settings.py" \
-            --apply --skip-protection
+          cd .darkfactory-pipeline
+          bun packages/harness/src/ci/repo-settings.ts --apply --skip-protection

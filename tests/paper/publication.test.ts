@@ -1,6 +1,13 @@
-import { expect, test } from "bun:test";
+import { expect, setDefaultTimeout, test } from "bun:test";
 import { readFile, stat } from "node:fs/promises";
 import { join, resolve } from "node:path";
+
+// Applies to this file only. The one test spawns a nested bun to compile the manuscript, so its wall
+// time is process startup plus a real typst compile. Bun's 5000ms default is not a bound this test can
+// rely on: it passed locally and failed CI at 5005ms with no change to the code. Declared generously,
+// because the assertion — that the check does not mutate the committed PDF — is worth more than a tight
+// bound on how fast a subprocess starts.
+setDefaultTimeout(60_000);
 
 const REPOSITORY_ROOT = resolve(import.meta.dir, "..", "..");
 const PAPER_ROOT = join(REPOSITORY_ROOT, "paper");

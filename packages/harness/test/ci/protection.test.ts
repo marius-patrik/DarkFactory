@@ -34,12 +34,59 @@ describe("Branch protection & rulesets synchronizer", () => {
 			json({ strict: true, contexts: ["quality", "verify-bound-issue"] }, 200),
 		]);
 		const repo = new GitHubRepository(new GitHubClient({ token: "fake-token", fetch }), "owner", "repo");
-		const result = await applyBranchProtection(repo, ["quality", "verify-bound-issue"], { branch: "main" });
+		// `strict` used to be hardcoded to true in this payload. It is declared now, so the test
+		// declares it — and the assertion below is that the declared value is what is sent.
+		const result = await applyBranchProtection(repo, ["quality", "verify-bound-issue"], {
+			branch: "develop",
+			strict: true,
+		});
 		expect(result.success).toBe(true);
 		expect(JSON.parse(String(calls[1]?.init?.body))).toEqual({
 			strict: true,
 			contexts: ["quality", "verify-bound-issue"],
 		});
+	});
+
+	it("sends the declared strictness, not a hardcoded one", async () => {
+		const { fetch, calls } = scripted([
+			json({ message: "Not Found" }, 404),
+			json({ strict: false, contexts: ["main-source"] }, 200),
+		]);
+		const repo = new GitHubRepository(new GitHubClient({ token: "fake-token", fetch }), "owner", "repo");
+		await applyBranchProtection(repo, ["main-source"], { branch: "main", strict: false });
+		expect(JSON.parse(String(calls[1]?.init?.body)).strict).toBe(false);
+	});
+
+	it("requests the declared number of approvals on the classic path", async () => {
+		// The classic API splits protection across endpoints, so a lane that requires review needs its
+		// own call. Before the policy was declared this module had no approvals field at all.
+		const { fetch, calls } = scripted([
+			json({ message: "Not Found" }, 404),
+			json({ strict: true, contexts: ["quality"] }, 200),
+			json({}, 200),
+		]);
+		const repo = new GitHubRepository(new GitHubClient({ token: "fake-token", fetch }), "owner", "repo");
+		await applyBranchProtection(repo, ["quality"], {
+			branch: "develop",
+			strict: true,
+			approvals: 1,
+			enforceAdmins: false,
+		});
+		const review = calls.find((call) => call.url.includes("required_pull_request_reviews"));
+		expect(review?.url).toContain("/branches/develop/protection/");
+		expect(JSON.parse(String(review?.init?.body)).required_approving_review_count).toBe(1);
+	});
+
+	it("does not ask for a review on a lane that declares none", async () => {
+		// `approvals: 0` must not become a call that turns review off on a branch whose lane simply
+		// does not ask for it.
+		const { fetch, calls } = scripted([
+			json({ message: "Not Found" }, 404),
+			json({ strict: false, contexts: ["main-source"] }, 200),
+		]);
+		const repo = new GitHubRepository(new GitHubClient({ token: "fake-token", fetch }), "owner", "repo");
+		await applyBranchProtection(repo, ["main-source"], { branch: "main", strict: false, approvals: 0 });
+		expect(calls.some((call) => call.url.includes("required_pull_request_reviews"))).toBe(false);
 	});
 
 	it("applies a modern GitHub ruleset when supported", async () => {

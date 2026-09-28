@@ -187,28 +187,10 @@ describe("release version source", () => {
 		expect(resolve(root)).toMatchObject({ next: null, tag: null, bump: null });
 	});
 
-	test("agrees with the Python resolver it replaces on this repository", async () => {
-		// The two implementations run side by side until the Python pipeline is removed, and
-		// release.yml asserts the same agreement in CI. Pinning it here means a divergence is a
-		// failing test rather than a release named one thing and tagged another.
-		const expected = JSON.parse(
-			Bun.spawnSync(
-				[
-					"python3",
-					"-c",
-					"import sys,json;sys.path.insert(0,'.github/scripts');import versioning;print(json.dumps(versioning.resolve('.'),sort_keys=True))",
-				],
-				{
-					cwd: join(import.meta.dir, "..", "..", ".."),
-				},
-			).stdout.toString(),
-		) as Record<string, unknown>;
-		const actual = resolve(join(import.meta.dir, "..", "..", ".."));
-		// `null` is dropped from both sides because the Python prints JSON null for an absent
-		// decision and the TypeScript uses `null` for the same thing, but the Python also omits
-		// nothing; comparing only the decided fields is what both actually promise.
-		const decided = (record: object) =>
-			Object.fromEntries(Object.entries(record).filter(([, value]) => value !== null));
-		expect(decided({ ...actual })).toEqual(decided(expected));
-	});
+	// The test that used to sit here spawned `versioning.py` and asserted the two resolvers agreed.
+	// It was a real invariant while both existed — two implementations read the same tree, and a
+	// divergence meant a release named one thing and tagged another. With the Python gone the
+	// TypeScript is the only resolver, so there is nothing to agree with, and a comparison against a
+	// deleted module would assert nothing while still spawning an interpreter. What remains in this
+	// file is the resolver's own behaviour on this repository, which is the claim that matters now.
 });

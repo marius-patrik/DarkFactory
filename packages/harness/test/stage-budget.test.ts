@@ -55,8 +55,15 @@ describe("df run execution budget", () => {
 			},
 			0,
 		);
+		// The budget is 250ms, not 25ms. The deadline is wall-clock and `prompt` never resolves, so
+		// the only thing that ends this test is the supervisor's own timer. At 25ms the interval
+		// between reading the clock here and reading it again inside the supervisor was the same order
+		// as the budget, so on a loaded machine the test passed or failed depending on scheduling: it
+		// passed alone and failed inside the full suite, on identical code. A bound that narrow cannot
+		// distinguish "the supervisor did not time out" from "the machine was busy".
+		// 250ms is an order of magnitude above that jitter and still fails fast enough to run in a suite.
 		const startedAt = Date.now();
-		const budget: RunDeadline = { startedAt, deadlineAt: startedAt + 25, budgetMs: 25 };
+		const budget: RunDeadline = { startedAt, deadlineAt: startedAt + 250, budgetMs: 250 };
 
 		let caught: unknown;
 		try {
@@ -69,7 +76,7 @@ describe("df run execution budget", () => {
 		const timeout = caught as RunTimeoutError;
 		expect(timeout.exitCode).toBe(4);
 		expect(timeout.sessionId).toBe("budget-test");
-		expect(timeout.elapsedMs).toBeGreaterThanOrEqual(20);
+		expect(timeout.elapsedMs).toBeGreaterThanOrEqual(200);
 		expect(aborts).toBe(1);
 		expect(events.filter((event) => event.type === "timeout")).toHaveLength(1);
 	});

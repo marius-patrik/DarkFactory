@@ -1,3 +1,4 @@
+import type { LimitTier } from "@darkfactory/protocol/model";
 import type { Candidate } from "../failover.ts";
 import { parseChain } from "../harness/routing.ts";
 import type { LimitLedger } from "../limits/ledger.ts";
@@ -89,6 +90,57 @@ function dataCollectionError(
 	);
 }
 
+/**
+ * The limit tier that costs nothing.
+ *
+ * `LimitTier` is `tight | standard | bulk` — a statement about how many requests a key is allowed,
+ * which is only incidentally a statement about cost. `bulk` is the free tier across every provider
+ * in the catalogue, so it is what `preferFree` means here.
+ */
+const FREE_TIER: LimitTier = "bulk";
+
+/**
+ * Scores how much a policy's soft preferences favour a model.
+ *
+ * Deliberately a bonus rather than a filter: naming a provider says which one to try first, and
+ * says nothing about what to do when it is out of quota. Everything the preference did not name
+ * stays reachable, which is what lets a repository benefit from a provider's new models without
+ * editing configuration.
+ *
+ * Precedence is the order the values are declared in, not whether the match was exact.
+ *
+ * @param model Model being scored.
+ * @param policy Matching policy, if any.
+ * @returns A non-negative bonus; higher means more preferred.
+ */
+function softPreferenceBonus(model: ModelCapability, policy: RouterPolicy | undefined): number {
+	if (!policy) return 0;
+	let bonus = 0;
+	const provider = model.candidate.provider;
+	const modelId = model.candidate.model;
+	const rank = (values: readonly string[] | undefined, value: string): number | undefined => {
+		if (!values || values.length === 0) return undefined;
+		// Declared order is the precedence: the first entry that matches wins, so whoever writes
+		// the list controls it. An exact id and a family prefix are both matches.
+		const exact = values.indexOf(value);
+		if (exact >= 0) return exact;
+		const segments = value.split("/");
+		// Providers namespace model ids (`stealth/space-bunny-alpha`, `vendor/model-v2`), so a
+		// declared fragment has to match a segment as well as the whole id. Otherwise naming a
+		// model family silently misses every build a provider releases under a prefix.
+		for (const [index, entry] of values.entries()) {
+			if (segments.some((segment) => segment.startsWith(entry))) return index;
+		}
+		return undefined;
+	};
+	const providerRank = rank(policy.prefer.preferProviders, provider);
+	if (providerRank !== undefined) bonus += 100 - Math.min(providerRank, 99);
+	const modelRank = rank(policy.prefer.preferModels, modelId);
+	if (modelRank !== undefined) bonus += 200 - Math.min(modelRank, 199);
+	if (policy.prefer.preferFree === true && model.limitTier === FREE_TIER) bonus += 50;
+	return bonus;
+}
+
 export async function routeTask(input: RouterInput, dependencies: RouteDependencies): Promise<RouteResult> {
 	const classified = await classifyTaskWithDiagnostics(input, dependencies.config, dependencies.classify);
 	const profile = classified.profile;
@@ -110,11 +162,23 @@ export async function routeTask(input: RouterInput, dependencies: RouteDependenc
 	const policy =
 		source === "policy" ? dependencies.config.policies.find((entry) => matches(entry, profile)) : undefined;
 	const forced = explicit ?? graph ?? constrained ?? hard;
-	const useGenerationCatalog =
+	const keepCatalogue = policy?.prefer.includeCatalogue === true;
+	const softPreference =
 		!!policy &&
-		!policy.prefer.candidates &&
-		!dependencies.config.candidates &&
-		(profile.needs.includes("image_gen") || profile.needs.includes("video_gen"));
+		(keepCatalogue || !policy.prefer.candidates) &&
+		((policy.prefer.preferProviders?.length ?? 0) > 0 ||
+			(policy.prefer.preferModels?.length ?? 0) > 0 ||
+			policy.prefer.preferFree === true);
+	// Generation tasks and any policy that expresses a soft preference resolve against the whole
+	// live catalogue. A declared chain is a ceiling, so falling back to it here would hide every
+	// model a provider publishes after the list was written — which is the opposite of what
+	// preferring a provider is for.
+	const useGenerationCatalog =
+		softPreference ||
+		(!!policy &&
+			!policy.prefer.candidates &&
+			!dependencies.config.candidates &&
+			(profile.needs.includes("image_gen") || profile.needs.includes("video_gen")));
 	const preferred = forced
 		? parseChain(forced)
 		: (policy?.prefer.candidates?.map(firstCandidate) ??
@@ -122,7 +186,7 @@ export async function routeTask(input: RouterInput, dependencies: RouteDependenc
 			(useGenerationCatalog ? [] : dependencies.defaultChain ? parseChain(dependencies.defaultChain) : []));
 	const byKey = new Map(dependencies.models.map((model) => [candidateKey(model.candidate), model]));
 	const universe: ModelCapability[] =
-		forced || preferred.length > 0
+		forced || (preferred.length > 0 && !keepCatalogue)
 			? preferred.map(
 					(candidate): ModelCapability =>
 						byKey.get(candidateKey(candidate)) ?? {
@@ -174,6 +238,14 @@ export async function routeTask(input: RouterInput, dependencies: RouteDependenc
 			? await dependencies.outcomes.penalties(profile.kind, dependencies.now?.())
 			: new Map<string, number>();
 	const preference = new Map(preferred.map((candidate, index) => [candidateKey(candidate), index]));
+	if (keepCatalogue && !forced) {
+		// Pinning with `includeCatalogue` ranks the named models ahead of everything else rather
+		// than replacing it: the pinned order is honoured, and the rest of the catalogue follows.
+		for (const model of dependencies.models) {
+			const key = candidateKey(model.candidate);
+			if (!preference.has(key)) preference.set(key, preference.size);
+		}
+	}
 	const tierOrder = policy?.prefer.tiers ?? [...DEFAULT_TIER_ORDER[profile.size]];
 	const forcedOrder = !!forced || !!policy?.prefer.candidates;
 	const scored = filtered
@@ -193,8 +265,14 @@ export async function routeTask(input: RouterInput, dependencies: RouteDependenc
 			const capabilityPenalty = missing || belowMinimum || unknownCapabilityTier ? 10_000 : 0;
 			const orderScore =
 				preferredIndex === undefined ? 1_000 : forcedOrder ? preferredIndex * 100 : preferredIndex / 10_000;
+			// Soft preferences bias the order without removing anything: a provider or model prefix
+			// named here is tried first, and everything else in the catalogue stays a live fallback.
+			// Lower score wins, so a preference has to subtract: naming a model or provider makes it
+			// earlier in the order, not later.
+			const softScore = -softPreferenceBonus(model, policy) * 10;
 			const score =
 				orderScore +
+				softScore +
 				(forced ? 0 : tierIndex < 0 ? 300 : tierIndex * 100) -
 				(forced ? 0 : quality) +
 				learning +

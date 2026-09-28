@@ -20,7 +20,6 @@ interface CacheEntry {
  * @property maxRetries - Maximum number of retry attempts for transient failures.
  * @property random - Function returning a random number for jitter calculation.
  * @property sleep - Async sleep function; defaults to Bun.sleep.
- * @property now - Function returning current date; defaults to `new Date()`.
  * @property userAgent - User‑Agent string sent with requests.
  * @property onAuthenticationFailure - Callback invoked when authentication errors are encountered.
  */
@@ -33,7 +32,6 @@ export interface GitHubClientOptions {
 	maxRetries?: number;
 	random?: () => number;
 	sleep?: Sleep;
-	now?: () => Date;
 	userAgent?: string;
 	onAuthenticationFailure?: () => void;
 }
@@ -51,7 +49,6 @@ export class GitHubClient {
 	readonly #maxRetries: number;
 	readonly #random: () => number;
 	readonly #sleep: Sleep;
-	readonly #now: () => Date;
 	readonly #userAgent: string;
 	readonly #onAuthenticationFailure?: () => void;
 	readonly #cache = new Map<string, CacheEntry>();
@@ -66,7 +63,6 @@ export class GitHubClient {
 		this.#maxRetries = options.maxRetries ?? 3;
 		this.#random = options.random ?? Math.random;
 		this.#sleep = options.sleep ?? ((ms) => Bun.sleep(ms));
-		this.#now = options.now ?? (() => new Date());
 		this.#userAgent = options.userAgent ?? "darkfactory-df/0.0";
 		this.#onAuthenticationFailure = options.onAuthenticationFailure;
 	}

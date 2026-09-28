@@ -47,7 +47,7 @@ if (target.platform === "win32") {
 	// named `df` on PATH with the DarkFactory binary beside it as `df-bin.exe`.
 	const stage = await mkdtemp(join(tmpdir(), "df-wrapper-"));
 	try {
-		await copyFile(join(harnessRoot, "scripts", "df-wrapper.cmd"), join(stage, "df.cmd"));
+		await copyFile(join(repositoryRoot, "scripts", "df-wrapper.cmd"), join(stage, "df.cmd"));
 		await copyFile(binary, join(stage, "df-bin.exe"));
 		const child = Bun.spawn([join(stage, "df.cmd"), "providers"], { cwd: stage, stdout: "pipe", stderr: "pipe" });
 		const [code, err] = await Promise.all([child.exited, new Response(child.stderr).text()]);
