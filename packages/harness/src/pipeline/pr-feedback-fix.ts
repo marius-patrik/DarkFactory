@@ -24,9 +24,9 @@
 
 import { type BoardStatus, blockEntity, type EntityStatePort } from "./board-status.ts";
 import { errorMessage } from "./pipeline-io.ts";
-import { checkoutPrBranch, type PrBranchContext } from "./pr-branch.ts";
 import { findParentRequestNumber } from "./plan-links.ts";
 import { approvedPlanText } from "./pr-body.ts";
+import { checkoutPrBranch, type PrBranchContext } from "./pr-branch.ts";
 import { AGENT_ERROR_PREFIX, isQuotaExhaustionNotice } from "./signals.ts";
 
 /** Marks every comment this pipeline posts, so a later pass can recognise its own output. */
@@ -115,7 +115,10 @@ function entitiesOf(context: PrFeedbackFixContext): EntityStatePort {
  * requirement.
  */
 function feedbackPrompt(planBody: string, feedback: string): string {
-	return `Plan approved:\n${planBody}\n\nOwner feedback:\n${feedback}\n\n` + "Make the necessary changes to address the feedback.";
+	return (
+		`Plan approved:\n${planBody}\n\nOwner feedback:\n${feedback}\n\n` +
+		"Make the necessary changes to address the feedback."
+	);
 }
 
 /**

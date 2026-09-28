@@ -1,11 +1,11 @@
 import { describe, expect, test } from "bun:test";
 import type { BoardEntity } from "../../src/pipeline/board-status.ts";
-import { runSelfReviewFix } from "../../src/pipeline/self-review-fix.ts";
 import { reviewDigest } from "../../src/pipeline/review-convergence.ts";
+import { runSelfReviewFix } from "../../src/pipeline/self-review-fix.ts";
 import { AGENT_ERROR_PREFIX, QUOTA_EXHAUSTED_NOTICE } from "../../src/pipeline/signals.ts";
 import {
-	type HandlerContextOptions,
 	gitCommands,
+	type HandlerContextOptions,
 	handlerContext,
 	labelChanges,
 	postedComments,
@@ -72,11 +72,9 @@ function fixContext(options: SelfReviewFixContextOptions = {}) {
 
 /** The port, wired to the pull request's comments and a head branch to check out. */
 function selfReviewFixPort(options: { comments?: string[]; behaviour?: Parameters<typeof recordingIo>[1] } = {}) {
-	return recordingIo(
-		{ [PR]: { comments: options.comments ?? [] } },
-		options.behaviour ?? {},
-		{ [PR]: { headRefName: HEAD, comments: options.comments ?? [] } },
-	);
+	return recordingIo({ [PR]: { comments: options.comments ?? [] } }, options.behaviour ?? {}, {
+		[PR]: { headRefName: HEAD, comments: options.comments ?? [] },
+	});
 }
 
 /**
@@ -227,9 +225,7 @@ describe("runSelfReviewFix: applying a review's findings", () => {
 		const outcome = await runSelfReviewFix(context, FIX_REQUEST);
 
 		expect(outcome.kind).toBe("next-review-dispatched");
-		expect(gitCommands(workspace)).not.toContain(
-			"commit -m fix(review): address self-review findings (iteration 2)",
-		);
+		expect(gitCommands(workspace)).not.toContain("commit -m fix(review): address self-review findings (iteration 2)");
 		expect(reported).toContain("No changes after fix attempt on iteration 2");
 		expect(port.calls.at(-1)?.args[1]).toMatchObject({ stage: "self-review", iteration: 3 });
 	});

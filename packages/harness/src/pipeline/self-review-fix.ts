@@ -195,8 +195,7 @@ export async function runSelfReviewFix(
 		if (fixResult.startsWith(AGENT_ERROR_PREFIX)) {
 			// Posted and stopped, but not blocked. The findings are still on the pull request and the
 			// reversion above is already pushed, so a retry re-reads them and continues.
-			const comment =
-				`${AGENT_MARKER}\n### Self-Review Fix Error (Iteration ${iteration})\n\n${fixResult}`;
+			const comment = `${AGENT_MARKER}\n### Self-Review Fix Error (Iteration ${iteration})\n\n${fixResult}`;
 			await io.addComment(repo, prNumber, comment);
 			return { kind: "agent-error", iteration, comment };
 		}
@@ -209,11 +208,7 @@ export async function runSelfReviewFix(
 			await workspace.git(["add", "-A"]);
 			const status = await workspace.git(["status", "--porcelain"]);
 			if (status) {
-				await workspace.git([
-					"commit",
-					"-m",
-					`fix(review): address self-review findings (iteration ${iteration})`,
-				]);
+				await workspace.git(["commit", "-m", `fix(review): address self-review findings (iteration ${iteration})`]);
 				await workspace.git(["push", "origin", "HEAD"]);
 				context.say(`Pushed review fixes for iteration ${iteration}`);
 			} else {
@@ -245,7 +240,10 @@ export async function runSelfReviewFix(
 	// The loop's next step, and the only one that advances it. Not caught: a dispatch failure that
 	// leaves a pull request in draft with nobody reading it is exactly the state this stage exists to
 	// prevent, and `dispatchAgentStage` has already posted its notice and blocked both entities.
-	await io.dispatchAgentStage(repo, nextReviewPayload({ pr: prNumber, plan: planNumber, request: requestNumber }, iteration + 1));
+	await io.dispatchAgentStage(
+		repo,
+		nextReviewPayload({ pr: prNumber, plan: planNumber, request: requestNumber }, iteration + 1),
+	);
 	context.say(`Dispatched self-review iteration ${iteration + 1}`);
 	return { kind: "next-review-dispatched", iteration, summary, comment };
 }

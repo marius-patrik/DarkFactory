@@ -1,11 +1,11 @@
 import { describe, expect, test } from "bun:test";
 import type { BoardEntity } from "../../src/pipeline/board-status.ts";
-import { runPrFeedbackFix } from "../../src/pipeline/pr-feedback-fix.ts";
 import { SCOPE_AMENDMENT_MARKER } from "../../src/pipeline/pr-body.ts";
+import { runPrFeedbackFix } from "../../src/pipeline/pr-feedback-fix.ts";
 import { AGENT_ERROR_PREFIX, QUOTA_EXHAUSTED_NOTICE } from "../../src/pipeline/signals.ts";
 import {
-	type HandlerContextOptions,
 	gitCommands,
+	type HandlerContextOptions,
 	handlerContext,
 	labelChanges,
 	postedComments,
@@ -41,7 +41,9 @@ function feedbackContext(options: FeedbackFixContextOptions = {}) {
 	const board: Array<BoardEntity & { status: string }> = [];
 	const base = handlerContext({ ...options, io, answers: options.answers ?? ["Updated the test command."] });
 	const workspace = recordingWorkspace({
-		gitOutput: { "status --porcelain": options.dirty === false ? "" : " M packages/harness/src/pipeline/plan-scope.ts" },
+		gitOutput: {
+			"status --porcelain": options.dirty === false ? "" : " M packages/harness/src/pipeline/plan-scope.ts",
+		},
 		gitError: options.gitError,
 	});
 	return {

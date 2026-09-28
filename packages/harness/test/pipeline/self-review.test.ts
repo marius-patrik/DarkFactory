@@ -1,15 +1,14 @@
 import { describe, expect, test } from "bun:test";
 import type { BoardEntity } from "../../src/pipeline/board-status.ts";
 import { pipelineEnvironment } from "../../src/pipeline/handler-context.ts";
-import { type SelfReviewContext, runSelfReviewIteration } from "../../src/pipeline/self-review.ts";
 import { reviewDigest } from "../../src/pipeline/review-convergence.ts";
 import { NO_FINDINGS_PREFIX } from "../../src/pipeline/review-findings.ts";
+import { runSelfReviewIteration, type SelfReviewContext } from "../../src/pipeline/self-review.ts";
 import { AGENT_ERROR_PREFIX, QUOTA_EXHAUSTED_NOTICE } from "../../src/pipeline/signals.ts";
 import {
 	type HandlerContextOptions,
 	handlerContext,
 	labelChanges,
-	operations,
 	postedComments,
 	recordingIo,
 	recordingWorkspace,
@@ -46,7 +45,8 @@ const DIFF = [
 ].join("\n");
 
 /** One review finding, in the numbered form the review prompt asks the agent for. */
-const ONE_FINDING = "1. `checkScope` never excludes test files, so a plan naming only source is judged against its own tests.";
+const ONE_FINDING =
+	"1. `checkScope` never excludes test files, so a plan naming only source is judged against its own tests.";
 const OTHER_FINDING = "1. A different finding entirely, with no shared wording.";
 
 /** What a self-review context is built from. */
@@ -298,10 +298,7 @@ describe("runSelfReviewIteration: failure paths", () => {
 		// `prView` is how the checkout learns the head branch, so a read that fails is a failed
 		// checkout - which is the one blocked-without-comment path, because a stopped pipeline is what
 		// a human is looking for and Blocked is the label they read.
-		const port = recordingIo(
-			{ [PLAN]: { body: PLAN_BODY } },
-			{ prView: new Error("HTTP 404: no pull request found") },
-		);
+		const port = recordingIo({ [PLAN]: { body: PLAN_BODY } }, { prView: new Error("HTTP 404: no pull request found") });
 		const { context, board, agent, reported } = selfReviewContext({ io: port.io, answers: [ONE_FINDING] });
 
 		const outcome = await runSelfReviewIteration(context, REQUEST_FOR_REVIEW);
@@ -444,10 +441,7 @@ describe("runSelfReviewIteration: the review prompt", () => {
 			issueNumber: PR,
 			repo: REPO,
 			isPr: true,
-			completedSteps: [
-				`Completed implementation and opened PR #${PR}`,
-				"Self-review iteration 2",
-			],
+			completedSteps: [`Completed implementation and opened PR #${PR}`, "Self-review iteration 2"],
 		});
 	});
 });
