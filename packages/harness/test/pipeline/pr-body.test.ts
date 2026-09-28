@@ -108,7 +108,7 @@ describe("generateBranchName", () => {
 	});
 
 	test("a long title is truncated to fifty characters and never ends in a separator", () => {
-		const name = generateBranchName("Plan: " + "word ".repeat(30));
+		const name = generateBranchName(`Plan: ${"word ".repeat(30)}`);
 		expect(name.startsWith("feature/")).toBe(true);
 		expect(name.slice("feature/".length).length).toBeLessThanOrEqual(50);
 		expect(name.endsWith("-")).toBe(false);
