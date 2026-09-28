@@ -8,7 +8,13 @@
  */
 
 import type { AgentDispatchPayload } from "../../src/pipeline/dispatch.ts";
-import { type AgentPromptRequest, type PipelineContext, pipelineContext } from "../../src/pipeline/handler-context.ts";
+import {
+	type AgentPromptRequest,
+	type PipelineContext,
+	pipelineContext,
+	pipelineEnvironment,
+} from "../../src/pipeline/handler-context.ts";
+import type { ImplementContext } from "../../src/pipeline/implement.ts";
 import type { AreaTaxonomy } from "../../src/pipeline/labels.ts";
 import type {
 	IssueCommentRow,
@@ -17,6 +23,7 @@ import type {
 	PipelineIo,
 	PrCreateInput,
 } from "../../src/pipeline/pipeline-io.ts";
+import type { VerificationResult, WorkspaceIo } from "../../src/pipeline/workspace-io.ts";
 
 /** One recorded operation, in the order the handler performed it. */
 export interface RecordedCall {
@@ -35,7 +42,16 @@ export interface RecordingIo extends PipelineIo {
 }
 
 /** Per-operation behaviour: a value to return, or an `Error` to throw. */
-export type IoBehaviour = Partial<Record<keyof PipelineIo, unknown | Error>>;
+export interface IoBehaviour extends Partial<Record<keyof PipelineIo, unknown | Error>> {
+	/**
+	 * What `prNumbersForBranch` answers, one entry per call.
+	 *
+	 * A handler that opens a pull request probes for an existing one and then polls for the new one,
+	 * so the two calls have to be able to disagree, and either can be an `Error` the port throws. An
+	 * exhausted sequence answers empty, which is "no open pull request for this branch".
+	 */
+	prNumberSequence?: Array<number[] | Error>;
+}
 
 /** The issue a {@link RecordingIo} serves when a handler reads one. */
 export interface IssueFixture {
@@ -115,7 +131,16 @@ export function recordingIo(issues: Record<number, IssueFixture> = {}, behaviour
 		prReady: async (repo, pr) => {
 			record("prReady", [repo, pr], undefined);
 		},
-		prNumbersForBranch: async (repo, head, base) => record("prNumbersForBranch", [repo, head, base], [] as number[]),
+		prNumbersForBranch: async (repo, head, base) => {
+			calls.push({ op: "prNumbersForBranch", args: [repo, head, base] });
+			if (behaviour.prNumberSequence) {
+				const next = behaviour.prNumberSequence.shift();
+				if (next === undefined) return [];
+				if (next instanceof Error) throw next;
+				return next;
+			}
+			return record("prNumbersForBranch", [repo, head, base], [] as number[]);
+		},
 		prCreate: async (repo, input: PrCreateInput) => {
 			record("prCreate", [repo, input], undefined);
 		},
@@ -229,4 +254,156 @@ export function labelChanges(
 			const change = call.args[2] as { labels: readonly string[]; add: boolean };
 			return { number: call.args[1] as number, labels: change.labels, add: change.add };
 		});
+}
+
+/** A `WorkspaceIo` that records instead of touching a working copy, with overridable behaviour. */
+export interface RecordingWorkspace extends WorkspaceIo {
+	/** Every call made so far, in order. */
+	readonly calls: RecordedCall[];
+	/** The `WorkspaceIo` methods, with a recording wrapper for each. */
+	readonly io: WorkspaceIo;
+}
+
+/** What a {@link recordingWorkspace} does when a handler asks it to do something. */
+export interface WorkspaceBehaviour {
+	/**
+	 * Standard output per git invocation, keyed by the arguments joined with a space.
+	 *
+	 * A git call with no entry returns an empty string, which is what a command that prints nothing
+	 * returns; the keys that matter are the ones a handler branches on, such as `branch -r` and
+	 * `status --porcelain`.
+	 */
+	gitOutput?: Record<string, string>;
+	/** Git stderr per invocation, keyed the same way; the call throws with this as its message. */
+	gitError?: Record<string, string>;
+	/** Notices the git identity configuration reports, as it does for a read-only `$HOME`. */
+	identityNotices?: string[];
+	/** Notices the formatter pass reports, as it does for a formatter that ran and failed. */
+	formatNotices?: string[];
+	/** The names the formatter pass reports as having run. */
+	formattersRan?: string[];
+	/** The test-suite result. Defaults to a passing `bun test` run. */
+	verification?: VerificationResult;
+	/** The refs `resolveBaseRefs` finds; the first is the one a diff is taken against. */
+	baseRefs?: string[];
+	/** The message `resolveBaseRefs` throws, naming the base it could not resolve. */
+	baseRefsError?: string;
+}
+
+/** A passing `bun test` run, the result a repository with a working suite produces. */
+const PASSING_SUITE: VerificationResult = {
+	args: ["bun", "run", "test"],
+	returncode: 0,
+	stdout: "1970 pass\n0 fail",
+	stderr: "",
+};
+
+/** The key a git invocation is looked up under in {@link WorkspaceBehaviour}. */
+function gitKey(args: readonly string[]): string {
+	return args.join(" ");
+}
+
+/**
+ * A recording `WorkspaceIo`.
+ *
+ * Every git call is looked up in {@link WorkspaceBehaviour.gitOutput} by its joined arguments, so a
+ * test states the repository's state - "this branch exists on the remote", "there are staged
+ * changes" - rather than a script of calls. The calls are still recorded in order, so the sequence
+ * remains assertable.
+ *
+ * @param behaviour - What git prints, what fails, and what the suites return.
+ * @returns The recording workspace and its call log.
+ */
+export function recordingWorkspace(behaviour: WorkspaceBehaviour = {}): RecordingWorkspace {
+	const calls: RecordedCall[] = [];
+	const record = <T>(op: string, args: unknown[], fallback: T): T => {
+		calls.push({ op, args });
+		return fallback;
+	};
+
+	const git = (args: readonly string[]): string => {
+		const key = gitKey(args);
+		record("git", [args], "");
+		const failure = behaviour.gitError?.[key];
+		if (failure !== undefined) throw new Error(failure);
+		return behaviour.gitOutput?.[key] ?? "";
+	};
+
+	const io: WorkspaceIo = {
+		configureGitIdentity: () => record("configureGitIdentity", [], behaviour.identityNotices ?? []),
+		git,
+		resolveBaseRefs: (base) => {
+			record("resolveBaseRefs", [base], behaviour.baseRefs ?? [`origin/${base}...HEAD`]);
+			if (behaviour.baseRefsError !== undefined) throw new Error(behaviour.baseRefsError);
+			return behaviour.baseRefs ?? [`origin/${base}...HEAD`];
+		},
+		formatRepository: () =>
+			record("formatRepository", [], { ran: behaviour.formattersRan ?? [], notices: behaviour.formatNotices ?? [] }),
+		verifyRepository: () => record("verifyRepository", [], behaviour.verification ?? PASSING_SUITE),
+		sleep: async (ms) => {
+			record("sleep", [ms], undefined);
+		},
+	};
+
+	return { ...io, calls, io };
+}
+
+/** What an {@link implementContext} is built from. */
+export interface ImplementContextOptions extends HandlerContextOptions {
+	/** The working copy double. */
+	workspace: RecordingWorkspace;
+	/** Board moves the handler made, as `{ number, isPr, status }`. */
+	board?: Array<{ number: number; isPr: boolean; status: string }>;
+	/**
+	 * The directory the checkpoint is read from.
+	 *
+	 * A real directory, because the checkpoint is a file: "a run that left no checkpoint" and "a run
+	 * that left a checkpoint naming the steps it completed" are different states of the same
+	 * filesystem, and a double that returns either on demand would not say which one the handler
+	 * reads.
+	 */
+	workspaceDir?: string;
+}
+
+/** An {@link ImplementContext} plus the doubles behind it. */
+export interface ImplementContextHandle extends HandlerContextHandle {
+	/** The context to hand `handleImplement`. */
+	implementContext: ImplementContext;
+	/** Board moves, recorded through the injected board port. */
+	board: Array<{ number: number; isPr: boolean; status: string }>;
+}
+
+/**
+ * An `ImplementContext` wired to a recording port, a recording workspace and a scripted agent.
+ *
+ * @param options - The port, the workspace, the agent's answers, and the repository's declarations.
+ * @returns The context and the doubles behind it.
+ */
+export function implementContext(options: ImplementContextOptions): ImplementContextHandle {
+	const base = handlerContext(options);
+	const board = options.board ?? [];
+	return {
+		...base,
+		board,
+		implementContext: {
+			...base.context,
+			workspace: options.workspace.io,
+			board: (entity, status) => {
+				board.push({ ...entity, status });
+			},
+			environment: pipelineEnvironment({ GITHUB_WORKSPACE: options.workspaceDir ?? "/workspace" }),
+		},
+	};
+}
+
+/** The operation names on a recording workspace, in the order they were performed. */
+export function workspaceOperations(recording: RecordingWorkspace): string[] {
+	return recording.calls.map((call) => call.op);
+}
+
+/** The git arguments a recording workspace saw, in order, each joined into a command line. */
+export function gitCommands(recording: RecordingWorkspace): string[] {
+	return recording.calls
+		.filter((call) => call.op === "git")
+		.map((call) => (call.args[0] as readonly string[]).join(" "));
 }
