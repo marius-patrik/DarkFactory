@@ -372,7 +372,11 @@ describe("plans", () => {
 		expect(document.docs.version).toBe(1);
 		expect(document.docs.home).toBe(".agents/PRD.md");
 		expect(document.docs).not.toHaveProperty("api");
-		expect(document.providers.defaultChain).toBeTruthy();
+		// The repository config no longer pins a provider chain. The chain is a ceiling the router
+		// receives as an argument, and `df ask` routes against the live catalogue, so a chain written
+		// into repo.dfconfig would hide every model published after it. router-preferences.test.ts
+		// covers that the declared chain is still honoured as a ceiling when one is passed.
+		expect(document.providers).not.toHaveProperty("defaultChain");
 	});
 
 	it("lets a declared command override the default, leaving other ecosystems alone", async () => {
