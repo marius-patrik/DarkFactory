@@ -20,15 +20,11 @@ přebírá tato skladba, ne model.
 
 Současný jazykový model stojí na architektuře #strong[Transformer], kterou představil Google
 v roce 2017 v jejich nyní proslulé práci #strong[#emph[„Attention Is All You Need“]] @vaswani2017.
-Místo zpracovávání tokenů jeden po druhém přiřazuje architektura význam každému tokenu
-současně se všemi ostatními.
-
-Mechanismus, na kterém je architektura postavená, se nazývá #strong[attention]. Ke každému
-tokenu připočítá vážený součet hodnot ostatních tokenů, takže jeho reprezentace nese
-informaci z celého kontextu a vzdálenost mezi pozicemi nemusí být pevně daná jejich
-pořadím. Právě to dovoluje zpracovat kontext najednou a vyhovět dnešním požadavkům na délku
-a složitost konverzace; mechanismus je používaný i v pozdějších generacích modelů
-@brown2020.
+Její základem je #strong[attention]: ke každému tokenu připočítá vážený součet hodnot všech
+ostatních, takže jeho reprezentace nese informaci z celého kontextu a vzdálenost mezi pozicemi
+není pevně daná jejich pořadím. Proto lze kontext zpracovat najednou, což je podmínkou
+dnešních nároků na délku a složitost konverzace; mechanismus je používaný i v pozdějších
+generacích modelů @brown2020.
 
 Jazykový model je sám o sobě jen funkce. Na základě toho, co dostane v kontextu, vypočítá
 rozložení pravděpodobností nad následujícím tokenem a jeden z nich vybere. Mezi voláními si
@@ -76,19 +72,6 @@ předchozí krok uspěl; průběh shrnuje @fig-react-loop.
   požadavku na nástroj @yao2022.],
 ) <fig-react-loop>
 
-V konkrétní implementaci se tato trajektorie skládá do jednoho kontextového okna, a tam začínají
-náklady. Výsledky starších nástrojů se z přepisu vyčistí a při dosažení hranice okna se přepis
-nahradí souhrnem @anthropic-context-engineering; rozhodující je, co v něm zůstane. Živé
-zpracování jednoho běhu v Claude Code shrnuje @fig-claude-code-context.
-
-#figure(
-  image("/components/img/claude-code-context-lifecycle.svg", width: 100%),
-  caption: [Kontextové okno v Claude Code: systémový prompt, nástroje a zadání zůstávají, zatímco
-  myšlenky, volání nástrojů a jejich výsledky se vrší. Když okno dojde k hranici, kompakce nahradí
-  přepis souhrnem a běh pokračuje s ním a s pěti naposledy otevřenými soubory. Vedle toho běží tři
-  věci: výsledky starších nástrojů se čistí, poznámky se ukládají mimo okno a obsah souborů se
-  načítá až tehdy, když je agent potřebuje @anthropic-context-engineering.],
-) <fig-claude-code-context>
 
 
 #heading(level: 3)[Nástroje, oprávnění a paměť (Tools, Permissions & Memory)]
@@ -121,6 +104,20 @@ mimo vyjmenované soubory, aniž by se změnil úkol, a úkol lze zúžit, aniž
 schopnost. Kontrola, která by tyto dvě roviny zaměnila, by pak nevěděla, zda selhal úkol, nebo
 oprávnění.
 
+
+V konkrétní implementaci se tato trajektorie skládá do jednoho kontextového okna, a tam začínají
+náklady. Výsledky starších nástrojů se z přepisu vyčistí a při dosažení hranice okna se přepis
+nahradí souhrnem @anthropic-context-engineering; rozhodující je, co v něm zůstane. Živé
+zpracování jednoho běhu v Claude Code shrnuje @fig-claude-code-context.
+
+#figure(
+  image("/components/img/claude-code-context-lifecycle.svg", width: 100%),
+  caption: [Kontextové okno v Claude Code: systémový prompt, nástroje a zadání zůstávají, zatímco
+  myšlenky, volání nástrojů a jejich výsledky se vrší. Když okno dojde k hranici, kompakce nahradí
+  přepis souhrnem a běh pokračuje s ním a s pěti naposledy otevřenými soubory. Vedle toho běží tři
+  věci: výsledky starších nástrojů se čistí, poznámky se ukládají mimo okno a obsah souborů se
+  načítá až tehdy, když je agent potřebuje @anthropic-context-engineering.],
+) <fig-claude-code-context>
 
 #heading(level: 3)[Kontextové okno a kompakce]
 
