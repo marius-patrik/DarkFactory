@@ -49,36 +49,76 @@ export interface SkillDriftItem {
 	details?: string;
 }
 
-/**
- * Directory holding the bundled skills: the source tree when running from a checkout, or the `assets/skills` folder
- * shipped next to the compiled `df` binary (the same places workflow templates are read from).
- *
- * @returns The first existing skills directory, or undefined when df was installed without skills.
- */
-export function bundledSkillsDir(): string | undefined {
-	const candidates = [join(import.meta.dir, "../../assets/skills"), join(dirname(process.execPath), "assets/skills")];
-	return candidates.find((candidate) => existsSync(candidate));
+export interface PluginSkill {
+	/** Skill directory name, which every host requires to equal the frontmatter `name`. */
+	name: string;
+	/** Plugin declaring the skill. */
+	plugin: string;
+	/** Root the declaration was found under: the repository's, or the shipped assets'. */
+	root: string;
+	/** Absolute path to the declaring `SKILL.md`. */
+	path: string;
 }
 
 /**
- * Lists the bundled skills (directories under the bundled skills directory that contain a SKILL.md).
+ * Roots holding plugin declarations, most authoritative first: this repository's `.agents/plugins/`,
+ * then the `assets/plugins` folder shipped next to the compiled `df` binary.
  *
- * @returns Skill names, sorted; empty when no skills are bundled.
+ * A shipped plugin appears in both when df runs from a checkout of the repository it ships from, so
+ * the first root wins and the shipped copy is treated as the build output it is.
+ *
+ * @returns Every existing plugin root, in precedence order; empty when df was installed without plugins.
+ */
+export function pluginRoots(): string[] {
+	const candidates = [
+		join(import.meta.dir, "../../../../.agents/plugins"),
+		join(dirname(process.execPath), "assets/plugins"),
+	];
+	return candidates.filter((candidate) => existsSync(candidate));
+}
+
+/** Every `<plugin>/skills/<skill>/SKILL.md` under every plugin root, including duplicates across roots. */
+export async function discoverPluginSkills(): Promise<PluginSkill[]> {
+	const found: PluginSkill[] = [];
+	for (const root of pluginRoots()) {
+		for (const entry of await readdir(root, { withFileTypes: true })) {
+			// `.claude-plugin` and friends hold a plugin's manifests, never a skill.
+			if (!entry.isDirectory() || entry.name.startsWith(".")) continue;
+			const skillsDir = join(root, entry.name, "skills");
+			if (!existsSync(skillsDir)) continue;
+			for (const skill of await readdir(skillsDir, { withFileTypes: true })) {
+				if (!skill.isDirectory()) continue;
+				const path = join(skillsDir, skill.name, "SKILL.md");
+				if (existsSync(path)) found.push({ name: skill.name, plugin: entry.name, root, path });
+			}
+		}
+	}
+	return found.sort((a, b) => a.name.localeCompare(b.name) || a.root.localeCompare(b.root));
+}
+
+/**
+ * Lists the skills declared by plugins, one entry per name.
+ *
+ * @returns Skill names, sorted; empty when no plugins are present.
  */
 export async function discoverBundledSkills(): Promise<string[]> {
-	const skillsDir = bundledSkillsDir();
-	if (!skillsDir) return [];
-	const entries = await readdir(skillsDir, { withFileTypes: true });
-	return entries
-		.filter((entry) => entry.isDirectory() && existsSync(join(skillsDir, entry.name, "SKILL.md")))
-		.map((entry) => entry.name)
-		.sort();
+	const seen = new Set<string>();
+	const names: string[] = [];
+	for (const skill of await discoverPluginSkills()) {
+		if (seen.has(skill.name)) continue;
+		seen.add(skill.name);
+		names.push(skill.name);
+	}
+	return names;
 }
 
-function bundledSkillPath(name: string): string {
-	const skillsDir = bundledSkillsDir();
-	if (!skillsDir) throw new Error("df was installed without bundled skills");
-	return join(skillsDir, name, "SKILL.md");
+/** The authoritative declaration of each skill, first root winning over the shipped copy. */
+async function pluginSkillIndex(): Promise<Map<string, PluginSkill>> {
+	const index = new Map<string, PluginSkill>();
+	for (const skill of await discoverPluginSkills()) {
+		if (!index.has(skill.name)) index.set(skill.name, skill);
+	}
+	return index;
 }
 
 async function resolveTemplateContext(repoDir: string): Promise<TemplateContext> {
@@ -136,18 +176,17 @@ export async function checkWorkflowsDrift(
 }
 
 export async function checkSkillsDrift(repoDir = process.cwd()): Promise<SkillDriftItem[]> {
-	const skills = await discoverBundledSkills();
+	const skills = await pluginSkillIndex();
 	const results: SkillDriftItem[] = [];
 
-	for (const name of skills) {
-		const srcPath = bundledSkillPath(name);
-		const srcContent = await readFile(srcPath, "utf-8");
+	for (const [name, skill] of skills) {
+		const srcContent = await readFile(skill.path, "utf-8");
 		const destPath = join(repoDir, ".agents", "skills", name, "SKILL.md");
 		let existingContent: string;
 		try {
 			existingContent = await readFile(destPath, "utf-8");
 		} catch {
-			results.push({ file: name, status: "missing", details: "File does not exist" });
+			results.push({ file: name, status: "missing", details: `not installed; declared by plugin ${skill.plugin}` });
 			continue;
 		}
 
@@ -157,7 +196,7 @@ export async function checkSkillsDrift(repoDir = process.cwd()): Promise<SkillDr
 			results.push({
 				file: name,
 				status: "modified",
-				details: "Bundled skill differs from installed file",
+				details: `plugin ${skill.plugin} declares it differently from the installed file`,
 			});
 		}
 	}
@@ -168,15 +207,14 @@ export async function checkSkillsDrift(repoDir = process.cwd()): Promise<SkillDr
 export async function installSkills(repoDir = process.cwd(), options: InstallOptions = {}): Promise<InstallReport> {
 	const dryRun = options.dryRun === true;
 	const force = options.force === true;
-	const skills = await discoverBundledSkills();
+	const skills = await pluginSkillIndex();
 
 	const installed: string[] = [];
 	const skippedModified: string[] = [];
 	const skippedUnmanaged: string[] = [];
 
-	for (const name of skills) {
-		const srcPath = bundledSkillPath(name);
-		const srcContent = await readFile(srcPath, "utf-8");
+	for (const [name, skill] of skills) {
+		const srcContent = await readFile(skill.path, "utf-8");
 		const destPath = join(repoDir, ".agents", "skills", name, "SKILL.md");
 
 		let existingContent: string | null = null;

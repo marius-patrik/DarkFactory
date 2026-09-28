@@ -7,9 +7,11 @@ import { checkSkillsDrift, discoverBundledSkills } from "../../src/ci/installer.
 // Paths come from this file, never from process.cwd(): the suite runs from packages/harness/ and from the repository root.
 const harnessDir = join(import.meta.dir, "..", "..");
 const repoDir = join(harnessDir, "..", "..");
-const skillsDir = join(harnessDir, "assets", "skills");
+const pluginsDir = join(repoDir, ".agents", "plugins");
+const operatorPlugin = "df-operations";
+const skillsDir = join(pluginsDir, operatorPlugin, "skills");
 
-/** Bundled skills; each chunk that adds one appends its name. */
+/** Skills the operator plugin declares; each chunk that adds one appends its name. */
 const EXPECTED_SKILLS = ["darkfactory-auth", "df-operator", "pipeline-operations", "provider-onboarding"];
 
 /** Top-level df commands named in the CLI's usage() text. */
@@ -32,11 +34,25 @@ function skillCommands(markdown: string): string[] {
 const skillPath = (name: string) => join(skillsDir, name, "SKILL.md");
 
 describe("bundled skills", () => {
-	test("the bundled skill directories are exactly the expected skills", () => {
+	test("the operator plugin declares exactly the expected skills", () => {
 		const dirs = readdirSync(skillsDir, { withFileTypes: true })
 			.filter((entry) => entry.isDirectory())
 			.map((entry) => entry.name);
 		expect(dirs.sort()).toEqual([...EXPECTED_SKILLS].sort());
+	});
+
+	test("every skill under every plugin is discoverable by the installer", async () => {
+		// The installer walks `<root>/<plugin>/skills/<skill>/SKILL.md`; a skill placed anywhere else
+		// is invisible to `df ci install` and would be listed by nothing.
+		const discovered = new Set(await discoverBundledSkills());
+		for (const plugin of readdirSync(pluginsDir, { withFileTypes: true })) {
+			if (!plugin.isDirectory() || plugin.name.startsWith(".")) continue;
+			const dir = join(pluginsDir, plugin.name, "skills");
+			if (!existsSync(dir)) continue;
+			for (const skill of readdirSync(dir, { withFileTypes: true })) {
+				if (skill.isDirectory()) expect(discovered).toContain(skill.name);
+			}
+		}
 	});
 
 	test.each(EXPECTED_SKILLS)("%s has frontmatter naming it and real content", (name) => {
@@ -59,12 +75,12 @@ describe("bundled skills", () => {
 		expect(content).not.toContain("gh secret set");
 	});
 
-	// `packages/harness/assets/skills` is the one source of truth: `discoverBundledSkills` reads
-	// only this directory, and `package-assets.ts` copies only this directory into a release.
-	// `.agents/skills` is where `installSkills` writes, so a copy tracked there is install output,
-	// not a second source. These two tests are what keeps that distinction true: the first fails on
-	// a divergent second text for a skill name, the second on a skill that exists only at the
-	// destination.
+	// `.agents/plugins/` is the one source of truth: `discoverBundledSkills` reads only plugin
+	// skills directories, and `package-assets.ts` copies only the plugins marked `shipped` into a
+	// release. `.agents/skills` is where `installSkills` writes, so a copy tracked there is install
+	// output, not a second source. These two tests are what keeps that distinction true: the first
+	// fails on a divergent second text for a skill name, the second on a skill that exists only at
+	// the destination.
 	test("every installed skill here is a byte-identical copy of the bundled source", async () => {
 		// `.agents/skills` is gitignored install output. It is absent until `df ci install` runs
 		// here, so absence is the expected state, not a failure. When it does exist — a developer

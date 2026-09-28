@@ -3,20 +3,21 @@ import { mkdir, mkdtemp, readFile, rm, stat, writeFile } from "node:fs/promises"
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import {
-	bundledSkillsDir,
 	checkSkillsDrift,
 	checkWorkflowsDrift,
 	discoverBundledSkills,
+	discoverPluginSkills,
 	installSkills,
 	installWorkflows,
 	updateWorkflows,
 } from "../../src/ci/installer.ts";
 
-// The bundled skill, read from the directory df actually ships, not from an installed copy.
-function bundledSkillPath(name: string): string {
-	const dir = bundledSkillsDir();
-	if (!dir) throw new Error("df was installed without bundled skills");
-	return join(dir, name, "SKILL.md");
+// The skill df ships, read from the plugin that declares it, not from an installed copy.
+async function bundledSkillPath(name: string): Promise<string> {
+	for (const skill of await discoverPluginSkills()) {
+		if (skill.name === name) return skill.path;
+	}
+	throw new Error(`no plugin declares the skill "${name}"`);
 }
 
 async function writeUpstream(temp: string, repo: string, ref: string): Promise<void> {
@@ -154,7 +155,7 @@ describe("Bundled skills installer & drift", () => {
 
 			const destPath = join(temp, ".agents", "skills", "darkfactory-auth", "SKILL.md");
 			expect(await stat(destPath)).toBeTruthy();
-			expect(await readFile(destPath, "utf-8")).toBe(await readFile(bundledSkillPath("darkfactory-auth"), "utf-8"));
+			expect(await readFile(destPath, "utf-8")).toBe(await readFile(await bundledSkillPath("darkfactory-auth"), "utf-8"));
 		} finally {
 			await rm(temp, { recursive: true, force: true });
 		}
@@ -194,7 +195,7 @@ describe("Bundled skills installer & drift", () => {
 			const forceReport = await installSkills(temp, { force: true });
 			expect(forceReport.installed).toContain("darkfactory-auth");
 			expect(await readFile(join(temp, ".agents", "skills", "darkfactory-auth", "SKILL.md"), "utf-8")).toBe(
-				await readFile(bundledSkillPath("darkfactory-auth"), "utf-8"),
+				await readFile(await bundledSkillPath("darkfactory-auth"), "utf-8"),
 			);
 		} finally {
 			await rm(temp, { recursive: true, force: true });
@@ -230,7 +231,7 @@ describe("Bundled skills installer & drift", () => {
 			const report = await installSkills(temp);
 			expect(report.installed).toContain("darkfactory-auth");
 			const destPath = join(temp, ".agents", "skills", "darkfactory-auth", "SKILL.md");
-			expect(await readFile(destPath, "utf-8")).toBe(await readFile(bundledSkillPath("darkfactory-auth"), "utf-8"));
+			expect(await readFile(destPath, "utf-8")).toBe(await readFile(await bundledSkillPath("darkfactory-auth"), "utf-8"));
 		} finally {
 			await rm(temp, { recursive: true, force: true });
 		}

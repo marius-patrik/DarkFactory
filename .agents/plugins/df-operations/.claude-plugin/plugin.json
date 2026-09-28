@@ -1,0 +1,8 @@
+{
+	"name": "df-operations",
+	"version": "1.0.0",
+	"description": "Operating df: credentials, accounts, providers and the pipeline.",
+	"author": { "name": "DarkFactory" },
+	"license": "MIT",
+	"keywords": ["df", "credentials", "providers", "pipeline"]
+}

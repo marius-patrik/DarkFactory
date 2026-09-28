@@ -91,7 +91,7 @@ describe("canonical documentation truth", () => {
 		expect(DOCUMENTS.length).toBeGreaterThan(20);
 		expect(DOCUMENTS).toContain(".agents/PRD.md");
 		expect(DOCUMENTS).toContain(".agents/rules/001-unit-tests.md");
-		expect(DOCUMENTS).toContain("packages/harness/assets/skills/darkfactory-auth/SKILL.md");
+		expect(DOCUMENTS).toContain(".agents/plugins/df-operations/skills/darkfactory-auth/SKILL.md");
 	});
 
 	test.each(DOCUMENTS)("%s names only repository paths that exist", (document) => {

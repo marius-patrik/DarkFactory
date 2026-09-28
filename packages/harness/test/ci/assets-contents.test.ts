@@ -47,14 +47,20 @@ describe("managed assets directory contains only known files", () => {
 		expect(present.filter((path) => !path.includes("/"))).toEqual([...ALLOWED_FILES].sort());
 	});
 
-	test("the skills directory holds only directories, each with a SKILL.md", () => {
-		// `discoverBundledSkills` filters on exactly this shape, so a loose file here is invisible.
-		const skillsDir = join(assetsDir, "skills");
-		if (!existsSync(skillsDir)) return;
-		for (const entry of readdirSync(skillsDir, { withFileTypes: true })) {
-			if (entry.isFile()) throw new Error(`stray file in assets/skills: ${entry.name}`);
-			if (!existsSync(join(skillsDir, entry.name, "SKILL.md"))) {
-				throw new Error(`assets/skills/${entry.name} has no SKILL.md`);
+	test("the plugins directory holds only directories, each with a SKILL.md", () => {
+		// `discoverPluginSkills` filters on exactly this shape, so a loose file here is invisible. The
+		// declaration moved out of this assets directory when skills became plugins; the copy under
+		// `dist/assets/plugins/` is release output, not something to edit here.
+		const pluginsDir = join(import.meta.dir, "..", "..", "..", "..", ".agents", "plugins");
+		for (const plugin of readdirSync(pluginsDir, { withFileTypes: true })) {
+			if (!plugin.isDirectory() || plugin.name.startsWith(".")) continue;
+			const skills = join(pluginsDir, plugin.name, "skills");
+			if (!existsSync(skills)) continue;
+			for (const entry of readdirSync(skills, { withFileTypes: true })) {
+				if (entry.isFile()) throw new Error(`stray file in ${plugin.name}/skills: ${entry.name}`);
+				if (!existsSync(join(skills, entry.name, "SKILL.md"))) {
+					throw new Error(`${plugin.name}/skills/${entry.name} has no SKILL.md`);
+				}
 			}
 		}
 	});
