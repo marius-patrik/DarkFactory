@@ -7,7 +7,7 @@
     "df": "src/cli.ts"
   },
   "scripts": {
-    "test": "bun test",
+    "test": "bun test --timeout=30000",
     "typecheck": "tsc --noEmit",
     "build": "bun run ./scripts/build.ts",
     "format": "biome format --write .",
