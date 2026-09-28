@@ -72,11 +72,12 @@ export interface DispatchEventRequest {
  * The stages `dispatch_event` hands a `repository_dispatch` to, and that an `approve` or `resume`
  * resumes.
  *
- * `run_self_review_iteration`, `run_self_review_fix`, `run_pr_feedback_fix` and `resume_item` are not
- * ported: they are not among the three handlers this work took. They are a required dependency
- * rather than a stub, because a stub returning an empty value would make a dispatched stage look
- * like it had run — and a self-review that did not run leaves a pull request in draft with nobody
- * reading it, reported as a success. The *routing* to them is ported and tested; the bodies are not.
+ * Three of the four now have bodies: `self-review`, `self-review-fix` and `pr-feedback-fix` are
+ * ported in `self-review.ts`, `self-review-fix.ts` and `pr-feedback-fix.ts`. Only `resume_item` is
+ * still unported, and it is still a required dependency rather than a stub, because a stub returning
+ * an empty value would make a dispatched stage look like it had run - and a self-review that did not
+ * run leaves a pull request in draft with nobody reading it, reported as a success. The *routing* to
+ * all four is ported and tested; the body of `resume` is not.
  */
 export interface PipelineStages {
 	/**
@@ -121,7 +122,7 @@ export type DispatchEventOutcome =
  * failure this pipeline cannot detect, and it is exactly what a stub would produce.
  */
 export interface DispatchEventContext extends PipelineContext {
-	/** The four unported stages. */
+	/** The stage bodies, three of which are now ported. */
 	stages: PipelineStages;
 	/** The project board, for the resume path on a failure report. */
 	board: BoardStatus;
