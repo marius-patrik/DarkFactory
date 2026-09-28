@@ -11,22 +11,6 @@
  * other harness: the ladder reads an answer, and this is where the event stream becomes one.
  */
 
-/** Environment variables mapped onto `df account set`: variable, df account id, slot. */
-export const DF_ACCOUNT_SET_MAP: readonly (readonly [variable: string, account: string, slot: string])[] = [
-	["GEMINI_API_KEY", "google:default", "api_key"],
-	["GEMINI_API_KEY_2", "google:key2", "api_key"],
-	["GEMINI_API_KEY_3", "google:key3", "api_key"],
-	["OPENROUTER_API_KEY", "openrouter:default", "api_key"],
-	["OPENROUTER_API_KEY_2", "openrouter:acct2", "api_key"],
-	["GROQ_API_KEY", "groq:default", "api_key"],
-] as const;
-
-/** Subscription logins df loads as df-owned accounts: variable, df account id. */
-export const DF_ACCOUNT_LOAD_MAP: readonly (readonly [variable: string, account: string])[] = [
-	["DF_ACCOUNT_OPENAI_CODEX", "openai-codex:pipeline"],
-	["DF_ACCOUNT_GROK_SUB", "grok-sub:pipeline"],
-] as const;
-
 /** `df` exit code: quota was exhausted on every candidate in df's own chain. */
 export const DF_EXIT_QUOTA_EXHAUSTED = 2;
 
@@ -138,18 +122,20 @@ export function dfFailureDetail(input: { exitCode: number; stdout: string; detai
 }
 
 /**
- * Every secret name the df container setup consumes, in setup order.
+/**
+ * The secret variable names a calling workflow must declare and forward, from the declared tables.
  *
- * This is the list a calling workflow must declare and forward. A workflow that omits one does not
- * fail, it silently drops that df account, so the list belongs beside the maps that consume it and
- * nowhere else.
+ * This list is a calling workflow's contract, so it is derived from the tables the document declares
+ * rather than from constants here. A workflow that omits one does not fail — it silently drops that
+ * df account.
  *
+ * @param set - The declared `set` table.
+ * @param load - The declared `load` table.
  * @returns The secret variable names, without repeats.
  */
-export function dfSetupSecretNames(): string[] {
-	const names = [
-		...DF_ACCOUNT_SET_MAP.map(([variable]) => variable),
-		...DF_ACCOUNT_LOAD_MAP.map(([variable]) => variable),
-	];
-	return [...new Set(names)];
+export function dfSetupSecretNames(
+	set: ReadonlyArray<readonly [string, string, string]> = [],
+	load: ReadonlyArray<readonly [string, string]> = [],
+): string[] {
+	return [...new Set([...set.map(([variable]) => variable), ...load.map(([variable]) => variable)])];
 }

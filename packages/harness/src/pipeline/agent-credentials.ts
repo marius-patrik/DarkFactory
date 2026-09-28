@@ -24,7 +24,6 @@ import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "no
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { resolveConfigDocumentPath } from "@darkfactory/protocol/config-document";
-import { DF_ACCOUNT_LOAD_MAP, DF_ACCOUNT_SET_MAP } from "./df-events.ts";
 import type { PipelineEnv } from "./handler-context.ts";
 
 /** One df account record, and the secret it was loaded from. */
@@ -128,11 +127,15 @@ function dfAccountStore(env: PipelineEnv): Record<string, unknown> {
  * credentials store rather than into the process environment that supplied it.
  *
  * @param env - The environment the run was given.
+ * @param load - The declared `load` table, as the configuration names it.
  * @returns One entry per loaded account, in setup order.
  */
-export function snapshotDfLoginFiles(env: PipelineEnv): DfAccountState[] {
+export function snapshotDfLoginFiles(
+	env: PipelineEnv,
+	load: ReadonlyArray<readonly [string, string]> = [],
+): DfAccountState[] {
 	const store = dfAccountStore(env);
-	return DF_ACCOUNT_LOAD_MAP.map(([variable, account]) => {
+	return load.map(([variable, account]) => {
 		const held = store[account];
 		if (held !== undefined && held !== null) return { account, secret: variable, original: held };
 		const raw = env[variable] ?? "";
@@ -312,6 +315,15 @@ export interface DfAccountSetupOptions {
 	warn?: (message: string) => void;
 	/** Creates the run's `DF_HOME`; defaults to a fresh private temporary directory. */
 	makeHome?: () => string;
+	/**
+	 * The account tables, as the configuration document declares them. Defaults to none.
+	 *
+	 * A repository that declares no accounts provisions none. The provider names, the account ids and
+	 * the slots were three constants in this file naming `google`, `openrouter`, `groq` and two
+	 * subscription records; they are facts about a repository, and a pipeline installed into a consumer
+	 * must not set up DarkFactory's providers.
+	 */
+	accounts?: { set: ReadonlyArray<readonly [string, string, string]>; load: ReadonlyArray<readonly [string, string]> };
 }
 
 /**
@@ -365,7 +377,10 @@ export async function setupDfAccounts(options: DfAccountSetupOptions): Promise<s
 		warn(`df config notice: ${errorMessage(error)}`);
 	}
 
-	for (const [variable, account, slot] of DF_ACCOUNT_SET_MAP) {
+	const setMap = options.accounts?.set ?? [];
+	const loadMap = options.accounts?.load ?? [];
+
+	for (const [variable, account, slot] of setMap) {
 		const value = live[variable] ?? "";
 		if (!value) continue;
 		const argv = ["df", "account", "set", account, slot, "--type", "api_key"];
@@ -381,7 +396,7 @@ export async function setupDfAccounts(options: DfAccountSetupOptions): Promise<s
 		say(`Configured df account ${account} from ${variable}.`);
 	}
 
-	for (const [variable, account] of DF_ACCOUNT_LOAD_MAP) {
+	for (const [variable, account] of loadMap) {
 		if (!live[variable]) continue;
 		const argv = ["df", "account", "load", account, "--from-env", variable];
 		const result = run(argv, childEnv, "");

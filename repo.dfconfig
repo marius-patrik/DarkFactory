@@ -173,6 +173,81 @@
         ]
       }
     },
+    "accounts": {
+      "$comment": "The `df` accounts this repository provisions. `set` rows are [variable, account, slot] for a credential handed to df with `df account set`; `load` rows are [variable, account] for a subscription record df loads itself. Which providers are used, what the accounts are called and which slot each holds are facts about this repository, so they are declared here rather than listed in the code that applies them.",
+      "set": [
+        [
+          "GEMINI_API_KEY",
+          "google:default",
+          "api_key"
+        ],
+        [
+          "GEMINI_API_KEY_2",
+          "google:key2",
+          "api_key"
+        ],
+        [
+          "GEMINI_API_KEY_3",
+          "google:key3",
+          "api_key"
+        ],
+        [
+          "OPENROUTER_API_KEY",
+          "openrouter:default",
+          "api_key"
+        ],
+        [
+          "OPENROUTER_API_KEY_2",
+          "openrouter:acct2",
+          "api_key"
+        ],
+        [
+          "GROQ_API_KEY",
+          "groq:default",
+          "api_key"
+        ]
+      ],
+      "load": [
+        [
+          "DF_ACCOUNT_OPENAI_CODEX",
+          "openai-codex:pipeline"
+        ],
+        [
+          "DF_ACCOUNT_GROK_SUB",
+          "grok-sub:pipeline"
+        ]
+      ]
+    },
+    "labels": {
+      "$comment": "Label vocabularies. Each is data about this repository — which statuses exist, which conventional-commit types are permitted, which colours area labels take — so it is declared here rather than as a constant in the code that applies it. The code holds the mechanism, not the list.",
+      "area_colours": [
+        "5319e7",
+        "1f883d",
+        "0052cc",
+        "a2eeef",
+        "f9d0c4",
+        "c2e0c6",
+        "e99695",
+        "006b75",
+        "0075ca"
+      ],
+      "types": [
+        "feat",
+        "bug",
+        "chore",
+        "refactor",
+        "test",
+        "ci",
+        "docs"
+      ],
+      "statuses": [
+        "ToDo",
+        "In Progress",
+        "Blocked",
+        "In Review",
+        "Done"
+      ]
+    },
     "board": {
       "$comment": "Boards are owned by the account, not by a repository, and there is no fixed number of them. `boards` names every board this repository participates in; the pipeline creates each one that does not exist and links each to the repository. `global` names the one that aggregates every repository, by reference, so it cannot disagree with the list.",
       "global": "Global",

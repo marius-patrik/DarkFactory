@@ -3,9 +3,6 @@ import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join, relative } from "node:path";
 import {
-	AREA_COLOURS,
-	DEFAULT_AREAS,
-	DEFAULT_IDENTITIES,
 	loadConfigBlock,
 	loadRepositoryManifest,
 	MANIFEST_PATH,
@@ -117,18 +114,32 @@ describe("areas", () => {
 		expect(labels[0]?.colour).toMatch(/^[0-9a-f]{6}$/u);
 	});
 
-	test("every area gets a distinct colour", async () => {
-		const dir = await declare({ areas: Object.fromEntries(Array.from({ length: 9 }, (_, i) => [`a${i}`, String(i)])) });
+	test("every area gets a distinct colour from the declared palette", async () => {
+		const palette = ["111111", "222222", "333333", "444444", "555555", "666666", "777777", "888888", "999999"];
+		const dir = await declare({
+			labels: { area_colours: palette },
+			areas: Object.fromEntries(Array.from({ length: 9 }, (_, i) => [`a${i}`, String(i)])),
+		});
 		const labels = (await loadRepositoryManifest(dir)).areaLabels();
 		expect(new Set(labels.map((label) => label.colour)).size).toBe(9);
 	});
 
-	test("colours cycle once the palette runs out", async () => {
+	test("colours cycle once the declared palette runs out", async () => {
+		// The palette is configuration, so the test declares one and asserts against it.
+		const palette = ["111111", "222222", "333333"];
 		const dir = await declare({
-			areas: Object.fromEntries(Array.from({ length: AREA_COLOURS.length + 2 }, (_, i) => [`a${i}`, String(i)])),
+			labels: { area_colours: palette },
+			areas: Object.fromEntries(Array.from({ length: palette.length + 2 }, (_, i) => [`a${i}`, String(i)])),
 		});
 		const labels = (await loadRepositoryManifest(dir)).areaLabels();
-		expect(labels[AREA_COLOURS.length]?.colour).toBe(AREA_COLOURS[0]);
+		expect(labels[palette.length]?.colour).toBe(palette[0]);
+	});
+
+	test("with no declared palette every area takes one neutral colour", async () => {
+		// Not a taxonomy chosen here: the absence of configuration is shown, not filled in.
+		const dir = await declare({ areas: { one: "One", two: "Two" } });
+		const labels = (await loadRepositoryManifest(dir)).areaLabels();
+		expect(new Set(labels.map((label) => label.colour)).size).toBe(1);
 	});
 
 	test("scopes match the areas", async () => {
@@ -152,9 +163,12 @@ describe("areas", () => {
 		expect(Object.keys((await loadRepositoryManifest(dir)).areas())).toEqual(["app"]);
 	});
 
-	test("a repository declaring no areas still has a taxonomy", async () => {
+	test("a repository declaring no areas has none", async () => {
+		// It used to receive a three-area taxonomy chosen in this file. A repository that has not
+		// declared its areas has not got any, and inventing them here is how a routing decision ends
+		// up made by a default rather than by the repository.
 		const dir = await declare({});
-		expect((await loadRepositoryManifest(dir)).areas()).toEqual(DEFAULT_AREAS);
+		expect((await loadRepositoryManifest(dir)).areas()).toEqual({});
 	});
 });
 
@@ -313,14 +327,14 @@ describe("identities", () => {
 		expect(loaded.identityFor("claude")?.trailer).toBe("Co-authored-by: Claude <noreply@anthropic.com>");
 	});
 
-	test("they fall back to the defaults when undeclared", async () => {
+	test("a repository declaring no identities has none", async () => {
+		// The default was this repository's own pipeline app, with its `user_id`, and a stale `codex`
+		// key where this document says `openai-codex`. A commit attributed through it would be
+		// attributed to a stranger in every consumer that forgot to declare its own identity.
 		const dir = await declare({});
 		const loaded = await loadRepositoryManifest(dir);
-		expect(loaded.identities()).toEqual(DEFAULT_IDENTITIES);
-		expect(loaded.botCommitAuthor()).toBe(
-			"darkfactory-pipeline[bot] <326069535+darkfactory-pipeline[bot]@users.noreply.github.com>",
-		);
-		expect(loaded.identityFor("google")?.name).toBe("Gemini");
+		expect(loaded.identities()).toEqual({});
+		expect(loaded.identityFor("google")).toBeUndefined();
 	});
 
 	test("custom declared identities win", async () => {
@@ -343,7 +357,7 @@ describe("identities", () => {
 
 	test("a documentation key alone does not count as a declaration", async () => {
 		const dir = await declare({ identities: { $comment: "none" } });
-		expect((await loadRepositoryManifest(dir)).identities()).toEqual(DEFAULT_IDENTITIES);
+		expect((await loadRepositoryManifest(dir)).identities()).toEqual({});
 	});
 
 	test("a providers sub-block wins over a top-level key of the same name", async () => {
@@ -351,13 +365,16 @@ describe("identities", () => {
 		expect((await loadRepositoryManifest(dir)).identityFor("google")?.name).toBe("Nested");
 	});
 
-	test("the defaults are not shared between reads", async () => {
-		// A caller mutating what it read must not corrupt the next repository's defaults.
-		const first = await declare({});
+	test("what one caller read is not shared with the next", async () => {
+		// It used to guard the *defaults*, which were cloned per read because a module-level constant
+		// is shared by every repository in the process. There are no defaults now, so the invariant it
+		// was protecting is re-derived against a declared identity: a caller mutating what it read must
+		// not be visible to a later read of a different document.
+		const first = await declare({ identities: { claude: { name: "Original" } } });
 		const loaded = await loadRepositoryManifest(first);
 		(loaded.identities() as Record<string, unknown>).claude = { name: "tampered" };
-		const second = await declare({});
-		expect((await loadRepositoryManifest(second)).identityFor("claude")?.name).toBe("Claude");
+		const second = await declare({ identities: { claude: { name: "Original" } } });
+		expect((await loadRepositoryManifest(second)).identityFor("claude")?.name).toBe("Original");
 	});
 });
 
@@ -372,8 +389,10 @@ describe("no foreign identity leaks", () => {
 		for (const area of areas) expect(FOREIGN).not.toContain(area);
 	});
 
-	test("the default identities name no other project", () => {
-		const serialised = JSON.stringify(DEFAULT_IDENTITIES).toLowerCase();
+	test("this repository's own identities name no other project", async () => {
+		// The same claim, re-derived against the document rather than against a constant that used to
+		// hold this repository's identity as a default.
+		const serialised = JSON.stringify((await loadRepositoryManifest(repoRoot)).identities()).toLowerCase();
 		for (const token of FOREIGN) expect(serialised).not.toContain(token);
 	});
 });
@@ -440,7 +459,7 @@ describe("configuration document discovery", () => {
 		const dir = await scratch();
 		await writeFile(join(dir, filename), JSON.stringify({ repo: { areas: { legacy: "Legacy declaration" } } }));
 		expect(resolveManifestPath(dir, NO_ENV)).toBe(join(dir, ".darkfactory", MANIFEST_PATH));
-		expect((await loadRepositoryManifest(dir, NO_ENV)).areas()).toEqual(DEFAULT_AREAS);
+		expect((await loadRepositoryManifest(dir, NO_ENV)).areas()).toEqual({});
 	});
 
 	test.each([MANIFEST_PATH, "config.dfconfig", ".dfconfig"])(

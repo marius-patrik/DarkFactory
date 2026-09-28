@@ -13,6 +13,23 @@ import {
 
 let home = "";
 
+/**
+ * The account tables a test declares.
+ *
+ * These are no longer constants in the source: which providers a repository uses is its own fact,
+ * and the test supplies its own. A test relying on the old constants was asserting that this
+ * repository's providers were configured, which is not a property of the code under test.
+ */
+const SET: ReadonlyArray<readonly [string, string, string]> = [
+	["GEMINI_API_KEY", "google:default", "api_key"],
+	["GEMINI_API_KEY_2", "google:key2", "api_key"],
+	["GROQ_API_KEY", "groq:default", "api_key"],
+];
+const LOAD: ReadonlyArray<readonly [string, string]> = [
+	["DF_ACCOUNT_OPENAI_CODEX", "openai-codex:pipeline"],
+	["DF_ACCOUNT_GROK_SUB", "grok-sub:pipeline"],
+];
+
 /** The base the ladder derives every attempt's environment from. */
 function baseEnv(extra: Record<string, string | undefined> = {}): Record<string, string | undefined> {
 	return { HOME: home, ...extra };
@@ -53,7 +70,7 @@ describe("df's own account records", () => {
 			DF_ACCOUNT_GROK_SUB: "not json at all",
 		});
 
-		const states = snapshotDfLoginFiles(env);
+		const states = snapshotDfLoginFiles(env, LOAD);
 
 		expect(states).toEqual([
 			{
@@ -68,7 +85,7 @@ describe("df's own account records", () => {
 	test("a record df refreshed during the run is written back to its secret", () => {
 		const dir = dfHome({ "openai-codex:pipeline": { tokens: { access_token: "stored" } } });
 		const env = baseEnv({ DF_HOME: dir, DF_ACCOUNT_OPENAI_CODEX: '{"tokens":{"access_token":"stored"}}' });
-		const states = snapshotDfLoginFiles(env);
+		const states = snapshotDfLoginFiles(env, LOAD);
 		// df refreshed the OAuth token into its own store while the attempt ran, and the process
 		// environment it was launched with still holds the old one.
 		writeFileSync(
@@ -87,7 +104,7 @@ describe("df's own account records", () => {
 	test("an unchanged record, an unloaded account and a removed account are all left alone", () => {
 		const dir = dfHome({ "openai-codex:pipeline": { tokens: { access_token: "same" } } });
 		const env = baseEnv({ DF_HOME: dir, DF_ACCOUNT_OPENAI_CODEX: '{"tokens":{"access_token":"same"}}' });
-		const states = snapshotDfLoginFiles(env);
+		const states = snapshotDfLoginFiles(env, LOAD);
 		const { persist, written } = recorder();
 		const reported: string[] = [];
 
@@ -99,7 +116,7 @@ describe("df's own account records", () => {
 
 	test("with no DF_HOME there is nothing to snapshot and nothing to write back", () => {
 		const { persist, written } = recorder();
-		const states = snapshotDfLoginFiles(baseEnv({ DF_ACCOUNT_OPENAI_CODEX: "{}" }));
+		const states = snapshotDfLoginFiles(baseEnv({ DF_ACCOUNT_OPENAI_CODEX: "{}" }), LOAD);
 
 		// The store is the authority when it holds a record and the secret is the fallback; with neither
 		// there is nothing, and an account is not invented from an unset variable.
@@ -160,7 +177,13 @@ describe("setupDfAccounts", () => {
 		const live: Record<string, string | undefined> = {};
 		const { run } = dfRecorder();
 
-		const home = await setupDfAccounts({ live, roots: [emptyRoot()], run, makeHome: () => "/tmp/df-home-fixed" });
+		const home = await setupDfAccounts({
+			live,
+			roots: [emptyRoot()],
+			run,
+			makeHome: () => "/tmp/df-home-fixed",
+			accounts: { set: SET, load: LOAD },
+		});
 
 		expect(home).toBe("/tmp/df-home-fixed");
 		expect(live.DF_HOME).toBe("/tmp/df-home-fixed");
@@ -170,7 +193,13 @@ describe("setupDfAccounts", () => {
 		const live: Record<string, string | undefined> = { GEMINI_API_KEY: "key-one", GROQ_API_KEY: "key-two" };
 		const { calls, run } = dfRecorder();
 
-		await setupDfAccounts({ live, roots: [emptyRoot()], run, makeHome: () => "/tmp/h" });
+		await setupDfAccounts({
+			live,
+			roots: [emptyRoot()],
+			run,
+			makeHome: () => "/tmp/h",
+			accounts: { set: SET, load: LOAD },
+		});
 
 		const sets = calls.filter((call) => call.argv[1] === "account" && call.argv[2] === "set");
 		expect(sets.map((call) => call.argv.slice(3))).toEqual([
@@ -189,6 +218,7 @@ describe("setupDfAccounts", () => {
 		const reported: string[] = [];
 
 		await setupDfAccounts({
+			accounts: { set: SET, load: LOAD },
 			live: { GEMINI_API_KEY: "one", GROQ_API_KEY: "" },
 			roots: [emptyRoot()],
 			run,
@@ -207,6 +237,7 @@ describe("setupDfAccounts", () => {
 		const reported: string[] = [];
 
 		await setupDfAccounts({
+			accounts: { set: SET, load: LOAD },
 			live: { GEMINI_API_KEY: "one", GROQ_API_KEY: "two", OPENROUTER_API_KEY: "three" },
 			roots: [emptyRoot()],
 			run,
@@ -227,6 +258,7 @@ describe("setupDfAccounts", () => {
 		const reported: string[] = [];
 
 		await setupDfAccounts({
+			accounts: { set: SET, load: LOAD },
 			live: { GEMINI_API_KEY: "one", GROQ_API_KEY: "two" },
 			roots: [emptyRoot()],
 			run,
@@ -245,6 +277,7 @@ describe("setupDfAccounts", () => {
 		const reported: string[] = [];
 
 		await setupDfAccounts({
+			accounts: { set: SET, load: LOAD },
 			live: { DF_ACCOUNT_OPENAI_CODEX: '{"token":"t"}' },
 			roots: [emptyRoot()],
 			run,
@@ -275,6 +308,7 @@ describe("setupDfAccounts", () => {
 		const reported: string[] = [];
 
 		await setupDfAccounts({
+			accounts: { set: SET, load: LOAD },
 			live,
 			roots: [root, join(root, ".darkfactory-pipeline")],
 			run,
@@ -293,6 +327,7 @@ describe("setupDfAccounts", () => {
 		const reported: string[] = [];
 
 		await setupDfAccounts({
+			accounts: { set: SET, load: LOAD },
 			live,
 			roots: [emptyRoot()],
 			run,

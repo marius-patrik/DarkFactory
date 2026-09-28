@@ -204,6 +204,13 @@ export interface AgentPromptRunnerOptions {
 	say?: (message: string) => void;
 	/** Writes a warning or an error; defaults to the console. */
 	warn?: (message: string) => void;
+	/**
+	 * The declared `load` table: `[variable, account]` per subscription record df owns. Defaults to
+	 * none, so a run whose document declares no accounts snapshots nothing.
+	 */
+	loadAccounts?: ReadonlyArray<readonly [string, string]>;
+	/** The declared `set` table: `[variable, account, slot]` per credential the pipeline hands df. */
+	setAccounts?: ReadonlyArray<readonly [string, string, string]>;
 }
 
 /**
@@ -260,8 +267,13 @@ interface ChainProgress {
  * reads the live environment at the moment it is needed and so still recognises a token rotated
  * mid-run.
  */
-function redactionNames(): string[] {
-	return [...new Set(dfSetupSecretNames())];
+function redactionNames(
+	set: ReadonlyArray<readonly [string, string, string]>,
+	load: ReadonlyArray<readonly [string, string]>,
+): string[] {
+	// Derived from the declared account tables, so a repository's provider variables are covered
+	// by a list that repository chose rather than by a constant naming another one's providers.
+	return dfSetupSecretNames(set, load);
 }
 
 /**
@@ -282,11 +294,13 @@ export function agentPromptRunner(options: AgentPromptRunnerOptions): RunAgentPr
 		now = () => Math.floor(Date.now() / 1000),
 		say = (message: string) => console.log(message),
 		warn = (message: string) => console.error(message),
+		loadAccounts = [],
+		setAccounts = [],
 	} = options;
 	const env = options.env ?? process.env;
 	const environment = pipelineEnvironment(env);
 	const persist = options.persistRotatedToken ?? reportingTokenPersistence(environment.repository, warn);
-	const secretNames = redactionNames();
+	const secretNames = redactionNames(setAccounts, loadAccounts);
 
 	/** Redact with every credential name the registry knows. */
 	const redact = (text: string): string => redactSecrets(text, secretNames, env);
@@ -457,7 +471,7 @@ export function agentPromptRunner(options: AgentPromptRunnerOptions): RunAgentPr
 		for (let retry = 0; retry <= MAX_RETRIES; retry += 1) {
 			// df borrows CLI subscription logins and keeps OAuth in its own store; either can rotate
 			// mid-run, so the pre-run state is snapshotted for write-back below.
-			const dfLoginState = snapshotDfLoginFiles(runEnvironment.live);
+			const dfLoginState = snapshotDfLoginFiles(runEnvironment.live, loadAccounts);
 			// The prompt travels by file, so a long prompt never meets an argument-length limit. The file
 			// is written per retry and removed in the `finally` below.
 			const promptFile = writePromptFile(text);

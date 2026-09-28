@@ -1,5 +1,10 @@
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { existsSync, mkdtempSync, readFileSync, rmSync } from "node:fs";
+
+// The declared account tables, so the redaction list is the one this test's repository declares.
+const setAccounts: ReadonlyArray<readonly [string, string, string]> = [["GEMINI_API_KEY", "google:default", "api_key"]];
+const loadAccounts: ReadonlyArray<readonly [string, string]> = [["DF_ACCOUNT_OPENAI_CODEX", "openai-codex:pipeline"]];
+
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type { QuotaBlockStore } from "../../src/pipeline/agent-failures.ts";
@@ -129,6 +134,8 @@ async function runLadder(options: LadderOptions = {}): Promise<LadderRun> {
 	};
 
 	const runner = agentPromptRunner({
+		setAccounts,
+		loadAccounts,
 		io: io.io,
 		workspace: workspace.io,
 		board: (entity, status) => board.push({ ...entity, status }),
@@ -305,6 +312,8 @@ describe("when the agent produces nothing", () => {
 	test("a failure notice that cannot be posted does not replace the failure being raised", async () => {
 		const io = recordingIo({}, { addComment: new Error("503 Service Unavailable") });
 		const runner = agentPromptRunner({
+			setAccounts,
+			loadAccounts,
 			io: io.io,
 			workspace: recordingWorkspace().io,
 			board: () => {},
@@ -351,6 +360,7 @@ describe("when the agent fails outright", () => {
 
 	test("a credential in an empty attempt's stderr is redacted before the notice is posted", async () => {
 		const run = await runLadder({
+			// The secret list is the declared account table, so the variable under test is one of them.
 			env: { GEMINI_API_KEY: "sk-live-0123456789abcdef" },
 			invocations: [{ exitCode: 0, stdout: "", stderr: "no key: sk-live-0123456789abcdef" }],
 			checkpoint: { issueNumber: 42, repo: "marius-patrik/DarkFactory" },

@@ -417,9 +417,13 @@ export async function buildRunnerPorts(options: BuildRunnerPortsOptions): Promis
 		warn,
 		readEvent,
 		setupAccounts: async () => {
+			// The account tables are declared, not listed here: which providers a repository uses is its
+			// own fact, and a pipeline installed into a consumer must not provision this one's.
+			const manifest = await loadRepositoryManifest(environment.workspaceDir, env);
 			await setupDfAccounts({
 				live: env,
 				roots: [environment.workspaceDir, join(environment.workspaceDir, ".darkfactory-pipeline")],
+				accounts: manifest.dfAccounts(),
 				say,
 				warn,
 			});

@@ -54,81 +54,21 @@ export function resolveManifestPath(
 }
 
 /** Area labels used when a repository declares none, chosen to be about the pipeline itself. */
-export const DEFAULT_AREAS: Readonly<Record<string, string>> = Object.freeze({
-	ci: "GitHub Actions workflows, containers, runner scripts, repository automation",
-	agents: "Agent runtime, routing, providers, planning/review orchestration and model execution",
-	docs: "Documentation compiler, API reference and shared web surfaces",
-});
 
 /** Colours cycled through when assigning one to an area label that has no explicit colour. */
-export const AREA_COLOURS: readonly string[] = Object.freeze([
-	"5319e7",
-	"1f883d",
-	"0052cc",
-	"a2eeef",
-	"f9d0c4",
-	"c2e0c6",
-	"e99695",
-	"006b75",
-	"0075ca",
-]);
 
 /**
- * Default identities used when a repository declares none.
- *
- * A provider identity names the trailer a generated commit carries, so a default that named the
- * wrong project would attribute this repository's commits to a stranger.
- */
-export const DEFAULT_IDENTITIES: Readonly<Record<string, Record<string, unknown>>> = Object.freeze({
-	app: {
-		slug: "darkfactory-pipeline",
-		login: "darkfactory-pipeline[bot]",
-		user_id: 326069535,
-		commit_author_email: "326069535+darkfactory-pipeline[bot]@users.noreply.github.com",
-	},
-	claude: {
-		name: "Claude",
-		display_name: "Claude",
-		trailer: "Co-authored-by: Claude <noreply@anthropic.com>",
-		note: "Generated with {model}",
-		account_link: "https://github.com/claude",
-		verified: true,
-	},
-	codex: {
-		name: "Codex",
-		display_name: "Codex",
-		trailer: "Co-authored-by: Codex <noreply@openai.com>",
-		note: "Generated with {model}",
-		account_link: "https://github.com/codex",
-		verified: true,
-	},
-	"openai-codex": {
-		name: "Codex",
-		display_name: "Codex",
-		trailer: "Co-authored-by: Codex <noreply@openai.com>",
-		note: "Generated with {model}",
-		account_link: "https://github.com/codex",
-		verified: true,
-	},
-	google: {
-		name: "Gemini",
-		display_name: "Gemini",
-		trailer: "Co-authored-by: Gemini <200291788+gemini-code-assist@users.noreply.github.com>",
-		note: "Generated with {model}",
-		account_link: "https://github.com/gemini-code-assist",
-		verified: true,
-	},
-	antigravity: {
-		name: "Gemini",
-		display_name: "Gemini",
-		trailer: "Co-authored-by: Gemini <200291788+gemini-code-assist@users.noreply.github.com>",
-		note: "Generated with {model}",
-		account_link: "https://github.com/gemini-code-assist",
-		verified: true,
-	},
-});
 
 /** One area label, as the labels API is given it. */
+/**
+ * The colour an area label takes when no palette is declared.
+ *
+ * A single neutral grey, used only when the document declares no `labels.area_colours`. It is a
+ * fallback for the *absence* of configuration rather than a taxonomy: it says nothing about what the
+ * areas are, and it is deliberately unremarkable.
+ */
+const DEFAULT_LABEL_COLOUR = "ededed";
+
 /** One branch protection lane, as the configuration document declares it. */
 export interface ProtectedBranch {
 	/** The branch this lane protects. */
@@ -314,8 +254,9 @@ export class RepositoryManifest {
 	 * wins, so a specific area declared after a general one never matches.
 	 */
 	private rawAreas(): Record<string, Json> {
-		const declared = withoutComments(this.data.areas);
-		return Object.keys(declared).length > 0 ? declared : { ...DEFAULT_AREAS };
+		// No fallback. A repository that declares no areas has none, which is a fact about it rather
+		// than a gap this code fills with a taxonomy chosen here.
+		return withoutComments(this.data.areas);
 	}
 
 	/**
@@ -357,13 +298,53 @@ export class RepositoryManifest {
 
 	/** The area labels, sorted by area name, each taking the next colour in {@link AREA_COLOURS}. */
 	areaLabels(): AreaLabel[] {
+		const palette = this.areaColours();
 		return Object.entries(this.areas())
 			.sort(([left], [right]) => (left < right ? -1 : left > right ? 1 : 0))
 			.map(([name, description], index) => ({
 				name: `area:${name}`,
-				colour: AREA_COLOURS[index % AREA_COLOURS.length] as string,
+				colour: palette.length > 0 ? (palette[index % palette.length] as string) : DEFAULT_LABEL_COLOUR,
 				description,
 			}));
+	}
+
+	/**
+	/**
+	 * The `df` accounts this repository provisions, as `set` and `load` tables.
+	 *
+	 * `set` is `[environment variable, df account id, slot]` for a credential the pipeline hands df
+	 * with `df account set`; `load` is `[environment variable, df account id]` for a subscription
+	 * record df loads itself. Which providers a repository uses, what its accounts are called and
+	 * which slot each holds are facts about that repository, so they are declared. The code holds the
+	 * mechanism — iterate, skip an unset variable, report a failure — and no provider names.
+	 */
+	dfAccounts(): { set: Array<[string, string, string]>; load: Array<[string, string]> } {
+		const declared = isRecord(this.data.accounts) ? this.data.accounts : {};
+		const rows = (key: string): unknown[] => (Array.isArray(declared[key]) ? (declared[key] as unknown[]) : []);
+		const cells = (entry: unknown): string[] => (Array.isArray(entry) ? entry.map((cell) => text(cell)) : []);
+		return {
+			set: rows("set")
+				.map(cells)
+				.filter((row) => row.length >= 3)
+				.map((row) => [row[0] as string, row[1] as string, row[2] as string]),
+			load: rows("load")
+				.map(cells)
+				.filter((row) => row.length >= 2)
+				.map((row) => [row[0] as string, row[1] as string]),
+		};
+	}
+
+	/**
+	 * The colours area labels are assigned from, cycled in declaration order.
+	 *
+	 * A colour is a fact about a label, not about code, so the palette is declared. With none
+	 * declared every area takes one colour, which is visibly plain rather than pretending to be a
+	 * taxonomy: a repository that has not chosen colours has not chosen them.
+	 */
+	areaColours(): string[] {
+		const declared = this.data.labels;
+		const list = isRecord(declared) ? declared.area_colours : undefined;
+		return Array.isArray(list) ? list.map((entry) => text(entry)) : [];
 	}
 
 	/** The permitted Conventional Commit scopes: bare area names, sorted. */
@@ -383,10 +364,17 @@ export class RepositoryManifest {
 		return withoutComments(this.data.app);
 	}
 
-	/** The declared provider and pipeline identities, defaulted when none are declared. */
+	/**
+	 * The declared provider and pipeline identities.
+	 *
+	 * There was a default here, and it was this repository's own: `darkfactory-pipeline[bot]` with its
+	 * `user_id`, plus a `codex` entry where the document says `openai-codex`. A repository that
+	 * declares no identity has none — a default that named the wrong project would attribute its
+	 * commits to a stranger, and a default that named the right one would be this pipeline's identity
+	 * leaking into every consumer that forgot to declare its own.
+	 */
 	identities(): Record<string, Json> {
-		const declared = withoutComments(this.data.identities);
-		return Object.keys(declared).length > 0 ? declared : structuredClone(DEFAULT_IDENTITIES);
+		return withoutComments(this.data.identities);
 	}
 
 	/**

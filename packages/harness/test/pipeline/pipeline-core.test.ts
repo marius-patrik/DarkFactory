@@ -346,17 +346,19 @@ describe("translating a df exit code", () => {
 });
 
 describe("the df credential list a workflow must forward", () => {
-	test("is the set map then the load map, without repeats", () => {
-		// The Python returned exactly this list in this order.
-		expect(dfSetupSecretNames()).toEqual([
-			"GEMINI_API_KEY",
-			"GEMINI_API_KEY_2",
-			"GEMINI_API_KEY_3",
-			"OPENROUTER_API_KEY",
-			"OPENROUTER_API_KEY_2",
-			"GROQ_API_KEY",
-			"DF_ACCOUNT_OPENAI_CODEX",
-			"DF_ACCOUNT_GROK_SUB",
-		]);
+	test("is the set entries then the load entries, without repeats", () => {
+		// Derived from the tables the configuration document declares, in that order. The Python
+		// returned a hardcoded list of this repository's own providers; the list is now the
+		// repository's to declare, so the test supplies one and asserts the derivation.
+		const set: ReadonlyArray<readonly [string, string, string]> = [
+			["A", "a:1", "api_key"],
+			["B", "b:1", "api_key"],
+		];
+		const load: ReadonlyArray<readonly [string, string]> = [
+			["C", "c:pipeline"],
+			["A", "a:2"],
+		];
+		expect(dfSetupSecretNames(set, load)).toEqual(["A", "B", "C"]);
+		expect(dfSetupSecretNames()).toEqual([]);
 	});
 });

@@ -4,7 +4,6 @@ import { join } from "node:path";
 import { CANONICAL_STATUSES } from "@darkfactory/protocol/workflow";
 import { CHECKPOINT_FILENAME } from "../../src/board/checkpoint.ts";
 import { CONFIG_MARKER } from "../../src/install/configuration-issue.ts";
-import { DF_ACCOUNT_LOAD_MAP, DF_ACCOUNT_SET_MAP } from "../../src/pipeline/df-events.ts";
 import { TYPE_LABELS } from "../../src/pipeline/labels.ts";
 import { labelTaxonomy, PIPELINE_ROLE_LABELS, STATUS_OPTIONS } from "../../src/settings/taxonomy.ts";
 import {
@@ -38,13 +37,18 @@ describe("df container credentials", () => {
 	const container = allSteps(agent).find((entry) => entry.step.name === "Dispatch agent in container")?.step;
 
 	it("test_agent_workflow_forwards_the_new_secrets_without_interpolation: the df secret list is the one agent.yml must declare", () => {
-		// `DF_ACCOUNT_SET_MAP` and `DF_ACCOUNT_LOAD_MAP`: the `df account set` keys, then the
-		// `df account load` records, without repeats. Both are exported by the modules that own the
-		// setup and the load respectively.
+		// Read from the configuration document, which is where the account tables are declared. The
+		// claim is unchanged — every declared account variable is declared for callers and forwarded to
+		// the container — but it is now made against the declaration rather than against a constant
+		// naming one repository's providers.
+		const accounts = JSON.parse(readFileSync(join(repoRoot, "repo.dfconfig"), "utf8")).repo.accounts as {
+			set: string[][];
+			load: string[][];
+		};
 		const names = [
 			...new Set([
-				...DF_ACCOUNT_SET_MAP.map(([variable]) => variable),
-				...DF_ACCOUNT_LOAD_MAP.map(([variable]) => variable),
+				...accounts.set.map(([variable]) => variable as string),
+				...accounts.load.map(([variable]) => variable as string),
 			]),
 		];
 		expect(names.length).toBeGreaterThan(0);
