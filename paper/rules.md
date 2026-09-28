@@ -21,7 +21,7 @@ Formulace jsou citovány doslova, aby je bylo možné ověřit proti originálu.
 | Patkový font | „V celé práci se používá jednotný patkový font, standardně černá barva." | ✅ Caladea |
 | Velikost a zarovnání | „Hlavní text je zarovnaný do bloku a má velikost 12 bodů." | ✅ `styles/body.typ` |
 | Řádkování | „Řádkování textu je 1,5 řádku" | ✅ `leading: 1.5 × 0.65em` |
-| Mezera pod odstavcem | „mezera pod odstavcem má velikost 8 bodů" | ✅ `spacing: 8pt` |
+| Mezera pod odstavcem | „mezera pod odstavcem má velikost 8 bodů" | ✅ mezera **8 pt**; zapsaná jako `spacing: 19.7pt`, protože `spacing` je cílová vzdálenost celé mezery, ne přírůstek — změřeno `bun scripts/measure-leading.ts ../PAPER.pdf` |
 | Odsazení | „První řádek odstavce se zleva zvlášť neodsazuje." | ✅ `first-line-indent: 0pt` |
 
 > ⚠️ Průvodce výslovně upozorňuje, že 12 b a **patkový** font jsou závazné a že

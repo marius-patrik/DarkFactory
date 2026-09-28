@@ -8,17 +8,14 @@
 #import "fonts.typ": PISMO
 
 #let body-text(body) = {
-  // Paragraph spacing sits clearly above the leading, so a break between paragraphs is
-  // visible rather than inferred. A level-2 heading carries 19pt above itself; a 12pt
-  // gap keeps the same rhythm a step quieter, which is what separates body paragraphs
-  // from sections.
-  //
-  // `spacing` is a target for the whole inter-paragraph distance, not an increment on
-  // top of the leading, and it is measured against a leading of 19.6pt here. Measured
-  // in the built PDF, `spacing: 12pt` therefore lands at 0.3pt over the leading, which
-  // is no gap at all; 24pt lands at 12.3pt, which is the 12pt the text asks for. Do not
-  // "simplify" this back to 12pt without re-measuring.
-  set par(justify: true, leading: 1.5 * 0.65em, spacing: 24pt, first-line-indent: 0pt)
+  // The guide requires 8pt below a paragraph (kap. 4). Typst's `spacing` is a target for the
+  // whole inter-paragraph distance, not an increment on the leading, so the number written here
+  // is not the gap that appears on the page. Measured in the built PDF with
+  // `bun scripts/measure-leading.ts ../PAPER.pdf`, the extra space introduced is
+  // `spacing - 11.7pt`: 24pt measured 12.3pt, 12pt measured 0.3pt. 19.7pt therefore targets the
+  // required 8pt gap. Re-measure after any change to the leading, the size, or this value -
+  // `spacing: 12pt` here looks like compliance and is no gap at all.
+  set par(justify: true, leading: 1.5 * 0.65em, spacing: 19.7pt, first-line-indent: 0pt)
   set text(font: PISMO, size: 12pt, lang: "cs", hyphenate: true)
   body
 }
