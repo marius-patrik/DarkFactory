@@ -23,7 +23,11 @@ declaration and a test fails on it.
   skills/<skill>/SKILL.md     # the one shared artefact
   references/                 # long material, linked not inlined
   scripts/                    # self-locating, runnable, meaningful exit codes
-  hooks/hooks.json            # Claude Code + Codex
+  hooks/
+    hooks.json                # Claude Code + Codex
+    guard.sh                  # the rule itself, self-locating
+    ports/opencode.ts         # opencode cannot read JSON hooks
+    ports/pi.ts               # pi cannot read JSON hooks
 ```
 
 All three manifests carry the same `name`, equal to the directory. Omit `mcp.json` and
@@ -61,6 +65,16 @@ So a hook that matters must be verifiable another way, and must not be the only 
 
 Keep hooks few and cheap. A `PreToolUse` guard that runs on every tool call is a tax on every
 action in the session, including the ones it has no opinion about. Match narrowly and exit fast.
+Of the failure modes worth guarding against, most are not detectable from a command line - editing
+by line in a hard-wrapped file, or losing a quote. Only build a hook for what the matcher can
+actually see, and only when the rule is worth a permanent tax.
+
+A rule that has to reach opencode and pi exists in **three** files, and they will drift unless you
+test them against the same cases. Do that. A loose pattern is the likely failure: matching the text
+`git add .` also matches `git add .darkfactory/...`, which is the one command the rule must never
+stop, so the separator after the flag is load-bearing.
+
+Because a hook that matters must be verifiable another way, never let a hook be the only guard.
 
 ## Scripts
 
