@@ -1,0 +1,6 @@
+{
+	"name": "plugin-builder",
+	"version": "1.0.0",
+	"description": "Author, validate and port agent plugins for Claude Code, Codex, opencode and pi.",
+	"license": "MIT"
+}
