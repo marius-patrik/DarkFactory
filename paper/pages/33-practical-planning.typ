@@ -50,4 +50,12 @@ Runner načte jeho titulek a text, vyžádá si od modelu interpretaci a zapíš
 
 Po schválení interpretace je workflow spuštěno znovu a runner založí #emph[dítě] issue s názvem začínajícím na `Plan:`, nativně propojené s původním issue. Model dostane schválený požadavek a sestaví implementační plán s očekávanými změnami, soubory nebo oblastmi repozitáře a kroky ověření. Plán se opět zobrazí v issue a schvaluje se samostatně. Schválení je tak explicitní bránou: samotná schopnost agenta plán vytvořit neznamená oprávnění měnit kód. Obě brány před vznikem větve jsou lidské, a protože jsou oddělené, lze schválit porozumění zadání a odmítnout plán, který z něj vychází.
 
+#figure(
+  image("/components/img/claude-code-plan.png", width: 100%),
+  caption: [Plán, který model navrhne, než se začne psát kód: seznam kroků podle souborů, které se
+  mění, a otázka, zda se má pokračovat. Stejně jako v popsané pipeline je plán brána, kterou člověk
+  schvaluje nebo odmítne, a teprve potom vzniká větev. Screenshot z Claude Code,
+  převzato z @gallardo2025beyond.],
+) <fig-claude-code-plan>
+
 Zpětná vazba člověka není součástí nového vývoje od začátku. Komentář se změnou nebo odmítnutím se předá zpět interpretaci nebo plánování, takže se opravuje rozhodnutí před vytvořením pracovní větve. Tento jednoduchý model odděluje porozumění zadání, plánování a vlastní implementaci bez potřeby složitého grafového orchestrátoru @darkfactory-d576ec8f, což je volba, již literatura připouští jako legitimní: paralelní práce je užitečná tam, kde na sobě úlohy nezávisí, a jinde je to jen zdroj sporu @openai-agent-orchestration.

@@ -22,6 +22,9 @@ Vzorec koordinátor a subagent je běžně dostupný i v komerčních CLI harnes
   caption: [Rozhraní Google Antigravity CLI, tedy harnessu agenta běžícího v terminálu: koordinátor definuje tři specializované subagenty a spouští je souběžně; každý běží vlastním kontextem @antigravity-cli.],
 ) <fig-antigravity-subagents>
 
+V praxi se to projevuje v několika ustálených vzorech:
+- #strong[Workflow graph] předem určuje závislosti, pořadí a větvení fází @openai-agent-orchestration.
+
 #figure(
   image("/components/img/claude-code-dynamic-workflows.png", width: 100%),
   caption: [Postup práce dynamického workflow v Claude Code: vlevo fáze plánu se stavem,
@@ -29,9 +32,6 @@ Vzorec koordinátor a subagent je běžně dostupný i v komerčních CLI harnes
   tokeny, počet nástrojů a doba běhu. Screenshot pochází z komunitního příspěvku; rozhraní
   i jeho chování popisuje dokumentace @anthropic-dynamic-workflows.],
 ) <fig-dynamic-workflows>
-
-V praxi se to projevuje v několika ustálených vzorech:
-- #strong[Workflow graph] předem určuje závislosti, pořadí a větvení fází @openai-agent-orchestration.
 - #strong[Agent Swarm] dynamicky rozkládá úlohu na heterogenní podproblémy a spouští specializované agenty paralelně pod řízením orchestrátoru @kimi-k25-swarm.
 - #strong[Goal loop] je nadřazená řídicí smyčka: po dílčím dokončení ReAct smyčky se pozorovaný stav porovná s cílem a podmínkami přijetí a běh skončí, nebo pokračuje další iterací. Vzor pochází z tzv. #strong[Ralph loop], který v roce 2025 popsal Geoffrey Huntley jako smyčku, jež opakovaně spouští agenta se stejným zadáním a stav si drží v pracovním stromu, nikoli v přepisu konverzace @huntley2025ralph. Dnes je to běžná funkce Claude Code i Codexu @claude-goal @openai-goals.
 - #strong[human-in-the-loop] (#strong[HITL]) označuje bod, v němž se do automatizované smyčky doplní kontrolní brány vyžadující explicitní lidské rozhodnutí, například schválení specifikace, potvrzení implementačního plánu nebo přijetí výsledného diffu. Vývojář tak může ponechat agentovi ohraničenou implementační práci a současně si zachovat odpovědnost za záměr a integraci.
