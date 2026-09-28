@@ -37,9 +37,7 @@ def test_ci_quality_is_detector_driven_and_aggregated():
     )
     matrix = jobs["quality-run"]
     assert matrix["needs"] == "detect"
-    assert "fromJSON(needs.detect.outputs.matrix)" in str(
-        matrix["strategy"]["matrix"]["include"]
-    )
+    assert "fromJSON(needs.detect.outputs.matrix)" in str(matrix["strategy"]["matrix"]["include"])
     assert _index(matrix["steps"], "Install package dependencies") < _index(
         matrix["steps"], "Run detected quality action"
     )
@@ -98,9 +96,7 @@ def test_failure_observer_only_auto_files_default_branch_incidents():
     triggers = workflow.get(True) or workflow["on"]
     assert triggers["workflow_run"]["types"] == ["completed"]
     assert "workflow_call" in triggers
-    assert "File or resolve the failure issue" in str(
-        workflow["jobs"]["report"]["steps"]
-    )
+    assert "File or resolve the failure issue" in str(workflow["jobs"]["report"]["steps"])
 
 
 def test_agent_image_installs_from_the_checked_in_harness_lock():
@@ -108,10 +104,7 @@ def test_agent_image_installs_from_the_checked_in_harness_lock():
     assert "COPY package.json /opt/darkfactory/" in dockerfile
     assert "COPY packages/ /opt/darkfactory/packages/" in dockerfile
     assert "COPY capabilities/ /opt/darkfactory/capabilities/" in dockerfile
-    assert (
-        "bun install --frozen-lockfile --cwd /opt/darkfactory/packages/harness"
-        in dockerfile
-    )
+    assert "bun install --frozen-lockfile --cwd /opt/darkfactory/packages/harness" in dockerfile
     assert "exec bun /opt/darkfactory/packages/harness/src/cli.ts" in dockerfile
     assert "COPY pyproject.toml requirements-dev.txt" in dockerfile
     assert "pip install --no-cache-dir -r requirements-dev.txt" in dockerfile
@@ -148,9 +141,7 @@ def test_ci_still_runs_on_a_protected_base_of_this_repository_itself():
 
 
 def test_the_required_bound_issue_check_runs_for_a_pull_request_against_any_base_branch():
-    triggers = _triggers(_workflow(".github/workflows/verify-pr-issue.yml"))[
-        "pull_request"
-    ]
+    triggers = _triggers(_workflow(".github/workflows/verify-pr-issue.yml"))["pull_request"]
     assert "branches" not in triggers
     assert "edited" in triggers["types"]
 
@@ -192,9 +183,7 @@ def _docs_gate_script():
     steps = _steps(CI_WORKFLOW, "docs-check")
     step = steps[_index(steps, "Detect combined configuration docs block")]
     script = step["run"]
-    assert "${{" not in script, (
-        "the step must be runnable outside Actions to be testable"
-    )
+    assert "${{" not in script, "the step must be runnable outside Actions to be testable"
     return script
 
 
@@ -214,9 +203,7 @@ def _gate_verdict(script, root, config_dir):
         ["bash", "-e", "-c", script], env=env, capture_output=True, text=True
     )
     if completed.returncode != 0:
-        assert "Ambiguous DarkFactory configuration" in completed.stderr, (
-            completed.stderr
-        )
+        assert "Ambiguous DarkFactory configuration" in completed.stderr, completed.stderr
         return "ambiguous"
     if "present=true" in output.read_text(encoding="utf-8"):
         return "present"
@@ -293,21 +280,15 @@ def test_the_workflow_gate_and_the_resolver_agree_on_the_candidate_matrix(tmp_pa
             path = root / candidate
             path.parent.mkdir(parents=True, exist_ok=True)
             path.write_text("{}", encoding="utf-8")
-        assert _gate_verdict(script, root, config_dir) == expected, (
-            f"workflow gate: {label}"
-        )
+        assert _gate_verdict(script, root, config_dir) == expected, f"workflow gate: {label}"
         assert _resolver_verdict(root, config_dir) == expected, f"resolver: {label}"
 
 
 def test_the_workflow_gate_and_the_resolver_name_the_same_candidates():
     script = _docs_gate_script()
-    declared = next(
-        line for line in script.splitlines() if line.startswith("CONFIG_FILENAMES=")
-    )
+    declared = next(line for line in script.splitlines() if line.startswith("CONFIG_FILENAMES="))
     gate_filenames = tuple(declared.split("=", 1)[1].strip().strip('"').split())
     assert set(gate_filenames) == set(resolver.CONFIG_FILENAMES)
 
-    default = next(
-        line for line in script.splitlines() if line.startswith("DEFAULT_CONFIG_DIR=")
-    )
+    default = next(line for line in script.splitlines() if line.startswith("DEFAULT_CONFIG_DIR="))
     assert default.split("=", 1)[1].strip().strip('"') == resolver.DEFAULT_CONFIG_DIR

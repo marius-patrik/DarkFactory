@@ -143,9 +143,7 @@ def _env_for(args: List[str]) -> Dict[str, str]:
         return env
 
     app_capable = bool(args) and args[0] in APP_CAPABLE_OPERATIONS
-    app_capable = app_capable or any(
-        path in arg for arg in args for path in APP_CAPABLE_PATHS
-    )
+    app_capable = app_capable or any(path in arg for arg in args for path in APP_CAPABLE_PATHS)
     if not app_capable:
         env["GH_TOKEN"] = user_token
     return env
@@ -177,9 +175,7 @@ class Runner:
         if not self.apply:
             print(f"  would run: gh {printable}")
             return None
-        result = subprocess.run(
-            ["gh"] + args, capture_output=True, text=True, env=_env_for(args)
-        )
+        result = subprocess.run(["gh"] + args, capture_output=True, text=True, env=_env_for(args))
         if result.returncode != 0:
             message = (result.stderr or result.stdout).strip().splitlines()
             detail = message[0] if message else "unknown error"
@@ -393,9 +389,7 @@ def apply_labels(run: Runner) -> None:
     """
     print("\n== Labels ==")
     existing: set = set()
-    listing = run.gh(
-        ["label", "list", "--repo", SLUG, "--limit", "200", "--json", "name"]
-    )
+    listing = run.gh(["label", "list", "--repo", SLUG, "--limit", "200", "--json", "name"])
     if listing:
         existing = {entry["name"] for entry in json.loads(listing)}
     elif run.apply:
@@ -566,9 +560,7 @@ def apply_status_options(run: Runner, field_id: str, existing: List[str]) -> Non
     """
     extra = [name for name in existing if name not in STATUS_OPTIONS and name != "Todo"]
     if extra:
-        print(
-            f"  REFUSING to rewrite: board has custom options that would be deleted: {extra}"
-        )
+        print(f"  REFUSING to rewrite: board has custom options that would be deleted: {extra}")
         print("  Reconcile them by hand, or add them to STATUS_OPTIONS, then re-run.")
         run.failures.append(f"status options rewrite blocked by custom columns {extra}")
         return
@@ -623,9 +615,9 @@ def apply_status_options(run: Runner, field_id: str, existing: List[str]) -> Non
         return
     applied = [
         option["name"]
-        for option in json.loads(result.stdout)["data"]["updateProjectV2Field"][
-            "projectV2Field"
-        ]["options"]
+        for option in json.loads(result.stdout)["data"]["updateProjectV2Field"]["projectV2Field"][
+            "options"
+        ]
     ]
     print(f"  Status options set to {applied}")
 
@@ -843,9 +835,7 @@ def report_required_secrets(run: Runner) -> None:
         "ANTIGRAVITY_CLIENT_SECRET": "OAuth client secret for the token exchange.",
     }
     present: set = set()
-    listing = run.gh(
-        ["secret", "list", "--repo", SLUG, "--json", "name"], allow_fail=True
-    )
+    listing = run.gh(["secret", "list", "--repo", SLUG, "--json", "name"], allow_fail=True)
     if listing:
         present = {entry["name"] for entry in json.loads(listing)}
 
@@ -853,9 +843,7 @@ def report_required_secrets(run: Runner) -> None:
         mark = "present" if name in present else "MISSING"
         print(f"  [{mark:>7}] {name} - {why}")
     if not present:
-        print(
-            "  (could not read the secret list; treat every entry above as unverified)"
-        )
+        print("  (could not read the secret list; treat every entry above as unverified)")
 
 
 def main() -> None:
@@ -865,9 +853,7 @@ def main() -> None:
     )
     mode = parser.add_mutually_exclusive_group(required=True)
     mode.add_argument("--apply", action="store_true", help="Execute the changes")
-    mode.add_argument(
-        "--plan", action="store_true", help="Print the changes without applying"
-    )
+    mode.add_argument("--plan", action="store_true", help="Print the changes without applying")
     parser.add_argument(
         "--skip-protection",
         action="store_true",

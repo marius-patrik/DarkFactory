@@ -149,9 +149,9 @@ def test_classify_type_uses_declared_bug_from_request_type_section():
 
 def test_format_conventional_commit_maps_bug_to_fix():
     """`bug` is a label; `fix` is the commit type. The mapping must not leak."""
-    assert format_conventional_commit(
-        "bug", "area:governance", "Correct the codec"
-    ) == ("fix(governance): correct the codec")
+    assert format_conventional_commit("bug", "area:governance", "Correct the codec") == (
+        "fix(governance): correct the codec"
+    )
     assert format_conventional_commit("feat", "area:agents", "Add cell buffer") == (
         "feat(agents): add cell buffer"
     )
@@ -204,9 +204,7 @@ def test_non_quota_errors_not_misdetected(message: str):
 def test_bot_comments_are_ignored():
     """Self-reply loops are the classic failure mode of a conversational CI agent."""
     assert is_bot_or_agent_comment("github-actions[bot]", "anything")
-    assert is_bot_or_agent_comment(
-        "someone", "<!-- darkfactory-agent -->\nInterpretation"
-    )
+    assert is_bot_or_agent_comment("someone", "<!-- darkfactory-agent -->\nInterpretation")
     assert is_bot_or_agent_comment("someone", "<!-- omnis-agent -->\nInterpretation")
     assert not is_bot_or_agent_comment("marius-patrik", "approve")
 
@@ -265,9 +263,7 @@ def test_node_helpers_use_bun_when_npm_is_absent(monkeypatch, tmp_path):
     assert not any(cmd[0] == "npm" for cmd in seen)
 
 
-def test_node_verification_fails_cleanly_without_a_package_runner(
-    monkeypatch, tmp_path
-):
+def test_node_verification_fails_cleanly_without_a_package_runner(monkeypatch, tmp_path):
     """A declared test with no runner reports a verification failure instead of raising.
 
     Args:
@@ -349,9 +345,7 @@ def test_new_agent_comments_are_branded_for_this_pipeline():
     source = _read_runner_source()
     assert "darkfactory-agent -->" in source
     written = [
-        l
-        for l in source.split("\n")
-        if "omnis-agent -->" in l and l.strip().startswith('"')
+        l for l in source.split("\n") if "omnis-agent -->" in l and l.strip().startswith('"')
     ]
     assert not written, f"the old marker must not be written any more: {written}"
 
@@ -448,9 +442,7 @@ class TestDeclarativeCredentials:
             lambda *a, **k: {"access_token": "fresh", "refresh_token": "new"},
         )
         assert prepare_credentials(rotating) == "fresh"
-        assert os.environ["ROTATING_TOKEN"] == "new", (
-            "the rotated token must not be discarded"
-        )
+        assert os.environ["ROTATING_TOKEN"] == "new", "the rotated token must not be discarded"
 
     def test_a_non_rotating_provider_keeps_its_stored_token(self, monkeypatch):
         """Google does not rotate, so nothing should be replaced behind the caller's back."""
@@ -505,7 +497,8 @@ class TestPlanIssuesAreNotInterpreted:
         self, monkeypatch, tmp_path
     ):
         """#1193. This used to return without interpreting, which is what muted the whole loop: the
-        failure reporter files this issue for a red build and the runner then refused to act on it."""
+        failure reporter files this issue for a red build and the runner then refused to act on it.
+        """
         called = []
         module = agent_runner_module()
         monkeypatch.setattr(module, "handle_interpret", lambda n, r: called.append(n))
@@ -517,17 +510,14 @@ class TestPlanIssuesAreNotInterpreted:
         )
         path = tmp_path / "event.json"
         path.write_text(
-            json.dumps(
-                self._payload(
-                    ["pipeline-failure"], body=_failure_body("CI", "3600000001")
-                )
-            ),
+            json.dumps(self._payload(["pipeline-failure"], body=_failure_body("CI", "3600000001"))),
             encoding="utf-8",
         )
         module.dispatch_event(str(path), "issues")
-        assert ("claim", "CI@3600000001") in called, (
-            "the failing run's effect identity must be claimed"
-        )
+        assert (
+            "claim",
+            "CI@3600000001",
+        ) in called, "the failing run's effect identity must be claimed"
         assert 92 in called, "a red build must reach the agent, not be ignored"
 
     def test_a_request_issue_is_still_interpreted(self, monkeypatch, tmp_path):
@@ -545,7 +535,8 @@ class TestPlanIssuesAreNotInterpreted:
 class TestPipelineCanStartOnAnExistingIssue:
     """v1 exit criterion 6. The graph's only entry edge carries the `Request` label, so an issue that
     already existed when the trigger was written - including every failure report - could never enter
-    the pipeline: only `issues.opened` fired, and opening one is the one thing that had not happened."""
+    the pipeline: only `issues.opened` fired, and opening one is the one thing that had not happened.
+    """
 
     def _dispatch(self, monkeypatch, tmp_path, labels, action, applied="Request"):
         called = []
@@ -568,23 +559,17 @@ class TestPipelineCanStartOnAnExistingIssue:
         module.dispatch_event(str(path), "issues")
         return called
 
-    def test_labelling_an_existing_issue_as_a_request_starts_it(
-        self, monkeypatch, tmp_path
-    ):
+    def test_labelling_an_existing_issue_as_a_request_starts_it(self, monkeypatch, tmp_path):
         assert self._dispatch(monkeypatch, tmp_path, ["Request"], "labeled") == [92]
 
-    def test_a_failure_report_labelled_as_a_request_starts_it(
-        self, monkeypatch, tmp_path
-    ):
+    def test_a_failure_report_labelled_as_a_request_starts_it(self, monkeypatch, tmp_path):
         """The failure reporter labels what it files, and a human can add `Request` to any open
         failure; both are the only way to start the pipeline on a failure that already exists."""
         assert self._dispatch(
             monkeypatch, tmp_path, ["pipeline-failure", "Request"], "labeled"
         ) == [92]
 
-    def test_an_unrelated_label_does_not_start_a_second_run(
-        self, monkeypatch, tmp_path
-    ):
+    def test_an_unrelated_label_does_not_start_a_second_run(self, monkeypatch, tmp_path):
         """`labeled` carries the issue's whole label set, so keying on that set would re-enter the
         pipeline every time a triage label was added to a Request."""
         assert (
@@ -619,9 +604,7 @@ class TestOneIssueTwoGates:
     def test_no_plan_yet_means_the_interpretation_was_approved(self, monkeypatch):
         """The first approval is of the interpretation, so a plan is what follows."""
         module = agent_runner_module()
-        monkeypatch.setattr(
-            module, "run_gh", lambda *a, **k: json.dumps({"comments": []})
-        )
+        monkeypatch.setattr(module, "run_gh", lambda *a, **k: json.dumps({"comments": []}))
         assert module.has_plan(91, REPO_SLUG) is False
 
     def test_a_posted_plan_means_the_plan_is_what_is_approved(self, monkeypatch):
@@ -639,9 +622,7 @@ class TestOneIssueTwoGates:
         monkeypatch.setattr(
             module,
             "run_gh",
-            lambda *a, **k: json.dumps(
-                {"comments": [{"body": "Looks good, one thought:"}]}
-            ),
+            lambda *a, **k: json.dumps({"comments": [{"body": "Looks good, one thought:"}]}),
         )
         assert module.has_plan(91, REPO_SLUG) is False
 
@@ -659,9 +640,7 @@ class TestOneIssueTwoGates:
 class TestApprovalRecognition:
     """The approval is the gate the whole pipeline waits on, so recognising it must be right."""
 
-    @pytest.mark.parametrize(
-        "text", ["approve", "Approve", "  approve  ", "lgtm", "/approve"]
-    )
+    @pytest.mark.parametrize("text", ["approve", "Approve", "  approve  ", "lgtm", "/approve"])
     def test_a_bare_approval_is_recognised(self, text):
         """The ordinary case."""
         assert agent_runner_module().APPROVAL_PATTERN.search(text)
@@ -698,9 +677,7 @@ def test_no_agent_heading_names_a_single_provider():
     """
     source = _read_runner_source()
     offenders = [
-        line
-        for line in source.split("\n")
-        if "### Antigravity" in line or "### Omnis" in line
+        line for line in source.split("\n") if "### Antigravity" in line or "### Omnis" in line
     ]
     assert not offenders, f"agent headings name a provider: {offenders}"
 
@@ -771,14 +748,10 @@ class TestRotatedTokenPersistence:
         monkeypatch.setenv("GITHUB_REPOSITORY", "o/r")
         monkeypatch.setattr(module.subprocess, "run", fake_run)
         assert module.persist_rotated_token("ROTATING_TOKEN", "new-value") is True
-        assert "new-value" not in " ".join(seen["cmd"]), (
-            "the value must not appear in argv"
-        )
+        assert "new-value" not in " ".join(seen["cmd"]), "the value must not appear in argv"
         assert seen["input"] == "new-value"
 
-    def test_without_a_repository_it_says_so_rather_than_failing_silently(
-        self, monkeypatch
-    ):
+    def test_without_a_repository_it_says_so_rather_than_failing_silently(self, monkeypatch):
         """Silence here means the next run fails to authenticate for no visible reason."""
         module = agent_runner_module()
         monkeypatch.delenv("GITHUB_REPOSITORY", raising=False)
@@ -827,9 +800,7 @@ class TestTheAccountsCredentialReachesTheCli:
         """
         return harnesses.Attempt(harnesses.REGISTRY[name], None, account)
 
-    def test_the_second_accounts_key_arrives_under_the_canonical_name(
-        self, monkeypatch
-    ):
+    def test_the_second_accounts_key_arrives_under_the_canonical_name(self, monkeypatch):
         """Args:
         monkeypatch: Pytest monkeypatch fixture.
         """
@@ -875,9 +846,7 @@ class TestTheAccountsCredentialReachesTheCli:
         assert env["ANTHROPIC_API_KEY"] == "api-key-two"
         assert "CLAUDE_CODE_OAUTH_TOKEN" not in env
 
-    def test_no_credential_survives_from_an_account_that_is_not_running(
-        self, monkeypatch
-    ):
+    def test_no_credential_survives_from_an_account_that_is_not_running(self, monkeypatch):
         """Args:
         monkeypatch: Pytest monkeypatch fixture.
         """
@@ -901,9 +870,7 @@ class TestTheAccountsCredentialReachesTheCli:
             "exchange_refresh_token",
             lambda *a, **k: {"access_token": "fresh"},
         )
-        env = agent_runner.credential_env(
-            dict(os.environ), self._attempt("antigravity", 2)
-        )
+        env = agent_runner.credential_env(dict(os.environ), self._attempt("antigravity", 2))
         assert env["ANTIGRAVITY_CLIENT_ID"] == "client-two"
         assert env["ANTIGRAVITY_CLIENT_SECRET"] == "secret-two"
 
@@ -911,10 +878,7 @@ class TestTheAccountsCredentialReachesTheCli:
         """A harness defined entirely through configuration may authenticate however it likes."""
         harness = harnesses.Harness(name="x", binary="x", template=[], auth=None)
         base = {"SOMETHING": "kept"}
-        assert (
-            agent_runner.credential_env(base, harnesses.Attempt(harness, None, 1))
-            == base
-        )
+        assert agent_runner.credential_env(base, harnesses.Attempt(harness, None, 1)) == base
 
 
 class TestLoginFileCredentialLifecycle:
@@ -974,9 +938,7 @@ class TestLoginFileCredentialLifecycle:
         result = agent_runner.prepare_login_file(base, attempt)
         assert result is not None
         path, secret_name, original = result
-        expected_path = os.path.join(
-            str(tmp_path), ".kimi-code", "credentials", "kimi-code.json"
-        )
+        expected_path = os.path.join(str(tmp_path), ".kimi-code", "credentials", "kimi-code.json")
         assert path == expected_path
         assert secret_name == "KIMI_AUTH_JSON_2"
         assert original == '{"kimi_token": "secret-2"}'
@@ -996,9 +958,7 @@ class TestLoginFileCredentialLifecycle:
         assert "CODEX_AUTH_JSON_2" not in env
         assert "CODEX_AUTH_JSON" not in env
 
-    def test_a_changed_file_is_persisted_to_the_same_numbered_secret(
-        self, tmp_path, monkeypatch
-    ):
+    def test_a_changed_file_is_persisted_to_the_same_numbered_secret(self, tmp_path, monkeypatch):
         """Token rotation writes back to the exact account that provided the login file."""
         module = agent_runner_module()
         target_file = tmp_path / "auth.json"
@@ -1053,16 +1013,12 @@ class TestLoginFileCredentialLifecycle:
 
         assert not target_file.exists(), "login file must still be removed"
 
-    def test_run_agent_prompt_end_to_end_with_login_file_rotation(
-        self, monkeypatch, tmp_path
-    ):
+    def test_run_agent_prompt_end_to_end_with_login_file_rotation(self, monkeypatch, tmp_path):
         """run_agent_prompt manages the login file lifecycle, suppresses static keys, and persists rotation."""
         monkeypatch.setenv("HOME", str(tmp_path))
         monkeypatch.setenv("AGENT_HARNESS_CHAIN", "codex")
         monkeypatch.delenv("AGENT_HARNESS_CONFIG", raising=False)
-        monkeypatch.setattr(
-            harnesses.shutil, "which", lambda binary: f"/usr/bin/{binary}"
-        )
+        monkeypatch.setattr(harnesses.shutil, "which", lambda binary: f"/usr/bin/{binary}")
         for name in harnesses.REGISTRY["codex"].auth.secret_names():
             monkeypatch.delenv(name, raising=False)
 
@@ -1094,16 +1050,12 @@ class TestLoginFileCredentialLifecycle:
         assert "OPENAI_API_KEY_2" not in captured_env
         assert "CODEX_AUTH_JSON_2" not in captured_env
 
-    def test_run_agent_prompt_persists_and_cleans_up_on_failure(
-        self, monkeypatch, tmp_path
-    ):
+    def test_run_agent_prompt_persists_and_cleans_up_on_failure(self, monkeypatch, tmp_path):
         """CLI invocation failure still persists any rotated token and removes the file."""
         monkeypatch.setenv("HOME", str(tmp_path))
         monkeypatch.setenv("AGENT_HARNESS_CHAIN", "codex")
         monkeypatch.delenv("AGENT_HARNESS_CONFIG", raising=False)
-        monkeypatch.setattr(
-            harnesses.shutil, "which", lambda binary: f"/usr/bin/{binary}"
-        )
+        monkeypatch.setattr(harnesses.shutil, "which", lambda binary: f"/usr/bin/{binary}")
         for name in harnesses.REGISTRY["codex"].auth.secret_names():
             monkeypatch.delenv(name, raising=False)
 
@@ -1114,9 +1066,7 @@ class TestLoginFileCredentialLifecycle:
 
         def fail_run(argv, **kwargs):
             assert login_path.exists()
-            login_path.write_text(
-                '{"auth": "v2-rotated-before-fail"}', encoding="utf-8"
-            )
+            login_path.write_text('{"auth": "v2-rotated-before-fail"}', encoding="utf-8")
             raise subprocess.CalledProcessError(1, argv, stderr="failed execution")
 
         monkeypatch.setattr(agent_runner.subprocess, "run", fail_run)
@@ -1129,9 +1079,7 @@ class TestLoginFileCredentialLifecycle:
         result = agent_runner.run_agent_prompt("test prompt")
         assert "[DarkFactory Agent Execution Error]" in result
         assert not login_path.exists(), "login file must be removed even on failure"
-        assert persisted == [
-            ("CODEX_AUTH_JSON_2", '{"auth": "v2-rotated-before-fail"}')
-        ]
+        assert persisted == [("CODEX_AUTH_JSON_2", '{"auth": "v2-rotated-before-fail"}')]
 
 
 class TestExhaustionRotatesBeforeItWaits:
@@ -1145,9 +1093,7 @@ class TestExhaustionRotatesBeforeItWaits:
         """
         monkeypatch.setenv("AGENT_HARNESS_CHAIN", "claude")
         monkeypatch.delenv("AGENT_HARNESS_CONFIG", raising=False)
-        monkeypatch.setattr(
-            harnesses.shutil, "which", lambda binary: f"/usr/bin/{binary}"
-        )
+        monkeypatch.setattr(harnesses.shutil, "which", lambda binary: f"/usr/bin/{binary}")
         for name in harnesses.REGISTRY["claude"].auth.secret_names():
             monkeypatch.delenv(name, raising=False)
         monkeypatch.setenv("CLAUDE_CODE_OAUTH_TOKEN", "one")
@@ -1168,9 +1114,7 @@ class TestExhaustionRotatesBeforeItWaits:
         def fake_run(argv, **kwargs):
             seen.append(kwargs["env"].get("CLAUDE_CODE_OAUTH_TOKEN", ""))
             if len(seen) == 1:
-                raise subprocess.CalledProcessError(
-                    1, argv, stderr="rate limit exceeded"
-                )
+                raise subprocess.CalledProcessError(1, argv, stderr="rate limit exceeded")
             return subprocess.CompletedProcess(argv, 0, stdout="done", stderr="")
 
         monkeypatch.setattr(agent_runner.subprocess, "run", fake_run)
@@ -1178,9 +1122,7 @@ class TestExhaustionRotatesBeforeItWaits:
         assert seen == ["one", "two"], "the second attempt must use the second account"
         assert slept == [], "there was an unused account; nothing should have waited"
 
-    def test_the_backoff_still_applies_when_there_is_nothing_to_rotate_to(
-        self, monkeypatch
-    ):
+    def test_the_backoff_still_applies_when_there_is_nothing_to_rotate_to(self, monkeypatch):
         """The last attempt is the only place waiting can possibly help.
 
         Args:
@@ -1188,9 +1130,7 @@ class TestExhaustionRotatesBeforeItWaits:
         """
         monkeypatch.setenv("AGENT_HARNESS_CHAIN", "claude")
         monkeypatch.delenv("AGENT_HARNESS_CONFIG", raising=False)
-        monkeypatch.setattr(
-            harnesses.shutil, "which", lambda binary: f"/usr/bin/{binary}"
-        )
+        monkeypatch.setattr(harnesses.shutil, "which", lambda binary: f"/usr/bin/{binary}")
         for name in harnesses.REGISTRY["claude"].auth.secret_names():
             monkeypatch.delenv(name, raising=False)
         monkeypatch.setenv("CLAUDE_CODE_OAUTH_TOKEN", "only")
@@ -1202,16 +1142,12 @@ class TestExhaustionRotatesBeforeItWaits:
         def fake_run(argv, **kwargs):
             calls.append(1)
             if len(calls) < 3:
-                raise subprocess.CalledProcessError(
-                    1, argv, stderr="rate limit exceeded"
-                )
+                raise subprocess.CalledProcessError(1, argv, stderr="rate limit exceeded")
             return subprocess.CompletedProcess(argv, 0, stdout="done", stderr="")
 
         monkeypatch.setattr(agent_runner.subprocess, "run", fake_run)
         assert agent_runner.run_agent_prompt("do it") == "done"
-        assert slept, (
-            "with one account and nothing else to try, backoff is all there is"
-        )
+        assert slept, "with one account and nothing else to try, backoff is all there is"
 
     def test_a_real_bug_is_not_answered_by_burning_every_account(self, monkeypatch):
         """Falling through on a genuine error would spend every account on the same broken prompt.
@@ -1224,9 +1160,7 @@ class TestExhaustionRotatesBeforeItWaits:
 
         def fake_run(argv, **kwargs):
             calls.append(1)
-            raise subprocess.CalledProcessError(
-                1, argv, stderr="syntax error in prompt file"
-            )
+            raise subprocess.CalledProcessError(1, argv, stderr="syntax error in prompt file")
 
         monkeypatch.setattr(agent_runner.subprocess, "run", fake_run)
         result = agent_runner.run_agent_prompt("do it")
@@ -1242,9 +1176,7 @@ class TestGhCliHandling:
         module = agent_runner_module()
 
         def fail_run(cmd, **kwargs):
-            return subprocess.CompletedProcess(
-                cmd, 1, stdout="", stderr="HTTP 404: Not Found"
-            )
+            return subprocess.CompletedProcess(cmd, 1, stdout="", stderr="HTTP 404: Not Found")
 
         monkeypatch.setattr(module.subprocess, "run", fail_run)
         with pytest.raises(subprocess.CalledProcessError) as exc_info:
@@ -1256,9 +1188,7 @@ class TestGhCliHandling:
         module = agent_runner_module()
 
         def ok_run(cmd, **kwargs):
-            return subprocess.CompletedProcess(
-                cmd, 0, stdout="hello world\n", stderr=""
-            )
+            return subprocess.CompletedProcess(cmd, 0, stdout="hello world\n", stderr="")
 
         monkeypatch.setattr(module.subprocess, "run", ok_run)
         assert module.try_gh(["status"]) == "hello world"
@@ -1268,14 +1198,10 @@ class TestGhCliHandling:
         module = agent_runner_module()
 
         def fail_run(cmd, **kwargs):
-            return subprocess.CompletedProcess(
-                cmd, 1, stdout="", stderr="label does not exist"
-            )
+            return subprocess.CompletedProcess(cmd, 1, stdout="", stderr="label does not exist")
 
         monkeypatch.setattr(module.subprocess, "run", fail_run)
-        result = module.try_gh(
-            ["issue", "edit", "12", "--add-label", "ci"], doing="label #12"
-        )
+        result = module.try_gh(["issue", "edit", "12", "--add-label", "ci"], doing="label #12")
         assert result is None
         err = capsys.readouterr().err
         assert "Could not label #12: label does not exist" in err
@@ -1298,9 +1224,7 @@ class TestEmptyAgentOutputIsAFailedAttempt:
         """
         monkeypatch.setenv("AGENT_HARNESS_CHAIN", "codex")
         monkeypatch.delenv("AGENT_HARNESS_CONFIG", raising=False)
-        monkeypatch.setattr(
-            harnesses.shutil, "which", lambda binary: f"/usr/bin/{binary}"
-        )
+        monkeypatch.setattr(harnesses.shutil, "which", lambda binary: f"/usr/bin/{binary}")
         for name in harnesses.REGISTRY["codex"].auth.secret_names():
             monkeypatch.delenv(name, raising=False)
         monkeypatch.setenv("OPENAI_API_KEY", "one")
@@ -1319,9 +1243,7 @@ class TestEmptyAgentOutputIsAFailedAttempt:
             seen.append(kwargs["env"].get("OPENAI_API_KEY", ""))
             if len(seen) == 1:
                 return subprocess.CompletedProcess(argv, 0, stdout="   \n", stderr="")
-            return subprocess.CompletedProcess(
-                argv, 0, stdout="real answer\n", stderr=""
-            )
+            return subprocess.CompletedProcess(argv, 0, stdout="real answer\n", stderr="")
 
         monkeypatch.setattr(agent_runner.subprocess, "run", fake_run)
         assert agent_runner.run_agent_prompt("do it") == "real answer"
@@ -1348,9 +1270,7 @@ class TestEmptyAgentOutputIsAFailedAttempt:
         assert agent_runner.run_agent_prompt("do it") == "done"
         assert seen == ["one", "two"]
 
-    def test_all_empty_raises_and_posts_a_notice_not_a_header_only_shell(
-        self, monkeypatch, capsys
-    ):
+    def test_all_empty_raises_and_posts_a_notice_not_a_header_only_shell(self, monkeypatch, capsys):
         """Nothing usable anywhere must fail the run, with a real notice, never an empty shell.
 
         Args:
@@ -1373,9 +1293,7 @@ class TestEmptyAgentOutputIsAFailedAttempt:
         ctx = {"issue_number": 42, "repo": "marius-patrik/DarkFactory"}
         with pytest.raises(RuntimeError, match="No usable agent output"):
             agent_runner.run_agent_prompt("do it", checkpoint_context=ctx)
-        assert posted, (
-            "a failure notice must be posted where the empty shell would have been"
-        )
+        assert posted, "a failure notice must be posted where the empty shell would have been"
         for body in posted:
             assert "### DarkFactory Agent Execution Error" in body
             _, _, after = body.partition("### DarkFactory Agent Execution Error")
@@ -1428,9 +1346,7 @@ class TestEmptyAgentOutputIsAFailedAttempt:
         assert agent_runner.run_agent_prompt("do it") == "answer with whitespace"
         assert len(calls) == 1
 
-    def test_answer_discussing_timeouts_is_not_mistaken_for_a_print_timeout(
-        self, monkeypatch
-    ):
+    def test_answer_discussing_timeouts_is_not_mistaken_for_a_print_timeout(self, monkeypatch):
         """Timeout wording in the agent's own answer (stdout) must not rotate the attempt away.
 
         Args:
@@ -1438,9 +1354,7 @@ class TestEmptyAgentOutputIsAFailedAttempt:
         """
         self._two_codex_accounts(monkeypatch)
         calls: List[int] = []
-        answer = (
-            "The print timeout is too short: the request timed out before the response."
-        )
+        answer = "The print timeout is too short: the request timed out before the response."
 
         def fake_run(argv, **kwargs):
             calls.append(1)
@@ -1461,9 +1375,7 @@ class TestAnswersAboutQuotaArePosted:
     )
 
     def _issue_view(self):
-        return json.dumps(
-            {"title": "Request: rotate on rate limits", "body": "", "labels": []}
-        )
+        return json.dumps({"title": "Request: rotate on rate limits", "body": "", "labels": []})
 
     def _run(self, monkeypatch, handler, result):
         posted = []
@@ -1484,9 +1396,7 @@ class TestAnswersAboutQuotaArePosted:
 
     def test_an_interpretation_that_discusses_quota_is_posted(self, monkeypatch):
         """Request #220 asked for rate-limit handling; its interpretation was dropped silently."""
-        posted = self._run(
-            monkeypatch, lambda m: m.handle_interpret(220, REPO_SLUG), self.ANSWER
-        )
+        posted = self._run(monkeypatch, lambda m: m.handle_interpret(220, REPO_SLUG), self.ANSWER)
         assert len(posted) == 1 and self.ANSWER in posted[0]
 
     def test_a_response_that_discusses_quota_is_posted(self, monkeypatch):
@@ -1499,13 +1409,8 @@ class TestAnswersAboutQuotaArePosted:
 
     def test_the_exhaustion_notice_still_posts_nothing(self, monkeypatch):
         """Exhaustion already checkpointed and labelled the issue Blocked inside the runner."""
-        notice = (
-            agent_runner.QUOTA_EXHAUSTED_NOTICE
-            + " across every harness and model (agy): 429"
-        )
-        posted = self._run(
-            monkeypatch, lambda m: m.handle_interpret(220, REPO_SLUG), notice
-        )
+        notice = agent_runner.QUOTA_EXHAUSTED_NOTICE + " across every harness and model (agy): 429"
+        posted = self._run(monkeypatch, lambda m: m.handle_interpret(220, REPO_SLUG), notice)
         assert posted == []
 
     def test_every_caller_tests_the_notice_not_the_wording(self):
@@ -1536,9 +1441,7 @@ class TestPlanAlignmentStatus:
             if "pr diff" in joined:
                 return "diff --git a/x b/x\n"
             if "issue view" in joined:
-                return json.dumps(
-                    {"title": "Plan", "body": "Do the thing", "comments": []}
-                )
+                return json.dumps({"title": "Plan", "body": "Do the thing", "comments": []})
             return ""
 
         monkeypatch.setattr(module, "run_gh", fake_gh)
@@ -1629,9 +1532,7 @@ def _failure_body(workflow, run_id):
     )
 
 
-def _dispatch_issue_comment(
-    monkeypatch, tmp_path, payload, plan_exists=False, claim=True
-):
+def _dispatch_issue_comment(monkeypatch, tmp_path, payload, plan_exists=False, claim=True):
     """Dispatches a payload with every stage handler replaced by a recorder.
 
     Args:
@@ -1664,24 +1565,14 @@ def _dispatch_issue_comment(
         "handle_plan",
         lambda req, plan, r, feedback="": calls["plan"].append((req, plan, feedback)),
     )
-    monkeypatch.setattr(
-        module, "handle_implement", lambda *a: calls["implement"].append(a)
-    )
-    monkeypatch.setattr(
-        module, "start_self_review", lambda *a: calls["self_review"].append(a)
-    )
-    monkeypatch.setattr(
-        module, "handle_respond", lambda *a, **k: calls["respond"].append((a, k))
-    )
-    monkeypatch.setattr(
-        module, "unblock_entity", lambda *a, **k: calls["unblock"].append((a, k))
-    )
+    monkeypatch.setattr(module, "handle_implement", lambda *a: calls["implement"].append(a))
+    monkeypatch.setattr(module, "start_self_review", lambda *a: calls["self_review"].append(a))
+    monkeypatch.setattr(module, "handle_respond", lambda *a, **k: calls["respond"].append((a, k)))
+    monkeypatch.setattr(module, "unblock_entity", lambda *a, **k: calls["unblock"].append((a, k)))
     monkeypatch.setattr(module, "load_checkpoint", lambda **k: None)
     monkeypatch.setattr(module, "has_plan", lambda n, r: plan_exists)
     monkeypatch.setattr(module, "claim_failure_dispatch", lambda *a: claim)
-    monkeypatch.setattr(
-        module, "run_gh", lambda *a, **k: (calls["gh"].append(a), "{}")[1]
-    )
+    monkeypatch.setattr(module, "run_gh", lambda *a, **k: (calls["gh"].append(a), "{}")[1])
     path = tmp_path / "event.json"
     path.write_text(json.dumps(payload), encoding="utf-8")
     module.dispatch_event(str(path), "issue_comment")
@@ -1737,9 +1628,7 @@ class TestPipelineFailureComments:
         )
         assert len(calls["respond"]) == 1
 
-    def test_a_recurrence_from_the_pipeline_resumes_the_loop(
-        self, monkeypatch, tmp_path
-    ):
+    def test_a_recurrence_from_the_pipeline_resumes_the_loop(self, monkeypatch, tmp_path):
         """A red build that comes back after a repair is reported as `Failed again:` by the pipeline's
         own token. A blanket bot-comment skip swallowed it, which is what kept the loop permanently
         muted; it has to reach the agent even though its author is a bot."""
@@ -1783,10 +1672,7 @@ class TestFailureEffectIdentity:
 
     def test_identity_is_the_workflow_and_the_failing_run(self):
         module = agent_runner_module()
-        assert (
-            module.failure_effect_id(_failure_body("CI", "3600000001"))
-            == "CI@3600000001"
-        )
+        assert module.failure_effect_id(_failure_body("CI", "3600000001")) == "CI@3600000001"
 
     def test_a_retitled_issue_keeps_its_identity(self):
         """The marker lives in the body precisely so a human renaming the issue cannot fork it."""
@@ -1798,18 +1684,12 @@ class TestFailureEffectIdentity:
 
     def test_an_ordinary_issue_has_no_failure_identity(self):
         module = agent_runner_module()
-        assert (
-            module.failure_effect_id("the label alone must never authorise a dispatch")
-            is None
-        )
+        assert module.failure_effect_id("the label alone must never authorise a dispatch") is None
 
     def test_a_marker_without_a_run_is_not_an_identity(self):
         """A partial report must not be dispatched as if it named a failure."""
         module = agent_runner_module()
-        assert (
-            module.failure_effect_id("<!-- pipeline-failure: CI -->\n\nno run recorded")
-            is None
-        )
+        assert module.failure_effect_id("<!-- pipeline-failure: CI -->\n\nno run recorded") is None
 
     def test_a_recurrence_takes_its_run_from_the_comment(self):
         module = agent_runner_module()
@@ -1831,10 +1711,7 @@ class TestFailureEffectIdentity:
 
     def test_an_ordinary_comment_is_not_a_recurrence(self):
         module = agent_runner_module()
-        assert (
-            module.refailure_effect_id(_failure_body("CI", "3600000001"), "looks bad")
-            is None
-        )
+        assert module.refailure_effect_id(_failure_body("CI", "3600000001"), "looks bad") is None
 
 
 class TestFailureDispatchElection:
@@ -1939,9 +1816,7 @@ class TestFailureDispatchElection:
 class TestRejectRoutesBack:
     """`reject`/`revise` re-runs the same stage with the comment as feedback."""
 
-    def test_reject_on_an_interpretation_reruns_interpretation(
-        self, monkeypatch, tmp_path
-    ):
+    def test_reject_on_an_interpretation_reruns_interpretation(self, monkeypatch, tmp_path):
         """No plan yet means the interpretation stage owns the rejection."""
         calls = _dispatch_issue_comment(
             monkeypatch,
@@ -1954,9 +1829,7 @@ class TestRejectRoutesBack:
         assert calls["plan"] == []
         assert calls["implement"] == []
         assert calls["unblock"] == [], "a rejection unblocks nothing"
-        assert not any("close" in args for args in calls["gh"]), (
-            "a rejection closes nothing"
-        )
+        assert not any("close" in args for args in calls["gh"]), "a rejection closes nothing"
 
     def test_reject_on_a_plan_reruns_planning(self, monkeypatch, tmp_path):
         """A plan exists means the plan stage owns the rejection."""
@@ -2066,9 +1939,7 @@ class TestCommandHint:
         module = agent_runner_module()
         posted = []
         calls = {"respond": []}
-        monkeypatch.setattr(
-            module, "handle_respond", lambda *a, **k: calls["respond"].append(a)
-        )
+        monkeypatch.setattr(module, "handle_respond", lambda *a, **k: calls["respond"].append(a))
 
         def fake_gh(args, repo=None):
             if args[:2] == ["issue", "comment"]:
@@ -2119,9 +1990,7 @@ class TestCommandHint:
 
         monkeypatch.setattr(module, "run_gh", fake_gh)
         path = tmp_path / "event.json"
-        path.write_text(
-            json.dumps(_issue_comment_payload("/df approve")), encoding="utf-8"
-        )
+        path.write_text(json.dumps(_issue_comment_payload("/df approve")), encoding="utf-8")
         module.dispatch_event(str(path), "issue_comment")
         assert posted == []
 
@@ -2153,9 +2022,7 @@ class TestStageTimeBudgets:
 
     def test_the_plan_gets_the_long_budget(self, monkeypatch):
         """Plan run 34833536164 (#227): four agy attempts hit "print timeout after 5m0s"."""
-        timeout = self._capture(
-            monkeypatch, lambda m: m.handle_plan(227, 227, REPO_SLUG)
-        )
+        timeout = self._capture(monkeypatch, lambda m: m.handle_plan(227, 227, REPO_SLUG))
         assert timeout == agent_runner.PLAN_TIMEOUT
         assert agent_runner.PLAN_TIMEOUT != "5m0s"
 
@@ -2210,9 +2077,7 @@ class TestAuthFailuresRotate:
         """
         monkeypatch.setenv("AGENT_HARNESS_CHAIN", "claude")
         monkeypatch.delenv("AGENT_HARNESS_CONFIG", raising=False)
-        monkeypatch.setattr(
-            harnesses.shutil, "which", lambda binary: f"/usr/bin/{binary}"
-        )
+        monkeypatch.setattr(harnesses.shutil, "which", lambda binary: f"/usr/bin/{binary}")
         for name in harnesses.REGISTRY["claude"].auth.secret_names():
             monkeypatch.delenv(name, raising=False)
         monkeypatch.setenv("CLAUDE_CODE_OAUTH_TOKEN", secret)
@@ -2232,9 +2097,7 @@ class TestAuthFailuresRotate:
         def fake_run(argv, **kwargs):
             seen.append(kwargs["env"].get("CLAUDE_CODE_OAUTH_TOKEN", ""))
             if len(seen) == 1:
-                raise subprocess.CalledProcessError(
-                    1, argv, stderr="401 invalid api key"
-                )
+                raise subprocess.CalledProcessError(1, argv, stderr="401 invalid api key")
             return subprocess.CompletedProcess(argv, 0, stdout="done", stderr="")
 
         monkeypatch.setattr(agent_runner.subprocess, "run", fake_run)
@@ -2294,9 +2157,7 @@ class TestAuthFailuresRotate:
         """
         monkeypatch.setenv("AGENT_HARNESS_CHAIN", "codex")
         monkeypatch.delenv("AGENT_HARNESS_CONFIG", raising=False)
-        monkeypatch.setattr(
-            harnesses.shutil, "which", lambda binary: f"/usr/bin/{binary}"
-        )
+        monkeypatch.setattr(harnesses.shutil, "which", lambda binary: f"/usr/bin/{binary}")
         for name in harnesses.REGISTRY["codex"].auth.secret_names():
             monkeypatch.delenv(name, raising=False)
         monkeypatch.setenv("OPENAI_API_KEY", "one")
@@ -2332,9 +2193,7 @@ class TestAuthFailuresRotate:
         def fake_run(argv, **kwargs):
             seen.append(kwargs["env"].get("CLAUDE_CODE_OAUTH_TOKEN", ""))
             if len(seen) == 1:
-                return subprocess.CompletedProcess(
-                    argv, 0, stdout="401 invalid api key", stderr=""
-                )
+                return subprocess.CompletedProcess(argv, 0, stdout="401 invalid api key", stderr="")
             return subprocess.CompletedProcess(argv, 0, stdout="done", stderr="")
 
         monkeypatch.setattr(agent_runner.subprocess, "run", fake_run)
@@ -2356,9 +2215,7 @@ class TestExecutionErrorsFailTheRun:
 
         monkeypatch.setattr(agent_runner, "run_gh", fake_gh)
         monkeypatch.setattr(agent_runner, "try_gh", lambda *a, **k: "")
-        monkeypatch.setattr(
-            agent_runner, "run_agent_prompt", lambda *a, **k: prompt_result
-        )
+        monkeypatch.setattr(agent_runner, "run_agent_prompt", lambda *a, **k: prompt_result)
         return posted, handler
 
     def test_interpret_error_posts_then_exits(self, monkeypatch):
@@ -2413,9 +2270,7 @@ class TestExecutionErrorsFailTheRun:
         Args:
             monkeypatch: Pytest monkeypatch fixture.
         """
-        notice = (
-            agent_runner.QUOTA_EXHAUSTED_NOTICE + " across every harness (claude): 429"
-        )
+        notice = agent_runner.QUOTA_EXHAUSTED_NOTICE + " across every harness (claude): 429"
         posted: List[str] = []
 
         def fake_gh(args, repo=None, **kwargs):
@@ -2440,16 +2295,11 @@ class TestFileLinksBecomeRepoLinks:
             branch="darkfactory",
         )
         assert "file://" not in out
-        assert (
-            "https://github.com/marius-patrik/DarkFactory/blob/darkfactory/harnesses.py"
-            in out
-        )
+        assert "https://github.com/marius-patrik/DarkFactory/blob/darkfactory/harnesses.py" in out
 
     def test_file_url_without_repo_becomes_a_plain_path(self):
         """Without a repo slug there is no link to build, so a plain code path remains."""
-        out = agent_runner.rewrite_file_links(
-            "see file:///.github/scripts/harnesses.py"
-        )
+        out = agent_runner.rewrite_file_links("see file:///.github/scripts/harnesses.py")
         assert "file://" not in out
         assert ".github/scripts/harnesses.py" in out
 
@@ -2473,9 +2323,7 @@ class TestTheAnswerIsTheResult:
         monkeypatch.setenv("AGENT_HARNESS_CHAIN", "codex")
         monkeypatch.delenv("AGENT_HARNESS_CONFIG", raising=False)
         monkeypatch.setenv("OPENAI_API_KEY", "key")
-        monkeypatch.setattr(
-            harnesses.shutil, "which", lambda binary: f"/usr/bin/{binary}"
-        )
+        monkeypatch.setattr(harnesses.shutil, "which", lambda binary: f"/usr/bin/{binary}")
         seen = []
 
         def fake_run(argv, **kwargs):
@@ -2603,9 +2451,7 @@ class TestScopeCheckKeepsTestsAndVaguePlans:
         assert "tests/test_footers.py" in in_scope
 
     def test_a_plan_without_file_paths_reverts_nothing(self):
-        in_scope, out = agent_runner.check_scope(
-            [".github/scripts/project_automation.py"], set()
-        )
+        in_scope, out = agent_runner.check_scope([".github/scripts/project_automation.py"], set())
         assert out == []
         assert in_scope == [".github/scripts/project_automation.py"]
 
@@ -2664,9 +2510,7 @@ class TestAnUnresolvableBaseIsAFailureNotAnEmptyDiff:
 
     def test_changed_files_are_reported_when_the_base_resolves(self, tmp_path):
         repo = _git_repo(tmp_path / "repo")
-        subprocess.run(
-            ["git", "-C", repo, "checkout", "-q", "-b", "feature"], check=True
-        )
+        subprocess.run(["git", "-C", repo, "checkout", "-q", "-b", "feature"], check=True)
         (Path(repo) / "added.py").write_text("added = 1\n", encoding="utf-8")
         subprocess.run(["git", "-C", repo, "add", "-A"], check=True)
         subprocess.run(["git", "-C", repo, "commit", "-q", "-m", "work"], check=True)
@@ -2676,9 +2520,7 @@ class TestAnUnresolvableBaseIsAFailureNotAnEmptyDiff:
         repo = _git_repo(tmp_path / "repo")
         assert agent_runner.resolve_base_refs("work", cwd=repo)[0] == "work...HEAD"
 
-    def test_reverting_out_of_scope_files_refuses_to_delete_against_an_absent_base(
-        self, tmp_path
-    ):
+    def test_reverting_out_of_scope_files_refuses_to_delete_against_an_absent_base(self, tmp_path):
         repo = _git_repo(tmp_path / "repo")
         (Path(repo) / "added.py").write_text("added = 1\n", encoding="utf-8")
         with pytest.raises(RuntimeError):
@@ -2821,13 +2663,9 @@ class TestSelfReviewFix:
 
         monkeypatch.setattr(module, "run_gh", fake_run_gh)
         monkeypatch.setattr(module, "run_git", fake_run_git)
-        monkeypatch.setattr(
-            module, "run_agent_prompt", lambda prompt, **k: "Fixed the bug"
-        )
+        monkeypatch.setattr(module, "run_agent_prompt", lambda prompt, **k: "Fixed the bug")
         monkeypatch.setattr(module, "format_repository", lambda *a, **k: None)
-        monkeypatch.setattr(
-            module, "block_entity", lambda num, **k: blocked.append(num)
-        )
+        monkeypatch.setattr(module, "block_entity", lambda num, **k: blocked.append(num))
         monkeypatch.setattr(
             module, "dispatch_stage", lambda repo, payload: dispatched.append(payload)
         )
@@ -2841,10 +2679,7 @@ class TestSelfReviewFix:
         )
 
         assert blocked == [10] and dispatched == []
-        assert (
-            len(comments) == 1
-            and "### Self-Review Fix Error (Iteration 1)" in comments[0]
-        )
+        assert len(comments) == 1 and "### Self-Review Fix Error (Iteration 1)" in comments[0]
         assert "Author identity unknown" in comments[0]
 
     def test_run_self_review_fix_reads_latest_matching_iteration(self, monkeypatch):
@@ -2954,9 +2789,7 @@ class TestRunSelfReviewIterationAndFindings:
         import agent_runner
 
         # Numbered multi-line items -> one finding each; 10. prefix stripped
-        text1 = (
-            "10. This is finding one\n  with a second line.\n20. This is finding two."
-        )
+        text1 = "10. This is finding one\n  with a second line.\n20. This is finding two."
         res1 = agent_runner.parse_review_findings(text1)
         assert res1 == [
             "This is finding one with a second line.",
@@ -2990,11 +2823,7 @@ class TestRunSelfReviewIterationAndFindings:
             "run_gh",
             lambda args, **k: (
                 gh_calls.append(args)
-                or (
-                    json.dumps({"comments": []})
-                    if args[:2] == ["issue", "view"]
-                    else "diff"
-                )
+                or (json.dumps({"comments": []}) if args[:2] == ["issue", "view"] else "diff")
             ),
         )
         monkeypatch.setattr(
@@ -3045,11 +2874,7 @@ class TestRunSelfReviewIterationAndFindings:
             "run_gh",
             lambda args, **k: (
                 gh_calls.append(args)
-                or (
-                    json.dumps({"comments": []})
-                    if args[:2] == ["issue", "view"]
-                    else "diff"
-                )
+                or (json.dumps({"comments": []}) if args[:2] == ["issue", "view"] else "diff")
             ),
         )
         monkeypatch.setattr(module, "run_agent_prompt", lambda *a, **k: "NO_FINDINGS")
@@ -3083,21 +2908,13 @@ class TestRunSelfReviewIterationAndFindings:
             "run_gh",
             lambda args, **k: (
                 gh_calls.append(args)
-                or (
-                    json.dumps({"comments": []})
-                    if args[:2] == ["issue", "view"]
-                    else "diff"
-                )
+                or (json.dumps({"comments": []}) if args[:2] == ["issue", "view"] else "diff")
             ),
         )
         monkeypatch.setattr(module, "run_agent_prompt", lambda *a, **k: "NO_FINDINGS")
-        monkeypatch.setattr(
-            module, "get_pr_changed_files", lambda *a, **k: ["file.py", "extra.py"]
-        )
+        monkeypatch.setattr(module, "get_pr_changed_files", lambda *a, **k: ["file.py", "extra.py"])
         monkeypatch.setattr(module, "parse_plan_files", lambda *a, **k: {"file.py"})
-        monkeypatch.setattr(
-            module, "check_scope", lambda *a, **k: (["file.py"], ["extra.py"])
-        )
+        monkeypatch.setattr(module, "check_scope", lambda *a, **k: (["file.py"], ["extra.py"]))
         monkeypatch.setattr(module, "development_branch", lambda *a, **k: "main")
         monkeypatch.setattr(
             module,
@@ -3212,8 +3029,7 @@ class TestRunSelfReviewIterationAndFindings:
         assert (30, False) in blocked_calls
         pr_comments = [args for args in gh_calls if args[:2] == ["pr", "comment"]]
         assert any(
-            "Self-Review Dispatch Error" in args[args.index("--body") + 1]
-            for args in pr_comments
+            "Self-Review Dispatch Error" in args[args.index("--body") + 1] for args in pr_comments
         )
 
 
@@ -3226,9 +3042,7 @@ class TestSelfReviewDispatchCycle:
         monkeypatch.setattr(
             module, "dispatch_stage", lambda repo, payload: sent.append((repo, payload))
         )
-        monkeypatch.setattr(
-            module, "find_parent_request_number", lambda plan, repo: None
-        )
+        monkeypatch.setattr(module, "find_parent_request_number", lambda plan, repo: None)
         module.start_self_review(10, 20, None, "owner/repo")
         assert sent == [
             (
@@ -3249,9 +3063,7 @@ class TestSelfReviewDispatchCycle:
         monkeypatch.setattr(
             module, "run_self_review_iteration", lambda *a: calls.append(("review", a))
         )
-        monkeypatch.setattr(
-            module, "run_self_review_fix", lambda *a: calls.append(("fix", a))
-        )
+        monkeypatch.setattr(module, "run_self_review_fix", lambda *a: calls.append(("fix", a)))
         monkeypatch.setattr(module, "setup_df_accounts", lambda: "home", raising=False)
         for stage in ("self-review", "self-review-fix"):
             event = {
@@ -3292,9 +3104,7 @@ class TestQuotaBlockRecording:
 
     def test_reset_from_a_retry_delay(self):
         module = agent_runner_module()
-        assert (
-            module.next_quota_reset("Please retry in 33s.", self.NOW) == self.NOW + 33
-        )
+        assert module.next_quota_reset("Please retry in 33s.", self.NOW) == self.NOW + 33
 
     def test_reset_falls_back_to_the_next_pacific_midnight(self):
         module = agent_runner_module()
@@ -3315,35 +3125,25 @@ class TestQuotaBlockRecording:
                         "value": json.dumps({"later": 5e9, "earlier": 1.0}),
                     }
                 )
-            if "POST" in args and any(
-                str(a) == "name=DARKFACTORY_QUOTA_PROVIDERS" for a in args
-            ):
+            if "POST" in args and any(str(a) == "name=DARKFACTORY_QUOTA_PROVIDERS" for a in args):
                 raise subprocess.CalledProcessError(
                     1, ["gh", "api"], stderr="HTTP 409: Already exists"
                 )
             return ""
 
         monkeypatch.setattr(module, "run_gh", fake_run_gh)
-        module.record_quota_block(
-            "owner/repo", 42, True, self.NOW, ["later", "earlier"], "987"
-        )
+        module.record_quota_block("owner/repo", 42, True, self.NOW, ["later", "earlier"], "987")
         run_post = next(c for c in calls if "name=DF_QUOTA_987" in c)
-        value = json.loads(
-            next(a for a in run_post if a.startswith("value="))[len("value=") :]
-        )
+        value = json.loads(next(a for a in run_post if a.startswith("value="))[len("value=") :])
         assert (
             value["item"] == 42
             and value["is_pr"] is True
             and value["reset_at"] == "2026-09-15T12:00:00Z"
         )
         patch = next(
-            c
-            for c in calls
-            if "PATCH" in c and c[1].endswith("/DARKFACTORY_QUOTA_PROVIDERS")
+            c for c in calls if "PATCH" in c and c[1].endswith("/DARKFACTORY_QUOTA_PROVIDERS")
         )
-        providers = json.loads(
-            next(a for a in patch if a.startswith("value="))[len("value=") :]
-        )
+        providers = json.loads(next(a for a in patch if a.startswith("value="))[len("value=") :])
         assert providers == {"later": 5e9, "earlier": self.NOW}
 
 
@@ -3356,22 +3156,16 @@ class TestResumeDispatch:
         monkeypatch.setattr(module, "load_checkpoint", lambda **k: None)
         monkeypatch.setattr(module, "unblock_entity", lambda *a, **k: None)
         monkeypatch.setattr(module, "has_plan", lambda n, r: plan_exists)
-        monkeypatch.setattr(
-            module, "handle_plan", lambda *a, **k: calls.append(("plan", a))
-        )
+        monkeypatch.setattr(module, "handle_plan", lambda *a, **k: calls.append(("plan", a)))
         monkeypatch.setattr(
             module, "handle_implement", lambda *a, **k: calls.append(("implement", a))
         )
-        monkeypatch.setattr(
-            module, "start_self_review", lambda *a: calls.append(("review", a))
-        )
+        monkeypatch.setattr(module, "start_self_review", lambda *a: calls.append(("review", a)))
         monkeypatch.setattr(module, "find_plan_issue_for_pr", lambda n, r: 20)
         monkeypatch.setattr(
             module,
             "run_gh",
-            lambda args, repo=None: json.dumps(
-                {"labels": [{"name": l} for l in labels]}
-            ),
+            lambda args, repo=None: json.dumps({"labels": [{"name": l} for l in labels]}),
         )
         monkeypatch.setattr(module, "setup_df_accounts", lambda: "home", raising=False)
         event = {
@@ -3385,9 +3179,9 @@ class TestResumeDispatch:
         return calls
 
     def test_a_request_with_a_plan_resumes_implementation(self, monkeypatch, tmp_path):
-        assert self._dispatch(
-            monkeypatch, tmp_path, 7, False, ["Request"], plan_exists=True
-        ) == [("implement", (7, 7, "owner/repo"))]
+        assert self._dispatch(monkeypatch, tmp_path, 7, False, ["Request"], plan_exists=True) == [
+            ("implement", (7, 7, "owner/repo"))
+        ]
 
     def test_a_request_without_a_plan_resumes_planning(self, monkeypatch, tmp_path):
         assert self._dispatch(monkeypatch, tmp_path, 7, False, ["Request"]) == [
@@ -3399,12 +3193,8 @@ class TestResumeDispatch:
             ("review", (10, 20, None, "owner/repo"))
         ]
 
-    def test_an_issue_that_is_neither_request_nor_plan_is_not_started(
-        self, monkeypatch, tmp_path
-    ):
-        assert (
-            self._dispatch(monkeypatch, tmp_path, 5, False, ["pipeline-failure"]) == []
-        )
+    def test_an_issue_that_is_neither_request_nor_plan_is_not_started(self, monkeypatch, tmp_path):
+        assert self._dispatch(monkeypatch, tmp_path, 5, False, ["pipeline-failure"]) == []
 
 
 def test_gh_api_calls_never_get_a_repo_flag(monkeypatch):
@@ -3420,9 +3210,7 @@ def test_gh_api_calls_never_get_a_repo_flag(monkeypatch):
     monkeypatch.setattr(
         module.subprocess, "run", lambda cmd, **kwargs: (seen.append(cmd), Done())[1]
     )
-    module.run_gh(
-        ["api", "repos/owner/repo/dispatches", "--method", "POST"], repo="owner/repo"
-    )
+    module.run_gh(["api", "repos/owner/repo/dispatches", "--method", "POST"], repo="owner/repo")
     module.run_gh(["issue", "view", "1"], repo="owner/repo")
     assert "--repo" not in seen[0]
     assert seen[1][-2:] == ["--repo", "owner/repo"]
@@ -3437,9 +3225,7 @@ def test_checkout_pr_branch_switches_to_the_head_branch(monkeypatch):
         "run_gh",
         lambda args, repo=None: json.dumps({"headRefName": "feature/x"}),
     )
-    monkeypatch.setattr(
-        module, "run_git", lambda args, cwd=None: git_calls.append(args) or ""
-    )
+    monkeypatch.setattr(module, "run_git", lambda args, cwd=None: git_calls.append(args) or "")
     assert module.checkout_pr_branch(10, "owner/repo", cwd="/work") == "feature/x"
     assert git_calls[-2:] == [
         ["fetch", "origin", "feature/x"],
@@ -3483,9 +3269,7 @@ class TestPrFeedbackRevision:
             "dispatch_stage",
             lambda repo, payload: calls["dispatch"].append(payload),
         )
-        monkeypatch.setattr(
-            module, "handle_respond", lambda *a, **k: calls["respond"].append(a)
-        )
+        monkeypatch.setattr(module, "handle_respond", lambda *a, **k: calls["respond"].append(a))
         monkeypatch.setattr(module, "find_plan_issue_for_pr", lambda n, r: plan)
         monkeypatch.setattr(module, "find_parent_request_number", lambda n, r: None)
         monkeypatch.setattr(module, "is_allowed_approver", lambda *a, **k: True)
@@ -3523,9 +3307,7 @@ class TestPrFeedbackRevision:
         ]
 
     def test_a_plain_review_comment_is_only_answered(self, monkeypatch, tmp_path):
-        calls = self._comment_event(
-            monkeypatch, tmp_path, "why is this function so long?"
-        )
+        calls = self._comment_event(monkeypatch, tmp_path, "why is this function so long?")
         assert calls["dispatch"] == [] and len(calls["respond"]) == 1
 
     def test_the_revision_is_pushed_announced_and_reviewed_again(self, monkeypatch):
@@ -3556,8 +3338,7 @@ class TestPrFeedbackRevision:
         module.run_pr_feedback_fix(10, 20, 30, "rename the helper", "owner/repo")
         assert ["push", "origin", "HEAD"] in git_calls
         assert any(
-            c[:2] == ["pr", "comment"] and "### Feedback addressed" in c[-1]
-            for c in gh_calls
+            c[:2] == ["pr", "comment"] and "### Feedback addressed" in c[-1] for c in gh_calls
         )
         assert reviews == [(10, 20, 30, "owner/repo")]
 
@@ -3581,9 +3362,7 @@ class TestPrFeedbackRevision:
         module.run_pr_feedback_fix(10, 20, 30, "rename the helper", "owner/repo")
         assert blocked == [10, 30] and reviews == []
         assert any(
-            "### Feedback Fix Error" in c[-1]
-            for c in gh_calls
-            if c[:2] == ["pr", "comment"]
+            "### Feedback Fix Error" in c[-1] for c in gh_calls if c[:2] == ["pr", "comment"]
         )
 
     @pytest.mark.parametrize(
@@ -3603,9 +3382,7 @@ class TestPrFeedbackRevision:
         def fake_git(args, cwd=None):
             git_calls.append(args)
             if args[:1] == ["commit"] and commit_error:
-                raise subprocess.CalledProcessError(
-                    128, ["git"] + args, stderr=commit_error
-                )
+                raise subprocess.CalledProcessError(128, ["git"] + args, stderr=commit_error)
             return status if args[:1] == ["status"] else ""
 
         monkeypatch.setattr(
@@ -3617,9 +3394,7 @@ class TestPrFeedbackRevision:
         )
         monkeypatch.setattr(module, "run_git", fake_git)
         monkeypatch.setattr(module, "format_repository", lambda cwd: None)
-        monkeypatch.setattr(
-            module, "run_agent_prompt", lambda prompt, **k: "Done, all fixed."
-        )
+        monkeypatch.setattr(module, "run_agent_prompt", lambda prompt, **k: "Done, all fixed.")
         monkeypatch.setattr(module, "block_entity", lambda n, **k: blocked.append(n))
         monkeypatch.setattr(module, "start_self_review", lambda *a: reviews.append(a))
         module.run_pr_feedback_fix(10, 20, 30, "compute it once", "owner/repo")
@@ -3650,9 +3425,7 @@ def test_checkpoint_and_notify_exhaustion_includes_resume_time_and_instructions(
         module,
         "record_quota_block",
         lambda repo, item_number, is_pr, reset_at, providers, run_id: (
-            recorded_blocks.append(
-                (repo, item_number, is_pr, reset_at, providers, run_id)
-            )
+            recorded_blocks.append((repo, item_number, is_pr, reset_at, providers, run_id))
         ),
     )
     monkeypatch.setattr(

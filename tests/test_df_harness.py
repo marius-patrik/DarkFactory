@@ -254,9 +254,7 @@ class TestDfPromptFile:
         assert seen["prompt"] == "the exact prompt" + agent_runner.ANSWER_CONTRACT
         assert not os.path.exists(seen["path"]), "the prompt file must be removed"
 
-    def test_explicit_review_kind_survives_specialized_prompt_vocabulary(
-        self, monkeypatch
-    ):
+    def test_explicit_review_kind_survives_specialized_prompt_vocabulary(self, monkeypatch):
         """Quoted feature vocabulary cannot override the stage kind declared by the pipeline."""
         seen = {}
 
@@ -270,7 +268,9 @@ class TestDfPromptFile:
             )
 
         monkeypatch.setattr(agent_runner.subprocess, "run", fake_run)
-        prompt = "Review this implementation plan: create an illustration and generate a video clip."
+        prompt = (
+            "Review this implementation plan: create an illustration and generate a video clip."
+        )
         assert agent_runner.run_agent_prompt(prompt, kind="review") == "reviewed"
         kind_index = seen["argv"].index("--kind")
         assert seen["argv"][kind_index : kind_index + 2] == ["--kind", "review"]
@@ -322,9 +322,7 @@ class TestDfSetup:
         calls = []
 
         def fake_run(argv, **kwargs):
-            calls.append(
-                (list(argv), kwargs.get("input"), kwargs.get("env", {}).get("DF_HOME"))
-            )
+            calls.append((list(argv), kwargs.get("input"), kwargs.get("env", {}).get("DF_HOME")))
             return subprocess.CompletedProcess(argv, 0, stdout="ok", stderr="")
 
         monkeypatch.setattr(agent_runner.subprocess, "run", fake_run)
@@ -338,9 +336,7 @@ class TestDfSetup:
         monkeypatch.setenv("OPENROUTER_API_KEY_2", "or-key")
         calls = self._record(monkeypatch)
         df_home = agent_runner.setup_df_accounts()
-        account_calls = [
-            call for call in calls if call[0][:3] == ["df", "account", "set"]
-        ]
+        account_calls = [call for call in calls if call[0][:3] == ["df", "account", "set"]]
         assert (
             ["df", "account", "set", "google:default", "api_key", "--type", "api_key"],
             "gem-key",
@@ -368,9 +364,7 @@ class TestDfSetup:
         calls = self._record(monkeypatch)
         agent_runner.setup_df_accounts()
         assert [call for call in calls if call[0][:3] == ["df", "account", "set"]] == []
-        assert [
-            call for call in calls if call[0][:3] == ["df", "account", "import"]
-        ] == []
+        assert [call for call in calls if call[0][:3] == ["df", "account", "import"]] == []
 
     def test_groq_and_remaining_keys_map_to_their_accounts(self, monkeypatch):
         """Args:
@@ -382,9 +376,7 @@ class TestDfSetup:
         monkeypatch.setenv("GROQ_API_KEY", "grok-key")
         calls = self._record(monkeypatch)
         agent_runner.setup_df_accounts()
-        accounts = [
-            call[0][3] for call in calls if call[0][:3] == ["df", "account", "set"]
-        ]
+        accounts = [call[0][3] for call in calls if call[0][:3] == ["df", "account", "set"]]
         assert accounts == [
             "google:key2",
             "google:key3",
@@ -424,9 +416,7 @@ class TestDfSetup:
             "DF_ACCOUNT_GROK_SUB",
         ] in [call[0] for call in calls]
 
-    def test_the_target_repo_config_selects_the_combined_document(
-        self, monkeypatch, tmp_path
-    ):
+    def test_the_target_repo_config_selects_the_combined_document(self, monkeypatch, tmp_path):
         """Args:
         monkeypatch: Pytest monkeypatch fixture.
         tmp_path: Pytest-provided empty directory.
@@ -565,9 +555,7 @@ class TestDfLoginRotation:
         )
         agent_runner.finish_df_login_files(states)
 
-    def test_a_run_persists_rotation_and_updates_only_the_secret(
-        self, monkeypatch, tmp_path
-    ):
+    def test_a_run_persists_rotation_and_updates_only_the_secret(self, monkeypatch, tmp_path):
         """The setup-loaded login is rotated by df; only the secret is updated."""
         df_home = tmp_path / "df-home"
         df_home.mkdir()

@@ -16,13 +16,9 @@ from typing import Dict, List, Optional
 import environment
 import manifest
 
-PIPELINE_ROOT = os.path.dirname(
-    os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-)
+PIPELINE_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 DIRECT_WORKFLOW_TEMPLATES = {
-    "ci": os.path.join(
-        PIPELINE_ROOT, "packages", "harness", "assets", "workflows", "ci.yml.tmpl"
-    ),
+    "ci": os.path.join(PIPELINE_ROOT, "packages", "harness", "assets", "workflows", "ci.yml.tmpl"),
     "verify-pr-issue": os.path.join(
         PIPELINE_ROOT,
         "packages",
@@ -244,9 +240,7 @@ def render_dispatch_inputs(spec: Dict[str, object], branch: str) -> str:
             rendered = default.format(branch=branch)
             # A boolean default must not be quoted; a string one must be, or a branch called
             # `true` or `2.0` would be read as something other than a string.
-            lines.append(
-                f"        default: {rendered if kind == 'boolean' else repr(rendered)}"
-            )
+            lines.append(f"        default: {rendered if kind == 'boolean' else repr(rendered)}")
     return "\n".join(lines) + "\n"
 
 
@@ -281,16 +275,12 @@ def render_caller(
             )
 
     spec = WORKFLOWS[workflow]
-    watched = watched_workflows(
-        installed if installed is not None else relevant_workflows()
-    )
+    watched = watched_workflows(installed if installed is not None else relevant_workflows())
     trigger = str(spec["on"]).format(branch=branch, watched=", ".join(watched))
 
     # A called workflow receives nothing from the caller's `inputs` context automatically, so a
     # dispatch input has to be declared here and forwarded by name.
-    forwarded = {
-        name: f"${{{{ inputs.{name} }}}}" for name in (spec.get("inputs") or {})
-    }
+    forwarded = {name: f"${{{{ inputs.{name} }}}}" for name in (spec.get("inputs") or {})}
     forwarded.update(spec.get("with") or {})  # type: ignore[arg-type]
     extras = "".join(f"      {key}: {value}\n" for key, value in forwarded.items())
 
@@ -460,9 +450,7 @@ def plan(
     refuse_self_install(owner, repo, pipeline_repo)
     installed = relevant_workflows(root)
     files = {
-        f".github/workflows/{name}.yml": render_caller(
-            name, pipeline_repo, ref, branch, installed
-        )
+        f".github/workflows/{name}.yml": render_caller(name, pipeline_repo, ref, branch, installed)
         for name in installed
     }
     files[manifest.MANIFEST_PATH] = render_manifest(
@@ -475,9 +463,7 @@ def plan(
 CONFIG_MARKER = "<!-- darkfactory: configuration -->"
 
 
-def configuration_issue(
-    repo: str, pipeline_repo: str, needs_submodules: bool = False
-) -> str:
+def configuration_issue(repo: str, pipeline_repo: str, needs_submodules: bool = False) -> str:
     """Renders the issue that asks a person for what installation cannot decide.
 
     Generating the callers and the manifest gets a repository most of the way, but four things
@@ -561,9 +547,7 @@ PIN_PATTERN = re.compile(r"(?P<prefix>\.github/workflows/[\w.-]+\.yml@)(?P<ref>\
 REF_INPUT_PATTERN = re.compile(
     r'(?P<prefix>pipeline-ref:\s*)(?P<quote>"?)(?P<ref>[^"\s]*)(?P=quote)'
 )
-DIRECT_CI_REF_PATTERN = re.compile(
-    r'(?P<prefix>^\s*ref:\s*")[^"]+(?P<suffix>"\s*$)', re.MULTILINE
-)
+DIRECT_CI_REF_PATTERN = re.compile(r'(?P<prefix>^\s*ref:\s*")[^"]+(?P<suffix>"\s*$)', re.MULTILINE)
 
 
 def retarget(root: str, ref: str) -> List[str]:
@@ -712,14 +696,10 @@ def reconcile_manifest(root: str, ref: str, planned: str) -> bool:
         raise ValueError(f"DarkFactory configuration at {path} must contain an object.")
     current_repo = current.get("repo")
     if not isinstance(current_repo, dict):
-        raise ValueError(
-            f"DarkFactory configuration at {path} is missing the repo block."
-        )
+        raise ValueError(f"DarkFactory configuration at {path} is missing the repo block.")
     planned_repo = json.loads(planned).get("repo")
     if not isinstance(planned_repo, dict):
-        raise ValueError(
-            "Generated DarkFactory configuration is missing the repo block."
-        )
+        raise ValueError("Generated DarkFactory configuration is missing the repo block.")
     before = json.dumps(current, sort_keys=True)
 
     for key, value in planned_repo.items():
@@ -757,12 +737,8 @@ def write(files: Dict[str, str], root: str = ".") -> List[str]:
         target = os.path.join(root, relative)
         if relative == manifest.MANIFEST_PATH:
             selected = manifest.resolve_manifest_path(root)
-            if os.path.isfile(selected) and os.path.abspath(
-                selected
-            ) != os.path.abspath(target):
-                print(
-                    f"  kept {os.path.relpath(selected, root)} (selected configuration alias)"
-                )
+            if os.path.isfile(selected) and os.path.abspath(selected) != os.path.abspath(target):
+                print(f"  kept {os.path.relpath(selected, root)} (selected configuration alias)")
                 continue
         if os.path.exists(target):
             print(f"  kept {relative} (already present)")

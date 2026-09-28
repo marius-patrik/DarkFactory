@@ -94,20 +94,14 @@ def load_config(repo_root: str) -> Dict[str, object]:
     except ImportError:
         from resolver import load_config_block
 
-    config: Dict[str, object] = dict(
-        load_config_block(repo_root, "repo").get("versioning", {})
-    )
+    config: Dict[str, object] = dict(load_config_block(repo_root, "repo").get("versioning", {}))
 
     mode = str(config.get("mode", "semver"))
     if mode not in MODES:
-        raise VersioningError(
-            f"unknown versioning mode {mode!r}; expected one of {list(MODES)}"
-        )
+        raise VersioningError(f"unknown versioning mode {mode!r}; expected one of {list(MODES)}")
     config["mode"] = mode
     config.setdefault("tag_prefix", "v")
-    config.setdefault(
-        "initial", "0.1.0" if mode in ("zerover", "pridever") else "0.1.0"
-    )
+    config.setdefault("initial", "0.1.0" if mode in ("zerover", "pridever") else "0.1.0")
     return config
 
 
@@ -393,9 +387,7 @@ def read_manual_version(repo_root: str) -> Optional[str]:
         return handle.read().strip() or None
 
 
-def resolve(
-    repo_root: str, requested: Optional[str] = None
-) -> Dict[str, Optional[str]]:
+def resolve(repo_root: str, requested: Optional[str] = None) -> Dict[str, Optional[str]]:
     """Works out the next release for a repository.
 
     Args:
@@ -423,11 +415,7 @@ def resolve(
     current_tag = latest_tag(tags, prefer=prefer)
     current = None
     if current_tag:
-        current = (
-            current_tag[len(prefix) :]
-            if current_tag.startswith(prefix)
-            else current_tag
-        )
+        current = current_tag[len(prefix) :] if current_tag.startswith(prefix) else current_tag
 
     if mode == "manual":
         if declared is None:

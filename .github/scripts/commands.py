@@ -34,9 +34,7 @@ STRICT_COMMAND = re.compile(r"(?i)^\s*(?:/df\s+|/)(approve|reject|revise|resume)
 #: Strict rejection with trailing feedback (`/df reject use bun, not npm`). Approvals and
 #: resumes never take trailing text; a rejection routes the stage back, so the reason rides
 #: along. The word boundary keeps prose like "rejected" or "/revision" from matching.
-STRICT_REJECT_WITH_FEEDBACK = re.compile(
-    r"(?i)^\s*(?:/df\s+|/)(?:reject|revise)\b\s*(.*?)\s*$"
-)
+STRICT_REJECT_WITH_FEEDBACK = re.compile(r"(?i)^\s*(?:/df\s+|/)(?:reject|revise)\b\s*(.*?)\s*$")
 
 #: Legacy whole-comment approvals that predate the strict grammar, per surface.
 LEGACY_ISSUE_COMMANDS: Dict[str, str] = {
@@ -63,9 +61,7 @@ ISSUE_COMMAND_RE = re.compile(
 )
 
 #: Whole-comment approval matcher for pull requests (strict grammar plus legacy words).
-PR_COMMAND_RE = re.compile(
-    r"(?i)^\s*(?:/df\s+approve|/approve|approve|merge|/merge|lgtm)\s*$"
-)
+PR_COMMAND_RE = re.compile(r"(?i)^\s*(?:/df\s+approve|/approve|approve|merge|/merge|lgtm)\s*$")
 
 #: Words whose mere mention (outside a command) earns at most a one-time hint.
 HINT_WORDS = re.compile(r"(?i)\b(approve(?:d)?|lgtm|merge|resume|revise|reject)\b")
@@ -77,12 +73,12 @@ HINT_MARKER = "<!-- darkfactory-command-hint -->"
 ALLOWED_ASSOCIATIONS = frozenset({"OWNER", "MEMBER", "COLLABORATOR"})
 
 #: Footer for the interpretation comment on a Request issue.
-INTERPRETATION_FOOTER = (
-    "Reply with `/df approve` to continue or `/df reject <feedback>` to revise"
-)
+INTERPRETATION_FOOTER = "Reply with `/df approve` to continue or `/df reject <feedback>` to revise"
 
 #: Footer for the implementation plan comment on a Plan issue.
-PLAN_FOOTER = "Reply with `/df approve` to start implementation or `/df reject <feedback>` to revise the plan"
+PLAN_FOOTER = (
+    "Reply with `/df approve` to start implementation or `/df reject <feedback>` to revise the plan"
+)
 
 #: Instructions for resuming execution after quota exhaustion.
 RESUME_INSTRUCTIONS = (

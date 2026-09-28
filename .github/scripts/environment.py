@@ -300,9 +300,7 @@ class Environment:
         declared: The `environment` block from the repository manifest, if any.
     """
 
-    def __init__(
-        self, root: str, packages: List[Package], declared: Dict[str, Any]
-    ) -> None:
+    def __init__(self, root: str, packages: List[Package], declared: Dict[str, Any]) -> None:
         self.root = root
         self.packages = packages
         self.declared = declared
@@ -367,9 +365,7 @@ class Environment:
         Returns:
             True when a workspace root declares members, or several packages were found.
         """
-        if any(
-            package.is_workspace_root and package.members for package in self.packages
-        ):
+        if any(package.is_workspace_root and package.members for package in self.packages):
             return True
         return len({package.path for package in self.packages}) > 1
 
@@ -466,9 +462,7 @@ class Environment:
                 if settings.get("command"):
                     plan[ecosystem] = {
                         "command": settings["command"],
-                        "versions": [
-                            str(entry) for entry in settings.get("versions", [])
-                        ],
+                        "versions": [str(entry) for entry in settings.get("versions", [])],
                         "manager": None,
                     }
         return plan
@@ -526,9 +520,7 @@ class Environment:
             settings = declared.get(ecosystem, {}) or {}
             entry["artifacts"] = [
                 str(glob)
-                for glob in (
-                    settings.get("artifacts") or ARTIFACT_GLOBS.get(ecosystem, [])
-                )
+                for glob in (settings.get("artifacts") or ARTIFACT_GLOBS.get(ecosystem, []))
             ]
         return plan
 
@@ -545,8 +537,7 @@ class Environment:
             "is_multi_domain": self.is_multi_domain,
             "packages": [package.as_dict() for package in self.packages],
             "package_managers": {
-                ecosystem: self.package_manager(ecosystem)
-                for ecosystem in sorted(self.ecosystems)
+                ecosystem: self.package_manager(ecosystem) for ecosystem in sorted(self.ecosystems)
             },
             "test_plan": self.test_plan(),
             "format_plan": self.format_plan(),
@@ -627,10 +618,7 @@ def _read_package(root: str, directory: str, filename: str) -> Optional[Package]
             version = version or data.get("tool", {}).get("poetry", {}).get("version")
         members = [
             str(entry)
-            for entry in data.get("tool", {})
-            .get("uv", {})
-            .get("workspace", {})
-            .get("members", [])
+            for entry in data.get("tool", {}).get("uv", {}).get("workspace", {}).get("members", [])
         ]
 
     elif filename == "Cargo.toml":
@@ -798,9 +786,7 @@ def detect(root: str) -> List[Package]:
         if existing is None or (existing.name is None and package.name is not None):
             deduplicated[key] = package
 
-    packages = sorted(
-        deduplicated.values(), key=lambda item: (item.path != ".", item.path)
-    )
+    packages = sorted(deduplicated.values(), key=lambda item: (item.path != ".", item.path))
 
     pnpm = _pnpm_members(root)
     if pnpm:
@@ -826,9 +812,7 @@ def configure(root: str) -> Environment:
     root = os.path.abspath(root)
     import manifest as manifest_module
 
-    declared: Dict[str, Any] = (
-        manifest_module.load(root).data.get("environment", {}) or {}
-    )
+    declared: Dict[str, Any] = manifest_module.load(root).data.get("environment", {}) or {}
 
     packages = detect(root)
 
@@ -870,9 +854,7 @@ def main() -> None:  # pragma: no cover - thin CLI wrapper
     """Prints the configured environment as JSON, for a workflow step to consume."""
     import argparse
 
-    parser = argparse.ArgumentParser(
-        description="Report the repository environment as JSON."
-    )
+    parser = argparse.ArgumentParser(description="Report the repository environment as JSON.")
     parser.add_argument("--repo-root", default=".", help="repository to inspect")
     args = parser.parse_args()
     print(json.dumps(configure(args.repo_root).as_dict(), indent=2))

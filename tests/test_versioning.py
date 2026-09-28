@@ -14,7 +14,9 @@ import pytest
 import versioning
 
 BREAKING = "feat(agents)!: replace the harness invocation contract"
-BREAKING_TRAILER = "refactor(agents): rework the chain\n\nBREAKING CHANGE: harness ids are now namespaced"
+BREAKING_TRAILER = (
+    "refactor(agents): rework the chain\n\nBREAKING CHANGE: harness ids are now namespaced"
+)
 FEATURE = "feat(release): add a versioning mode"
 FIX = "fix(ci): stop dropping the final log line"
 CHORE = "chore(ci): bump the runner image"
@@ -62,14 +64,12 @@ class TestSemver:
 
 
 class TestZeroVer:
-    """ "Your software's major version should never exceed [...] zero.\""""
+    """ "Your software's major version should never exceed [...] zero.\" """
 
     @pytest.mark.parametrize("bump", ["major", "minor", "patch"])
     def test_the_major_never_leaves_zero(self, bump):
         result = versioning.next_version("zerover", "0.9.8", bump)
-        assert result.startswith("0."), (
-            f"{bump} produced {result}, which escapes ZeroVer"
-        )
+        assert result.startswith("0."), f"{bump} produced {result}, which escapes ZeroVer"
 
     def test_a_breaking_change_lands_on_the_minor_instead_of_the_major(self):
         # Under semver this would be 1.0.0; ZeroVer's whole point is that it must not be.
@@ -112,17 +112,11 @@ class TestCalVer:
 
     def test_the_first_release_of_a_month_starts_at_zero(self):
         day = datetime.date(2026, 9, 7)
-        assert (
-            versioning.next_version("calver", "2026.08.4", "minor", today=day)
-            == "2026.09.0"
-        )
+        assert versioning.next_version("calver", "2026.08.4", "minor", today=day) == "2026.09.0"
 
     def test_a_later_release_in_the_same_month_increments(self):
         day = datetime.date(2026, 9, 7)
-        assert (
-            versioning.next_version("calver", "2026.09.0", "patch", today=day)
-            == "2026.09.1"
-        )
+        assert versioning.next_version("calver", "2026.09.0", "patch", today=day) == "2026.09.1"
 
     def test_the_bump_size_does_not_matter(self):
         day = datetime.date(2026, 9, 7)
@@ -155,10 +149,7 @@ class TestLatestTag:
         assert versioning.latest_tag(["v0.1.0", "v0.10.0", "v0.9.0"]) == "v0.10.0"
 
     def test_non_release_tags_are_ignored(self):
-        assert (
-            versioning.latest_tag(["nightly", "v1.0.0", "release-candidate"])
-            == "v1.0.0"
-        )
+        assert versioning.latest_tag(["nightly", "v1.0.0", "release-candidate"]) == "v1.0.0"
 
     def test_no_tags_means_no_current_version(self):
         assert versioning.latest_tag([]) is None
@@ -174,10 +165,7 @@ class TestLatestTag:
 
     def test_the_declared_line_wins_over_a_higher_superseded_one(self):
         # A repository that has moved to a new line is on that line, not on the old one.
-        assert (
-            versioning.latest_tag(["v0.81.0", "v3a.1.0", "v4.0.0"], prefer="a")
-            == "v3a.1.0"
-        )
+        assert versioning.latest_tag(["v0.81.0", "v3a.1.0", "v4.0.0"], prefer="a") == "v3a.1.0"
 
     def test_a_preference_with_no_matching_tag_falls_back(self):
         assert versioning.latest_tag(["v1.0.0"], prefer="a") == "v1.0.0"
@@ -253,9 +241,7 @@ def _init_repo(path, mode, commits, version=None, record_issue=None):
     for index, message in enumerate(commits):
         (path / f"f{index}.txt").write_text(message)
         subprocess.run(["git", "-C", str(path), "add", "-A"], check=True)
-        subprocess.run(
-            ["git", "-C", str(path), "commit", "-q", "-m", message], check=True
-        )
+        subprocess.run(["git", "-C", str(path), "commit", "-q", "-m", message], check=True)
 
 
 def _later(path, message):
@@ -310,9 +296,7 @@ class TestResolve:
             subprocess.run(["git", "-C", str(repo), "tag", "v0.9.8"], check=True)
             (repo / "later.txt").write_text("x")
             subprocess.run(["git", "-C", str(repo), "add", "-A"], check=True)
-            subprocess.run(
-                ["git", "-C", str(repo), "commit", "-q", "-m", BREAKING], check=True
-            )
+            subprocess.run(["git", "-C", str(repo), "commit", "-q", "-m", BREAKING], check=True)
             results[mode] = versioning.resolve(str(repo))["next"]
         assert results == {"semver": "1.0.0", "zerover": "0.10.0", "pridever": "0.10.0"}
 

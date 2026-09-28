@@ -80,9 +80,7 @@ class FakeProjectClient:
             return
         self.added_labels.append((repo, issue_number, label))
 
-    def close_issue(
-        self, repo: str, issue_number: int, reason: str = "completed"
-    ) -> None:
+    def close_issue(self, repo: str, issue_number: int, reason: str = "completed") -> None:
         """Records an issue closure."""
         self.closed_issues.append((repo, issue_number))
 
@@ -126,10 +124,7 @@ def test_determine_status_from_labels_precedence():
 def test_determine_status_prefers_terminal_over_stale_in_progress_when_closed():
     """On a closed item a Done label must win outright over stale In Progress."""
     assert determine_status_from_labels(["In Progress", "Done"], closed=True) == "Done"
-    assert (
-        determine_status_from_labels(["In Progress", "Dropped"], closed=True)
-        == "Dropped"
-    )
+    assert determine_status_from_labels(["In Progress", "Dropped"], closed=True) == "Dropped"
 
 
 def test_determine_status_ignores_terminal_labels_on_open_items():
@@ -233,9 +228,7 @@ def test_pr_ready_for_review_moves_bound_issues_to_in_progress():
 def test_issue_reopened_with_checkpoint_stays_blocked(tmp_path, monkeypatch):
     """Reopening must not wipe quota-blocked resume state when a checkpoint exists."""
     checkpoint = tmp_path / ".antigravity_checkpoint.json"
-    checkpoint.write_text(
-        '{"issue_number": 7, "completed_steps": ["plan"]}', encoding="utf-8"
-    )
+    checkpoint.write_text('{"issue_number": 7, "completed_steps": ["plan"]}', encoding="utf-8")
     monkeypatch.setenv("STATE_DIR", str(tmp_path))
     client = FakeProjectClient()
     payload = {
@@ -317,9 +310,7 @@ def test_checkpoint_bound_is_configurable(tmp_path, monkeypatch):
     assert project_automation.checkpoint_covers_issue(13) is True
 
 
-def test_checkpoint_with_unparseable_timestamp_falls_back_to_file_mtime(
-    tmp_path, monkeypatch
-):
+def test_checkpoint_with_unparseable_timestamp_falls_back_to_file_mtime(tmp_path, monkeypatch):
     """A missing or malformed timestamp is judged on the file's mtime, not trusted forever.
 
     save_checkpoint always writes a timestamp, so a payload without one is either hand-written or
@@ -577,9 +568,7 @@ def test_status_field_ids_are_not_hardcoded():
     with open(path, encoding="utf-8") as handle:
         source = handle.read()
     assert "PVTSSF_" not in source, "Status field id must be discovered, not hardcoded"
-    assert "field-list" in source, (
-        "Status field must be resolved via `gh project field-list`"
-    )
+    assert "field-list" in source, "Status field must be resolved via `gh project field-list`"
 
 
 def test_client_caches_discovery_lookups(monkeypatch: pytest.MonkeyPatch):
@@ -615,12 +604,8 @@ class TestBoardResolution:
         first, second = FakeProjectClient(), FakeProjectClient()
         group = project_automation.BoardGroup([first, second])
         group.track("https://github.com/o/r/issues/1", "In Progress")
-        assert [url for url, _ in first.added_items] == [
-            "https://github.com/o/r/issues/1"
-        ]
-        assert [url for url, _ in second.added_items] == [
-            "https://github.com/o/r/issues/1"
-        ]
+        assert [url for url, _ in first.added_items] == ["https://github.com/o/r/issues/1"]
+        assert [url for url, _ in second.added_items] == ["https://github.com/o/r/issues/1"]
 
     def test_labels_and_closures_happen_once_not_once_per_board(self):
         """A label belongs to the issue, not to a board; applying it twice is wrong."""
@@ -650,9 +635,7 @@ class TestBoardResolution:
         monkeypatch.setattr(
             project_automation.subprocess,
             "run",
-            lambda cmd, **kwargs: (
-                seen.append(cmd) or type("R", (), {"stdout": "done\n"})()
-            ),
+            lambda cmd, **kwargs: (seen.append(cmd) or type("R", (), {"stdout": "done\n"})()),
         )
         group = project_automation.BoardGroup([])
         assert group.run_gh(["issue", "list"]) == "done"
@@ -737,12 +720,8 @@ class TestBoardResolution:
         )
 
         assert project_automation.resolve_boards("marius-patrik") == [11, 17]
-        assert project_automation.resolve_boards(
-            "marius-patrik", include_scoped=False
-        ) == [17]
-        assert project_automation.resolve_boards(
-            "marius-patrik", include_global=False
-        ) == [11]
+        assert project_automation.resolve_boards("marius-patrik", include_scoped=False) == [17]
+        assert project_automation.resolve_boards("marius-patrik", include_global=False) == [11]
 
     def test_a_recorded_failure_makes_the_run_fail(self):
         """The whole point: a broken board must not report success."""
@@ -772,9 +751,7 @@ class TestSettledStatus:
 
     def test_a_stale_in_progress_label_does_not_survive_closing(self):
         """The exact drift found on the board: closed items still showing In Progress."""
-        assert (
-            project_automation.settled_status(True, False, ["In Progress"]) == "Dropped"
-        )
+        assert project_automation.settled_status(True, False, ["In Progress"]) == "Dropped"
 
 
 class TestTokenSelection:
@@ -784,13 +761,9 @@ class TestTokenSelection:
         """Projects v2 permissions are org-scoped, so a user-owned board needs the user's token."""
         monkeypatch.setenv("GH_TOKEN", "app")
         monkeypatch.setenv("GH_PROJECT_TOKEN", "user")
-        assert (
-            project_automation._env_for(["project", "item-list"])["GH_TOKEN"] == "user"
-        )
+        assert project_automation._env_for(["project", "item-list"])["GH_TOKEN"] == "user"
 
-    @pytest.mark.parametrize(
-        "args", [["issue", "edit"], ["api", "repos/o/r"], ["pr", "view"]]
-    )
+    @pytest.mark.parametrize("args", [["issue", "edit"], ["api", "repos/o/r"], ["pr", "view"]])
     def test_repository_calls_use_the_app_token(self, args, monkeypatch):
         """The quota that starved the automation was spent on exactly these calls."""
         monkeypatch.setenv("GH_TOKEN", "app")
@@ -801,9 +774,7 @@ class TestTokenSelection:
         """A repository that never configured one must still work as it did before."""
         monkeypatch.setenv("GH_TOKEN", "only")
         monkeypatch.delenv("GH_PROJECT_TOKEN", raising=False)
-        assert (
-            project_automation._env_for(["project", "item-list"])["GH_TOKEN"] == "only"
-        )
+        assert project_automation._env_for(["project", "item-list"])["GH_TOKEN"] == "only"
 
 
 class TestMembershipReconciliation:
@@ -856,9 +827,7 @@ class TestMembershipReconciliation:
 
     def test_an_open_pull_request_is_work_in_flight(self):
         """Whatever its labels say, an open pull request is not merely ToDo."""
-        client = self._client(
-            [], [{"number": 2, "url": "https://x/pull/2", "labels": []}]
-        )
+        client = self._client([], [{"number": 2, "url": "https://x/pull/2", "labels": []}])
         project_automation.reconcile_membership(client, "o/r")
         assert client.tracked == [("https://x/pull/2", "In Progress")]
 
@@ -924,9 +893,7 @@ class TestFailuresSayWhatWentWrong:
 
     def test_stdout_is_used_when_there_is_no_stderr(self):
         """`gh` does not always fail on stderr."""
-        exc = subprocess.CalledProcessError(
-            1, ["gh"], output="API rate limit already exceeded"
-        )
+        exc = subprocess.CalledProcessError(1, ["gh"], output="API rate limit already exceeded")
         assert "API rate limit already exceeded" in project_automation._detail(exc)
 
     def test_bytes_output_does_not_break_the_message(self):
@@ -984,9 +951,7 @@ class TestRateLimitingAndQuotaReserve:
         monkeypatch.setattr(
             client, "edit_status", lambda item_id, st: pytest.fail("should not mutate")
         )
-        monkeypatch.setattr(
-            client, "add_item", lambda url: pytest.fail("should not add")
-        )
+        monkeypatch.setattr(client, "add_item", lambda url: pytest.fail("should not add"))
         client.track("https://github.com/o/r/issues/1", "Done")
 
     def test_track_edits_without_add_when_status_differs(self, monkeypatch):
@@ -994,9 +959,7 @@ class TestRateLimitingAndQuotaReserve:
         client = GitHubProjectClient(project_number=10)
         client._items_cache = {"https://github.com/o/r/issues/1": ("item-1", "ToDo")}
         edited = []
-        monkeypatch.setattr(
-            client, "add_item", lambda url: pytest.fail("should not add")
-        )
+        monkeypatch.setattr(client, "add_item", lambda url: pytest.fail("should not add"))
         monkeypatch.setattr(
             client,
             "edit_status",
@@ -1005,9 +968,7 @@ class TestRateLimitingAndQuotaReserve:
         client.track("https://github.com/o/r/issues/1", "In Progress")
         assert edited == [("item-1", "In Progress")]
 
-    def test_long_reconciliation_is_not_truncated_by_an_artificial_cap(
-        self, monkeypatch
-    ):
+    def test_long_reconciliation_is_not_truncated_by_an_artificial_cap(self, monkeypatch):
         """No fixed per-run mutation count remains: a long run processes every item it is given."""
         assert not hasattr(project_automation, "MUTATION_BUDGET")
         monkeypatch.setattr(project_automation, "GRAPHQL_REMAINING", 5000)
@@ -1047,12 +1008,8 @@ class TestRateLimitingAndQuotaReserve:
             "load_existing_items",
             lambda: pytest.fail("should not query the board"),
         )
-        monkeypatch.setattr(
-            client, "add_item", lambda *a, **k: pytest.fail("should not add")
-        )
-        monkeypatch.setattr(
-            client, "edit_status", lambda *a, **k: pytest.fail("should not edit")
-        )
+        monkeypatch.setattr(client, "add_item", lambda *a, **k: pytest.fail("should not add"))
+        monkeypatch.setattr(client, "edit_status", lambda *a, **k: pytest.fail("should not edit"))
 
         client.track("https://github.com/o/r/issues/1", "ToDo")
 
@@ -1251,9 +1208,7 @@ class TestRateLimitingAndQuotaReserve:
                 self.writes.append((item_id, status_name))
                 return True
 
-            def set_status_label(
-                self, repo, issue_number, status_name, existing_labels=None
-            ):
+            def set_status_label(self, repo, issue_number, status_name, existing_labels=None):
                 self.status_labels.append((repo, issue_number, status_name))
 
         client = Recorder()
@@ -1269,9 +1224,7 @@ class TestRateLimitingAndQuotaReserve:
         payload = {
             "ref": "refs/heads/darkfactory",
             "repository": {"full_name": REPO, "default_branch": "darkfactory"},
-            "commits": [
-                {"message": "fix(ci): fix darkfactory automation\n\nCloses #68"}
-            ],
+            "commits": [{"message": "fix(ci): fix darkfactory automation\n\nCloses #68"}],
         }
         process_event("push", payload, client=client)
         assert client.status_labels == [(REPO, 68, "Done")]
@@ -1343,9 +1296,9 @@ class TestRateLimitingAndQuotaReserve:
 
         assert calls[0] == ("POST", "/repos/o/r/issues/42/labels", {"labels": ["Done"]})
         assert ("DELETE", "/repos/o/r/issues/42/labels/In%20Progress", None) in calls
-        assert not [c for c in calls if c[0] == "PUT"], (
-            "replacing the label set races other writers"
-        )
+        assert not [
+            c for c in calls if c[0] == "PUT"
+        ], "replacing the label set races other writers"
         assert not [c for c in calls if c[0] == "DELETE" and "Done" in c[1]]
 
     def test_status_label_never_removes_labels_added_after_the_event(self):
@@ -1369,9 +1322,7 @@ class TestRateLimitingAndQuotaReserve:
         rest.set_status_label("o/r", 227, "ToDo", stale_payload_labels)
 
         removed = [c[1] for c in calls if c[0] == "DELETE"]
-        assert removed == [], (
-            f"only other status labels may be removed, removed {removed}"
-        )
+        assert removed == [], f"only other status labels may be removed, removed {removed}"
         assert not [c for c in calls if c[0] == "PUT"]
 
     def test_quota_reconciliation_threshold_blocks_bulk_scan(self, monkeypatch):
@@ -1390,9 +1341,7 @@ class TestRateLimitingAndQuotaReserve:
         assert project_automation.can_mutate() is False
         assert project_automation.can_reconcile() is False
 
-    def test_track_with_content_id_uses_fast_path_without_loading_items(
-        self, monkeypatch
-    ):
+    def test_track_with_content_id_uses_fast_path_without_loading_items(self, monkeypatch):
         """When content_id is provided, track() bypasses expensive board item fetching."""
         client = project_automation.GitHubProjectClient(project_number=10)
         client._project_id = "PVT_123"
@@ -1400,9 +1349,7 @@ class TestRateLimitingAndQuotaReserve:
         client._status_field_id = "f-1"
 
         load_called = []
-        monkeypatch.setattr(
-            client, "load_existing_items", lambda: load_called.append(True) or {}
-        )
+        monkeypatch.setattr(client, "load_existing_items", lambda: load_called.append(True) or {})
 
         added = []
         monkeypatch.setattr(
@@ -1454,9 +1401,7 @@ class TestRateLimitingAndQuotaReserve:
         monkeypatch.setattr(
             client.graphql,
             "add_item",
-            lambda pid, cid: pytest.fail(
-                "add_item should not be called for existing items"
-            ),
+            lambda pid, cid: pytest.fail("add_item should not be called for existing items"),
         )
 
         # 1. Matching historical item -> 0 mutations
@@ -1528,10 +1473,7 @@ class TestScopedBoardRouting:
             project_automation,
             "reconcile_membership",
             lambda client, repo, state=None: (
-                reconciled.append(
-                    (repo, [member.project_number for member in client.clients])
-                )
-                or 0
+                reconciled.append((repo, [member.project_number for member in client.clients])) or 0
             ),
         )
         monkeypatch.setattr(
@@ -1570,9 +1512,7 @@ class TestScopedBoardRouting:
                 return [17]
             return [11, 17]
 
-        monkeypatch.setattr(
-            project_automation, "resolve_boards", counting_resolve_boards
-        )
+        monkeypatch.setattr(project_automation, "resolve_boards", counting_resolve_boards)
 
         class Loaded:
             data = {"app": {"installed_on": ["o/current", "o/other-a", "o/other-b"]}}
@@ -1588,10 +1528,7 @@ class TestScopedBoardRouting:
             project_automation,
             "reconcile_membership",
             lambda client, repo, state=None: (
-                reconciled.append(
-                    (repo, [member.project_number for member in client.clients])
-                )
-                or 0
+                reconciled.append((repo, [member.project_number for member in client.clients])) or 0
             ),
         )
         monkeypatch.setattr(
@@ -1637,9 +1574,7 @@ class TestAddItemRace:
             ) -> Dict[str, Any]:
                 calls.append(query)
                 if "addProjectV2ItemById" in query:
-                    raise RuntimeError(
-                        "GraphQL error: Content already exists in this project"
-                    )
+                    raise RuntimeError("GraphQL error: Content already exists in this project")
                 return {
                     "node": {
                         "projectItems": {
@@ -1657,17 +1592,13 @@ class TestAddItemRace:
 
     def test_other_add_errors_still_fail(self, monkeypatch):
         failures = []
-        monkeypatch.setattr(
-            project_automation, "_fail", lambda message: failures.append(message)
-        )
+        monkeypatch.setattr(project_automation, "_fail", lambda message: failures.append(message))
 
         class BrokenGraphQL(project_automation.GitHubGraphQLClient):
             def execute(
                 self, query: str, variables: Optional[Dict[str, Any]] = None
             ) -> Dict[str, Any]:
-                raise RuntimeError(
-                    "GraphQL error: Resource not accessible by integration"
-                )
+                raise RuntimeError("GraphQL error: Resource not accessible by integration")
 
         assert BrokenGraphQL(token="test-token").add_item("PVT_1", "I_1") is None
         assert failures and "Resource not accessible" in failures[0]
@@ -1962,9 +1893,7 @@ def test_reconciliation_fixes_all_audited_faults():
             self.edited_statuses.append((item_id, status_name))
             return True
 
-        def set_status_label(
-            self, repo, issue_number, status_name, existing_labels=None
-        ):
+        def set_status_label(self, repo, issue_number, status_name, existing_labels=None):
             self.status_labels.append((repo, issue_number, status_name))
             for iss in repo_issues:
                 if iss["number"] == issue_number:
@@ -2041,6 +1970,4 @@ def test_label_writes_never_replace_non_status_labels():
     )
     assert ("POST", "/repos/o/r/issues/42/labels", {"labels": ["Done"]}) in requested
     assert ("DELETE", "/repos/o/r/issues/42/labels/In%20Progress", None) in requested
-    assert not any(
-        p.endswith("bug") or p.endswith("area%3Aci") for _, p, _ in requested
-    )
+    assert not any(p.endswith("bug") or p.endswith("area%3Aci") for _, p, _ in requested)

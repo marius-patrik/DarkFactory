@@ -34,9 +34,7 @@ NOTE_SECTIONS: Tuple[Tuple[str, str], ...] = (
 )
 
 #: `type(scope)!: subject`
-_COMMIT = re.compile(
-    r"^(?P<type>[a-z]+)(?:\((?P<scope>[^)]*)\))?(?P<bang>!)?:\s*(?P<subject>.+)$"
-)
+_COMMIT = re.compile(r"^(?P<type>[a-z]+)(?:\((?P<scope>[^)]*)\))?(?P<bang>!)?:\s*(?P<subject>.+)$")
 
 #: The identity automation-authored commits carry. The same one the pipeline uses everywhere else,
 #: so a record commit is attributable to the pipeline rather than to whichever runner produced it.
@@ -70,9 +68,7 @@ def build_notes(messages: Iterable[str], version: str, previous: Optional[str]) 
         scope = match.group("scope")
         subject = match.group("subject").strip()
         entry = f"**{scope}**: {subject}" if scope else subject
-        if match.group("bang") or re.search(
-            r"^BREAKING[ -]CHANGE:", message, re.MULTILINE
-        ):
+        if match.group("bang") or re.search(r"^BREAKING[ -]CHANGE:", message, re.MULTILINE):
             breaking.append(entry)
         commit_type = match.group("type")
         if commit_type in grouped:
@@ -118,11 +114,7 @@ def declared_assets(root: str) -> List[Dict[str, str]]:
             resolved.append(
                 {
                     "path": str(entry["path"]),
-                    **(
-                        {"command": str(entry["command"])}
-                        if entry.get("command")
-                        else {}
-                    ),
+                    **({"command": str(entry["command"])} if entry.get("command") else {}),
                 }
             )
     return resolved
@@ -324,9 +316,7 @@ def _git(root: str, *args: str) -> str:
     Raises:
         ReleaseError: If git fails, with its error output attached.
     """
-    result = subprocess.run(
-        ["git", *args], cwd=root, capture_output=True, text=True, check=False
-    )
+    result = subprocess.run(["git", *args], cwd=root, capture_output=True, text=True, check=False)
     if result.returncode != 0:
         raise ReleaseError(f"git {' '.join(args)} failed: {result.stderr.strip()}")
     return result.stdout.strip()
@@ -345,17 +335,13 @@ def _gh(root: str, *args: str) -> str:
     Raises:
         ReleaseError: If the command fails, with its error output attached.
     """
-    result = subprocess.run(
-        ["gh", *args], cwd=root, capture_output=True, text=True, check=False
-    )
+    result = subprocess.run(["gh", *args], cwd=root, capture_output=True, text=True, check=False)
     if result.returncode != 0:
         raise ReleaseError(f"gh {' '.join(args)} failed: {result.stderr.strip()}")
     return result.stdout.strip()
 
 
-def record_version(
-    root: str, version: str, released_tag: Optional[str] = None
-) -> Dict[str, Any]:
+def record_version(root: str, version: str, released_tag: Optional[str] = None) -> Dict[str, Any]:
     """Records a released version on a delivery branch for the development branch.
 
     The `VERSION` file is the owner's control over the next number, which only works while it is
@@ -530,9 +516,7 @@ def main() -> None:  # pragma: no cover - thin CLI wrapper
 
     if args.sync_metadata and resolved["version"]:
         resolved["metadata_synced"] = sync_metadata(args.repo_root, resolved["version"])
-        resolved["metadata_problems"] = check_metadata(
-            args.repo_root, resolved["version"]
-        )
+        resolved["metadata_problems"] = check_metadata(args.repo_root, resolved["version"])
 
     if args.notes_out and resolved["notes"]:
         with open(args.notes_out, "w", encoding="utf-8") as handle:

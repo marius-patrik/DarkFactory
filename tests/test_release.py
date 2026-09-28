@@ -43,9 +43,7 @@ def _repo(root, manifest=None, commits=()):
     for index, message in enumerate(commits):
         _write(root, f"f{index}.txt", message)
         subprocess.run(["git", "-C", str(root), "add", "-A"], check=True)
-        subprocess.run(
-            ["git", "-C", str(root), "commit", "-q", "-m", message], check=True
-        )
+        subprocess.run(["git", "-C", str(root), "commit", "-q", "-m", message], check=True)
 
 
 @pytest.fixture
@@ -103,9 +101,7 @@ class TestNotes:
         assert "### Breaking changes" in notes
 
     def test_a_scopeless_commit_still_appears(self):
-        assert "add a thing" in release.build_notes(
-            ["feat: add a thing"], "1.1.0", "1.0.0"
-        )
+        assert "add a thing" in release.build_notes(["feat: add a thing"], "1.1.0", "1.0.0")
 
     def test_non_conventional_commits_are_skipped(self):
         notes = release.build_notes(["wip", "asdf"], "1.0.1", "1.0.0")
@@ -127,12 +123,8 @@ class TestAssetPlanning:
         assert any("bun run build" == step["command"] for step in steps)
 
     def test_a_workspace_root_is_built_once_not_per_member(self, monorepo):
-        steps = [
-            s for s in release.plan_assets(str(monorepo)) if s["ecosystem"] == "node"
-        ]
-        assert len(steps) == 1, (
-            "building each workspace member repeats the root's own build"
-        )
+        steps = [s for s in release.plan_assets(str(monorepo)) if s["ecosystem"] == "node"]
+        assert len(steps) == 1, "building each workspace member repeats the root's own build"
         assert steps[0]["cwd"] == "."
 
     def test_declared_assets_are_appended(self, tmp_path):
@@ -143,11 +135,7 @@ class TestAssetPlanning:
             json.dumps(
                 {
                     "repo": {
-                        "release": {
-                            "assets": [
-                                {"command": "make bundle", "path": "out/*.tar.gz"}
-                            ]
-                        }
+                        "release": {"assets": [{"command": "make bundle", "path": "out/*.tar.gz"}]}
                     }
                 }
             ),
@@ -180,17 +168,9 @@ class TestAssetPlanning:
         _write(
             monorepo,
             "repo.dfconfig",
-            json.dumps(
-                {
-                    "repo": {
-                        "environment": {"release": {"node": {"artifacts": ["out/**"]}}}
-                    }
-                }
-            ),
+            json.dumps({"repo": {"environment": {"release": {"node": {"artifacts": ["out/**"]}}}}}),
         )
-        steps = [
-            s for s in release.plan_assets(str(monorepo)) if s["ecosystem"] == "node"
-        ]
+        steps = [s for s in release.plan_assets(str(monorepo)) if s["ecosystem"] == "node"]
         assert steps[0]["globs"] == ["out/**"]
 
 
@@ -199,9 +179,7 @@ class TestAssetCollection:
 
     def test_only_existing_files_are_collected(self, tmp_path):
         _write(tmp_path, "dist/app.whl", "x")
-        steps = [
-            {"command": None, "cwd": ".", "globs": ["dist/*.whl", "dist/*.tar.gz"]}
-        ]
+        steps = [{"command": None, "cwd": ".", "globs": ["dist/*.whl", "dist/*.tar.gz"]}]
         assert release.collect_assets(str(tmp_path), steps) == ["dist/app.whl"]
 
     def test_directories_are_not_collected(self, tmp_path):
@@ -257,9 +235,7 @@ class TestMetadataConformance:
 
     def test_sync_only_touches_the_version(self, monorepo):
         release.sync_metadata(str(monorepo), "1.5.0")
-        with open(
-            os.path.join(str(monorepo), "packages/cli/package.json"), encoding="utf-8"
-        ) as fh:
+        with open(os.path.join(str(monorepo), "packages/cli/package.json"), encoding="utf-8") as fh:
             data = json.load(fh)
         assert data == {"name": "@acme/cli", "version": "1.5.0"}
 
@@ -267,9 +243,7 @@ class TestMetadataConformance:
         _write(tmp_path, "Cargo.toml", '[package]\nname = "thing"\nversion = "0.1.0"\n')
         _write(tmp_path, "repo.dfconfig", json.dumps({"repo": {}}))
         release.sync_metadata(str(tmp_path), "0.2.0")
-        content = open(
-            os.path.join(str(tmp_path), "Cargo.toml"), encoding="utf-8"
-        ).read()
+        content = open(os.path.join(str(tmp_path), "Cargo.toml"), encoding="utf-8").read()
         assert 'version = "0.2.0"' in content
         assert 'name = "thing"' in content
 
@@ -299,9 +273,7 @@ class TestResolveRelease:
         _repo(tmp_path, {}, ["feat(ci): add the pipeline"])
         _write(tmp_path, "package.json", json.dumps({"name": "a", "version": "9.9.9"}))
         resolved = release.resolve_release(str(tmp_path))
-        assert resolved["metadata_problems"], (
-            "a package at 9.9.9 cannot ship as 0.1.0 unnoticed"
-        )
+        assert resolved["metadata_problems"], "a package at 9.9.9 cannot ship as 0.1.0 unnoticed"
 
 
 class TestRecordVersion:
@@ -330,18 +302,10 @@ class TestRecordVersion:
             check=True,
         )
         identity = (manifest or {}).get("identity", {})
-        branch = (
-            identity.get("development_branch")
-            or identity.get("default_branch")
-            or "main"
-        )
+        branch = identity.get("development_branch") or identity.get("default_branch") or "main"
         subprocess.run(["git", "-C", str(work), "branch", "-M", branch], check=True)
-        subprocess.run(
-            ["git", "-C", str(work), "remote", "add", "origin", str(remote)], check=True
-        )
-        subprocess.run(
-            ["git", "-C", str(work), "push", "-q", "origin", branch], check=True
-        )
+        subprocess.run(["git", "-C", str(work), "remote", "add", "origin", str(remote)], check=True)
+        subprocess.run(["git", "-C", str(work), "push", "-q", "origin", branch], check=True)
         return work
 
     def _gh_stub(self, tmp_path, monkeypatch, prs="[]"):
@@ -394,9 +358,7 @@ class TestRecordVersion:
             == 0
         )
 
-    def test_recording_the_same_version_twice_changes_nothing(
-        self, tmp_path, monkeypatch
-    ):
+    def test_recording_the_same_version_twice_changes_nothing(self, tmp_path, monkeypatch):
         """A re-run after a completed release must not ask for a second review."""
         log = self._gh_stub(tmp_path, monkeypatch)
         work = self._origin(
@@ -437,9 +399,7 @@ class TestRecordVersion:
         assert result["pull_request"] == '[{"number": 42}]'
         assert "pr create" not in log.read_text()
 
-    def test_without_a_bound_issue_the_version_is_still_recorded(
-        self, tmp_path, monkeypatch
-    ):
+    def test_without_a_bound_issue_the_version_is_still_recorded(self, tmp_path, monkeypatch):
         """`verify-bound-issue` would reject the request, so it is reported rather than opened."""
         log = self._gh_stub(tmp_path, monkeypatch)
         work = self._origin(tmp_path, {"identity": {"development_branch": "develop"}})
@@ -463,9 +423,7 @@ class TestRecordVersion:
         assert result["issue"] == 1113
         assert "Advances #1113" in log.read_text()
 
-    def test_a_repository_with_one_branch_records_against_it(
-        self, tmp_path, monkeypatch
-    ):
+    def test_a_repository_with_one_branch_records_against_it(self, tmp_path, monkeypatch):
         """With no separate development branch the default branch is the integration lane."""
         self._gh_stub(tmp_path, monkeypatch)
         work = self._origin(tmp_path, {"identity": {"default_branch": "trunk"}})

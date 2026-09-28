@@ -43,13 +43,9 @@ def resolve_config_document_path(
         The selected path, or the default ``<DF_CONFIG_DIR>/repo.dfconfig`` path when none exists.
     """
     repository_root = os.path.abspath(root)
-    config_directory = _config_directory(
-        repository_root, os.environ if env is None else env
-    )
+    config_directory = _config_directory(repository_root, os.environ if env is None else env)
     root_candidates = _candidates(repository_root)
-    folder_candidates = (
-        [] if config_directory == repository_root else _candidates(config_directory)
-    )
+    folder_candidates = [] if config_directory == repository_root else _candidates(config_directory)
 
     if root_candidates and folder_candidates:
         raise ValueError(
@@ -64,11 +60,7 @@ def resolve_config_document_path(
             f"Ambiguous DarkFactory configuration aliases in {scope}: {', '.join(candidates)}; "
             "keep only repo.dfconfig, config.dfconfig, or .dfconfig."
         )
-    return (
-        candidates[0]
-        if candidates
-        else os.path.join(config_directory, CONFIG_FILENAMES[0])
-    )
+    return candidates[0] if candidates else os.path.join(config_directory, CONFIG_FILENAMES[0])
 
 
 def load_config_block(
@@ -98,9 +90,7 @@ def load_config_block(
         with open(path, encoding="utf-8") as handle:
             document = json.load(handle)
     except (OSError, json.JSONDecodeError) as exc:
-        raise ValueError(
-            f"Invalid DarkFactory configuration JSON at {path}: {exc}"
-        ) from exc
+        raise ValueError(f"Invalid DarkFactory configuration JSON at {path}: {exc}") from exc
     if not isinstance(document, dict):
         raise ValueError(f"DarkFactory configuration at {path} must contain an object.")
     value = document.get(block)

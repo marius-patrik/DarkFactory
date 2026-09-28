@@ -197,10 +197,7 @@ def can_reconcile() -> bool:
     """Checks whether bulk reconciliation is safe given current quota reserves."""
     if RATE_LIMITED:
         return False
-    if (
-        GRAPHQL_REMAINING is not None
-        and GRAPHQL_REMAINING < QUOTA_RECONCILIATION_THRESHOLD
-    ):
+    if GRAPHQL_REMAINING is not None and GRAPHQL_REMAINING < QUOTA_RECONCILIATION_THRESHOLD:
         print(
             f"Notice: GraphQL quota below reserve ({GRAPHQL_REMAINING} < {QUOTA_RECONCILIATION_THRESHOLD}); "
             f"skipping bulk reconciliation to preserve quota for real-time events.",
@@ -273,9 +270,7 @@ def has_terminal_status_label(labels: Sequence[Any]) -> bool:
 #: sweeps is not waiting to be resumed. Without a bound, one quota exhaustion in a persisted state
 #: directory pinned its issue to ``Blocked`` forever, because ``remove_checkpoint`` is reachable only
 #: from an explicit resume. Overridable for operators with a longer quota horizon.
-CHECKPOINT_MAX_AGE_SECONDS = int(
-    os.environ.get("DF_CHECKPOINT_MAX_AGE_SECONDS", "86400")
-)
+CHECKPOINT_MAX_AGE_SECONDS = int(os.environ.get("DF_CHECKPOINT_MAX_AGE_SECONDS", "86400"))
 
 
 def _checkpoint_age_seconds(path: str, data: Any) -> Optional[float]:
@@ -290,9 +285,9 @@ def _checkpoint_age_seconds(path: str, data: Any) -> Optional[float]:
         stamp = data.get("timestamp")
         if isinstance(stamp, str) and stamp.strip():
             try:
-                written = datetime.strptime(
-                    stamp.strip(), "%Y-%m-%dT%H:%M:%SZ"
-                ).replace(tzinfo=timezone.utc)
+                written = datetime.strptime(stamp.strip(), "%Y-%m-%dT%H:%M:%SZ").replace(
+                    tzinfo=timezone.utc
+                )
             except ValueError:
                 written = None
             if written is not None:
@@ -390,23 +385,16 @@ def expected_status(
             or item.get("merged_at")
             or item.get("mergedAt")
             or (
-                isinstance(item.get("pull_request"), dict)
-                and item["pull_request"].get("merged_at")
+                isinstance(item.get("pull_request"), dict) and item["pull_request"].get("merged_at")
             )
             or state_str == "merged"
         )
         is_closed = (
-            state_str in ("closed", "merged")
-            or is_merged
-            or bool(item.get("closed", False))
+            state_str in ("closed", "merged") or is_merged or bool(item.get("closed", False))
         )
-        is_draft = bool(
-            item.get("draft") or item.get("is_draft") or item.get("isDraft")
-        )
+        is_draft = bool(item.get("draft") or item.get("is_draft") or item.get("isDraft"))
         state_reason_val = item.get("state_reason") or item.get("stateReason")
-        state_reason = (
-            str(state_reason_val).strip().lower() if state_reason_val else None
-        )
+        state_reason = str(state_reason_val).strip().lower() if state_reason_val else None
 
         raw_labels = item.get("labels", [])
         if isinstance(raw_labels, dict) and "nodes" in raw_labels:
@@ -431,14 +419,10 @@ def expected_status(
                 else:
                     checkpoint = False
 
-        item_bound_prs = (
-            bound_prs or item.get("bound_prs") or item.get("bound_pr_states") or []
-        )
+        item_bound_prs = bound_prs or item.get("bound_prs") or item.get("bound_pr_states") or []
     else:
         kind = getattr(item, "kind", getattr(item, "type", ""))
-        is_pr = bool(
-            getattr(item, "is_pr", False) or str(kind).lower() in ("pullrequest", "pr")
-        )
+        is_pr = bool(getattr(item, "is_pr", False) or str(kind).lower() in ("pullrequest", "pr"))
         state_str = str(getattr(item, "state", "")).strip().lower()
         is_merged = bool(
             getattr(item, "merged", False)
@@ -446,19 +430,11 @@ def expected_status(
             or state_str == "merged"
         )
         is_closed = state_str in ("closed", "merged") or is_merged
-        is_draft = bool(
-            getattr(item, "draft", False) or getattr(item, "is_draft", False)
-        )
-        state_reason_val = getattr(
-            item, "state_reason", getattr(item, "stateReason", None)
-        )
-        state_reason = (
-            str(state_reason_val).strip().lower() if state_reason_val else None
-        )
+        is_draft = bool(getattr(item, "draft", False) or getattr(item, "is_draft", False))
+        state_reason_val = getattr(item, "state_reason", getattr(item, "stateReason", None))
+        state_reason = str(state_reason_val).strip().lower() if state_reason_val else None
         raw_labels = getattr(item, "labels", [])
-        labels_list = [
-            l.get("name") if isinstance(l, dict) else str(l) for l in raw_labels if l
-        ]
+        labels_list = [l.get("name") if isinstance(l, dict) else str(l) for l in raw_labels if l]
         if checkpoint is None:
             checkpoint = bool(getattr(item, "checkpoint", False))
         item_bound_prs = bound_prs or getattr(item, "bound_prs", [])
@@ -469,18 +445,13 @@ def expected_status(
         if isinstance(pr, dict):
             pr_st = str(pr.get("state", "")).strip().lower()
             pr_mg = bool(
-                pr.get("merged")
-                or pr.get("merged_at")
-                or pr.get("mergedAt")
-                or pr_st == "merged"
+                pr.get("merged") or pr.get("merged_at") or pr.get("mergedAt") or pr_st == "merged"
             )
             pr_dr = bool(pr.get("draft") or pr.get("is_draft") or pr.get("isDraft"))
         else:
             pr_st = str(getattr(pr, "state", "")).strip().lower()
             pr_mg = bool(
-                getattr(pr, "merged", False)
-                or getattr(pr, "merged_at", None)
-                or pr_st == "merged"
+                getattr(pr, "merged", False) or getattr(pr, "merged_at", None) or pr_st == "merged"
             )
             pr_dr = bool(getattr(pr, "draft", False) or getattr(pr, "is_draft", False))
         if pr_mg:
@@ -489,9 +460,7 @@ def expected_status(
             bound_pr_ready = True
 
     normalized_labels = {lbl.lower() for lbl in labels_list}
-    has_superseded = bool(
-        {"superseded", "duplicate"} & normalized_labels
-    ) or state_reason in (
+    has_superseded = bool({"superseded", "duplicate"} & normalized_labels) or state_reason in (
         "duplicate",
         "superseded",
     )
@@ -633,9 +602,7 @@ class GitHubRestClient:
         """
         url = f"{self.base_url}{path}"
         if params:
-            query_str = urllib.parse.urlencode(
-                {k: v for k, v in params.items() if v is not None}
-            )
+            query_str = urllib.parse.urlencode({k: v for k, v in params.items() if v is not None})
             url = f"{url}?{query_str}"
 
         headers = {
@@ -651,9 +618,7 @@ class GitHubRestClient:
             data_bytes = json.dumps(json_data).encode("utf-8")
             headers["Content-Type"] = "application/json"
 
-        req = urllib.request.Request(
-            url, data=data_bytes, headers=headers, method=method
-        )
+        req = urllib.request.Request(url, data=data_bytes, headers=headers, method=method)
 
         try:
             with urllib.request.urlopen(req, timeout=30) as resp:
@@ -767,9 +732,7 @@ class GitHubRestClient:
         # event payload) wipes every label another writer added in between: on #227 the agent's
         # type and area labels were removed nine seconds after it applied them. Adding the status
         # and deleting only the other status labels touches nothing else.
-        del (
-            existing_labels
-        )  # kept for callers; the POST response is the fresh label list
+        del existing_labels  # kept for callers; the POST response is the fresh label list
         try:
             current = self.request(
                 "POST",
@@ -817,9 +780,7 @@ class GitHubRestClient:
                 file=sys.stderr,
             )
 
-    def close_issue(
-        self, repo: str, issue_number: int, reason: str = "completed"
-    ) -> None:
+    def close_issue(self, repo: str, issue_number: int, reason: str = "completed") -> None:
         """Closes an issue with a specific state reason.
 
         Args:
@@ -859,9 +820,7 @@ class GitHubGraphQLClient:
         self.endpoint = "https://api.github.com/graphql"
         self._projects_cache: Optional[Dict[str, Dict[str, Any]]] = None
 
-    def execute(
-        self, query: str, variables: Optional[Dict[str, Any]] = None
-    ) -> Dict[str, Any]:
+    def execute(self, query: str, variables: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
         """Executes a GraphQL query or mutation with error checking and rate-limit tracking.
 
         Args:
@@ -881,12 +840,8 @@ class GitHubGraphQLClient:
         if self.token:
             headers["Authorization"] = f"Bearer {self.token}"
 
-        payload = json.dumps({"query": query, "variables": variables or {}}).encode(
-            "utf-8"
-        )
-        req = urllib.request.Request(
-            self.endpoint, data=payload, headers=headers, method="POST"
-        )
+        payload = json.dumps({"query": query, "variables": variables or {}}).encode("utf-8")
+        req = urllib.request.Request(self.endpoint, data=payload, headers=headers, method="POST")
 
         try:
             with urllib.request.urlopen(req, timeout=30) as resp:
@@ -897,9 +852,7 @@ class GitHubGraphQLClient:
                         global GRAPHQL_REMAINING
                         GRAPHQL_REMAINING = val
                         if val <= QUOTA_MINIMUM:
-                            mark_rate_limited(
-                                f"GraphQL quota exhausted ({val} remaining)"
-                            )
+                            mark_rate_limited(f"GraphQL quota exhausted ({val} remaining)")
                     except ValueError:
                         # A malformed remaining value must not be read as "quota unknown, so
                         # unlimited" - with no mutation-count fallback left, this reserve is the
@@ -958,9 +911,7 @@ class GitHubGraphQLClient:
         except Exception as exc:
             if is_rate_limited(exc):
                 mark_rate_limited()
-            print(
-                f"Error resolving projects for {owner}: {_detail(exc)}", file=sys.stderr
-            )
+            print(f"Error resolving projects for {owner}: {_detail(exc)}", file=sys.stderr)
             return {}
 
     def get_project_fields(self, project_id: str) -> List[Dict[str, Any]]:
@@ -1000,9 +951,7 @@ class GitHubGraphQLClient:
             )
             return []
 
-    def fetch_board_items(
-        self, project_id: str, limit: int = 1000
-    ) -> List[Dict[str, Any]]:
+    def fetch_board_items(self, project_id: str, limit: int = 1000) -> List[Dict[str, Any]]:
         """Fetches items of a project board with lean projections to minimize GraphQL complexity cost.
 
         Args:
@@ -1114,9 +1063,7 @@ class GitHubGraphQLClient:
         }
         """
         try:
-            data = self.execute(
-                mutation, {"projectId": project_id, "contentId": content_id}
-            )
+            data = self.execute(mutation, {"projectId": project_id, "contentId": content_id})
             return data.get("addProjectV2ItemById", {}).get("item", {}).get("id")
         except Exception as exc:
             if is_rate_limited(exc):
@@ -1128,9 +1075,7 @@ class GitHubGraphQLClient:
                 existing = self.find_item_for_content(project_id, content_id)
                 if existing:
                     return existing
-            _fail(
-                f"adding content {content_id} to project {project_id}: {_detail(exc)}"
-            )
+            _fail(f"adding content {content_id} to project {project_id}: {_detail(exc)}")
             return None
 
     def find_item_for_content(self, project_id: str, content_id: str) -> Optional[str]:
@@ -1209,9 +1154,7 @@ class GitHubGraphQLClient:
         except Exception as exc:
             if is_rate_limited(exc):
                 mark_rate_limited()
-            print(
-                f"Error updating item {item_id} status: {_detail(exc)}", file=sys.stderr
-            )
+            print(f"Error updating item {item_id} status: {_detail(exc)}", file=sys.stderr)
             return False
 
     def enforce_board_taxonomy(
@@ -1230,9 +1173,7 @@ class GitHubGraphQLClient:
             Updated mapping of canonical status name to option ID.
         """
         existing_by_name = {
-            opt["name"].strip().lower(): opt
-            for opt in existing_options
-            if opt and "name" in opt
+            opt["name"].strip().lower(): opt for opt in existing_options if opt and "name" in opt
         }
 
         options_input = [
@@ -1273,23 +1214,15 @@ class GitHubGraphQLClient:
             )
             field = data.get("updateProjectV2Field", {}).get("projectV2Field") or {}
             options = field.get("options", [])
-            print(
-                f"Successfully enforced canonical status taxonomy on field {field_id}."
-            )
-            return {
-                opt["name"]: opt["id"]
-                for opt in options
-                if "name" in opt and "id" in opt
-            }
+            print(f"Successfully enforced canonical status taxonomy on field {field_id}.")
+            return {opt["name"]: opt["id"] for opt in options if "name" in opt and "id" in opt}
         except Exception as exc:
             print(
                 f"Warning: could not enforce taxonomy on field {field_id}: {_detail(exc)}",
                 file=sys.stderr,
             )
             return {
-                opt["name"]: opt["id"]
-                for opt in existing_options
-                if "name" in opt and "id" in opt
+                opt["name"]: opt["id"] for opt in existing_options if "name" in opt and "id" in opt
             }
 
 
@@ -1327,11 +1260,7 @@ def resolve_boards(
         titles = []
         if include_scoped:
             titles.append(loaded.project_title)
-        if (
-            include_global
-            and loaded.global_board_title
-            and loaded.global_board_title not in titles
-        ):
+        if include_global and loaded.global_board_title and loaded.global_board_title not in titles:
             titles.append(loaded.global_board_title)
     except Exception as exc:
         print(f"Could not read the board declaration: {_detail(exc)}", file=sys.stderr)
@@ -1367,9 +1296,7 @@ def resolve_boards(
             by_title = {p["title"]: p for p in json.loads(output).get("projects", [])}
         except Exception as exc:
             if is_rate_limited(exc):
-                mark_rate_limited(
-                    f"Project board rate limit reached resolving boards for {owner}"
-                )
+                mark_rate_limited(f"Project board rate limit reached resolving boards for {owner}")
                 return []
             _fail(f"could not list projects for {owner}: {_detail(exc)}")
             return []
@@ -1409,9 +1336,7 @@ class GitHubProjectClient:
         self.rest = rest_client or GitHubRestClient()
         self.graphql = graphql_client or GitHubGraphQLClient()
         self._project_id: Optional[str] = None
-        self._status_field_id: Optional[str] = (
-            os.environ.get("PROJECT_STATUS_FIELD_ID") or None
-        )
+        self._status_field_id: Optional[str] = os.environ.get("PROJECT_STATUS_FIELD_ID") or None
         self._status_options: Optional[Dict[str, str]] = None
         self._items_cache: Optional[Dict[str, Tuple[str, Optional[str]]]] = None
         self._raw_items_cache: Optional[List[Dict[str, Any]]] = None
@@ -1453,9 +1378,7 @@ class GitHubProjectClient:
                 except Exception as exc:
                     if is_rate_limited(exc):
                         mark_rate_limited()
-                    print(
-                        f"Could not resolve project id: {_detail(exc)}", file=sys.stderr
-                    )
+                    print(f"Could not resolve project id: {_detail(exc)}", file=sys.stderr)
         return self._project_id
 
     def _load_status_field(self) -> None:
@@ -1487,9 +1410,7 @@ class GitHubProjectClient:
             except Exception as exc:
                 if is_rate_limited(exc):
                     mark_rate_limited()
-                print(
-                    f"Could not resolve Status field: {_detail(exc)}", file=sys.stderr
-                )
+                print(f"Could not resolve Status field: {_detail(exc)}", file=sys.stderr)
                 return
 
         for field in fields:
@@ -1594,9 +1515,7 @@ class GitHubProjectClient:
                     match = URL_PATTERN.match(content_url)
                     if match:
                         owner, repo_name, _ = match.groups()
-                        self.rest._node_id_cache[(f"{owner}/{repo_name}", number)] = (
-                            node_id
-                        )
+                        self.rest._node_id_cache[(f"{owner}/{repo_name}", number)] = node_id
 
                 # Resolve current Status value
                 status_name = None
@@ -1682,9 +1601,7 @@ class GitHubProjectClient:
             )
             return False
 
-        success = self.graphql.update_item_status(
-            project_id, item_id, field_id, option_id
-        )
+        success = self.graphql.update_item_status(project_id, item_id, field_id, option_id)
         if not success:
             # Fallback to run_gh if GraphQL failed
             try:
@@ -1815,9 +1732,7 @@ class GitHubProjectClient:
             return
         self.rest.add_issue_label(repo, issue_number, label)
 
-    def close_issue(
-        self, repo: str, issue_number: int, reason: str = "completed"
-    ) -> None:
+    def close_issue(self, repo: str, issue_number: int, reason: str = "completed") -> None:
         """Closes an issue."""
         self.rest.close_issue(repo, issue_number, reason=reason)
 
@@ -1882,9 +1797,7 @@ class BoardGroup:
     ) -> None:
         """Applies the status label once."""
         if self.clients:
-            _safe_set_status_label(
-                self.clients[0], repo, number, status, existing_labels
-            )
+            _safe_set_status_label(self.clients[0], repo, number, status, existing_labels)
 
     def add_issue_label(self, repo: str, number: int, label: str) -> None:
         """Adds a label once."""
@@ -1926,9 +1839,7 @@ def _safe_track(
             client.track(url, status)
 
 
-def _safe_close_issue(
-    client: Any, repo: str, issue_number: int, reason: str = "completed"
-) -> None:
+def _safe_close_issue(client: Any, repo: str, issue_number: int, reason: str = "completed") -> None:
     """Closes an issue safely whether client accepts reason kwarg or not."""
     try:
         client.close_issue(repo, issue_number, reason=reason)
@@ -1945,9 +1856,7 @@ def _safe_set_status_label(
 ) -> None:
     """Sets a status label safely whether client accepts existing_labels kwarg or not."""
     try:
-        client.set_status_label(
-            repo, issue_number, status, existing_labels=existing_labels
-        )
+        client.set_status_label(repo, issue_number, status, existing_labels=existing_labels)
     except TypeError:
         client.set_status_label(repo, issue_number, status)
 
@@ -1984,9 +1893,7 @@ def _handle_issue_event(payload: Dict[str, Any], client: Any) -> None:
     status = expected_status(item)
     _safe_track(client, issue_url, status, content_id=node_id, fast_path=True)
     if issue_number:
-        _safe_set_status_label(
-            client, repo, issue_number, status, existing_labels=labels
-        )
+        _safe_set_status_label(client, repo, issue_number, status, existing_labels=labels)
 
 
 def _handle_pull_request_event(payload: Dict[str, Any], client: Any) -> None:
@@ -2002,13 +1909,9 @@ def _handle_pull_request_event(payload: Dict[str, Any], client: Any) -> None:
     body = pr.get("body", "")
     bound_issues = extract_bound_issues(body)
     closing_issues = extract_closing_issues(body)
-    print(
-        f"PR event {action}: bound issues {bound_issues}; closing issues {closing_issues}"
-    )
+    print(f"PR event {action}: bound issues {bound_issues}; closing issues {closing_issues}")
 
-    closed = (
-        str(pr.get("state", "")).lower() == "closed" or action == "closed" or merged
-    )
+    closed = str(pr.get("state", "")).lower() == "closed" or action == "closed" or merged
 
     item = dict(pr)
     item["kind"] = "PullRequest"
@@ -2021,9 +1924,7 @@ def _handle_pull_request_event(payload: Dict[str, Any], client: Any) -> None:
     pr_status = expected_status(item)
     _safe_track(client, pr_url, pr_status, content_id=node_id, fast_path=True)
     if pr_number:
-        _safe_set_status_label(
-            client, repo, pr_number, pr_status, existing_labels=labels
-        )
+        _safe_set_status_label(client, repo, pr_number, pr_status, existing_labels=labels)
 
     if action == "ready_for_review":
         for issue_num in bound_issues:
@@ -2125,11 +2026,7 @@ def reconcile_membership(client: Any, repo: str, state: Optional[str] = None) ->
 
     tracked = 0
 
-    target = (
-        client.clients[0]
-        if isinstance(client, BoardGroup) and client.clients
-        else client
-    )
+    target = client.clients[0] if isinstance(client, BoardGroup) and client.clients else client
     if hasattr(target, "run_gh") and type(target).run_gh != GitHubProjectClient.run_gh:
         for kind in ("issue", "pr"):
             try:
@@ -2164,9 +2061,7 @@ def reconcile_membership(client: Any, repo: str, state: Optional[str] = None) ->
                     _safe_track(client, entry["url"], status, fast_path=False)
                     num = entry.get("number")
                     if num:
-                        _safe_set_status_label(
-                            client, repo, num, status, existing_labels=labels
-                        )
+                        _safe_set_status_label(client, repo, num, status, existing_labels=labels)
                     tracked += 1
             except Exception as exc:
                 if is_rate_limited(exc):
@@ -2196,9 +2091,7 @@ def reconcile_membership(client: Any, repo: str, state: Optional[str] = None) ->
         if url:
             _safe_track(client, url, status, content_id=node_id, fast_path=False)
             if num:
-                _safe_set_status_label(
-                    client, repo, num, status, existing_labels=labels
-                )
+                _safe_set_status_label(client, repo, num, status, existing_labels=labels)
             tracked += 1
             # Small pacing delay between mutations to avoid secondary rate limits
             time.sleep(0.05)
@@ -2308,9 +2201,7 @@ def reconcile_unassigned_statuses(client: Any) -> None:
                     )
                 repo, number = _repo_and_number_from_content(content, url=url)
                 if repo and number:
-                    _safe_set_status_label(
-                        client, repo, number, wanted, existing_labels=labels
-                    )
+                    _safe_set_status_label(client, repo, number, wanted, existing_labels=labels)
         except Exception as exc:
             if is_rate_limited(exc):
                 mark_rate_limited()
@@ -2341,9 +2232,7 @@ def reconcile_unassigned_statuses(client: Any) -> None:
                 current = fv.get("name")
                 break
 
-        labels = [
-            l.get("name") for l in content.get("labels", {}).get("nodes", []) if l
-        ]
+        labels = [l.get("name") for l in content.get("labels", {}).get("nodes", []) if l]
         item_entry = dict(content)
         item_entry["labels"] = labels
         wanted = expected_status(item_entry)
@@ -2447,13 +2336,10 @@ def reconcile(
     else:
         if board_numbers:
             board_clients = [
-                GitHubProjectClient(owner=owner, project_number=n)
-                for n in board_numbers
+                GitHubProjectClient(owner=owner, project_number=n) for n in board_numbers
             ]
         else:
-            board_nums = resolve_boards(
-                owner=owner, include_scoped=True, include_global=True
-            )
+            board_nums = resolve_boards(owner=owner, include_scoped=True, include_global=True)
             if loaded:
                 graphql = GitHubGraphQLClient()
                 by_title = graphql.resolve_projects(owner)
@@ -2461,9 +2347,7 @@ def reconcile(
                     p = by_title.get(title)
                     if p and "number" in p and p["number"] not in board_nums:
                         board_nums.append(p["number"])
-            board_clients = [
-                GitHubProjectClient(owner=owner, project_number=n) for n in board_nums
-            ]
+            board_clients = [GitHubProjectClient(owner=owner, project_number=n) for n in board_nums]
 
     title_by_num: Dict[int, str] = {
         getattr(c, "project_number", PROJECT_NUMBER): getattr(c, "title", "")
@@ -2492,9 +2376,7 @@ def reconcile(
         except Exception:
             title_by_num = {}
 
-    global_title = (
-        getattr(loaded, "global_board_title", None) if loaded else None
-    ) or "Global"
+    global_title = (getattr(loaded, "global_board_title", None) if loaded else None) or "Global"
 
     for b_client in board_clients:
         b_num = getattr(b_client, "project_number", PROJECT_NUMBER)
@@ -2513,18 +2395,12 @@ def reconcile(
                 # A scoped board carries only its own repository; with an unknown title, only the
                 # repository this run belongs to. Other repositories are aggregated on Global only.
                 if b_title:
-                    if (
-                        repo_name.lower() != b_title.lower()
-                        and repo.lower() != b_title.lower()
-                    ):
+                    if repo_name.lower() != b_title.lower() and repo.lower() != b_title.lower():
                         continue
                 elif repo != repos_to_scan[0]:
                     continue
 
-            if (
-                hasattr(b_client, "run_gh")
-                and type(b_client).run_gh != GitHubProjectClient.run_gh
-            ):
+            if hasattr(b_client, "run_gh") and type(b_client).run_gh != GitHubProjectClient.run_gh:
                 repo_items = []
                 for kind in ("issue", "pr"):
                     try:
@@ -2570,9 +2446,7 @@ def reconcile(
                 if isinstance(raw_labels, dict) and "nodes" in raw_labels:
                     raw_labels = raw_labels["nodes"]
                 label_names = [
-                    l.get("name") if isinstance(l, dict) else str(l)
-                    for l in raw_labels
-                    if l
+                    l.get("name") if isinstance(l, dict) else str(l) for l in raw_labels if l
                 ]
                 item_status_labels = {l for l in label_names if l in STATUS_LABELS}
 
@@ -2596,9 +2470,7 @@ def reconcile(
                     if current_status != exp_status:
                         corrections["status_updated"] += 1
                         state_val = str(item.get("state", "")).upper()
-                        is_closed = state_val in ("CLOSED", "MERGED") or bool(
-                            item.get("merged")
-                        )
+                        is_closed = state_val in ("CLOSED", "MERGED") or bool(item.get("merged"))
                         if is_closed and current_status not in TERMINAL_STATUSES:
                             corrections["closed_not_terminal"] += 1
                         elif not is_closed and current_status in TERMINAL_STATUSES:
@@ -2646,9 +2518,7 @@ def reconcile(
     return summary
 
 
-def process_event(
-    event_name: str, payload: Dict[str, Any], client: Optional[Any] = None
-) -> None:
+def process_event(event_name: str, payload: Dict[str, Any], client: Optional[Any] = None) -> None:
     """Dispatches a webhook payload to the matching board handler."""
     if client is None:
         numbers = resolve_boards()
@@ -2675,10 +2545,7 @@ def process_event(
             import manifest as manifest_module
 
             loaded = manifest_module.load(".")
-            installed = [
-                str(r)
-                for r in (loaded.data.get("app", {}) or {}).get("installed_on", [])
-            ]
+            installed = [str(r) for r in (loaded.data.get("app", {}) or {}).get("installed_on", [])]
             for r in installed:
                 if r and r not in repos_to_reconcile:
                     repos_to_reconcile.append(r)
