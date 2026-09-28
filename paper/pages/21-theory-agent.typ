@@ -21,13 +21,6 @@ Vektorové reprezentace, označované jako #strong[embeddingy], zachycují séma
 ) <fig-embedding-queen>
 
 
-#heading(level: 3)[Context window a kompakce]
-
-#strong[Kontextové okno] zahrnuje pracovní kontext jednoho volání modelu. Může obsahovat instrukce, části repozitáře, historii volání nástrojů i výsledky předchozích kroků. Jeho kapacita však sama o sobě nezaručuje, že model všechny podstatné informace správně využije: úspěšnost jejich vybavení závisí také na umístění v kontextu a může s rostoucí délkou vstupu klesat @liu2024. Toto postupné zhoršování práce s nahromaděným kontextem se označuje jako #strong[context rot] @anthropic-context-engineering.
-
-#strong[Kompakce] (#emph[compaction]) po překročení stanoveného limitu nahrazuje starší průběh strukturovaným souhrnem klíčových rozhodnutí a dosažených výsledků. Do dalšího volání tak není nutné vkládat celý přepis předchozí interakce @anthropic-context-engineering.
-
-
 #heading(level: 3)[Smyčka (Agent Loop)]
 
 Základním mechanismem agentického systému je #strong[agentní smyčka], tedy konkrétní implementace
@@ -44,6 +37,13 @@ poznat, zda předchozí krok vůbec uspěl; průběh shrnuje @fig-react-loop.
   image("/components/img/react-loop.svg", width: 100%),
   caption: [Agentní smyčka ReAct: model střídá uvažování s akcí, akci provádí harness mimo model a pozorování se vrací do kontextu. Smyčka končí, když model místo další akce vydá závěrečnou odpověď @yao2022.],
 ) <fig-react-loop>
+
+
+#heading(level: 3)[Context window a kompakce]
+
+#strong[Kontextové okno] zahrnuje pracovní kontext jednoho volání modelu. Může obsahovat instrukce, části repozitáře, historii volání nástrojů i výsledky předchozích kroků. Jeho kapacita však sama o sobě nezaručuje, že model všechny podstatné informace správně využije: úspěšnost jejich vybavení závisí také na umístění v kontextu a může s rostoucí délkou vstupu klesat @liu2024. Toto postupné zhoršování práce s nahromaděným kontextem se označuje jako #strong[context rot] @anthropic-context-engineering.
+
+#strong[Kompakce] (#emph[compaction]) po překročení stanoveného limitu nahrazuje starší průběh strukturovaným souhrnem klíčových rozhodnutí a dosažených výsledků. Do dalšího volání tak není nutné vkládat celý přepis předchozí interakce @anthropic-context-engineering.
 
 
 #heading(level: 3)[Dovednosti a nástroje (Skills & Tools)]
