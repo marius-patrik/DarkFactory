@@ -86,14 +86,32 @@ jobs:
           app-id: ${{ vars.DARKFACTORY_APP_ID || '4861004' }}
           private-key: ${{ secrets.DARKFACTORY_APP_PRIVATE_KEY }}
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
+      - name: Set up Bun
+        uses: oven-sh/setup-bun@v2
+
+      - name: Install the pipeline runtime
+        # ROOT resolves the pinned pipeline the way the other converted workflows do, so a
+        # repository pinned to a pipeline ref runs that ref's code rather than its own.
+        run: |
+          ROOT="$GITHUB_WORKSPACE"
+          if [ -d "$GITHUB_WORKSPACE/.darkfactory-pipeline" ]; then
+            ROOT="$GITHUB_WORKSPACE/.darkfactory-pipeline"
+          fi
+          bun install --frozen-lockfile --cwd "$ROOT"
 
       - name: Run Project Board Automation
+        # `board/main.ts` is the entry `project_automation.py` was, on the same port: the same three
+        # shapes (sweep on demand, or the webhook named by GITHUB_EVENT_NAME and read from
+        # GITHUB_EVENT_PATH), the same environment, and the same exit contract -- a rate limit exits
+        # zero because the work is deferred to the next run, while a recorded board failure exits
+        # non-zero, because a board that silently stopped accepting writes is the failure this
+        # reports.
         run: |
-          python3 "${PIPELINE_SCRIPTS:-.github/scripts}/project_automation.py"
+          ROOT="$GITHUB_WORKSPACE"
+          if [ -d "$GITHUB_WORKSPACE/.darkfactory-pipeline" ]; then
+            ROOT="$GITHUB_WORKSPACE/.darkfactory-pipeline"
+          fi
+          bun "$ROOT/packages/harness/src/board/main.ts"
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token || secrets.GH_PROJECT_TOKEN || secrets.GITHUB_TOKEN }}
           GH_PROJECT_TOKEN: ${{ secrets.GH_PROJECT_TOKEN }}

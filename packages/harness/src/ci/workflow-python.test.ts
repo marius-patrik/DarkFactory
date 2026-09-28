@@ -54,7 +54,6 @@ const REMAINING_PYTHON_STEPS: Record<string, string[]> = {
 		"install / Reconcile labels, board and settings",
 	],
 	"pr-approval-automerge.yml": ["on-approval / Handle Approval and Auto-Merge"],
-	"project-automation.yml": ["automate-project / Run Project Board Automation"],
 	"release.yml": [
 		"resolve / Install dependencies",
 		"resolve / Confirm the TypeScript resolver agrees with the Python pipeline",
@@ -71,9 +70,35 @@ const CONVERTED: Array<[workflow: string, step: string, expected: string]> = [
 	["verify-pr-issue.yml", "Verify PR description binds a tracking issue", "bun packages/harness/src/ci/bound-issue.ts"],
 	["release.yml", "Decide which build tooling is needed", "jq -r"],
 	["release.yml", "Build release assets", "jq -r"],
+	["project-automation.yml", "Run Project Board Automation", 'bun "$ROOT/packages/harness/src/board/main.ts"'],
 ];
 
 describe("steps that no longer need an interpreter", () => {
+	/**
+	 * A converted step that names a file which does not exist passes every other assertion here: the
+	 * command is the one the tracker expects, the step reaches no interpreter, and the remainder list
+	 * matches. It fails at run time instead, and a step that exits zero without doing its work is the
+	 * worst outcome available -- the board simply stops being updated and nothing reports it.
+	 *
+	 * So the path is resolved on disk. `$ROOT` is stripped because it is a runtime checkout location,
+	 * not a repository path; what remains must exist in this repository.
+	 */
+	it("every converted step names a file that exists in this repository", () => {
+		for (const [workflow, step] of CONVERTED) {
+			const converted = allSteps(parseWorkflow(workflow)).find((entry) => entry.step.name === step);
+			const run = converted?.step.run ?? "";
+			for (const match of run.matchAll(/(?:^|\s)"?\$?\{?ROOT\}?\/?([^\s"']+\.ts)/gu)) {
+				const target = match[1];
+				if (target === undefined) continue;
+				const relative = target.replace(/^\.\//u, "").replace(/^ROOT\//u, "");
+				expect(
+					existsSync(join(repoRoot, relative)),
+					`${workflow} / ${step} names ${relative}, which does not exist`,
+				).toBe(true);
+			}
+		}
+	});
+
 	for (const [workflow, step, expected] of CONVERTED) {
 		it(`${workflow}: ${step} runs \`${expected}\``, () => {
 			const converted = allSteps(parseWorkflow(workflow)).find((entry) => entry.step.name === step);
