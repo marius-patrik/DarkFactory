@@ -1,4 +1,7 @@
-import { describe, expect, it } from "bun:test";
+import { afterAll, beforeAll, describe, expect, it } from "bun:test";
+import { mkdtempSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { main } from "../src/cli.ts";
 import { RUNNER_COMMANDS } from "../src/pipeline/main.ts";
 
@@ -27,6 +30,35 @@ const REQUIRED = [
 	"respond",
 	"token-refresh",
 ] as const;
+
+/**
+ * This suite calls the real `df` entry point, so it must pin the environment that entry point reads.
+ *
+ * `resolveConfigDocumentPath` treats `repo.dfconfig`, `config.dfconfig` and `.dfconfig` in one
+ * directory as mutually ambiguous, and it also looks in `$DF_CONFIG_DIR/.darkfactory`. Left to inherit
+ * the ambient environment, this suite made `config.test.ts` fail in CI with
+ * "Ambiguous DarkFactory configuration" — a failure in a test that has nothing to do with it, caused
+ * only by which files happened to be on disk. A test that perturbs another test is worse than no test,
+ * so the directory is pinned to an empty one and restored afterwards.
+ */
+const saved: Record<string, string | undefined> = {};
+let configDir = "";
+
+beforeAll(() => {
+	for (const name of ["DF_CONFIG_DIR", "GH_TOKEN", "GITHUB_REPOSITORY"]) saved[name] = process.env[name];
+	configDir = mkdtempSync(join(tmpdir(), "df-runner-commands-"));
+	process.env.DF_CONFIG_DIR = configDir;
+	process.env.GH_TOKEN = "t".repeat(40);
+	process.env.GITHUB_REPOSITORY = "marius-patrik/DarkFactory";
+});
+
+afterAll(() => {
+	for (const [name, value] of Object.entries(saved)) {
+		if (value === undefined) delete process.env[name];
+		else process.env[name] = value;
+	}
+	if (configDir) rmSync(configDir, { recursive: true, force: true });
+});
 
 describe("the agent image's commands are reachable through df", () => {
 	it("the runner declares exactly the commands the image needs", () => {
