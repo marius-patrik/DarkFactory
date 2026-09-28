@@ -126,6 +126,61 @@ describe("plugin validation", () => {
 		expect(rules).toContain("skill/shared-key");
 	});
 
+	test("two plugins declaring one skill name is an error, not a silently collapsed count", () => {
+		// The failure #1216 was filed for. It regressed when validation started reading each
+		// plugin's deduped `skills` list, which cannot contain one name twice.
+		const root = repository([
+			{ name: "alpha", skills: [{ dir: "shared", frontmatter: goodSkill("shared") }] },
+			{ name: "beta", skills: [{ dir: "shared", frontmatter: goodSkill("shared") }] },
+		]);
+		const result = validatePlugins(root);
+		const duplicates = result.findings.filter((finding) => finding.rule === "plugin/single-declaration");
+		expect(duplicates).toHaveLength(1);
+		expect(duplicates[0]?.level).toBe("error");
+		expect(duplicates[0]?.detail).toContain("shared");
+		// Both declarations are still visited, so the skill behind the shadowing one is validated too.
+		expect(result.skillCount).toBe(1);
+		expect(result.pluginCount).toBe(2);
+	});
+
+	test("a shadowed skill still has its own front matter validated", () => {
+		const root = repository([
+			{ name: "alpha", skills: [{ dir: "shared", frontmatter: goodSkill("shared") }] },
+			{
+				name: "beta",
+				skills: [{ dir: "shared", frontmatter: "---\nname: shared\n---\n\n# Shared\n" }],
+			},
+		]);
+		const rules = validatePlugins(root).findings.map((finding) => finding.rule);
+		expect(rules).toContain("plugin/single-declaration");
+		expect(rules).toContain("skill/description");
+	});
+
+	test("a repeated skill name resolves to the same owner on every run", () => {
+		const root = repository([
+			{ name: "alpha", skills: [{ dir: "shared", frontmatter: goodSkill("shared") }] },
+			{ name: "beta", skills: [{ dir: "shared", frontmatter: goodSkill("shared") }] },
+		]);
+		const owners = discoverPluginSkills(root)
+			.filter((skill) => skill.name === "shared")
+			.map((skill) => skill.plugin);
+		expect(owners).toEqual(["alpha", "beta"]);
+		expect(discoverPluginSkills(root).map((skill) => skill.name)).toEqual(
+			discoverPluginSkills(root).map((skill) => skill.name),
+		);
+	});
+
+	test("each plugin keeps the skills it declares, whatever else shadows the name", () => {
+		// A repeated name must not empty the losing plugin: it reported zero skills and no error.
+		const root = repository([
+			{ name: "alpha", skills: [{ dir: "shared", frontmatter: goodSkill("shared") }] },
+			{ name: "beta", skills: [{ dir: "shared", frontmatter: goodSkill("shared") }] },
+		]);
+		const byName = new Map(discoverPlugins(root).map((plugin) => [plugin.name, plugin.skills.map((s) => s.name)]));
+		expect(byName.get("alpha")).toEqual(["shared"]);
+		expect(byName.get("beta")).toEqual(["shared"]);
+	});
+
 	test("a manifest whose name differs from its directory is an error", () => {
 		const root = repository([{ name: "alpha" }]);
 		writeFileSync(

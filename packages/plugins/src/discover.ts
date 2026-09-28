@@ -64,16 +64,28 @@ export function discoverPluginSkills(repoRoot = process.cwd()): PluginSkill[] {
 			}
 		}
 	}
-	return found.sort((a, b) => a.name.localeCompare(b.name) || a.root.localeCompare(b.root));
+	// A total order. Two skills of one name in the same root tie on `name` and `root`, so without the
+	// plugin and path tiebreaks the winner would be whichever `readdirSync` happened to return first,
+	// and the same repository would report a different owner on a different filesystem.
+	return found.sort(
+		(a, b) =>
+			a.name.localeCompare(b.name) ||
+			a.root.localeCompare(b.root) ||
+			a.plugin.localeCompare(b.plugin) ||
+			a.path.localeCompare(b.path),
+	);
 }
 
-/** Every plugin, with the skills it declares. When two roots declare a skill, the first one wins. */
+/**
+ * Every plugin, with the skills it declares.
+ *
+ * A plugin reports the skills under its own directory rather than a deduplicated view. When two roots
+ * carry a plugin of the same name the first root wins outright, and so do the skills it declares; a
+ * repeated *skill* name across two different plugins is a reportable conflict, and neither plugin
+ * may lose the declaration over it, so `df plugin list` and `describe` both keep showing it.
+ */
 export function discoverPlugins(repoRoot = process.cwd()): Plugin[] {
-	const authoritative = new Map<string, PluginSkill>();
-	for (const skill of discoverPluginSkills(repoRoot)) {
-		if (!authoritative.has(skill.name)) authoritative.set(skill.name, skill);
-	}
-
+	const all = discoverPluginSkills(repoRoot);
 	const plugins: Plugin[] = [];
 	const seen = new Set<string>();
 	for (const root of pluginRoots(repoRoot)) {
@@ -91,7 +103,7 @@ export function discoverPlugins(repoRoot = process.cwd()): Plugin[] {
 				path,
 				claudeManifest: existsSync(claude) ? claude : undefined,
 				codexManifest: existsSync(codex) ? codex : undefined,
-				skills: [...authoritative.values()].filter((skill) => skill.plugin === entry.name),
+				skills: all.filter((skill) => skill.plugin === entry.name && skill.root === root),
 				hasHooks: existsSync(join(path, "hooks", "hooks.json")),
 				hasScripts: existsSync(join(path, "scripts")),
 			});

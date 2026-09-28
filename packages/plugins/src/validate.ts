@@ -1,6 +1,6 @@
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
-import { discoverPlugins, relativeToRepo, type Plugin } from "./discover.ts";
+import { discoverPluginSkills, discoverPlugins, relativeToRepo, type Plugin } from "./discover.ts";
 
 const NAME_PATTERN = /^[a-z0-9]+(-[a-z0-9]+)*$/u;
 const MAX_NAME = 64;
@@ -207,23 +207,26 @@ export function validatePlugins(repoRoot = process.cwd()): {
 		} else {
 			findings.push(...validateManifest(plugin, plugin.codexManifest, "codex", repoRoot));
 		}
+	}
 
-		for (const skill of plugin.skills) {
-			findings.push(...validateSkill(skill.path, skill.name, repoRoot));
-			const previous = declared.get(skill.name);
-			const where = relativeToRepo(repoRoot, skill.path);
-			if (previous) {
-				// The failure #1216 fixed: two declarations of one skill, neither gate reporting it.
-				findings.push({
-					level: "error",
-					path: where,
-					rule: "plugin/single-declaration",
-					detail: `skill "${skill.name}" is also declared at ${previous}`,
-				});
-			} else {
-				declared.set(skill.name, where);
-			}
+	// Skills are checked from the flat discovery list rather than from each plugin's `skills`, which
+	// has already had a repeated name collapsed. Reading the deduped list made the check below
+	// unreachable: one name could never appear twice, so two declarations of one skill went
+	// unreported, which is the failure #1216 was filed for.
+	for (const skill of discoverPluginSkills(repoRoot)) {
+		findings.push(...validateSkill(skill.path, skill.name, repoRoot));
+		const where = relativeToRepo(repoRoot, skill.path);
+		const previous = declared.get(skill.name);
+		if (previous === undefined) {
+			declared.set(skill.name, where);
+			continue;
 		}
+		findings.push({
+			level: "error",
+			path: where,
+			rule: "plugin/single-declaration",
+			detail: `skill "${skill.name}" is also declared at ${previous}`,
+		});
 	}
 
 	// A directory beside the plugins that is neither a manifest nor a skill directory is invisible to
