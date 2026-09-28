@@ -200,8 +200,25 @@ export interface StagePayload {
 	stage: string;
 	pr: number;
 	plan: number;
-	request: number | null;
+	/**
+	 * The parent Request issue, omitted when the run has none.
+	 *
+	 * The Python put `"request": null` there instead, which the receiving stage reads back as
+	 * `client_payload.get("request")` - and a missing key reads the same way. Omitting it keeps this
+	 * assignable to {@link AgentDispatchPayload}, which is the port the stage is dispatched through.
+	 */
+	request?: number | undefined;
 	iteration?: number;
+}
+
+/** What a stage payload names, with a Request that may be absent. */
+interface StageTarget {
+	/** The pull request. */
+	pr: number;
+	/** The Plan issue. */
+	plan: number;
+	/** The parent Request issue, or `null`/`undefined` when the run named none. */
+	request?: number | null | undefined;
 }
 
 /**
@@ -211,15 +228,12 @@ export interface StagePayload {
  * @param iteration - The iteration whose findings are to be fixed.
  * @returns The payload for {@link SELF_REVIEW_FIX_STAGE}.
  */
-export function fixPayload(
-	input: { pr: number; plan: number; request: number | null },
-	iteration: number,
-): StagePayload {
+export function fixPayload(input: StageTarget, iteration: number): StagePayload {
 	return {
 		stage: SELF_REVIEW_FIX_STAGE,
 		pr: input.pr,
 		plan: input.plan,
-		request: input.request,
+		request: input.request ?? undefined,
 		iteration,
 	};
 }
@@ -231,15 +245,12 @@ export function fixPayload(
  * @param nextIteration - The iteration to run, which is the fixed one plus one.
  * @returns The payload for {@link SELF_REVIEW_STAGE}.
  */
-export function nextReviewPayload(
-	input: { pr: number; plan: number; request: number | null },
-	nextIteration: number,
-): StagePayload {
+export function nextReviewPayload(input: StageTarget, nextIteration: number): StagePayload {
 	return {
 		stage: SELF_REVIEW_STAGE,
 		pr: input.pr,
 		plan: input.plan,
-		request: input.request,
+		request: input.request ?? undefined,
 		iteration: nextIteration,
 	};
 }
