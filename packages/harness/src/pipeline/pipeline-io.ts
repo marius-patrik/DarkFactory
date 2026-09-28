@@ -46,8 +46,14 @@ export interface IssueView {
 	parentIssue?: number | undefined;
 }
 
-/** The pull request fields a handler can ask for, mirroring `gh pr view --json`. */
-export type PrField = "body" | "comments" | "closingIssues";
+/**
+ * The pull request fields a handler can ask for, mirroring `gh pr view --json`.
+ *
+ * `headRefName` is here because the review and fix stages both have to read and change the pull
+ * request's own branch: a dispatched stage starts from the default branch, and a commit made there
+ * targets a ref the pull request does not merge.
+ */
+export type PrField = "body" | "comments" | "closingIssues" | "headRefName";
 
 /** An issue a pull request closes, as the plan resolver reads it. */
 export interface ClosingIssue {
@@ -67,6 +73,13 @@ export interface PrView {
 	comments: string[];
 	/** The issues the pull request closes, when asked for. */
 	closingIssues: ClosingIssue[];
+	/**
+	 * The branch carrying the work, when asked for.
+	 *
+	 * A dispatch that has to commit has to know this: the stage starts from the repository's default
+	 * branch, and a commit pushed from there does not move the pull request at all.
+	 */
+	headRefName?: string | undefined;
 }
 
 /** A label to add to, or remove from, an issue or pull request. */
@@ -231,6 +244,7 @@ const PR_VIEW_QUERY = `query ($owner: String!, $name: String!, $number: Int!) {
 	repository(owner: $owner, name: $name) {
 		pullRequest(number: $number) {
 			body
+			headRefName
 			comments(first: 100) { nodes { body } }
 			closingIssuesReferences(first: 50) {
 				nodes { number title labels(first: 50) { nodes { name } } }
@@ -332,6 +346,7 @@ export function githubPipelineIo(client: GitHubClient): PipelineIo {
 			repository?: {
 				pullRequest?: {
 					body?: string | null;
+					headRefName?: string | null;
 					comments?: { nodes?: unknown };
 					closingIssuesReferences?: { nodes?: unknown };
 				} | null;
@@ -340,6 +355,9 @@ export function githubPipelineIo(client: GitHubClient): PipelineIo {
 		const pull = data.repository?.pullRequest;
 		if (!pull) return view;
 		view.body = pull.body ?? "";
+		// Left undefined rather than defaulted: a caller that must commit has to be able to tell a
+		// pull request that names its head branch from a read that never asked.
+		if (fields.includes("headRefName")) view.headRefName = pull.headRefName ?? undefined;
 		if (fields.includes("comments")) view.comments = commentBodies(pull.comments?.nodes);
 		if (fields.includes("closingIssues")) view.closingIssues = closingIssues(pull.closingIssuesReferences?.nodes);
 		return view;

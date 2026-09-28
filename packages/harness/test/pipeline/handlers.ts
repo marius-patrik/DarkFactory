@@ -89,6 +89,8 @@ export interface PullFixture {
 	comments?: string[];
 	/** The issues the pull request closes. */
 	closingIssues?: Array<{ number: number; labels?: Array<{ name?: string } | string>; title?: string }>;
+	/** The branch carrying the work, served only when a handler asks for it. */
+	headRefName?: string;
 }
 
 /** An empty pull request, with unread fields left out. */
@@ -105,6 +107,7 @@ function pullView(fixture: PullFixture, fields: readonly PrField[]): PrView {
 					}),
 				)
 			: [],
+		headRefName: fields.includes("headRefName") ? fixture.headRefName : undefined,
 	};
 }
 
@@ -144,9 +147,13 @@ export function recordingIo(
 	/** Lists an issue's comments, pairing each body with the id GitHub assigned it. */
 	const readComments = (_repo: string, issue: number): IssueCommentRow[] => {
 		if (behaviour.issueComments instanceof Error) throw behaviour.issueComments;
-		const fixture = issues[issue] ?? EMPTY_ISSUE;
-		const ids = fixture.commentIds ?? (fixture.comments ?? []).map((_, index) => 1000 + index);
-		return (fixture.comments ?? []).map((body, index) => ({ id: ids[index] ?? index, body }));
+		// A pull request's conversation comment *is* an issue comment, so a handler reading the
+		// comments on a pull request is served from either fixture. The review and fix stages read
+		// the pull request's own comments, and would otherwise see none.
+		const fixture = { ...(pullRequests[issue] ?? {}), ...(issues[issue] ?? {}) } as PullFixture & IssueFixture;
+		const bodies = fixture.comments ?? [];
+		const ids = (fixture as IssueFixture).commentIds ?? bodies.map((_, index) => 1000 + index);
+		return bodies.map((body, index) => ({ id: ids[index] ?? index, body }));
 	};
 
 	/** Records a call, then returns a configured value or throws a configured error. */
@@ -334,6 +341,13 @@ export interface WorkspaceBehaviour {
 	baseRefs?: string[];
 	/** The message `resolveBaseRefs` throws, naming the base it could not resolve. */
 	baseRefsError?: string;
+	/**
+	 * What `removePath` finds at a path, as `"file"`, `"directory"` or `undefined`.
+	 *
+	 * Keyed by the path, and `undefined` is a real answer - the Python's `os.path.isfile` and
+	 * `os.path.isdir` both say no, and the caller then reaches for no git command at all.
+	 */
+	removedPaths?: Record<string, "file" | "directory">;
 }
 
 /** A passing `bun test` run, the result a repository with a working suite produces. */
@@ -378,6 +392,10 @@ export function recordingWorkspace(behaviour: WorkspaceBehaviour = {}): Recordin
 	const io: WorkspaceIo = {
 		configureGitIdentity: () => record("configureGitIdentity", [], behaviour.identityNotices ?? []),
 		git,
+		removePath: (path) => {
+			record("removePath", [path], behaviour.removedPaths?.[path]);
+			return behaviour.removedPaths?.[path];
+		},
 		resolveBaseRefs: (base) => {
 			record("resolveBaseRefs", [base], behaviour.baseRefs ?? [`origin/${base}...HEAD`]);
 			if (behaviour.baseRefsError !== undefined) throw new Error(behaviour.baseRefsError);
