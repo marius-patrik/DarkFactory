@@ -2,11 +2,7 @@ import { describe, expect, it } from "bun:test";
 import { mkdir, mkdtemp, readFile, rm, stat, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import {
-	checkWorkflowsDrift,
-	installWorkflows,
-	updateWorkflows,
-} from "../../src/ci/installer.ts";
+import { checkWorkflowsDrift, installWorkflows, updateWorkflows } from "../../src/ci/installer.ts";
 
 async function writeUpstream(temp: string, repo: string, ref: string): Promise<void> {
 	await writeFile(join(temp, "repo.dfconfig"), JSON.stringify({ repo: { upstream: { repo, ref } } }));

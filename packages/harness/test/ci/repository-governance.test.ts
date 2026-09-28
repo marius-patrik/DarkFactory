@@ -352,8 +352,7 @@ describe("board automation workflows", () => {
 	}
 });
 
-describe("status taxonomy", () => {
-});
+describe("status taxonomy", () => {});
 
 describe("issue templates", () => {
 	for (const name of EXPECTED_ISSUE_TEMPLATES) {

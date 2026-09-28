@@ -86,7 +86,11 @@ describe("@darkfactory/docs", () => {
 	test("compiles only current canonical pages and workflow metadata", async () => {
 		const root = await fixture();
 		const graph = compileDocsContentGraph(root, loadDocsConfig(root));
-		expect(graph.pages.map((page) => page.id)).toEqual(["home", "darkfactory-plugins-df-rules-skills-001-test", "agents-adr-0001-test"]);
+		expect(graph.pages.map((page) => page.id)).toEqual([
+			"home",
+			"darkfactory-plugins-df-rules-skills-001-test",
+			"agents-adr-0001-test",
+		]);
 		expect(graph.pages[0]?.source).toBe("README.md");
 		expect(graph.workflows).toEqual([{ source: ".github/workflows/ci.yml", name: "CI", jobs: ["test"] }]);
 	});
