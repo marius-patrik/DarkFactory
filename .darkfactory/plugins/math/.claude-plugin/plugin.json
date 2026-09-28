@@ -1,14 +1,11 @@
 {
-	"name": "math",
-	"version": "1.0.0",
-	"description": "Mathematics repository detection and formal-math capability boundary.",
-	"license": "MIT",
-	"shipped": false,
-	"author": {
-		"name": "DarkFactory"
-	},
-	"keywords": [
-		"math",
-		"capability"
-	]
+  "name": "math",
+  "version": "1.0.0",
+  "description": "Mathematics repository detection and formal-math capability boundary.",
+  "license": "MIT",
+  "shipped": false,
+  "author": {
+    "name": "DarkFactory"
+  },
+  "keywords": ["math", "capability"]
 }

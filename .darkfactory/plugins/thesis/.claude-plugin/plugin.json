@@ -1,8 +1,8 @@
 {
-	"name": "thesis",
-	"version": "1.0.0",
-	"description": "Writing, reviewing and verifying the Czech thesis on agentic software engineering.",
-	"author": { "name": "DarkFactory" },
-	"license": "MIT",
-	"keywords": ["thesis", "czech", "typst", "review"]
+  "name": "thesis",
+  "version": "1.0.0",
+  "description": "Writing, reviewing and verifying the Czech thesis on agentic software engineering.",
+  "author": { "name": "DarkFactory" },
+  "license": "MIT",
+  "keywords": ["thesis", "czech", "typst", "review"]
 }

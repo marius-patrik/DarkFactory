@@ -26,8 +26,7 @@ interface HookOutput {
 type BeforeTool = (input: HookInput, output: HookOutput) => Promise<void> | void;
 
 /** A blind add. The separator matters: `git add .darkfactory/x` is an explicit path, not this. */
-const BLIND_ADD =
-	/git\s+add\s+(-A|--all|-a)([\s]|;|&|\||\)|$)|git\s+add\s+\.([\s]|;|&|\||\)|$|")/;
+const BLIND_ADD = /git\s+add\s+(-A|--all|-a)([\s]|;|&|\||\)|$)|git\s+add\s+\.([\s]|;|&|\||\)|$|")/;
 
 const REASON = [
 	"Refusing a blind git add. It swept a parallel session's work into a commit here.",

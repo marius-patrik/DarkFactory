@@ -1,4 +1,4 @@
-import { lstatSync, readFileSync, readlinkSync, realpathSync } from "node:fs";
+import { lstatSync, readlinkSync, realpathSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import type { DocsContentGraph } from "./content.ts";
 import { analyzeRuleNoteRelations } from "./relations.ts";
@@ -9,9 +9,7 @@ export interface DocumentationTruthFinding {
 	message: string;
 }
 
-const CURRENT_ALIASES = [
-	{ path: join(".agents", "notes", "README.md"), target: "../../README.md" },
-] as const;
+const CURRENT_ALIASES = [{ path: join(".agents", "notes", "README.md"), target: "../../README.md" }] as const;
 
 const RETIRED_DOCUMENTATION_PATHS = [
 	"AGENTS.md",

@@ -1,6 +1,6 @@
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
-import { discoverPlugins, pluginRoots, relativeToRepo, type Plugin } from "./discover.ts";
+import { discoverPlugins, relativeToRepo, type Plugin } from "./discover.ts";
 
 const NAME_PATTERN = /^[a-z0-9]+(-[a-z0-9]+)*$/u;
 const MAX_NAME = 64;
@@ -66,7 +66,12 @@ function validateSkill(skillPath: string, dirName: string, repoRoot: string): Fi
 	const { fields, closed } = readFrontmatter(body);
 
 	if (!closed) {
-		findings.push({ level: "error", path, rule: "skill/frontmatter", detail: "front matter is not closed by a second ---" });
+		findings.push({
+			level: "error",
+			path,
+			rule: "skill/frontmatter",
+			detail: "front matter is not closed by a second ---",
+		});
 		return findings;
 	}
 
@@ -77,7 +82,12 @@ function validateSkill(skillPath: string, dirName: string, repoRoot: string): Fi
 		findings.push({ level: "error", path, rule: "skill/name", detail: "front matter has no name" });
 	} else {
 		if (name.length > MAX_NAME) {
-			findings.push({ level: "error", path, rule: "skill/name-length", detail: `${name.length} chars, max ${MAX_NAME}` });
+			findings.push({
+				level: "error",
+				path,
+				rule: "skill/name-length",
+				detail: `${name.length} chars, max ${MAX_NAME}`,
+			});
 		}
 		if (!NAME_PATTERN.test(name)) {
 			findings.push({ level: "error", path, rule: "skill/name-pattern", detail: `"${name}" is not kebab-case` });
@@ -85,18 +95,38 @@ function validateSkill(skillPath: string, dirName: string, repoRoot: string): Fi
 		// opencode documents the requirement and Claude Code defaults the name to the directory, so a
 		// mismatch makes `/skill:<name>` disagree with the host's own listing.
 		if (name !== dirName) {
-			findings.push({ level: "error", path, rule: "skill/name-dir-match", detail: `name "${name}" != directory "${dirName}"` });
+			findings.push({
+				level: "error",
+				path,
+				rule: "skill/name-dir-match",
+				detail: `name "${name}" != directory "${dirName}"`,
+			});
 		}
 		if (RESERVED_NAMES.has(name) || name.startsWith("anthropic-skills")) {
-			findings.push({ level: "error", path, rule: "skill/reserved-name", detail: `"${name}" is reserved by Claude Code` });
+			findings.push({
+				level: "error",
+				path,
+				rule: "skill/reserved-name",
+				detail: `"${name}" is reserved by Claude Code`,
+			});
 		}
 	}
 
 	if (description.trim() === "") {
 		// Codex and pi refuse to load a skill without one. This is the rule that actually breaks.
-		findings.push({ level: "error", path, rule: "skill/description", detail: "no description; Codex and pi will not load it" });
+		findings.push({
+			level: "error",
+			path,
+			rule: "skill/description",
+			detail: "no description; Codex and pi will not load it",
+		});
 	} else if (description.length > MAX_DESCRIPTION) {
-		findings.push({ level: "error", path, rule: "skill/description-length", detail: `${description.length} chars, max ${MAX_DESCRIPTION}` });
+		findings.push({
+			level: "error",
+			path,
+			rule: "skill/description-length",
+			detail: `${description.length} chars, max ${MAX_DESCRIPTION}`,
+		});
 	} else if (!/^use when\b/iu.test(description)) {
 		findings.push({
 			level: "warning",
@@ -147,7 +177,11 @@ function validateManifest(plugin: Plugin, manifestPath: string, host: string, re
  * passes here loads in all four. Exits 1 rather than 0 when there is nothing to check, because a
  * clean report for a check that examined nothing is the outcome worse than a failure.
  */
-export function validatePlugins(repoRoot = process.cwd()): { findings: Finding[]; pluginCount: number; skillCount: number } {
+export function validatePlugins(repoRoot = process.cwd()): {
+	findings: Finding[];
+	pluginCount: number;
+	skillCount: number;
+} {
 	const findings: Finding[] = [];
 	const plugins = discoverPlugins(repoRoot);
 	const declared = new Map<string, string>();
@@ -211,4 +245,3 @@ export function validatePlugins(repoRoot = process.cwd()): { findings: Finding[]
 
 	return { findings, pluginCount: plugins.length, skillCount: declared.size };
 }
-

@@ -60,7 +60,7 @@ function isDocumentationFile(path: string): boolean {
 	return (
 		path === "README.md" ||
 		configDocumentPaths().has(path) ||
-		path.startsWith(RULES_PLUGIN + "/skills/") ||
+		path.startsWith(`${RULES_PLUGIN}/skills/`) ||
 		path.startsWith(".agents/adr/")
 	);
 }
@@ -76,7 +76,7 @@ function isProductContractFile(path: string): boolean {
 
 function isGovernanceFile(path: string): boolean {
 	return (
-		path.startsWith(RULES_PLUGIN + "/skills/") ||
+		path.startsWith(`${RULES_PLUGIN}/skills/`) ||
 		path.startsWith(".agents/adr/") ||
 		path.startsWith(".github/workflows/") ||
 		path.startsWith("packages/harness/assets/workflows/")

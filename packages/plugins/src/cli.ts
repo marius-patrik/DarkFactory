@@ -32,7 +32,7 @@ export function runPluginCli(args: string[], repoDir = process.cwd(), context: P
 
 	switch (subcommand) {
 		case "list":
-			return listPlugins(args, repoDir, { log, isJson });
+			return listPlugins(repoDir, { log, isJson });
 		case "describe":
 			return describePlugin(args, repoDir, { log, error, isJson });
 		case "validate":
@@ -44,11 +44,7 @@ export function runPluginCli(args: string[], repoDir = process.cwd(), context: P
 	}
 }
 
-function listPlugins(
-	args: string[],
-	repoDir: string,
-	io: { log: (msg: string) => void; isJson: boolean },
-): number {
+function listPlugins(repoDir: string, io: { log: (msg: string) => void; isJson: boolean }): number {
 	const plugins = discoverPlugins(repoDir);
 	if (io.isJson) {
 		io.log(
@@ -147,7 +143,13 @@ function validateCommand(
 	if (io.isJson) {
 		io.log(
 			JSON.stringify(
-				{ plugins: result.pluginCount, skills: result.skillCount, errors: errors.length, warnings: warnings.length, findings: result.findings },
+				{
+					plugins: result.pluginCount,
+					skills: result.skillCount,
+					errors: errors.length,
+					warnings: warnings.length,
+					findings: result.findings,
+				},
 				null,
 				2,
 			),

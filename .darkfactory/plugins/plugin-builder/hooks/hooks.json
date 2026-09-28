@@ -1,16 +1,16 @@
 {
-	"hooks": {
-		"PreToolUse": [
-			{
-				"matcher": "Bash",
-				"hooks": [
-					{
-						"type": "command",
-						"command": "\"$(cd \"$(dirname \"$0\")/..\" && pwd)\"/hooks/guard.sh",
-						"statusMessage": "Checking the command against the plugin guard"
-					}
-				]
-			}
-		]
-	}
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"$(cd \"$(dirname \"$0\")/..\" && pwd)\"/hooks/guard.sh",
+            "statusMessage": "Checking the command against the plugin guard"
+          }
+        ]
+      }
+    ]
+  }
 }

@@ -111,7 +111,9 @@ describe("rule/note relationships", () => {
 	test("fails on malformed canonical record identity", () => {
 		const badRule = { ...rule("DF-RULE-001"), source: ".darkfactory/plugins/df-rules/skills/099-test/SKILL.md" };
 		const findings = analyzeRuleNoteRelations(graph([badRule, adr("ADR-0001", "DF-RULE-001")])).findings;
-		expect(findings).toContain(".darkfactory/plugins/df-rules/skills/099-test/SKILL.md: filename must start with canonical rule number 001-");
+		expect(findings).toContain(
+			".darkfactory/plugins/df-rules/skills/099-test/SKILL.md: filename must start with canonical rule number 001-",
+		);
 	});
 
 	test("fails when rule index metadata and prose heading titles drift", () => {
@@ -137,7 +139,9 @@ describe("rule/note relationships", () => {
 			{ ...badAdr, markdown: badAdr.markdown.replace("## Consequences\n\nTest.\n", "") },
 		]);
 		const findings = analyzeRuleNoteRelations(content).findings;
-		expect(findings).toContain(".darkfactory/plugins/df-rules/skills/001-test/SKILL.md: canonical rule is missing non-empty Enforcement section");
+		expect(findings).toContain(
+			".darkfactory/plugins/df-rules/skills/001-test/SKILL.md: canonical rule is missing non-empty Enforcement section",
+		);
 		expect(findings).toContain(".agents/adr/0001-test.md: accepted ADR is missing non-empty Consequences section");
 	});
 

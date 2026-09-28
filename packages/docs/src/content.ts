@@ -94,16 +94,18 @@ function titleFromMarkdown(markdown: string, fallback: string): string {
 }
 
 function idFromSource(source: string): string {
-	return source
-		.replaceAll("\\", "/")
-		// A rule is a skill, so its document is SKILL.md inside a per-rule directory. The directory
-		// name is the identity; the constant file name would otherwise end every rule id in "-skill".
-		.replace(/\/SKILL\.md$/u, "")
-		.replace(/\.md$/u, "")
-		.replace(/^\.?\//u, "")
-		.replace(/[^A-Za-z0-9]+/gu, "-")
-		.replace(/^-+|-+$/gu, "")
-		.toLowerCase();
+	return (
+		source
+			.replaceAll("\\", "/")
+			// A rule is a skill, so its document is SKILL.md inside a per-rule directory. The directory
+			// name is the identity; the constant file name would otherwise end every rule id in "-skill".
+			.replace(/\/SKILL\.md$/u, "")
+			.replace(/\.md$/u, "")
+			.replace(/^\.?\//u, "")
+			.replace(/[^A-Za-z0-9]+/gu, "-")
+			.replace(/^-+|-+$/gu, "")
+			.toLowerCase()
+	);
 }
 
 function markdownPage(repoRoot: string, source: string, kind: DocsPageKind, id?: string): DocsPage {

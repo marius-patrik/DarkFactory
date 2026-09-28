@@ -1,8 +1,8 @@
 {
-	"name": "df-rules",
-	"version": "1.0.0",
-	"description": "The binding development rules of DarkFactory, one skill per rule.",
-	"author": { "name": "DarkFactory" },
-	"license": "MIT",
-	"keywords": ["rules", "governance", "darkfactory"]
+  "name": "df-rules",
+  "version": "1.0.0",
+  "description": "The binding development rules of DarkFactory, one skill per rule.",
+  "author": { "name": "DarkFactory" },
+  "license": "MIT",
+  "keywords": ["rules", "governance", "darkfactory"]
 }

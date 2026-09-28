@@ -10,7 +10,8 @@ const repoDir = join(harnessDir, "..", "..");
 // `.agents` is a symlink to `.darkfactory`; a walker does not descend it, so the canonical
 // directories are named on the real path.
 const CANONICAL_DIRECTORIES = [join(".darkfactory"), join(".darkfactory", "plugins")];
-const CANONICAL_FILES = ["README.md", "CONTRIBUTING.md"];
+// CONTRIBUTING.md is a symlink to the product document, which is the root README itself.
+const CANONICAL_FILES = ["README.md"];
 
 /** Code spans that are a claim about the tree rather than a name, pattern or placeholder. */
 const NOT_A_PATH = /[*?<>|{}[\]$"'`~(]|^\.{1,2}$|^\//u;

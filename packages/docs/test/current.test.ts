@@ -47,9 +47,7 @@ function writeCurrentAliases(repoRoot: string, omit?: string): void {
 	// The root README is the canonical product document itself, and the notes alias resolves to it,
 	// so the fixture has to lay down a real file there rather than a projection.
 	writeFileSync(join(repoRoot, "README.md"), "# product\n");
-	const aliases = [
-		[".agents/notes/README.md", "../../README.md"],
-	] as const;
+	const aliases = [[".agents/notes/README.md", "../../README.md"]] as const;
 	for (const [path, target] of aliases) {
 		if (path === omit) continue;
 		mkdirSync(join(repoRoot, path, ".."), { recursive: true });
@@ -66,8 +64,6 @@ describe("current documentation truth", () => {
 			expect(() => assertCurrentDocumentation(repoRoot, content)).not.toThrow();
 		});
 	});
-
-
 
 	test("fails when a required current alias is missing", () => {
 		withRepo((repoRoot) => {
@@ -104,7 +100,6 @@ describe("current documentation truth", () => {
 			});
 		});
 	});
-
 
 	test("fails when a retired documentation surface returns", () => {
 		withRepo((repoRoot) => {

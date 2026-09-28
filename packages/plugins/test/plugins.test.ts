@@ -114,9 +114,7 @@ describe("plugin validation", () => {
 	});
 
 	test("a name that differs from the directory is an error", () => {
-		const root = repository([
-			{ name: "alpha", skills: [{ dir: "typo-dir", frontmatter: goodSkill("one") }] },
-		]);
+		const root = repository([{ name: "alpha", skills: [{ dir: "typo-dir", frontmatter: goodSkill("one") }] }]);
 		const rules = validatePlugins(root).findings.map((finding) => finding.rule);
 		expect(rules).toContain("skill/name-dir-match");
 	});
@@ -191,7 +189,16 @@ describe("df plugin", () => {
 
 	test("validate fails on a finding and --strict fails on a warning", () => {
 		const root = repository([
-			{ name: "alpha", skills: [{ dir: "one", frontmatter: "---\nname: one\ndescription: A skill that says what it is, not when to use it.\n---\n\n# One\n" }] },
+			{
+				name: "alpha",
+				skills: [
+					{
+						dir: "one",
+						frontmatter:
+							"---\nname: one\ndescription: A skill that says what it is, not when to use it.\n---\n\n# One\n",
+					},
+				],
+			},
 		]);
 		// A warning alone passes by default and fails under --strict, which is the point of the flag.
 		expect(run(["validate"], root).code).toBe(0);

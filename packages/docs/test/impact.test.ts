@@ -40,7 +40,10 @@ describe("documentation impact policy", () => {
 			evidence,
 		);
 		expect(result.impactKinds).toEqual(["governance", "product"]);
-		expect(result.documentationFiles).toEqual([".darkfactory/plugins/df-rules/skills/001-current/SKILL.md", "repo.dfconfig"]);
+		expect(result.documentationFiles).toEqual([
+			".darkfactory/plugins/df-rules/skills/001-current/SKILL.md",
+			"repo.dfconfig",
+		]);
 	});
 
 	test("does not invent docs impact for an internal implementation helper", () => {

@@ -1,14 +1,11 @@
 {
-	"name": "release",
-	"version": "1.0.0",
-	"description": "Release artifact integrity, provenance and distribution capability boundary.",
-	"license": "MIT",
-	"shipped": false,
-	"author": {
-		"name": "DarkFactory"
-	},
-	"keywords": [
-		"release",
-		"capability"
-	]
+  "name": "release",
+  "version": "1.0.0",
+  "description": "Release artifact integrity, provenance and distribution capability boundary.",
+  "license": "MIT",
+  "shipped": false,
+  "author": {
+    "name": "DarkFactory"
+  },
+  "keywords": ["release", "capability"]
 }
