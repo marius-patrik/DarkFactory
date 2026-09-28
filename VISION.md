@@ -2,6 +2,12 @@
 
 **Status: NORMATIVE. This document is the single source of truth for the project.**
 
+> This document was the repository `README.md` on the thesis branch, where it absorbed the product
+> requirements and the rule set. It is named `VISION.md` so the root `README.md` can be the product
+> document itself and the binding rules can be skills, one per rule, under
+> `.agents/plugins/df-rules/skills/`. Where this document and a rule skill disagree, the rule skill is
+> the single declaration; this is the design rationale that was written alongside them.
+
 # Contents
 
 **Part I — Orientation**
