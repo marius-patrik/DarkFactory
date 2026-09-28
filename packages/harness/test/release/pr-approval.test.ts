@@ -31,17 +31,15 @@ function boardSpy(): ProjectBoardClient & { added: string[]; labelled: string[];
 		// Async on purpose. The real client is a GraphQL client and its writes are promises, and a
 		// synchronous fake is what let `handlePrApproval` be declared synchronous — the signature was
 		// shaped by the test rather than by the dependency it would run against in production.
-		addItem: async (url) => {
+		track: async (url, status) => {
 			added.push(url);
-			return `item-${added.length}`;
-		},
-		editStatus: async (itemId) => {
-			moved.push(itemId);
-			return true;
+			moved.push(status);
 		},
 		setStatusLabel: async (_repo, number) => {
 			labelled.push(`#${number}`);
 		},
+		addIssueLabel: async () => undefined,
+		closeIssue: async () => undefined,
 	};
 }
 
@@ -367,20 +365,19 @@ describe("the board writes are awaited, which is the whole point of the async cl
 		// its writes land reports a merge and reconciles nothing.
 		const settled: string[] = [];
 		const client: ProjectBoardClient = {
-			addItem: async () => {
+			track: async () => {
 				await Bun.sleep(1);
-				settled.push("addItem");
-				return "item-1";
-			},
-			editStatus: async () => {
-				await Bun.sleep(1);
-				settled.push("editStatus");
-				return true;
+				settled.push("track");
 			},
 			setStatusLabel: async () => {
 				await Bun.sleep(1);
 				settled.push("setStatusLabel");
 			},
+			closeIssue: async () => {
+				await Bun.sleep(1);
+				settled.push("closeIssue");
+			},
+			addIssueLabel: async () => undefined,
 		};
 		const outcome = await handlePrApproval({
 			run: mergedDuringPoll(),
@@ -397,44 +394,18 @@ describe("the board writes are awaited, which is the whole point of the async cl
 			sleep: async () => undefined,
 		});
 		expect(outcome.merged).toBe(true);
-		// The PR's own item, its status label, then the bound issue's label and item.
-		expect(settled).toEqual(["addItem", "editStatus", "setStatusLabel", "setStatusLabel", "addItem", "editStatus"]);
-	});
-
-	test("a null item id skips the status edit and nothing else, as the Python's `if item_id:` did", async () => {
-		const edited: string[] = [];
-		const client: ProjectBoardClient = {
-			addItem: async () => null,
-			editStatus: async (itemId) => {
-				edited.push(itemId);
-				return true;
-			},
-			setStatusLabel: async () => undefined,
-		};
-		await handlePrApproval({
-			run: mergedDuringPoll(),
-			client,
-			logger: { out: () => undefined, err: () => undefined },
-			env: {
-				GITHUB_ACTOR: "maintainer",
-				APPROVER_ASSOCIATION: "OWNER",
-				GITHUB_EVENT_NAME: "issue_comment",
-				IS_PR: "true",
-				PR_NUMBER: "7",
-				COMMENT_BODY: "/df approve",
-			},
-			sleep: async () => undefined,
-		});
-		expect(edited).toEqual([]);
+		// The PR is tracked and labelled, then each bound issue is labelled and tracked.
+		expect(settled).toEqual(["track", "setStatusLabel", "setStatusLabel", "track"]);
 	});
 
 	test("a rejected board write propagates, because the Python had no try/except around it", async () => {
 		const client: ProjectBoardClient = {
-			addItem: async () => {
+			track: async () => {
 				throw new Error("board write failed");
 			},
-			editStatus: async () => true,
 			setStatusLabel: async () => undefined,
+			closeIssue: async () => undefined,
+			addIssueLabel: async () => undefined,
 		};
 		await expect(
 			handlePrApproval({

@@ -6,9 +6,11 @@
  * auto-merge with branch auto-deletion, and reconciles bound issues and the project board to `Done`
  * after the merge lands.
  *
- * Board mutations are delegated to a {@link ProjectBoardClient}, so field and option ids are
+ * Board mutations are delegated to the board's own target, so field and option ids are
  * resolved at runtime rather than hardcoded.
  */
+
+import type { BoardTarget } from "../board/client.ts";
 import { ALLOWED_ASSOCIATIONS, isAllowedApprover, parsePrCommand } from "./commands.ts";
 
 /** Seconds between merge-completion polls, and how many polls to attempt. */
@@ -50,14 +52,16 @@ export interface GhOptions {
 export type GhRunner = (args: readonly string[], repo: string, options?: GhOptions) => GhResult;
 
 /** The board mutations post-merge reconciliation needs. */
-export interface ProjectBoardClient {
-	/** Adds a board item for a pull request or issue URL, resolving its item id or `null`. */
-	addItem(url: string): Promise<string | null>;
-	/** Moves a board item to a status. */
-	editStatus(itemId: string, status: string): Promise<boolean>;
-	/** Labels an issue or pull request with the named board status. */
-	setStatusLabel(repo: string, number: number, status: string): Promise<unknown>;
-}
+/**
+ * Board mutations go through the board's own {@link BoardTarget}.
+ *
+ * This handler used to declare a `ProjectBoardClient` of its own, with `addItem` then `editStatus`.
+ * That was a second expression of one mechanism and it was wrong twice over: no production value
+ * satisfied it, and `BoardTarget.track(url, status)` already does the whole job in one call. The two
+ * steps only existed because the test's fake was synchronous and could pretend a write completed
+ * before the next line ran.
+ */
+export type ProjectBoardClient = BoardTarget;
 
 /** Where the handler narrates what it is doing. */
 export interface PrApprovalLogger {
@@ -284,20 +288,18 @@ export async function reconcilePostMerge(
 	// unhandled rejection after this function has already returned — which is a board that silently
 	// stopped being updated, the exact outcome this reconciliation exists to prevent.
 	//
-	// A `null` item id is still tolerated, and still only that: the Python wrote `if item_id:` before
-	// editing the status, so a null skips the edit and nothing else. A rejected write propagates, which
-	// is what the Python did too — it had no try/except around these calls.
+	// A rejected write propagates, which is what the Python did: it had no try/except around these
+	// calls, so a failed board write failed the run. Swallowing it would hide the very failure this
+	// reconciliation exists to prevent.
 	if (data.url) {
-		const itemId = await client.addItem(data.url);
-		if (itemId) await client.editStatus(itemId, "Done");
+		await client.track(data.url, "Done", { fastPath: true });
 		await client.setStatusLabel(repo, prNumber, "Done");
 	}
 
 	for (const num of issueNumbers) {
 		run(["issue", "close", String(num), "--repo", repo, "--reason", "completed"], repo);
 		await client.setStatusLabel(repo, num, "Done");
-		const itemId = await client.addItem(`https://github.com/${repo}/issues/${num}`);
-		if (itemId) await client.editStatus(itemId, "Done");
+		await client.track(`https://github.com/${repo}/issues/${num}`, "Done", { fastPath: true });
 		logger.out(`Closed issue #${num} and marked it Done on the project board`);
 	}
 }
