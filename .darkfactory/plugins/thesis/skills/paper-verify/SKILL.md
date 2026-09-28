@@ -52,8 +52,18 @@ bylo třikrát špatně, takže jsou známé všechny pasti:
   většinu citací.
 - `findall` vrací celou shodu **včetně `@`**, takže průsečík musí odříznout.
 
-**Sazba.** Viz `typst-safe-editing`: měř v sestaveném PDF. Školní pravidlo pro mezeru pod odstavcem
-a jeho odchylka jsou v `school-rules`.
+**Sazba.** Měř ji, neodhaduj. Školní pravidlo pro mezeru pod odstavcem a jeho odchylka jsou
+v `school-rules`, ale jak ji změřit je tady:
+
+```sh
+# jen reportuje
+bun .darkfactory/plugins/thesis/scripts/measure-paragraph-gap.ts ../PAPER.pdf
+
+# nebo tvrdí: skončí 1, když nesouhlasí (0.5pt tolerance)
+bun .darkfactory/plugins/thesis/scripts/measure-paragraph-gap.ts ../PAPER.pdf --want 8
+```
+
+`typst-safe-editing` vysvětluje, proč je číslo ve stylu jiné než mezera na stránce.
 
 **Struktura před úpravou.** Při strukturální úpravě, která posouvá kapitolu, vytáhni text z PDF
 před a po a porovnej. Tak se odhalil ztracený odstavec, který se jinak neprojevil.

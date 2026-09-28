@@ -34,10 +34,12 @@ publikace i sestavení PDF to neodhalí, protože obě hodnoty jsou platný Typs
 závazného pravidla neopravuj mlčky a nevyhlašuj ji za splněnou.** Je to bod k rozhodnutí autora;
 do té doby je hodnota 24 pt odchylkou.
 
-Sázba je jediná oblast, kde je „správná hodnota“ místo jednoho čísla otázkou výkladu: v Typstu je
-`par(spacing:)` **cílová vzdálenost mezi odstavci, ne přírůstek nad řádkováním**. Nastavit
-`spacing: 8pt` při řádkování 19,6 pt tedy neznamená mezeru 8 pt, ale mezeru menší než nulu. Kladná
-mezera 8 pt je proto `spacing` rovná řádkování plus 8. Který výklad vedoucí uznává, zeptej se.
+Sázba je jediná oblast, kde je „správná hodnota“ místo jednoho čísla otázkou výkladu. V Typstu je
+`par(spacing:)` **cílová vzdálenost mezi odstavci, ne přírůstek nad řádkováním**, takže číslo ve stylu
+není mezera, která vznikne na stránce. Řádkování je tu `1.5 × 0.65em`, tedy 11,7 pt při 12 pt, a
+kladná mezera 8 pt je proto `spacing` rovných **19,7 pt** — nikoli 8 pt a nikoli 27,6 pt. Který
+výklad vedoucí uznává, zeptej se.
+
 **Neměř to odhadem** — změř to ve sestaveném PDF, viz `paper-verify`.
 
 ## Kapitoly a nadpisy (kap. 4)
