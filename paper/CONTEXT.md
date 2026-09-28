@@ -103,7 +103,7 @@ skill. Two things about them that are easy to get wrong:
   both true, and the measurement is reproducible:
 
 ```sh
-cd paper && bun scripts/measure-leading.ts ../PAPER.pdf
+cd paper && bun ../.darkfactory/plugins/thesis/scripts/measure-paragraph-gap.ts ../PAPER.pdf
 ```
 
 Page count is not a quality measure. Word and character counts are diagnostics, not targets.
@@ -112,7 +112,7 @@ Page count is not a quality measure. Word and character counts are diagnostics, 
 
 ```sh
 cd paper && bun run check          # typst compile + publication structure check
-bun scripts/measure-leading.ts ../PAPER.pdf   # the real paragraph gap, measured
+bun ../.darkfactory/plugins/thesis/scripts/measure-paragraph-gap.ts ../PAPER.pdf   # the real paragraph gap, measured
 ```
 
 `scripts/paper/publication.ts` validates **PDF structure, never content**. A paper with four false
