@@ -83,10 +83,13 @@ RUN groupadd --gid ${AGENT_GID} agent \
 
 ENV HOME=/home/agent
 
-# 6. Copy runner entrypoint and scripts
+# 6. Copy the pipeline scripts
+#
+# The entrypoint is TypeScript and lives in the harness source already copied above, so nothing is
+# installed as a runner binary any more. The scripts are still copied because the delivery workflows
+# run them in the runner context, and the image is meant to reproduce that environment; the ENTRYPOINT
+# itself no longer reaches any of them.
 COPY .github/scripts/ /usr/local/share/darkfactory-scripts/
-COPY .github/scripts/agent_runner.py /usr/local/bin/darkfactory-agent-runner
-RUN chmod +x /usr/local/bin/darkfactory-agent-runner
 
 ENV PYTHONPATH="/usr/local/share/darkfactory-scripts:/workspace/.github/scripts:${PYTHONPATH}"
 
@@ -94,4 +97,14 @@ ENV PYTHONPATH="/usr/local/share/darkfactory-scripts:/workspace/.github/scripts:
 # the root they need at build time.
 USER agent
 
-ENTRYPOINT ["dbus-run-session", "--", "python3", "/usr/local/bin/darkfactory-agent-runner"]
+# The agent entrypoint is `packages/harness/src/pipeline/main.ts`. It takes the same nine commands
+# the Python `main` took -- dispatch, interpret, plan, implement, self-review, self-review-fix,
+# plan-alignment, respond, token-refresh -- and `docker run darkfactory-agent dispatch` reaches
+# `runnerMain` with the argument untouched.
+#
+# `dispatch` was the reason this line could not move earlier. `df` had no top-level `dispatch`
+# subcommand, and the nearest thing, `graph dispatch`, prints a plan and exits 0 rather than running
+# the agent, so a shim would have turned a loud failure into a silent one and the run would have been
+# skipped instead of reported. `nix/entrypoint.sh` says the same thing and sequences itself after
+# #1148 for this reason. `main.ts` now provides the real command.
+ENTRYPOINT ["dbus-run-session", "--", "bun", "/opt/darkfactory/packages/harness/src/pipeline/main.ts"]

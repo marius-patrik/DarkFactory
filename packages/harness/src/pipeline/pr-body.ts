@@ -31,13 +31,16 @@ const MAX_BRANCH_SLUG = 50;
  * each other, or a commit titled `bug(...)` is not a Conventional Commit at all.
  *
  * @param typeLabel - The label the classifier applied.
- * @param scope - The area label, whose `area:` prefix is dropped.
+ * @param scope - The area label, whose leading `area:` prefixes are dropped.
  * @param description - The change's description.
  * @returns A Conventional Commit subject line.
  */
 export function formatConventionalCommit(typeLabel: string, scope: string, description: string): string {
 	const type = typeLabel === "bug" ? "fix" : typeLabel;
-	const scopeClean = scope.replace(/^area:/, "").trim();
+	// Every leading `area:` is stripped, not just the first. A colon inside the scope is not a
+	// cosmetic problem: the first colon in `type(scope): description` terminates the header, so a
+	// surviving `area:` yields `feat(area:agents): ...`, which is not a Conventional Commit at all.
+	const scopeClean = scope.replace(/^(?:area:)+/u, "").trim();
 	let descriptionClean = description.trim();
 	if (descriptionClean && /^[A-Z]$/u.test(descriptionClean[0] as string)) {
 		descriptionClean = descriptionClean[0]?.toLowerCase() + descriptionClean.slice(1);
