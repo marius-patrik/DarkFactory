@@ -46,7 +46,6 @@ function pushPathFilter(workflow: string): string[] {
  */
 const REMAINING_PYTHON_STEPS: Record<string, string[]> = {
 	"agent.yml": ["run-agent / Resolve target environment"],
-	"branch-policy.yml": ["reconcile / Reconcile default branch and protection"],
 	"ci.yml": ["quality-run / Install Python package manager"],
 	"install.yml": [
 		"install / Generate the installation",
@@ -71,6 +70,7 @@ const CONVERTED: Array<[workflow: string, step: string, expected: string]> = [
 	["release.yml", "Decide which build tooling is needed", "jq -r"],
 	["release.yml", "Build release assets", "jq -r"],
 	["project-automation.yml", "Run Project Board Automation", 'bun "$ROOT/packages/harness/src/board/main.ts"'],
+	["branch-policy.yml", "Reconcile default branch and protection", "bun packages/harness/src/ci/repo-settings.ts"],
 ];
 
 describe("steps that no longer need an interpreter", () => {
