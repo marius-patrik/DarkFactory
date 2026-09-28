@@ -1,13 +1,12 @@
 /**
- * Retry pacing and the model order the ladder walks.
+ * Retry pacing.
  *
- * Both exist for one reason: an unused account is always a better answer than sleeping. The backoff
- * is therefore only ever consulted at the end of the chain, where there is nothing left to rotate
- * to, and the chain itself is ordered so the cheapest usable model is tried first.
+ * The model order this file also used to carry is gone. `DEFAULT_MODEL_FALLBACK_CHAIN` named
+ * `gemini-3.8-flash-high` and `claude-opus-*` in code, and `getModelFallbackChain` — its only reader —
+ * had no caller at all. Model preference is declared in the configuration document's
+ * `providers.router` policies and `df` resolves the model it runs, so a second ladder here was a
+ * policy nothing read.
  */
-
-/** The models the ladder falls back through when the node names none. */
-export const DEFAULT_MODEL_FALLBACK_CHAIN: readonly string[] = ["gemini-3.8-flash-high", "claude-opus-4-6-thinking"];
 
 /** Tuning for {@link calculateBackoff}. */
 export interface BackoffOptions {
@@ -68,16 +67,3 @@ export function calculateBackoff(attempt: number, options: BackoffOptions = {}):
  * @param customChain - An explicit chain, if the node supplied one.
  * @returns The model identifiers to attempt, in order.
  */
-export function getModelFallbackChain(initialModel?: string, customChain?: readonly string[]): string[] {
-	if (customChain !== undefined) {
-		const chain = [...customChain];
-		if (!initialModel) return chain;
-		const at = chain.indexOf(initialModel);
-		return at >= 0 ? chain.slice(at) : [initialModel, ...chain];
-	}
-	if (!initialModel) return [...DEFAULT_MODEL_FALLBACK_CHAIN];
-	const defaultAt = DEFAULT_MODEL_FALLBACK_CHAIN.indexOf(initialModel);
-	return defaultAt >= 0
-		? DEFAULT_MODEL_FALLBACK_CHAIN.slice(defaultAt).slice()
-		: [initialModel, ...DEFAULT_MODEL_FALLBACK_CHAIN];
-}

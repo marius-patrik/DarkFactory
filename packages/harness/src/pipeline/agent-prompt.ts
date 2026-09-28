@@ -45,7 +45,7 @@ import { calculateBackoff } from "./backoff.ts";
 import type { Checkpoint } from "./checkpoint.ts";
 import { dfFailureDetail, dfSetupSecretNames, parseDfJsonOutput } from "./df-events.ts";
 import { DF_LABEL, dfAvailable, dfRunArgv } from "./df-run.ts";
-import { DEFAULT_REPOSITORY } from "./dispatch.ts";
+import { NO_TARGET_REPOSITORY } from "./dispatch.ts";
 import {
 	AGENT_DEFAULT_TIMEOUT,
 	type AgentPromptRequest,
@@ -554,7 +554,7 @@ export function agentPromptRunner(options: AgentPromptRunnerOptions): RunAgentPr
 				issueNumber: checkpoint.issueNumber ?? 0,
 				// The Python's quota path used a literal default here and did *not* fall back to
 				// `GITHUB_REPOSITORY`, unlike the empty-output notice. Reproduced as it is.
-				repo: checkpoint.repo || DEFAULT_REPOSITORY,
+				repo: checkpoint.repo || NO_TARGET_REPOSITORY,
 				isPr: checkpoint.isPr ?? false,
 				branchName: checkpoint.branchName,
 				completedSteps: checkpoint.completedSteps,

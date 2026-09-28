@@ -10,7 +10,7 @@ import { describe, expect, test } from "bun:test";
 import { mkdirSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { calculateBackoff, DEFAULT_MODEL_FALLBACK_CHAIN, getModelFallbackChain } from "../../src/pipeline/backoff.ts";
+import { calculateBackoff } from "../../src/pipeline/backoff.ts";
 import {
 	CHECKPOINT_FILENAME,
 	type Checkpoint,
@@ -154,29 +154,6 @@ describe("retry pacing", () => {
 
 	test("an absurd attempt number does not overflow", () => {
 		expect(Number.isFinite(calculateBackoff(10_000, { random: () => 0.5 }))).toBe(true);
-	});
-});
-
-describe("the model chain", () => {
-	test("with no model configured it is the default chain", () => {
-		expect(getModelFallbackChain()).toEqual([...DEFAULT_MODEL_FALLBACK_CHAIN]);
-	});
-
-	test("naming a model in the default chain narrows it rather than repeating it", () => {
-		expect(getModelFallbackChain("claude-opus-4-6-thinking")).toEqual(["claude-opus-4-6-thinking"]);
-	});
-
-	test("naming a model outside the default chain prepends it", () => {
-		expect(getModelFallbackChain("gpt-5")).toEqual(["gpt-5", ...DEFAULT_MODEL_FALLBACK_CHAIN]);
-	});
-
-	test("an explicit chain is rotated so the initial model is first", () => {
-		expect(getModelFallbackChain("b", ["a", "b", "c"])).toEqual(["b", "c"]);
-		expect(getModelFallbackChain("z", ["a", "b"])).toEqual(["z", "a", "b"]);
-	});
-
-	test("an explicit chain with no initial model is used as given", () => {
-		expect(getModelFallbackChain(undefined, ["a", "b"])).toEqual(["a", "b"]);
 	});
 });
 

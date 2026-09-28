@@ -407,10 +407,14 @@ describe("eventRepository", () => {
 		expect(eventRepository("o/r")).toBe("o/r");
 	});
 
-	test("falls back to the default repository when the event names none", () => {
-		expect(eventRepository(undefined)).toBe("marius-patrik/DarkFactory");
-		expect(eventRepository({})).toBe("marius-patrik/DarkFactory");
-		expect(eventRepository("")).toBe("marius-patrik/DarkFactory");
+	test("invents no repository when the event names none", () => {
+		// This used to fall back to `marius-patrik/DarkFactory`, this repository's own slug, baked
+		// into a pipeline that is installed into other repositories. A run that could not name its
+		// target resolved to DarkFactory and reported success against it. It names nothing now, and
+		// the caller supplies the environment's slug or fails.
+		expect(eventRepository(undefined)).toBe("");
+		expect(eventRepository({})).toBe("");
+		expect(eventRepository("")).toBe("");
 		expect(eventRepository(undefined, "env/slug")).toBe("env/slug");
 	});
 });

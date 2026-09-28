@@ -13,7 +13,7 @@
 
 import type { Checkpoint } from "./checkpoint.ts";
 import type { AgentDispatchPayload } from "./dispatch.ts";
-import { DEFAULT_REPOSITORY } from "./dispatch.ts";
+import { NO_TARGET_REPOSITORY } from "./dispatch.ts";
 import type { AreaTaxonomy } from "./labels.ts";
 import type { PipelineIo } from "./pipeline-io.ts";
 
@@ -100,7 +100,7 @@ export function pipelineEnvironment(env: PipelineEnv = process.env): PipelineEnv
 	return {
 		workspaceDir,
 		stateDir: env.STATE_DIR ?? workspaceDir,
-		repository: env.GITHUB_REPOSITORY ?? DEFAULT_REPOSITORY,
+		repository: env.GITHUB_REPOSITORY ?? NO_TARGET_REPOSITORY,
 	};
 }
 

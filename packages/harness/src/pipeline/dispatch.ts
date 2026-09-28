@@ -339,10 +339,21 @@ export function routeRepositoryDispatch(payload: AgentDispatchPayload): Route {
 }
 
 /** The workflow name this pipeline runs under when an event names no repository. */
-export const DEFAULT_REPOSITORY = "marius-patrik/DarkFactory";
+/**
+ * No default target repository.
+ *
+ * This was the literal `"marius-patrik/DarkFactory"`, which is this repository's own slug baked into a
+ * pipeline that installs into *other* repositories. A run with `GITHUB_REPOSITORY` unset — a local
+ * invocation, a misconfigured step — resolved to DarkFactory and reported success against it, which is
+ * the same class of failure as a run that silently reconciles a consumer against the pipeline. An
+ * unset target is an error now.
+ */
+export const NO_TARGET_REPOSITORY =
+	"no target repository: set GITHUB_REPOSITORY. The pipeline does not default to its own repository, " +
+	"because it is installed into others.";
 
 /** Reads the repository slug an event payload targets, falling back to the environment. */
-export function eventRepository(repository: unknown, fallback = DEFAULT_REPOSITORY): string {
+export function eventRepository(repository: unknown, fallback = ""): string {
 	if (repository && typeof repository === "object" && "full_name" in repository) {
 		const fullName = (repository as { full_name?: unknown }).full_name;
 		if (typeof fullName === "string" && fullName) return fullName;
