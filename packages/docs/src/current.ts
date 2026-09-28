@@ -11,7 +11,6 @@ export interface DocumentationTruthFinding {
 }
 
 const CURRENT_ALIASES = [
-	{ path: join(".agents", "notes", "README.md"), target: "../../README.md" },
 	// The ADRs are authored once under the DarkFactory directory and discovered at the root by symlink,
 	// the same arrangement as `.agents` itself. Copied rather than linked would let the two drift.
 	{ path: "ADRs.md", target: join(darkFactoryDirectory(), "ADRs.md") },
@@ -33,13 +32,12 @@ const RETIRED_DOCUMENTATION_PATHS = [
 	"properdocs.yml",
 	"mkdocs.yml",
 	"harness/README.md",
-	join(".agents", "notes", "bootstrap.md"),
-	join(".agents", "notes", "vision_capture.md"),
-	join(".agents", "notes", "adr"),
-	// The records live in one document now, so the per-decision directory is a retired surface and a
-	// file left in it would be a decision nothing reads.
+	// The notes tree is retired. It held a symlink to the README, which is what the root already is,
+	// so a file reintroduced there is content nothing reads.
+	join(".agents", "notes"),
+	join(darkFactoryDirectory(), "notes"),
+	// The records live in one document now, so the per-decision directory is a retired surface too.
 	join(darkFactoryDirectory(), "adr"),
-	join(".agents", "notes", "rules"),
 	"_notes",
 	"_rules",
 ] as const;

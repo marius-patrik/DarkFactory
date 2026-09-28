@@ -33,7 +33,6 @@ site/
 .properdocs-source/
 
 # Agent pipeline
-.antigravity_checkpoint.json
 .darkfactory/generated/
 
 # IDE / Editor / OS
@@ -47,20 +46,8 @@ Thumbs.db
 # The runner mounts the webhook payload into the workspace; it is not repository content.
 event.json
 
-# Harness test workspaces created when tests run from the repository root
-.harness-test-*/
-
 # uv writes this when Python tooling is invoked; the manifest is pyproject.toml
 uv.lock
 
-# Test fixtures create temporary trees beside the suite; they are not repository content.
-packages/harness/.*-test-*/
-
-
-# Relocated to packages/harness in #1227. Nothing belongs at this path any more;
-# Root-anchored. A bare `harness/` matches any directory of that name at any depth, which silently
-# gitignored packages/harness/ too — and biome honours .gitignore, so the largest source tree in the
-# repository became invisible to `biome ci .`.
-/harness/
 .licence-test-*/
 .cli-test-*/

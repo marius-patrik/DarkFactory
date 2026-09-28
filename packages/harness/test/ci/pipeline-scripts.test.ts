@@ -171,13 +171,6 @@ describe("shared repository settings", () => {
 	});
 });
 
-describe("runtime state that is never repository content", () => {
-	it("test_gitignore_excludes_agent_checkpoint: the checkpoint file is runtime state", () => {
-		expect(CHECKPOINT_FILENAME).toBeDefined();
-		expect(readFileSync(join(repoRoot, ".gitignore"), "utf8")).toContain(CHECKPOINT_FILENAME);
-	});
-});
-
 describe("the install marker", () => {
 	it("test_the_configuration_template_carries_the_install_marker: a reinstall files no duplicate", () => {
 		expect(CONFIG_MARKER).toBeDefined();

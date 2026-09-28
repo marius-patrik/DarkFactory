@@ -44,17 +44,14 @@ function withRepo(run: (repoRoot: string) => void): void {
 
 function writeCurrentAliases(repoRoot: string, omit?: string): void {
 	mkdirSync(join(repoRoot, ".agents"), { recursive: true });
-	// The root README is the canonical product document itself, and the notes alias resolves to it,
-	// so the fixture has to lay down a real file there rather than a projection.
+	// The root README is the canonical product document itself, so the fixture lays down a real file
+	// there rather than a projection.
 	writeFileSync(join(repoRoot, "README.md"), "# product\n");
 	// The ADRs are authored once and symlinked at the root, so the fixture lays down the document
 	// and then the alias, exactly as the repository does.
 	mkdirSync(join(repoRoot, ".darkfactory"), { recursive: true });
 	writeFileSync(join(repoRoot, ".darkfactory", "ADRs.md"), "# Architecture decision records\n");
-	const aliases = [
-		[".agents/notes/README.md", "../../README.md"],
-		["ADRs.md", ".darkfactory/ADRs.md"],
-	] as const;
+	const aliases = [["ADRs.md", ".darkfactory/ADRs.md"]] as const;
 	for (const [path, target] of aliases) {
 		if (path === omit) continue;
 		mkdirSync(join(repoRoot, path, ".."), { recursive: true });
@@ -75,9 +72,9 @@ describe("current documentation truth", () => {
 	test("fails when a required current alias is missing", () => {
 		withRepo((repoRoot) => {
 			const content = graph();
-			writeCurrentAliases(repoRoot, ".agents/notes/README.md");
+			writeCurrentAliases(repoRoot, "ADRs.md");
 			expect(currentDocumentationFindings(repoRoot, content)).toContainEqual({
-				path: ".agents/notes/README.md",
+				path: "ADRs.md",
 				message: "required documentation discovery alias is missing",
 			});
 		});
@@ -87,9 +84,9 @@ describe("current documentation truth", () => {
 		withRepo((repoRoot) => {
 			const content = graph();
 			writeCurrentAliases(repoRoot);
-			unlinkSync(join(repoRoot, "README.md"));
+			unlinkSync(join(repoRoot, ".darkfactory", "ADRs.md"));
 			expect(currentDocumentationFindings(repoRoot, content)).toContainEqual({
-				path: ".agents/notes/README.md",
+				path: "ADRs.md",
 				message: "documentation discovery alias target is missing",
 			});
 		});
@@ -98,11 +95,11 @@ describe("current documentation truth", () => {
 	test("rejects a copied current alias", () => {
 		withRepo((repoRoot) => {
 			const content = graph();
-			writeCurrentAliases(repoRoot, ".agents/notes/README.md");
-			mkdirSync(join(repoRoot, ".agents", "notes"), { recursive: true });
-			writeFileSync(join(repoRoot, ".agents", "notes", "README.md"), "# stale\n");
+			writeCurrentAliases(repoRoot, "ADRs.md");
+			mkdirSync(join(repoRoot, ".darkfactory"), { recursive: true });
+			writeFileSync(join(repoRoot, "ADRs.md"), "# stale\n");
 			expect(currentDocumentationFindings(repoRoot, content)).toContainEqual({
-				path: ".agents/notes/README.md",
+				path: "ADRs.md",
 				message: "documentation discovery alias must remain a symlink, not a copied document",
 			});
 		});
@@ -138,8 +135,8 @@ describe("current documentation truth", () => {
 				".claude",
 				join(".agents", "README.md"),
 				join(".agents", "CLAUDE.md"),
-				join(".agents", "notes", "adr"),
-				join(".agents", "notes", "rules"),
+				join(".agents", "notes"),
+				join(".darkfactory", "notes"),
 				join(".darkfactory", "adr"),
 			]) {
 				const absolute = join(repoRoot, path);
@@ -160,8 +157,8 @@ describe("current documentation truth", () => {
 				".claude",
 				".agents/README.md",
 				".agents/CLAUDE.md",
-				".agents/notes/adr",
-				".agents/notes/rules",
+				".agents/notes",
+				".darkfactory/notes",
 				".darkfactory/adr",
 			]) {
 				expect(findings).toContainEqual({ path, message: "retired documentation surface must not exist" });
