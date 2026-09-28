@@ -91,7 +91,9 @@ jobs:
           fetch-depth: 0
 
       - name: Set up Bun
-        if: matrix.packageManager == 'bun'
+        # The paper capability resolves its entrypoint with a repository script, so the typst
+        # job needs bun too even though it is not a bun job.
+        if: matrix.packageManager == 'bun' || matrix.ecosystem == 'typst'
         uses: oven-sh/setup-bun@v2
 
       - name: Set up Node
@@ -135,7 +137,9 @@ jobs:
           deno-version: v2.x
 
       - name: Set up Typst
-        if: matrix.ecosystem == 'typst'
+        # The paper package's own test compiles the manuscript, so its job needs typst even
+        # though it is a node job.
+        if: matrix.ecosystem == 'typst' || matrix.cwd == 'paper'
         uses: typst-community/setup-typst@v5
 
       - name: Set up Lean
