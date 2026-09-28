@@ -7,6 +7,8 @@
 // the structure of the work: 1.1 and 1.2 Terminology.
 #heading(level: 1)[Úvod]
 
+#heading(level: 2)[Motivace: Vývoj a adopce generativní AI] <motivace>
+
 Nástroje založené na jazykových modelech se v krátké době drasticky zlepšily a jejich vývoj lze členit do tří stupňů. Nejprve doplňovaly kód v editoru @github-copilot-completion, potom přišly konverzační chatboty
 @github-copilot-chat, v nichž model sestavuje odpověď, ale nástroje mu zpravidla nebyly k dispozici, takže i nadále všechno provedl uživatel. #figure(
   image("/components/img/vscode-copilot-inline-suggestions.png", width: 100%),

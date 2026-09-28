@@ -13,7 +13,7 @@
   // actually exists: a stale entry silently stops exempting anything, and a missing
   // one leaves a near-blank page between the part opener and its first subsection.
   let inline-openers = (
-    <intro-goal>,
+    <motivace>,
     <theory-first>,
     <practical-first>,
     <results-first>,
