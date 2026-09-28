@@ -31,7 +31,7 @@ Průvodce předepisuje části v tomto pořadí. Tato práce je má všechny a n
 | :--- | :--- | :--- |
 | Anotace, klíčová slova, obsah, seznam zdrojů | `pages/01`–`03`, `90` | Anotace i abstrakt v češtině i angličtině |
 | Úvod | **1 Úvod** | Vysvětluje pojmy, představuje známé poznatky, obsahuje odkazy na literaturu |
-| Teoretická část | **2 Teoretická část** | 2.1 jazykový model, 2.2 agent: model a harness, 2.3 agentické inženýrství, 2.4 softwareová továrna, 2.4 softwareová továrna |
+| Teoretická část | **2 Teoretická část** | 2.1 co je to agent a jak funguje, 2.2 agentické inženýrství, 2.3 softwareová továrna, 2.4 softwareová továrna |
 | Metodická část | **3.1 Metodika** | Viz níže — zde je odchylka |
 | Praktická část | **3.2**–**3.5** | Průvodce nemá samostatnou praktickou část jako takovou |
 | Výsledky a závěr | **4 Závěr** | 4.1 zjištění, 4.2 diskuse, 4.3 shrnutí |
