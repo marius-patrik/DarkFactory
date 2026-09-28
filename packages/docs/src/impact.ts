@@ -1,6 +1,6 @@
 import { darkFactoryDirectory } from "@darkfactory/protocol/config-document";
 import type { RepositoryEvidence } from "@darkfactory/core/repository-evidence";
-import { RULES_PLUGIN } from "./content.ts";
+import { adrDocumentSource, RULES_PLUGIN } from "./content.ts";
 
 /** High-level kinds of change that can require canonical documentation updates. */
 export type DocumentationImpactKind = "public-api" | "product" | "governance";
@@ -59,7 +59,7 @@ function isDocumentationFile(path: string): boolean {
 		path === "README.md" ||
 		configDocumentPaths().has(path) ||
 		path.startsWith(`${RULES_PLUGIN}/skills/`) ||
-		path.startsWith(".agents/adr/")
+		path === adrDocumentSource()
 	);
 }
 
@@ -75,7 +75,7 @@ function isProductContractFile(path: string): boolean {
 function isGovernanceFile(path: string): boolean {
 	return (
 		path.startsWith(`${RULES_PLUGIN}/skills/`) ||
-		path.startsWith(".agents/adr/") ||
+		path === adrDocumentSource() ||
 		path.startsWith(".github/workflows/") ||
 		path.startsWith("packages/harness/assets/workflows/")
 	);

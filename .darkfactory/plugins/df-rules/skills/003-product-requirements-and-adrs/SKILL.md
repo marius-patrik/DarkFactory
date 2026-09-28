@@ -14,7 +14,7 @@ license: MIT
 
 ## Requirement
 
-`README.md` is the single normative product requirements document. Current active Request/Planning records define approved feature-specific behavior and executable delivery scope. Accepted ADRs record durable architectural decisions and rationale.
+`README.md` is the single normative product requirements document. Current active Request/Planning records define approved feature-specific behavior and executable delivery scope. Accepted ADRs record durable architectural decisions and rationale. They live in one document, `ADRs.md`, authored at `.darkfactory/ADRs.md` and symlinked at the repository root, one `## ADR-NNNN — Title` record per decision.
 
 Executable declarations use the final DarkFactory contracts:
 

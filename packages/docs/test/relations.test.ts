@@ -75,7 +75,7 @@ describe("rule/note relationships", () => {
 		const empty = graph([]);
 		const findings = analyzeRuleNoteRelations(empty).findings;
 		expect(findings).toContain("rules: at least one canonical rule is required");
-		expect(findings).toContain(".agents/adr: at least one accepted ADR is required");
+		expect(findings).toContain(".darkfactory/ADRs.md: at least one accepted ADR is required");
 		expect(() => assertRuleNoteRelations(empty)).toThrow("Rule/note relationship contract failed");
 	});
 
@@ -92,7 +92,7 @@ describe("rule/note relationships", () => {
 			rule("DF-RULE-001"),
 		]);
 		expect(analyzeRuleNoteRelations(content).findings).toContain(
-			".agents/adr/0001-test.md: accepted ADR must declare Related rules",
+			".agents/adr/0001-test.md#ADR-0001: accepted ADR must declare Related rules",
 		);
 	});
 
@@ -142,7 +142,9 @@ describe("rule/note relationships", () => {
 		expect(findings).toContain(
 			".darkfactory/plugins/df-rules/skills/001-test/SKILL.md: canonical rule is missing non-empty Enforcement section",
 		);
-		expect(findings).toContain(".agents/adr/0001-test.md: accepted ADR is missing non-empty Consequences section");
+		expect(findings).toContain(
+			".agents/adr/0001-test.md#ADR-0001: accepted ADR is missing non-empty Consequences section",
+		);
 	});
 
 	test("rejects non-ADR long-term notes so README cannot omit them", () => {
@@ -155,6 +157,8 @@ describe("rule/note relationships", () => {
 		};
 		expect(
 			analyzeRuleNoteRelations(graph([rule("DF-RULE-001"), adr("ADR-0001", "DF-RULE-001"), note])).findings,
-		).toContain(".agents/notes/loose.md: current long-term notes must be accepted numbered ADRs under .agents/adr/");
+		).toContain(
+			".agents/notes/loose.md: current long-term notes must be accepted numbered ADRs in .darkfactory/ADRs.md",
+		);
 	});
 });

@@ -21,10 +21,10 @@ function graph(): DocsContentGraph {
 					"---\nid: DF-RULE-001\ntitle: Test\nstatus: normative\napplies_to: [agents]\nactivation: always\nowners: [docs]\n---\n# Rule 1 — Test\n\n## Requirement\n\nTest.\n\n## Rationale\n\nTest.\n\n## Enforcement\n\nTest.\n\n## Exceptions\n\nNone.\n\n## Change control\n\nTest.\n",
 			},
 			{
-				id: "adr-0001",
+				id: "darkfactory-adrs-md-adr-0001-test",
 				kind: "adr",
 				title: "ADR-0001 — Test",
-				source: ".agents/adr/0001-test.md",
+				source: ".darkfactory/ADRs.md",
 				markdown:
 					"# ADR-0001 — Test\n\n**Status**: Accepted\n\n**Related rules**: `DF-RULE-001`\n\n## Decision\n\nTest.\n\n## Consequences\n\nTest.\n",
 			},
@@ -47,7 +47,14 @@ function writeCurrentAliases(repoRoot: string, omit?: string): void {
 	// The root README is the canonical product document itself, and the notes alias resolves to it,
 	// so the fixture has to lay down a real file there rather than a projection.
 	writeFileSync(join(repoRoot, "README.md"), "# product\n");
-	const aliases = [[".agents/notes/README.md", "../../README.md"]] as const;
+	// The ADRs are authored once and symlinked at the root, so the fixture lays down the document
+	// and then the alias, exactly as the repository does.
+	mkdirSync(join(repoRoot, ".darkfactory"), { recursive: true });
+	writeFileSync(join(repoRoot, ".darkfactory", "ADRs.md"), "# Architecture decision records\n");
+	const aliases = [
+		[".agents/notes/README.md", "../../README.md"],
+		["ADRs.md", ".darkfactory/ADRs.md"],
+	] as const;
 	for (const [path, target] of aliases) {
 		if (path === omit) continue;
 		mkdirSync(join(repoRoot, path, ".."), { recursive: true });
@@ -133,6 +140,7 @@ describe("current documentation truth", () => {
 				join(".agents", "CLAUDE.md"),
 				join(".agents", "notes", "adr"),
 				join(".agents", "notes", "rules"),
+				join(".darkfactory", "adr"),
 			]) {
 				const absolute = join(repoRoot, path);
 				mkdirSync(join(absolute, ".."), { recursive: true });
@@ -154,6 +162,7 @@ describe("current documentation truth", () => {
 				".agents/CLAUDE.md",
 				".agents/notes/adr",
 				".agents/notes/rules",
+				".darkfactory/adr",
 			]) {
 				expect(findings).toContainEqual({ path, message: "retired documentation surface must not exist" });
 			}

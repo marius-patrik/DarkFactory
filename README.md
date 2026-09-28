@@ -8,7 +8,7 @@ DarkFactory is a self-hosting autonomous software-delivery system built around a
 
 1. `README.md` defines product requirements and architecture.
 2. Current active Request/Planning records define approved feature-specific behavior and executable delivery scope.
-3. Accepted ADRs under `.agents/adr/` record durable decisions and rationale.
+3. Accepted ADRs in `ADRs.md`, authored once at `.darkfactory/ADRs.md` and symlinked at the root, record durable decisions and rationale.
 4. The combined `repo.dfconfig` document (or accepted root `config.dfconfig` or `.dfconfig` alias) and the workflow graph are executable declarations.
 5. `.agents/plugins/df-rules/skills/` define mandatory contribution/governance behavior, one skill per rule.
 6. Generated docs/web views are projections, not independent sources of truth.
@@ -289,7 +289,7 @@ TypeDoc may be used internally as the TypeScript/TSDoc extractor.
 
 Documentation builds are deterministic, strict and zero-warning for required API surfaces.
 
-`README.md` **is** the canonical product-documentation homepage: a regular file at the repository root, not a symlink. The binding rules are skills in `.agents/plugins/df-rules/skills/`, one per rule, and ADR links derive from `.agents/adr/**`. CI fails when a rule is missing a required front-matter field, when a rule number is not contiguous from 001, or when rule↔note relations are incomplete or contradictory.
+`README.md` **is** the canonical product-documentation homepage: a regular file at the repository root, not a symlink. The binding rules are skills in `.agents/plugins/df-rules/skills/`, one per rule, and ADR links derive from the records in `.darkfactory/ADRs.md`. CI fails when a rule is missing a required front-matter field, when a rule number is not contiguous from 001, or when rule↔note relations are incomplete or contradictory.
 
 ## 14. DarkFactory Web
 

@@ -2,6 +2,7 @@ import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { basename, join, relative } from "node:path";
 import type { DocsConfig } from "./config.ts";
 import { loadDocsConfig } from "./config.ts";
+import { darkFactoryDirectory } from "@darkfactory/protocol/config-document";
 
 /** Semantic kind assigned to a documentation page. */
 export type DocsPageKind = "home" | "product" | "plan" | "rules" | "rule" | "note" | "adr" | "capability";
@@ -93,6 +94,45 @@ function titleFromMarkdown(markdown: string, fallback: string): string {
 	return match?.[1]?.trim() || fallback;
 }
 
+/** Source path of the single document holding every accepted architecture decision. */
+export function adrDocumentSource(repoRoot = process.cwd()): string {
+	return `${darkFactoryDirectory()}/ADRs.md`;
+}
+
+interface AdrSection {
+	heading: string;
+	body: string;
+}
+
+/**
+ * Splits the ADR document into one section per `## ADR-NNNN — Title` heading.
+ *
+ * The decisions live in one file, so a section rather than a file is the unit of identity. The
+ * document's own h1 and its contents list are not a decision and are skipped.
+ */
+function adrSections(markdown: string): AdrSection[] {
+	const lines = markdown.replaceAll("\r\n", "\n").split("\n");
+	const sections: AdrSection[] = [];
+	let current: AdrSection | undefined;
+
+	for (const line of lines) {
+		const heading = /^##\s+(ADR-\d{4}\s+—\s+.+)$/u.exec(line)?.[1];
+		if (heading) {
+			current = { heading, body: "" };
+			sections.push(current);
+			continue;
+		}
+		if (current === undefined) continue;
+		// A heading of the same level ends the section; a deeper one belongs to it.
+		if (/^##\s+/u.test(line)) {
+			current = undefined;
+			continue;
+		}
+		current.body += `${line}\n`;
+	}
+	return sections;
+}
+
 function idFromSource(source: string): string {
 	return (
 		source
@@ -123,12 +163,30 @@ function markdownPage(repoRoot: string, source: string, kind: DocsPageKind, id?:
 	};
 }
 
-function markdownFiles(directory: string): string[] {
-	if (!existsSync(directory)) return [];
-	return readdirSync(directory, { withFileTypes: true })
-		.filter((entry) => entry.isFile() && entry.name.endsWith(".md"))
-		.map((entry) => entry.name)
-		.sort((a, b) => a.localeCompare(b));
+/**
+ * Every accepted ADR as its own page, carrying the section text.
+ *
+ * A page is the unit the graph and the rule/ADR relation contract work in, so splitting one document
+ * into sections keeps both working while the decisions themselves are authored in a single file.
+ */
+function adrPages(repoRoot: string): DocsPage[] {
+	const source = adrDocumentSource(repoRoot);
+	if (!existsSync(join(repoRoot, source))) return [];
+	const markdown = readFileSync(join(repoRoot, source), "utf8").replaceAll("\r\n", "\n");
+	return adrSections(markdown).map((section) => {
+		const heading = section.heading;
+		if (!/^\*\*Status\*\*:\s*Accepted\s*$/mu.test(section.body))
+			throw new Error(`ADR must have Status: Accepted: ${heading}`);
+		// The heading is the title and the body is what the checks read, so the section is rendered
+		// as it would be as a page of its own.
+		return {
+			id: idFromSource(`${source}#${heading}`),
+			kind: "adr" as const,
+			title: heading,
+			source: source.replaceAll("\\", "/"),
+			markdown: `# ${heading}\n${section.body}`,
+		};
+	});
 }
 
 /** The plugin holding the binding repository rules, one skill per rule. */
@@ -201,8 +259,7 @@ export function compileDocsContentGraph(
 ): DocsContentGraph {
 	const pages: DocsPage[] = [markdownPage(repoRoot, config.home, "home", "home")];
 	for (const source of ruleSources(repoRoot)) pages.push(markdownPage(repoRoot, source, "rule"));
-	const adrRoot = join(repoRoot, ".agents", "adr");
-	for (const name of markdownFiles(adrRoot)) pages.push(markdownPage(repoRoot, join(".agents", "adr", name), "adr"));
+	pages.push(...adrPages(repoRoot));
 	const workflowRoot = join(repoRoot, ".github", "workflows");
 	const workflows = existsSync(workflowRoot)
 		? readdirSync(workflowRoot, { withFileTypes: true })
