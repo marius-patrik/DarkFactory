@@ -12,6 +12,14 @@
 /** An ISO-8601 timestamp, with or without a zone designator. */
 const ISO_TIMESTAMP_RE = /\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z?/u;
 
+/**
+ * The one agent, as the provider map's key.
+ *
+ * A key rather than a provider: `df` chooses the model and the provider behind it, so nothing here
+ * names a provider, and a map keyed by a name only the agent knows cannot be maintained.
+ */
+export const DF_PROVIDER = "df";
+
 /** A `resetAt` epoch in milliseconds, as several providers report it. */
 const RESET_AT_RE = /"resetAt"\s*:\s*(\d{10,})/u;
 
@@ -94,26 +102,25 @@ export function nextQuotaReset(errorDetail: string, nowSeconds: number): number 
 	return nextPacificMidnight(nowSeconds);
 }
 
-/** The provider list a run names when every candidate in the chain ran out. */
-const CHAIN_SUFFIX_RE = /across every harness and model\s*\(([^)]+)\)/u;
+/** How a run says the agent ran out of quota across every account it holds. */
+// No `g`: a global regex carries `lastIndex` between calls, so `.test` alternates its answer
+// depending on what was tested before it. That is a test that passes alone and fails in the suite.
+const EXHAUSTED_RE = /Quota exhausted on every account .*? holds/u;
 
 /**
- * Read the provider names a run names when it ran out of quota across the whole chain.
+ * Read the provider name a run gives when it ran out of quota everywhere.
  *
  * These names go into the repository's provider map so a later resume knows which provider is worth
- * trying first, so the list has to come from the failure itself rather than from the chain the
- * runner happened to be configured with.
+ * trying first. It used to be parsed out of the failure detail, where the notice named the harnesses
+ * the runner had walked. There is one agent and it resolves its own model, so the only thing the
+ * pipeline can name is that agent — and on resume `df` picks a different provider itself, which is
+ * the whole reason the map exists rather than the runner re-walking a list.
  *
  * @param errorDetail - The failure detail the run produced.
- * @returns The provider names, or an empty array when the detail names none.
+ * @returns The agent that was exhausted, or an empty array when the detail says otherwise.
  */
 export function exhaustedProviders(errorDetail: string): string[] {
-	const match = CHAIN_SUFFIX_RE.exec(errorDetail);
-	if (!match?.[1]) return [];
-	return match[1]
-		.split(",")
-		.map((provider) => provider.trim())
-		.filter(Boolean);
+	return EXHAUSTED_RE.test(errorDetail) ? [DF_PROVIDER] : [];
 }
 
 /** What a run variable records about one blocked item. */

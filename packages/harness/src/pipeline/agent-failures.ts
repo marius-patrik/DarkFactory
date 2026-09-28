@@ -16,9 +16,9 @@
 
 import type { GitHubClient } from "../github/client.ts";
 import { GitHubError } from "../github/errors.ts";
-import { describeChain } from "../install/harness-registry.ts";
 import { type BoardStatus, blockEntity } from "./board-status.ts";
 import { type Checkpoint, RESUME_INSTRUCTIONS, saveCheckpoint } from "./checkpoint.ts";
+import { DF_LABEL } from "./df-run.ts";
 import type { PipelineEnv } from "./handler-context.ts";
 import type { PipelineIo } from "./pipeline-io.ts";
 import {
@@ -31,6 +31,15 @@ import {
 	quotaRunVariable,
 } from "./quota.ts";
 import type { WorkspaceIo } from "./workspace-io.ts";
+
+/**
+ * How the agent is described in a quota notice.
+ *
+ * This used to enumerate a "chain" of harnesses and models — a bullet per rung, resolved from a
+ * registry of nine agent CLIs. There is one agent, it picks its own model from its own configuration,
+ * and it fails over accounts itself, so a list of rungs described choices this pipeline never made.
+ */
+const DF_MODEL_DESCRIPTION = `${DF_LABEL} — df resolves its own model and its own accounts, so the pipeline chooses neither`;
 
 /** Marks every comment this pipeline posts, so a later pass can recognise its own output. */
 const AGENT_MARKER = "<!-- darkfactory-agent -->";
@@ -318,7 +327,7 @@ export async function checkpointAndNotifyExhaustion(
 
 	const resetAt = nextQuotaReset(context.errorDetail, blockedAt);
 	const body = exhaustionComment({
-		models: describeChain({ env: port.env }),
+		models: DF_MODEL_DESCRIPTION,
 		steps,
 		branchName: context.branchName,
 		resetAtUtc: utcStamp(resetAt),

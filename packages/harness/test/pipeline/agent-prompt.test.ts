@@ -2,16 +2,15 @@ import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { existsSync, mkdtempSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { REGISTRY } from "../../src/install/harness-registry.ts";
 import type { QuotaBlockStore } from "../../src/pipeline/agent-failures.ts";
 import {
 	ANSWER_CONTRACT,
 	agentPromptRunner,
 	type CommandResult,
-	HarnessBinaryMissing,
 	type ProcessRunner,
 } from "../../src/pipeline/agent-prompt.ts";
 import { type Checkpoint, loadCheckpoint } from "../../src/pipeline/checkpoint.ts";
+import { DF_BINARY, DF_LABEL } from "../../src/pipeline/df-run.ts";
 import { QUOTA_PROVIDERS_VARIABLE, quotaRunVariable } from "../../src/pipeline/quota.ts";
 import { AGENT_ERROR_PREFIX, AUTH_FAILED_NOTICE, QUOTA_EXHAUSTED_NOTICE } from "../../src/pipeline/signals.ts";
 import {
@@ -91,13 +90,9 @@ let workspaceDir = "";
  */
 async function runLadder(options: LadderOptions = {}): Promise<LadderRun> {
 	const invocations = options.invocations ?? [{ exitCode: 0, stdout: dfStream("the answer"), stderr: "" }];
-	// The image carries exactly the chain's binaries, so an unlisted harness is genuinely absent and a
-	// chain override is genuinely runnable.
-	const chain = (options.env?.AGENT_HARNESS_CHAIN ?? "df")
-		.split(",")
-		.map((name) => name.trim())
-		.filter(Boolean);
-	const onPath = options.onPath ?? chain.map((name) => REGISTRY[name]?.binary ?? name);
+	// The image carries the agent and nothing else, so the only availability question is whether `df`
+	// is on PATH. A chain override is no longer a thing this pipeline reads.
+	const onPath = options.onPath ?? [DF_BINARY];
 	const io = recordingIo();
 	const workspace = recordingWorkspace({ gitOutput: options.gitOutput });
 	const board: LadderRun["board"] = [];
@@ -236,37 +231,38 @@ describe("the answer a harness produces", () => {
 			env: { AGENT_HARNESS_CHAIN: "df,claude", CLAUDE_CODE_OAUTH_TOKEN: "tok-abcdefgh", HOME: workspaceDir },
 			invocations: [
 				{ exitCode: 0, stdout: dfStream("Error: 429 Too Many Requests"), stderr: "" },
-				{ exitCode: 0, stdout: "the real answer\n", stderr: "" },
+				{ exitCode: 0, stdout: dfStream("the real answer"), stderr: "" },
 			],
 		});
 
+		// Both invocations are the one agent. The second was a plain-text answer, which only parsed
+		// because a *different* CLI's output was not read as df's event stream; with one agent every
+		// answer arrives as that stream.
 		expect(run.result).toBe("the real answer");
-		expect(run.reported.join("\n")).toContain("Quota exhausted on df (reported on stdout)");
-		expect(run.runs.map((entry) => entry.argv[0])).toEqual(["df", "claude"]);
+		expect(run.reported.join("\n")).toContain("Quota exhausted on `df` (reported on stdout)");
+		expect(run.runs.every((entry) => entry.argv[0] === "df")).toBe(true);
 	});
 });
 
-describe("when the image has no usable harness", () => {
-	test("a chain whose binaries are all absent returns the no-harness notice and spawns nothing", async () => {
+describe("when the image has no agent", () => {
+	test("an image without df returns the no-agent notice and spawns nothing", async () => {
 		const run = await runLadder({ onPath: [] });
 
-		// The pipeline has one harness by declaration, so an image that lost it is a diagnosable state
-		// rather than a crash, and the run says which binary is missing.
+		// There is one agent, so an image that lost it is a diagnosable state rather than a crash, and
+		// the run says which binary is missing.
 		expect(run.result).toBe(
-			`${AGENT_ERROR_PREFIX}: No usable harness. ` +
-				"The pipeline runs df as its only agent harness and it is not on PATH.",
+			`${AGENT_ERROR_PREFIX}: No usable agent. The pipeline runs df as its only agent and it is not on PATH.`,
 		);
 		expect(run.runs).toEqual([]);
 	});
 
-	test("a chain naming a harness that is not installed skips it and runs the one that is", async () => {
-		const run = await runLadder({
-			env: { AGENT_HARNESS_CHAIN: "cursor,df" },
-			onPath: ["df"],
-		});
-
+	test("a leftover chain override does not change what runs or what is reported", async () => {
+		// `AGENT_HARNESS_CHAIN` used to select which agent CLIs the runner walked. With one
+		// agent there is nothing to select, so an override naming something else must not
+		// change what runs or produce a notice about a harness that does not exist.
+		const run = await runLadder({ env: { AGENT_HARNESS_CHAIN: "cursor,df" }, onPath: ["df"] });
 		expect(run.result).toBe("the answer");
-		expect(run.reported).toContain("Harness 'cursor' unavailable (cursor-agent not on PATH); skipping.");
+		expect(run.reported.join("\n")).not.toContain("cursor");
 	});
 });
 
@@ -281,8 +277,7 @@ describe("when the agent produces nothing", () => {
 		// and the issue waits forever.
 		expect(run.result).toBeInstanceOf(Error);
 		expect((run.result as Error).message).toBe(
-			`${AGENT_ERROR_PREFIX}: No usable agent output was produced across every attempt (df): ` +
-				"df produced no output",
+			`${AGENT_ERROR_PREFIX}: No usable agent output was produced by ${DF_LABEL} (the agent produced no output)`,
 		);
 
 		const comment = postedComments(run.io)[0] as string;
@@ -348,7 +343,7 @@ describe("when the agent fails outright", () => {
 
 		// Guessing a class for an unknown failure would burn the rest of the chain on the same bug.
 		expect(run.result).toBe(
-			`${AGENT_ERROR_PREFIX}: Unexpected failure executing df: ` +
+			`${AGENT_ERROR_PREFIX}: Unexpected failure executing \`df\`: ` +
 				"EACCES: permission denied, open '/root/.df/credentials.json'",
 		);
 		expect(run.runs).toHaveLength(1);
@@ -388,7 +383,7 @@ describe("when every account and model is out of quota", () => {
 		// df's own summary comes first, the captured line is kept because it is not part of that summary,
 		// and the exit code is translated last so the single quota check keeps deciding everything.
 		expect(run.result).toBe(
-			`${QUOTA_EXHAUSTED_NOTICE} across every harness and model (df): ` +
+			`${QUOTA_EXHAUSTED_NOTICE} on every account ${DF_LABEL} holds: ` +
 				'all candidates exhausted\n{"type":"error","message":"all candidates exhausted"}\n' +
 				"df exit code 2: quota exhausted on every candidate in the chain",
 		);
@@ -442,7 +437,7 @@ describe("when every account and model is out of quota", () => {
 		});
 
 		expect(run.result).toBe(
-			`${AUTH_FAILED_NOTICE} across every harness and model (df): ` +
+			`${AUTH_FAILED_NOTICE} for every account ${DF_LABEL} holds: ` +
 				'every candidate was rejected\n{"type":"error","message":"every candidate was rejected"}\n' +
 				"df exit code 3: authentication failed on every candidate in the chain",
 		);
@@ -452,175 +447,11 @@ describe("when every account and model is out of quota", () => {
 		expect(loadCheckpoint(workspaceDir)).toBeUndefined();
 		expect(run.variables).toEqual([]);
 	});
-
-	test("a harness whose binary vanished between resolution and invocation moves to the next attempt", async () => {
-		const run = await runLadder({
-			env: { AGENT_HARNESS_CHAIN: "df,claude", CLAUDE_CODE_OAUTH_TOKEN: "tok-abcdefgh", HOME: workspaceDir },
-			invocations: [
-				new HarnessBinaryMissing("df"),
-				{ exitCode: 0, stdout: "answered by the second harness\n", stderr: "" },
-			],
-		});
-
-		expect(run.result).toBe("answered by the second harness");
-		expect(run.reported.join("\n")).toContain("vanished between resolution and invocation");
-	});
-
-	test("a plain-text harness reporting a limit on stdout rotates rather than posting it as the reply", async () => {
-		const run = await runLadder({
-			env: {
-				AGENT_HARNESS_CHAIN: "claude,gemini",
-				CLAUDE_CODE_OAUTH_TOKEN: "tok-abcdefgh",
-				GEMINI_API_KEY: "key-abcdefgh",
-			},
-			invocations: [
-				{ exitCode: 0, stdout: "Error: 429 Too Many Requests\n", stderr: "" },
-				{ exitCode: 0, stdout: "the real answer\n", stderr: "" },
-			],
-		});
-
-		expect(run.result).toBe("the real answer");
-		expect(run.runs.map((entry) => entry.argv[0])).toEqual(["claude", "gemini"]);
-		expect(run.reported.join("\n")).toContain("Quota exhausted on claude/opus (reported on stdout)");
-		expect(run.reported).toContain("Succeeded on gemini/gemini-3.8-flash after 1 exhausted attempt(s).");
-	});
-
-	test("the last attempt waits out a rate limit twice and then gives up, without rotating", async () => {
-		const run = await runLadder({
-			invocations: [{ exitCode: 1, stdout: "", stderr: "Error: 429 Too Many Requests" }],
-			checkpoint: { issueNumber: 42, repo: "marius-patrik/DarkFactory" },
-		});
-
-		// One attempt, three invocations: the original plus the two retries the Python allowed.
-		expect(run.runs).toHaveLength(3);
-		expect(run.slept).toHaveLength(2);
-		expect(run.slept[1]).toBeGreaterThan(run.slept[0] as number);
-		expect(run.result).toBe(
-			`${QUOTA_EXHAUSTED_NOTICE} across every harness and model (df): Error: 429 Too Many Requests`,
-		);
-		expect(run.board).toEqual([{ number: 42, isPr: false, status: "Blocked" }]);
-	});
-
-	test("an exhausted account rotates immediately rather than waiting", async () => {
-		const run = await runLadder({
-			env: {
-				AGENT_HARNESS_CHAIN: "claude,gemini",
-				CLAUDE_CODE_OAUTH_TOKEN: "tok-abcdefgh",
-				CLAUDE_CODE_OAUTH_TOKEN_2: "tok-ijklmnop",
-				GEMINI_API_KEY: "key-abcdefgh",
-			},
-			invocations: [
-				{ exitCode: 1, stdout: "", stderr: "Error: 429 Too Many Requests" },
-				{ exitCode: 0, stdout: "second account answered\n", stderr: "" },
-			],
-		});
-
-		expect(run.result).toBe("second account answered");
-		expect(run.slept).toEqual([]);
-	});
 });
 
-describe("when the credential store cannot be reached", () => {
-	test("an unreachable token endpoint skips the account instead of ending the run", async () => {
-		const realFetch = globalThis.fetch;
-		globalThis.fetch = (async () => {
-			throw new Error("connect ECONNREFUSED 10.0.0.1:443");
-		}) as unknown as typeof fetch;
-		try {
-			const run = await runLadder({
-				env: {
-					AGENT_HARNESS_CHAIN: "antigravity,claude",
-					ANTIGRAVITY_REFRESH_TOKEN: "refresh-abcdefgh",
-					ANTIGRAVITY_CLIENT_ID: "client-abcdefgh",
-					CLAUDE_CODE_OAUTH_TOKEN: "tok-abcdefgh",
-					HOME: workspaceDir,
-				},
-				invocations: [{ exitCode: 0, stdout: "the static credential answered\n", stderr: "" }],
-			});
+describe("when the credential store cannot be reached", () => {});
 
-			expect(run.reported.join("\n")).toContain(
-				"Could not authenticate antigravity/gemini-3.8-flash-high: unexpected error during token refresh: " +
-					"connect ECONNREFUSED",
-			);
-			// A stale or unreachable store on one account must not strand a healthy one.
-			expect(run.result).toBe("the static credential answered");
-			expect(run.runs.map((entry) => entry.argv[0])).toEqual(["claude"]);
-		} finally {
-			globalThis.fetch = realFetch;
-		}
-	});
-
-	test("a rejected exchange is reported with the endpoint's own status", async () => {
-		const realFetch = globalThis.fetch;
-		globalThis.fetch = (async () =>
-			new Response('{"error":"invalid_grant"}', { status: 400 })) as unknown as typeof fetch;
-		try {
-			const run = await runLadder({
-				env: {
-					AGENT_HARNESS_CHAIN: "antigravity",
-					ANTIGRAVITY_REFRESH_TOKEN: "refresh-abcdefgh",
-				},
-				invocations: [{ exitCode: 0, stdout: "never reached\n", stderr: "" }],
-			});
-
-			expect(run.reported.join("\n")).toContain(
-				'Could not authenticate antigravity/gemini-3.8-flash-high: token refresh failed (400): {"error":"invalid_grant"}',
-			);
-			// The endpoint was never reached, so nothing was spawned and nothing was reported as an
-			// answer.
-			expect(run.runs).toEqual([]);
-			expect(run.result).toBe(
-				`${QUOTA_EXHAUSTED_NOTICE} across every harness and model ` +
-					"(antigravity/gemini-3.8-flash-high, antigravity/claude-opus-4-6-thinking): " +
-					'token refresh failed (400): {"error":"invalid_grant"}',
-			);
-		} finally {
-			globalThis.fetch = realFetch;
-		}
-	});
-});
-
-describe("the credential one attempt is handed", () => {
-	test("a second account's key arrives under the first account's name and the first is cleared", async () => {
-		const run = await runLadder({
-			env: {
-				AGENT_HARNESS_CHAIN: "claude",
-				CLAUDE_CODE_OAUTH_TOKEN_2: "second-account-token",
-				CLAUDE_CODE_OAUTH_TOKEN_3: "third-account-token",
-			},
-			invocations: [{ exitCode: 0, stdout: "answered\n", stderr: "" }],
-		});
-
-		const childEnv = run.runs[0]?.env as Record<string, string | undefined>;
-		// The CLI only ever reads one name, so account two's secret has to arrive under it.
-		expect(childEnv.CLAUDE_CODE_OAUTH_TOKEN).toBe("second-account-token");
-		// No other account's secret may travel along: leaving one in place lets the CLI authenticate
-		// with it and the rotation achieves nothing, silently.
-		expect(childEnv.CLAUDE_CODE_OAUTH_TOKEN_2).toBeUndefined();
-		expect(childEnv.CLAUDE_CODE_OAUTH_TOKEN_3).toBeUndefined();
-		expect(childEnv.ANTHROPIC_API_KEY).toBeUndefined();
-	});
-
-	test("a subscription login is written from its secret and removed once the attempt is over", async () => {
-		const loginPath = join(workspaceDir, ".codex", "auth.json");
-		const run = await runLadder({
-			env: {
-				AGENT_HARNESS_CHAIN: "codex",
-				CODEX_AUTH_JSON: '{"tokens":{"access_token":"abc"}}',
-				OPENAI_API_KEY: "key-abcdefgh",
-				HOME: workspaceDir,
-			},
-			invocations: [{ exitCode: 0, stdout: "answered\n", stderr: "" }],
-		});
-
-		expect(run.result).toBe("answered");
-		// The file carried the secret while the CLI ran, and is gone now, so the secret is not left on
-		// disk for the next thing in the container to read.
-		expect(run.runs[0]?.argv[0]).toBe("codex");
-		expect(run.runs[0]?.loginFile).toBe('{"tokens":{"access_token":"abc"}}');
-		expect(existsSync(loginPath)).toBe(false);
-	});
-});
+describe("the credential one attempt is handed", () => {});
 
 /** The value the ladder wrote to one repository variable. */
 function variablesOf(run: LadderRun, name: string): string | undefined {

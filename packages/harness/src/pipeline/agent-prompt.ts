@@ -26,23 +26,9 @@
 
 import { spawn } from "node:child_process";
 import {
-	type Attempt,
-	attemptLabel,
-	authSecretNames,
-	buildArgv,
-	credentialEnvNames,
-	type Harness,
-	PROMPT_FILE,
-	REGISTRY,
-	resolveAttempts,
-} from "../install/harness-registry.ts";
-import {
 	type AttemptEnvironment,
-	credentialEnv,
 	finishDfLoginFiles,
-	finishLoginFile,
 	type PersistRotatedToken,
-	prepareLoginFile,
 	removePromptFile,
 	reportingTokenPersistence,
 	snapshotDfLoginFiles,
@@ -58,6 +44,7 @@ import {
 import { calculateBackoff } from "./backoff.ts";
 import type { Checkpoint } from "./checkpoint.ts";
 import { dfFailureDetail, dfSetupSecretNames, parseDfJsonOutput } from "./df-events.ts";
+import { DF_LABEL, dfAvailable, dfRunArgv } from "./df-run.ts";
 import { DEFAULT_REPOSITORY } from "./dispatch.ts";
 import {
 	AGENT_DEFAULT_TIMEOUT,
@@ -108,10 +95,8 @@ const BACKOFF_FACTOR = 2.0;
 /** Longest a rotated-credential detail reaches in a notice, as the Python cut it. */
 const DETAIL_LIMIT = 400;
 
-/** The notice returned when the chain resolved to nothing at all. */
-const NO_HARNESS_NOTICE =
-	`${AGENT_ERROR_PREFIX}: No usable harness. ` +
-	"The pipeline runs df as its only agent harness and it is not on PATH.";
+/** The notice returned when the agent is not on PATH, which is the one precondition there is. */
+const NO_AGENT_NOTICE = `${AGENT_ERROR_PREFIX}: No usable agent. The pipeline runs df as its only agent and it is not on PATH.`;
 
 /** How a command ended, as `subprocess.run` reported it. */
 export interface CommandResult {
@@ -221,28 +206,33 @@ export interface AgentPromptRunnerOptions {
 	warn?: (message: string) => void;
 }
 
-/** What one attempt is doing, as the ladder walks it. */
+/**
+ * What one run of the agent is doing.
+ *
+ * This carried a harness, a model, a 1-based account, and whether anything was left to rotate to.
+ * All four were scaffolding for a fallback chain across nine agent CLIs. There is one agent, it
+ * picks its own model, and it reads its own accounts from `DF_HOME`, so none of them was ever a
+ * decision the runner could make differently. Only the label survives, because a notice has to say
+ * what ran.
+ */
 interface AttemptState {
-	/** The attempt's harness. */
-	harness: Harness;
-	/** The model pinned onto it, if any. */
-	model: string | undefined;
-	/** The 1-based account paying for it. */
-	account: number;
-	/** The rendered label, which names the account but never its credential. */
+	/** The rendered label, which names the agent and never a credential. */
 	label: string;
-	/** Whether an unused account, pool or harness is left to try. */
-	rotationAvailable: boolean;
 }
 
 /** Which way an attempt ended, as the ladder's four branches distinguish them. */
 type AttemptOutcome =
 	/** The agent answered. */
 	| { kind: "answer"; output: string }
-	/** This attempt is done and the ladder should move on. */
-	| { kind: "rotate" | "no-output" }
-	/** A last-attempt rate limit: the only point at which waiting beats rotating. */
+	/** The agent exited cleanly with nothing usable to show. */
+	| { kind: "no-output" }
+	/** A transient rate limit, and the retry budget is not yet spent. */
 	| { kind: "retry" }
+	/**
+	 * The run ends here, and why is in `progress`: quota becomes a checkpoint, an auth failure becomes
+	 * a plain error. Distinct from `no-output`, which means nothing usable was produced at all.
+	 */
+	| { kind: "exhausted" }
 	/** The run ends here, with this notice. */
 	| { kind: "error"; notice: string };
 
@@ -262,25 +252,16 @@ interface ChainProgress {
 	sawNoOutput: boolean;
 }
 
-/** Whether a harness template carries the prompt-file placeholder. */
-function takesPromptFile(harness: Harness): boolean {
-	return harness.template.some((token) => token.includes(PROMPT_FILE));
-}
-
 /**
- * Every environment variable whose value may appear in a provider's own output and must not.
+ * Every environment variable whose value may appear in the agent's own output and must not.
  *
- * The registry's default chain first, then every *registered* harness: a chain override can still run
- * one, and the df setup step reads its own secrets. Names rather than values, because redaction reads
- * the live environment at the moment it is needed and so still recognises a token rotated mid-run.
+ * The account secrets `df` reads, which is all there is: the pipeline provisions them through `df
+ * account set`, and `df` reads them from its own store. Names rather than values, because redaction
+ * reads the live environment at the moment it is needed and so still recognises a token rotated
+ * mid-run.
  */
 function redactionNames(): string[] {
-	const names = new Set(credentialEnvNames());
-	for (const harness of Object.values(REGISTRY)) {
-		if (harness.auth) for (const name of authSecretNames(harness.auth)) names.add(name);
-	}
-	for (const name of dfSetupSecretNames()) names.add(name);
-	return [...names];
+	return [...new Set(dfSetupSecretNames())];
 }
 
 /**
@@ -323,9 +304,8 @@ export function agentPromptRunner(options: AgentPromptRunnerOptions): RunAgentPr
 	});
 
 	/** The failure detail a non-zero exit produced, with df's exit code translated into wording. */
-	const failureDetail = (state: AttemptState, result: CommandResult): string => {
+	const failureDetail = (_state: AttemptState, result: CommandResult): string => {
 		const detail = `${result.stderr.trim()}\n${result.stdout.trim()}`.trim();
-		if (state.harness.name !== "df") return detail;
 		return dfFailureDetail({ exitCode: result.exitCode, stdout: result.stdout, detail });
 	};
 
@@ -343,8 +323,7 @@ export function agentPromptRunner(options: AgentPromptRunnerOptions): RunAgentPr
 
 		if (!exhausted && !authFailed) {
 			const notice =
-				`${AGENT_ERROR_PREFIX}: \`${state.harness.binary}\` invocation failed ` +
-				`(exit code ${result.exitCode}): ${detail}`;
+				`${AGENT_ERROR_PREFIX}: ${DF_LABEL} invocation failed ` + `(exit code ${result.exitCode}): ${detail}`;
 			warn(notice);
 			return { kind: "error", notice };
 		}
@@ -352,25 +331,18 @@ export function agentPromptRunner(options: AgentPromptRunnerOptions): RunAgentPr
 		if (authFailed) {
 			progress.lastRotatable = "auth";
 			const safe = redact(detail).slice(0, DETAIL_LIMIT);
-			warn(
-				state.rotationAvailable
-					? `Authentication failed on ${state.label}: ${safe}. ` +
-							"Moving to the next account/model/harness rather than failing."
-					: `Authentication failed on ${state.label} with no account, model or harness left to try: ${safe}.`,
-			);
-			return { kind: "rotate" };
+			// `df` resolves its own accounts, so the runner has nothing to rotate to. A credential the
+			// agent rejected is a failure to report, not a rung to move past.
+			warn(`Authentication failed on ${state.label} and df has no other account to try: ${safe}.`);
+			return { kind: "exhausted" };
 		}
 
 		progress.lastRotatable = "quota";
-		if (state.rotationAvailable) {
-			warn(
-				`Quota exhausted on ${state.label}: ${detail}. ` +
-					"Moving to the next account/model/harness rather than waiting.",
-			);
-			return { kind: "rotate" };
-		}
-		// Nothing left to rotate to, so this is the only point at which waiting is the better answer.
-		return { kind: "retry" };
+		warn(
+			`Quota exhausted on ${state.label}: ${detail}. ` +
+				"There is no other account to move to, so the run ends in a checkpoint.",
+		);
+		return { kind: "exhausted" };
 	};
 
 	/**
@@ -396,9 +368,8 @@ export function agentPromptRunner(options: AgentPromptRunnerOptions): RunAgentPr
 		return true;
 	};
 
-	/** The sentence the Python appended to every rotation notice. */
-	const rotationWhere = (state: AttemptState): string =>
-		state.rotationAvailable ? "Moving to the next attempt." : "Nothing left to rotate to.";
+	/** What a notice says about what happens next. `df` has nothing to rotate to. */
+	const rotationWhere = (): string => "There is no other account for df to try.";
 
 	/**
 	 * Classify an invocation that exited cleanly.
@@ -411,7 +382,7 @@ export function agentPromptRunner(options: AgentPromptRunnerOptions): RunAgentPr
 	 * untouched.
 	 */
 	const classifyOutput = (state: AttemptState, result: CommandResult, progress: ChainProgress): AttemptOutcome => {
-		const output = state.harness.name === "df" ? parseDfJsonOutput(result.stdout) : result.stdout.trim();
+		const output = parseDfJsonOutput(result.stdout);
 
 		if (output && !output.includes("\n") && output.length <= SHORT_REPORT_LIMIT) {
 			const quota = isQuotaExhausted(output);
@@ -422,9 +393,13 @@ export function agentPromptRunner(options: AgentPromptRunnerOptions): RunAgentPr
 				warn(
 					`${quota ? "Quota exhausted" : "Authentication failed"} on ${state.label} (reported on stdout); ` +
 						`detail: ${progress.lastErrorDetail.slice(0, DETAIL_LIMIT)}. ` +
-						`${rotationWhere(state)}`,
+						`${rotationWhere()}`,
 				);
-				return { kind: "rotate" };
+				// Quota is retried, because the retry budget is the only resilience left now there is no
+				// second agent to move on to. An auth failure is not: a credential the agent has already
+				// rejected will be rejected again, so the run ends and says so rather than spending the
+				// budget on it.
+				return auth ? { kind: "error", notice: progress.lastErrorDetail } : { kind: "retry" };
 			}
 		}
 
@@ -444,18 +419,18 @@ export function agentPromptRunner(options: AgentPromptRunnerOptions): RunAgentPr
 				warn(
 					`${quota ? "Quota exhausted" : "Authentication failed"} on ${state.label} ` +
 						`(reported without usable output); ` +
-						`stderr tail: ${progress.lastErrorDetail.slice(0, DETAIL_LIMIT)}. ${rotationWhere(state)}`,
+						`stderr tail: ${progress.lastErrorDetail.slice(0, DETAIL_LIMIT)}. ${rotationWhere()}`,
 				);
-				return { kind: "rotate" };
+				return { kind: "exhausted" };
 			}
 			// A harness that exits 0 with no usable text is a failed attempt, not a perfect answer.
 			// It rotates exactly like quota - waiting cannot fix a spent time budget - and if nothing
 			// produces text anywhere the run raises rather than reporting success over an empty shell.
 			progress.sawNoOutput = true;
-			progress.lastErrorDetail = redact(boundedTail(result.stderr)) || `${state.label} produced no output`;
+			progress.lastErrorDetail = redact(boundedTail(result.stderr)) || "the agent produced no output";
 			warn(
 				`No usable output from ${state.label} (exit 0, empty or print-timed-out); ` +
-					`stderr tail: ${progress.lastErrorDetail.slice(0, DETAIL_LIMIT)}. ${rotationWhere(state)}`,
+					`stderr tail: ${progress.lastErrorDetail.slice(0, DETAIL_LIMIT)}. ${rotationWhere()}`,
 			);
 			return { kind: "no-output" };
 		}
@@ -472,39 +447,29 @@ export function agentPromptRunner(options: AgentPromptRunnerOptions): RunAgentPr
 		kind: string,
 		progress: ChainProgress,
 	): Promise<AttemptOutcome> => {
-		const attempt: Attempt = { harness: state.harness, model: state.model, account: state.account };
-		let attemptEnv: Record<string, string | undefined>;
-		try {
-			attemptEnv = await credentialEnv(runEnvironment, attempt, persist);
-		} catch (error) {
-			// An unusable account is not a fatal error: the next one may hold a working credential.
-			warn(`Could not authenticate ${state.label}: ${errorMessage(error)}`);
-			progress.lastErrorDetail = errorMessage(error);
-			return { kind: "rotate" };
-		}
-
+		// `df` reads its own accounts, so the environment an invocation runs in is the run's own. There
+		// is no per-attempt credential to prepare and no second account to fall back to.
+		const attemptEnv = runEnvironment.base;
 		const text = prompt + ANSWER_CONTRACT;
+		// Progress, not failure, so it goes to stdout. This used to announce the resolved chain; with
+		// one agent it says what is about to run, which is the part a reader of a stuck run needs.
+		say(`Running ${DF_LABEL} (${kind}), timeout ${timeout}.`);
 		for (let retry = 0; retry <= MAX_RETRIES; retry += 1) {
-			const loginState = prepareLoginFile(runEnvironment.base, attempt);
 			// df borrows CLI subscription logins and keeps OAuth in its own store; either can rotate
 			// mid-run, so the pre-run state is snapshotted for write-back below.
-			const dfLoginState = state.harness.name === "df" ? snapshotDfLoginFiles(runEnvironment.live) : undefined;
-			// A template carrying the prompt-file placeholder receives the prompt by path, so a long
-			// prompt never meets an argument-length limit. The file is written per retry and removed
-			// in the `finally` below.
-			const promptFile = takesPromptFile(state.harness) ? writePromptFile(text) : undefined;
-			const argv = buildArgv(state.harness, { prompt: text, model: state.model, timeout, promptFile, kind });
+			const dfLoginState = snapshotDfLoginFiles(runEnvironment.live);
+			// The prompt travels by file, so a long prompt never meets an argument-length limit. The file
+			// is written per retry and removed in the `finally` below.
+			const promptFile = writePromptFile(text);
+			const argv = dfRunArgv({ promptFile, kind, timeout });
 
 			let result: CommandResult;
 			try {
 				result = await run(argv, attemptEnv);
 			} catch (error) {
 				if (error instanceof HarnessBinaryMissing) {
-					warn(
-						`Harness binary '${error.binary}' vanished between resolution and invocation; ` +
-							"moving to the next attempt.",
-					);
-					return { kind: "rotate" };
+					warn(`Harness binary '${error.binary}' vanished between resolution and invocation.`);
+					return { kind: "exhausted" };
 				}
 				// Anything unexpected is surfaced verbatim rather than classified: the ladder cannot
 				// tell a quota failure from a bug it has never seen, and guessing would be worse.
@@ -512,31 +477,32 @@ export function agentPromptRunner(options: AgentPromptRunnerOptions): RunAgentPr
 				warn(notice);
 				return { kind: "error", notice };
 			} finally {
-				finishLoginFile(loginState, persist);
 				if (dfLoginState) finishDfLoginFiles(dfLoginState, runEnvironment.live, persist, warn);
-				if (promptFile) removePromptFile(promptFile);
+				removePromptFile(promptFile);
 			}
 
-			if (result.exitCode !== 0) {
-				const outcome = classifyFailure(state, result, progress);
-				if (outcome.kind !== "retry") return outcome;
-				if (!(await waitOutRateLimit(state, retry, progress.lastErrorDetail))) return { kind: "rotate" };
-				continue;
+			// Both verdicts come back through the same retry budget. An agent that reports exhaustion on
+			// stdout has exited 0, and used to be handled by rotating to a second CLI; with one agent the only
+			// resilience left is this loop, so a verdict that says "try again" has to reach it.
+			const outcome =
+				result.exitCode !== 0 ? classifyFailure(state, result, progress) : classifyOutput(state, result, progress);
+			if (outcome.kind !== "retry") return outcome;
+			if (!(await waitOutRateLimit(state, retry, progress.lastErrorDetail))) {
+				return { kind: "exhausted" };
 			}
-			return classifyOutput(state, result, progress);
 		}
-		return { kind: "rotate" };
+		return { kind: "exhausted" };
 	};
 
 	return async function runPrompt(request: AgentPromptRequest): Promise<string> {
 		const timeout = request.timeout ?? AGENT_DEFAULT_TIMEOUT;
 		const kind = request.kind;
-		// The Python's chain-resolution notices went to stdout, not stderr: they are progress, not
-		// failure.
-		const attempts = resolveAttempts(undefined, { env, which, log: say });
-		if (attempts.length === 0) {
-			warn(NO_HARNESS_NOTICE);
-			return NO_HARNESS_NOTICE;
+		// The one precondition the runner checks for itself. `df` resolves its own model and its own
+		// accounts, so there is nothing else to resolve, and a notice about which harness to use is not a
+		// thing this pipeline can act on.
+		if (!dfAvailable(which)) {
+			warn(NO_AGENT_NOTICE);
+			return NO_AGENT_NOTICE;
 		}
 
 		const base: Record<string, string | undefined> = { ...env };
@@ -545,35 +511,18 @@ export function agentPromptRunner(options: AgentPromptRunnerOptions): RunAgentPr
 		const runEnvironment: AttemptEnvironment = { base, live: { ...env } };
 
 		const progress: ChainProgress = { lastErrorDetail: "", lastRotatable: "quota", sawNoOutput: false };
-		const tried: string[] = [];
+		const state: AttemptState = { label: DF_LABEL };
+		const outcome = await runAttempt(state, runEnvironment, request.prompt, timeout, kind, progress);
+		if (outcome.kind === "answer") return outcome.output;
+		if (outcome.kind === "error") return outcome.notice;
 
-		for (const [index, attempt] of attempts.entries()) {
-			const state: AttemptState = {
-				harness: attempt.harness,
-				model: attempt.model,
-				account: attempt.account,
-				label: attemptLabel(attempt),
-				rotationAvailable: index < attempts.length - 1,
-			};
-			tried.push(state.label);
-			const outcome = await runAttempt(state, runEnvironment, request.prompt, timeout, kind, progress);
-			if (outcome.kind === "answer") {
-				if (tried.length > 1) {
-					say(`Succeeded on ${state.label} after ${tried.length - 1} exhausted attempt(s).`);
-				}
-				return outcome.output;
-			}
-			if (outcome.kind === "error") return outcome.notice;
-		}
-
-		const chain = tried.join(", ");
 		if (progress.sawNoOutput) {
 			// Every attempt produced nothing usable. This is not quota - quota blocks gracefully with a
 			// checkpoint - it is the pipeline silently succeeding on an empty shell, which must fail the
 			// run so the workflow turns red rather than "passing" with vacuous comments.
 			const notice = redact(
-				`${AGENT_ERROR_PREFIX}: No usable agent output was produced across every attempt ` +
-					`(${chain}): ${progress.lastErrorDetail || "empty output"}`,
+				`${AGENT_ERROR_PREFIX}: No usable agent output was produced by ${DF_LABEL} ` +
+					`(${progress.lastErrorDetail || "empty output"})`,
 			);
 			warn(notice);
 			await postAgentFailureNotice(
@@ -588,12 +537,12 @@ export function agentPromptRunner(options: AgentPromptRunnerOptions): RunAgentPr
 			// Every credential in the chain was rejected. This is not quota - resuming the same stale
 			// secrets would fail the same way - so there is no checkpoint and no `Blocked` label, just an
 			// error the callers post before failing the run.
-			const err = `${AUTH_FAILED_NOTICE} across every harness and model (${chain}): ${progress.lastErrorDetail}`;
+			const err = `${AUTH_FAILED_NOTICE} for every account ${DF_LABEL} holds: ${progress.lastErrorDetail || "no detail"}`;
 			warn(redact(err));
 			return err;
 		}
 
-		const err = `${QUOTA_EXHAUSTED_NOTICE} across every harness and model (${chain}): ${progress.lastErrorDetail}`;
+		const err = `${QUOTA_EXHAUSTED_NOTICE} on every account ${DF_LABEL} holds: ${progress.lastErrorDetail || "no detail"}`;
 		warn(err);
 
 		const checkpoint = request.checkpoint;

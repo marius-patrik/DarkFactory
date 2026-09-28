@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, test } from "bun:test";
+import { afterEach, describe, expect, setDefaultTimeout, test } from "bun:test";
 import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { FileCredentialStore } from "@darkfactory/keychain";
@@ -26,6 +26,15 @@ import { redactToolInput } from "../src/cli.ts";
  * second file still failed at 5000ms.
  */
 const temporary: string[] = [];
+
+// Applies to this file only. Every test here spawns the real `df` entry point, so its wall time is
+// process startup plus whatever the run does. Bun's 5000ms default is not a bound these can rely on:
+// the file passes on its own in 17s, and under the full suite a test that took 1.2s in isolation has
+// failed at 5007ms with no change to the code. The bound is generous because what these assert — that
+// `df` chooses a route, that it fails a run, that it records an outcome — is worth more than a tight
+// bound on how fast a subprocess starts. A `bunfig.toml` preload does not reach other files, so the
+// bound has to be declared where the tests are.
+setDefaultTimeout(60_000);
 
 afterEach(async () => {
 	for (const path of temporary.splice(0)) {

@@ -20,31 +20,12 @@
  */
 
 import { spawnSync } from "node:child_process";
-import { chmodSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
-import { homedir, tmpdir } from "node:os";
-import { dirname, join, normalize } from "node:path";
+import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { dirname, join } from "node:path";
 import { resolveConfigDocumentPath } from "@darkfactory/protocol/config-document";
-import {
-	type Attempt,
-	type Auth,
-	authCompanionNames,
-	authEnvNames,
-	authLoginFileNames,
-	authSecretNames,
-	type Harness,
-} from "../install/harness-registry.ts";
 import { DF_ACCOUNT_LOAD_MAP, DF_ACCOUNT_SET_MAP } from "./df-events.ts";
 import type { PipelineEnv } from "./handler-context.ts";
-
-/** A subscription login materialised on disk for one attempt, and the secret that populated it. */
-export interface LoginFileState {
-	/** Absolute path of the file written under `HOME`. */
-	path: string;
-	/** Environment variable the file's contents came from. */
-	secretName: string;
-	/** The contents as supplied, so a rewrite by the CLI can be detected. */
-	original: string;
-}
 
 /** One df account record, and the secret it was loaded from. */
 export interface DfAccountState {
@@ -77,145 +58,16 @@ const ROTATION_UNPERSISTED = (secret: string): string =>
 const ROTATION_FAILED = (secret: string, detail: string): string =>
 	`${secret} was rotated but could not be written back (${detail.slice(0, 80)}); ` +
 	"the next run will fail to authenticate.";
-
-/** The token response an OAuth refresh endpoint returns. */
-interface TokenResponse {
-	access_token?: string;
-	refresh_token?: string;
-}
-
-/**
- * Exchange a stored refresh token for an access token at any OAuth token endpoint.
- *
- * Ported from `exchange_refresh_token`. A non-2xx answer and a transport failure are both reported
- * as thrown errors naming the endpoint's own status or message, because the ladder prints the
- * failure and moves to the next account: the wording is what a human reads in the job log.
- *
- * @param request - The token endpoint and the stored credential it is exchanged with.
- * @returns The parsed token response.
- * @throws When the endpoint rejects the exchange or cannot be reached.
- */
-async function exchangeRefreshToken(request: {
-	tokenUrl: string;
-	refreshToken: string;
-	clientId: string;
-	clientSecret: string;
-}): Promise<TokenResponse> {
-	const fields = new URLSearchParams({
-		refresh_token: request.refreshToken,
-		grant_type: "refresh_token",
-	});
-	if (request.clientId) fields.set("client_id", request.clientId);
-	if (request.clientSecret) fields.set("client_secret", request.clientSecret);
-
-	let response: Response;
-	try {
-		response = await fetch(request.tokenUrl, {
-			method: "POST",
-			headers: { "Content-Type": "application/x-www-form-urlencoded" },
-			body: fields.toString(),
-		});
-	} catch (error) {
-		throw new Error(`unexpected error during token refresh: ${errorMessage(error)}`);
-	}
-	const body = await response.text();
-	if (!response.ok) throw new Error(`token refresh failed (${response.status}): ${body}`);
-	try {
-		return JSON.parse(body) as TokenResponse;
-	} catch (error) {
-		throw new Error(`unexpected error during token refresh: ${errorMessage(error)}`);
-	}
-}
-
 /** The message of a thrown value. */
 function errorMessage(error: unknown): string {
 	return error instanceof Error ? error.message : String(error);
 }
 
 /**
- * The names a prepared credential is exported under, which is not the name it was found under.
+ * The two environments one run sees.
  *
- * The first account's names, because that is what the CLI reads - but only the single name the
- * credential was actually found under, because the alternatives are different *kinds* of credential.
- * The claude CLI prefers `ANTHROPIC_API_KEY`, so a subscription token exported there as well failed
- * every run with "401 API key is invalid".
- */
-function exportNames(auth: Auth, account: number, base: PipelineEnv): string[] {
-	if (auth.kind !== "static") return authEnvNames(auth, 1);
-	const source = authEnvNames(auth, account);
-	const target = authEnvNames(auth, 1);
-	for (let index = 0; index < source.length; index += 1) {
-		const from = source[index] as string;
-		if (base[from]) return [target[index] as string];
-	}
-	return target.slice(0, 1);
-}
-
-/**
- * Obtain a usable credential for a harness from what it declares.
- *
- * Ported from `prepare_credentials`, which reads the *process* environment rather than the base an
- * attempt's `env` is copied from. The distinction is not cosmetic and is why {@link AttemptEnvironment}
- * carries two mappings.
- *
- * @param harness - The harness to authenticate, carrying an optional `auth` declaration.
- * @param account - 1-based account whose credential to prepare.
- * @param env - The process environment the declared variables are read from.
- * @param persist - Where a rotated refresh token is written back to.
- * @returns A usable credential, or `undefined` when the harness declares none.
- * @throws When an exchange was declared and could not be completed.
- */
-async function prepareCredentials(
-	harness: Harness,
-	account: number,
-	env: Record<string, string | undefined>,
-	persist: PersistRotatedToken,
-): Promise<string | undefined> {
-	const auth = harness.auth;
-	const names = auth ? authEnvNames(auth, account) : [];
-	if (!auth || names.length === 0) return undefined;
-
-	if (auth.kind === "static") {
-		for (const name of names) {
-			const value = env[name];
-			if (value) return value;
-		}
-		return undefined;
-	}
-
-	const primary = names[0] as string;
-	const stored = env[primary] ?? "";
-	if (!stored) return undefined;
-	if (auth.kind !== "oauth_refresh") throw new Error(`${harness.name}: unknown auth kind '${auth.kind}'`);
-
-	const companions = authCompanionNames(auth, account);
-	const response = await exchangeRefreshToken({
-		tokenUrl: auth.tokenUrl,
-		refreshToken: stored,
-		clientId: companions[0] ? (env[companions[0]] ?? "") : "",
-		clientSecret: companions[1] ? (env[companions[1]] ?? "") : "",
-	});
-
-	// A provider that rotates issues a new refresh token on every exchange. Reading only the access
-	// token is correct while the provider does not rotate and silently strands the credential the
-	// moment one does - so the declaration decides, and the new value is written back under *this
-	// account's* name: rotating account two's token into account one's secret would strand both.
-	const rotated = response.refresh_token;
-	if (auth.rotates && rotated && rotated !== stored) {
-		env[primary] = rotated;
-		persist(primary, rotated);
-	}
-	return response.access_token;
-}
-
-/**
- * The environment the ladder runs in, as the Python's two mappings.
- *
- * The Python kept `os.environ` live and made one `os.environ.copy()` per `run_agent_prompt` call, and
- * a rotated refresh token was written to the live one. That is not a detail: the attempt currently
- * running is handed the freshly exchanged *access* token, so a rotated refresh token only matters to
- * the *next* attempt in the chain and to redaction. A single shared mapping would hand the refresh
- * token to the current attempt under the name the CLI reads, which is the opposite of the intent.
+ * `base` is copied once when the run starts, so a df-owned account record written into `live`
+ * cannot change what the invocation already running is using, and `live` is what the next run reads.
  */
 export interface AttemptEnvironment {
 	/** Copied once when the ladder starts; each attempt's `env` is a copy of this plus `TERM`. */
@@ -233,38 +85,6 @@ export interface AttemptEnvironment {
  * @returns A copy of the base carrying exactly this account's credential.
  * @throws When an exchange was declared and could not be completed.
  */
-export async function credentialEnv(
-	environment: AttemptEnvironment,
-	attempt: Attempt,
-	persist: PersistRotatedToken,
-): Promise<Record<string, string | undefined>> {
-	const base = environment.base;
-	const env: Record<string, string | undefined> = { ...base };
-	const auth = attempt.harness.auth;
-	// A harness that declares no auth - `df`, which reads its own accounts from DF_HOME - runs with
-	// the environment it was given, untouched.
-	if (!auth) return env;
-
-	// Every name this harness could authenticate with, across every account, is cleared first, so
-	// what remains is what this attempt chose.
-	for (const name of authSecretNames(auth)) delete env[name];
-
-	const loginNames = authLoginFileNames(auth, attempt.account);
-	const loginName = loginNames[0] ?? "";
-	let credential = await prepareCredentials(attempt.harness, attempt.account, environment.live, persist);
-	// Subscription CLIs read the login file, never the static API-key names.
-	if (loginName && base[loginName]) credential = undefined;
-	if (credential) {
-		for (const name of exportNames(auth, attempt.account, base)) env[name] = credential;
-	}
-	const source = authCompanionNames(auth, attempt.account);
-	const target = authCompanionNames(auth, 1);
-	for (let index = 0; index < source.length; index += 1) {
-		if (base[source[index] as string]) env[target[index] as string] = base[source[index] as string];
-	}
-	return env;
-}
-
 /**
  * Materialise the selected subscription login, as a CLI reads it from a file rather than the
  * environment.
@@ -274,22 +94,6 @@ export async function credentialEnv(
  * @returns The state to hand {@link finishLoginFile} afterwards, or `undefined` when the harness has
  *   no login file or the secret is empty.
  */
-export function prepareLoginFile(base: PipelineEnv, attempt: Attempt): LoginFileState | undefined {
-	const auth = attempt.harness.auth;
-	const login = auth?.loginFile;
-	if (!auth || !login) return undefined;
-	const secretName = authLoginFileNames(auth, attempt.account)[0];
-	if (!secretName) return undefined;
-	const content = base[secretName] ?? "";
-	if (!content) return undefined;
-	const home = base.HOME || process.env.HOME || homedir();
-	const path = join(home, normalize(login.path));
-	mkdirSync(dirname(path), { recursive: true });
-	writeFileSync(path, content, { mode: 0o600 });
-	chmodSync(path, 0o600);
-	return { path, secretName, original: content };
-}
-
 /**
  * Persist a login file the CLI rewrote, then remove it.
  *
@@ -299,25 +103,6 @@ export function prepareLoginFile(base: PipelineEnv, attempt: Attempt): LoginFile
  * @param state - What {@link prepareLoginFile} returned.
  * @param persist - Where a rotated token is written back to.
  */
-export function finishLoginFile(state: LoginFileState | undefined, persist: PersistRotatedToken): void {
-	if (!state) return;
-	let current: string | undefined;
-	try {
-		current = readFileSync(state.path, "utf8");
-	} catch {
-		current = undefined;
-	}
-	if (current !== undefined && current !== state.original) {
-		// A CLI that rewrote its login has rotated whatever subscription backs it.
-		persist(state.secretName, current);
-	}
-	try {
-		rmSync(state.path, { force: true });
-	} catch {
-		// The file is inside HOME and the next attempt writes its own; a leftover is not fatal.
-	}
-}
-
 /** Read the df-owned account records df may have rewritten, keyed by account id. */
 function dfAccountStore(env: PipelineEnv): Record<string, unknown> {
 	const dfHome = env.DF_HOME ?? "";

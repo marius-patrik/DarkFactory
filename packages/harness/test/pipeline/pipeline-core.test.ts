@@ -231,11 +231,12 @@ describe("when a quota-blocked run may resume", () => {
 });
 
 describe("recording a quota block", () => {
-	test("reads the provider names out of the chain the run reported", () => {
-		expect(exhaustedProviders("Quota exhausted across every harness and model (agy, codex): 429")).toEqual([
-			"agy",
-			"codex",
-		]);
+	test("names the agent when the run reports quota exhausted on every account", () => {
+		// The notice used to list the harnesses the runner had walked, and those names were the
+		// provider names. There is one agent and it resolves its own model, so the map is keyed by
+		// the agent and `df` chooses a different provider itself on resume.
+		expect(exhaustedProviders("Quota exhausted on every account `df` holds: 429")).toEqual(["df"]);
+		expect(exhaustedProviders("Quota exhausted on `df`: one account left")).toEqual([]);
 		expect(exhaustedProviders("some other failure")).toEqual([]);
 	});
 
