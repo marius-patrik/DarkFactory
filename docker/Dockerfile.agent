@@ -105,14 +105,18 @@ ENV PYTHONPATH="/usr/local/share/darkfactory-scripts:/workspace/.github/scripts:
 # the root they need at build time.
 USER agent
 
-# The agent entrypoint is `packages/harness/src/pipeline/main.ts`. It takes the same nine commands
-# the Python `main` took -- dispatch, interpret, plan, implement, self-review, self-review-fix,
-# plan-alignment, respond, token-refresh -- and `docker run darkfactory-agent dispatch` reaches
-# `runnerMain` with the argument untouched.
+# The agent entrypoint is `df` — the CLI the image already installs a few lines above.
 #
-# `dispatch` was the reason this line could not move earlier. `df` had no top-level `dispatch`
-# subcommand, and the nearest thing, `graph dispatch`, prints a plan and exits 0 rather than running
-# the agent, so a shim would have turned a loud failure into a silent one and the run would have been
-# skipped instead of reported. `nix/entrypoint.sh` says the same thing and sequences itself after
-# #1148 for this reason. `main.ts` now provides the real command.
-ENTRYPOINT ["dbus-run-session", "--", "bun", "/opt/darkfactory/packages/harness/src/pipeline/main.ts"]
+# Not a path into the source tree, and not a second executable. The image ships one command and runs
+# it, so anything the agent image can do is something `df` can do: `docker run darkfactory-agent
+# dispatch` appends `dispatch` to this entrypoint, and `df dispatch` runs it.
+#
+# The nine runner commands (dispatch, interpret, plan, implement, self-review, self-review-fix,
+# plan-alignment, respond, token-refresh) are cases in `df`'s own switch, not a separate process. That
+# is the point at which `nix/entrypoint.sh`'s blocker is satisfied: it refused to translate `dispatch`
+# into `graph dispatch` because a shim printing a plan and exiting 0 turns a loud failure into a
+# silent one. The answer was a real `df dispatch`, not a better shim.
+#
+# `dbus-run-session` still wraps it, because the credential store is a D-Bus client and dropping the
+# wrapper removes the session bus rather than the dependency.
+ENTRYPOINT ["dbus-run-session", "--", "df"]

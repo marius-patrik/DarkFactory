@@ -53,6 +53,7 @@ import { sweepQuotaResumes } from "./limits/resume-sweep.ts";
 import { estimateTask } from "./limits/routing.ts";
 import { type CatalogResult, isRunnableCatalogModel, ModelCatalog } from "./models/catalog.ts";
 import { ModelPoller } from "./models/poller.ts";
+import { RUNNER_COMMANDS, type RunnerCommand, runnerMain } from "./pipeline/main.ts";
 import { ProviderRegistry } from "./providers/runtime.ts";
 import { loadProviderConfig } from "./providers/schema.ts";
 import { classifyFailure } from "./quota.ts";
@@ -1603,8 +1604,23 @@ async function secretsCli(home: string, args: string[]): Promise<void> {
  * @throws {ChainExhaustedError} If all candidates in the chain are unavailable during a run
  * @throws {Error} If an unknown command is provided or a command handler fails
  */
+
 export async function main(args = process.argv.slice(2)): Promise<void> {
 	if (args[0] === "graph") return graphCommand(args.slice(1));
+	// The nine runner commands are reached through `df` itself, not through a second executable.
+	//
+	// The agent image installs `df` and runs it, so a command only this binary can run is a command
+	// the image cannot reach. Pointing ENTRYPOINT at a file inside the source tree instead would work
+	// and would be wrong twice over: it bypasses the CLI that owns the command surface, and it makes
+	// the image's entrypoint depend on the source layout, so a file move breaks the container.
+	//
+	// `nix/entrypoint.sh` refused to shim `dispatch` into `graph dispatch` for the same reason it gave:
+	// a shim that makes the image look compatible turns a loud failure into a silent one. The fix was
+	// never a better shim. It was a real `df dispatch`, which is what this is.
+	if (RUNNER_COMMANDS.includes(args[0] as RunnerCommand)) {
+		process.exitCode = await runnerMain(args);
+		return;
+	}
 	const home = defaultDfHome();
 	const config = await loadDfConfig(process.cwd());
 	const providerConfig = await loadProviderConfig(home);
