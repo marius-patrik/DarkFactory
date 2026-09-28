@@ -7,7 +7,11 @@ from typing import Any, Dict, List
 import pytest
 
 import handle_pr_approval
-from handle_pr_approval import collect_bound_issues, detect_approval, submit_proxy_review
+from handle_pr_approval import (
+    collect_bound_issues,
+    detect_approval,
+    submit_proxy_review,
+)
 
 
 def test_collect_bound_issues_merges_both_sources():
@@ -43,7 +47,9 @@ def test_collect_bound_issues_tolerates_missing_fields():
         ("", False),
     ],
 )
-def test_detect_approval_from_comment(monkeypatch: pytest.MonkeyPatch, body: str, expected: bool):
+def test_detect_approval_from_comment(
+    monkeypatch: pytest.MonkeyPatch, body: str, expected: bool
+):
     """Only an approval command counts; prose and rejections do not.
 
     Args:
@@ -59,7 +65,9 @@ def test_detect_approval_from_comment(monkeypatch: pytest.MonkeyPatch, body: str
     assert approved is expected
 
 
-def test_detect_approval_ignores_comments_outside_pull_requests(monkeypatch: pytest.MonkeyPatch):
+def test_detect_approval_ignores_comments_outside_pull_requests(
+    monkeypatch: pytest.MonkeyPatch,
+):
     """An `approve` on a plain issue is a plan gate, not a merge instruction.
 
     Args:
@@ -72,7 +80,9 @@ def test_detect_approval_ignores_comments_outside_pull_requests(monkeypatch: pyt
 
 
 @pytest.mark.parametrize("state", ["approved", "APPROVED", "Approved"])
-def test_detect_approval_from_native_review_state(monkeypatch: pytest.MonkeyPatch, state: str):
+def test_detect_approval_from_native_review_state(
+    monkeypatch: pytest.MonkeyPatch, state: str
+):
     """A native `APPROVED` review counts without consulting `IS_PR`.
 
     The workflow used to derive `IS_PR` from the `issue` object, which
@@ -100,7 +110,9 @@ def test_detect_approval_from_native_review_state(monkeypatch: pytest.MonkeyPatc
         ("", "approved"),
     ],
 )
-def test_review_body_words_never_count(monkeypatch: pytest.MonkeyPatch, state: str, body: str):
+def test_review_body_words_never_count(
+    monkeypatch: pytest.MonkeyPatch, state: str, body: str
+):
     """The loose body match fired on "I don't approve yet"; only state counts.
 
     Args:
@@ -214,7 +226,9 @@ def test_proxy_review_verifies_that_the_review_landed(monkeypatch: pytest.Monkey
     def fake_gh(args: List[str], repo: str, check: bool = False, as_bot: bool = False):
         if args[0] == "pr":
             assert as_bot, "the approval must be sent with the bot token"
-            return subprocess.CompletedProcess(args, 1, "", "not permitted to approve own PR")
+            return subprocess.CompletedProcess(
+                args, 1, "", "not permitted to approve own PR"
+            )
         return subprocess.CompletedProcess(args, 0, "", "")
 
     monkeypatch.setattr(handle_pr_approval, "_gh", fake_gh)

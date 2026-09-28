@@ -24,7 +24,9 @@ def _write(root, relative, content):
         content: Text to write.
     """
     path = os.path.join(str(root), relative)
-    os.makedirs(os.path.dirname(path), exist_ok=True) if os.path.dirname(relative) else None
+    os.makedirs(os.path.dirname(path), exist_ok=True) if os.path.dirname(
+        relative
+    ) else None
     with open(path, "w", encoding="utf-8") as handle:
         handle.write(content)
 
@@ -49,14 +51,22 @@ def polyglot(tmp_path):
     )
     _write(tmp_path, "bun.lock", "")
     _write(
-        tmp_path, "packages/web/package.json", json.dumps({"name": "@acme/web", "version": "1.4.0"})
+        tmp_path,
+        "packages/web/package.json",
+        json.dumps({"name": "@acme/web", "version": "1.4.0"}),
     )
     _write(
-        tmp_path, "packages/cli/package.json", json.dumps({"name": "@acme/cli", "version": "1.3.9"})
+        tmp_path,
+        "packages/cli/package.json",
+        json.dumps({"name": "@acme/cli", "version": "1.3.9"}),
     )
     _write(tmp_path, "Cargo.toml", '[workspace]\nmembers = ["crates/*"]\n')
     _write(tmp_path, "Cargo.lock", "")
-    _write(tmp_path, "crates/core/Cargo.toml", '[package]\nname = "acme-core"\nversion = "1.4.0"\n')
+    _write(
+        tmp_path,
+        "crates/core/Cargo.toml",
+        '[package]\nname = "acme-core"\nversion = "1.4.0"\n',
+    )
     return tmp_path
 
 
@@ -64,7 +74,9 @@ class TestDetection:
     """Detection is the default because it cannot drift."""
 
     def test_a_single_python_repository(self, tmp_path):
-        _write(tmp_path, "pyproject.toml", '[project]\nname = "thing"\nversion = "2.1.0"\n')
+        _write(
+            tmp_path, "pyproject.toml", '[project]\nname = "thing"\nversion = "2.1.0"\n'
+        )
         env = environment.configure(str(tmp_path))
         assert env.ecosystems == {"python"}
         assert not env.is_monorepo
@@ -106,9 +118,15 @@ class TestDetection:
         assert env.packages[0].name == "github.com/acme/tool"
 
     def test_build_output_directories_are_not_scanned(self, tmp_path):
-        _write(tmp_path, "package.json", json.dumps({"name": "app", "version": "1.0.0"}))
+        _write(
+            tmp_path, "package.json", json.dumps({"name": "app", "version": "1.0.0"})
+        )
         _write(tmp_path, "node_modules/dep/package.json", json.dumps({"name": "dep"}))
-        _write(tmp_path, "target/pkg/Cargo.toml", '[package]\nname = "junk"\nversion = "0.0.0"\n')
+        _write(
+            tmp_path,
+            "target/pkg/Cargo.toml",
+            '[package]\nname = "junk"\nversion = "0.0.0"\n',
+        )
         env = environment.configure(str(tmp_path))
         assert [p.name for p in env.packages] == ["app"]
 
@@ -137,7 +155,9 @@ class TestPackageManagers:
         ],
     )
     def test_each_node_manager_is_recognised(self, tmp_path, lockfile, expected):
-        _write(tmp_path, "package.json", json.dumps({"name": "app", "version": "1.0.0"}))
+        _write(
+            tmp_path, "package.json", json.dumps({"name": "app", "version": "1.0.0"})
+        )
         _write(tmp_path, lockfile, "")
         assert environment.configure(str(tmp_path)).package_manager("node") == expected
 
@@ -159,8 +179,12 @@ class TestPnpmWorkspaces:
     """pnpm keeps its members in a separate file rather than in package.json."""
 
     def test_members_are_read_from_pnpm_workspace_yaml(self, tmp_path):
-        _write(tmp_path, "package.json", json.dumps({"name": "root", "version": "1.0.0"}))
-        _write(tmp_path, "pnpm-workspace.yaml", "packages:\n  - 'apps/*'\n  - 'libs/*'\n")
+        _write(
+            tmp_path, "package.json", json.dumps({"name": "root", "version": "1.0.0"})
+        )
+        _write(
+            tmp_path, "pnpm-workspace.yaml", "packages:\n  - 'apps/*'\n  - 'libs/*'\n"
+        )
         _write(tmp_path, "pnpm-lock.yaml", "")
         env = environment.configure(str(tmp_path))
         root = next(p for p in env.packages if p.path == ".")
@@ -199,7 +223,9 @@ class TestDeclaredConfiguration:
             },
         )
         env = environment.configure(str(tmp_path))
-        assert [(p.path, p.ecosystem, p.name) for p in env.packages] == [("weird", "make", "weird")]
+        assert [(p.path, p.ecosystem, p.name) for p in env.packages] == [
+            ("weird", "make", "weird")
+        ]
 
     def test_a_declaration_corrects_a_detected_package(self, tmp_path):
         _write(tmp_path, "pyproject.toml", "[tool.black]\nline-length = 100\n")
@@ -207,7 +233,12 @@ class TestDeclaredConfiguration:
             tmp_path,
             {
                 "packages": [
-                    {"path": ".", "ecosystem": "python", "name": "darkfactory", "version": "0.1.0"}
+                    {
+                        "path": ".",
+                        "ecosystem": "python",
+                        "name": "darkfactory",
+                        "version": "0.1.0",
+                    }
                 ]
             },
         )
@@ -237,7 +268,10 @@ class TestPlans:
     def test_each_ecosystem_gets_its_own_command(self, polyglot):
         env = environment.configure(str(polyglot))
         assert env.test_plan()["node"]["command"] == "bun test"
-        assert env.test_plan()["rust"]["command"] == "cargo test --all-features --workspace"
+        assert (
+            env.test_plan()["rust"]["command"]
+            == "cargo test --all-features --workspace"
+        )
 
     def test_polyglot_plans_cover_every_ecosystem(self, polyglot):
         env = environment.configure(str(polyglot))
@@ -247,7 +281,10 @@ class TestPlans:
     def test_the_package_manager_picks_the_command(self, tmp_path):
         _write(tmp_path, "package.json", json.dumps({"name": "a", "version": "1.0.0"}))
         _write(tmp_path, "pnpm-lock.yaml", "")
-        assert environment.configure(str(tmp_path)).test_plan()["node"]["command"] == "pnpm test"
+        assert (
+            environment.configure(str(tmp_path)).test_plan()["node"]["command"]
+            == "pnpm test"
+        )
 
     def test_python_carries_a_version_matrix_and_others_do_not(self, tmp_path):
         _write(tmp_path, "pyproject.toml", '[project]\nname = "x"\nversion = "1.0.0"\n')
@@ -273,12 +310,16 @@ class TestPlans:
         _manifest(polyglot, {"testing": {"rust": {"command": "cargo nextest run"}}})
         plan = environment.configure(str(polyglot)).test_plan()
         assert plan["rust"]["command"] == "cargo nextest run"
-        assert plan["node"]["command"] == "bun test", "other ecosystems keep their defaults"
+        assert plan["node"]["command"] == "bun test", (
+            "other ecosystems keep their defaults"
+        )
 
     def test_a_declared_matrix_overrides_the_default(self, tmp_path):
         _write(tmp_path, "pyproject.toml", '[project]\nname = "x"\nversion = "1.0.0"\n')
         _manifest(tmp_path, {"testing": {"python": {"versions": ["3.12"]}}})
-        assert environment.configure(str(tmp_path)).test_plan()["python"]["versions"] == ["3.12"]
+        assert environment.configure(str(tmp_path)).test_plan()["python"][
+            "versions"
+        ] == ["3.12"]
 
     def test_an_ecosystem_can_be_disabled(self, polyglot):
         _manifest(polyglot, {"testing": {"rust": {"enabled": False}}})
@@ -287,7 +328,10 @@ class TestPlans:
     def test_an_undetectable_suite_can_be_declared(self, tmp_path):
         _write(tmp_path, "README.md", "nothing detectable")
         _manifest(tmp_path, {"testing": {"e2e": {"command": "make e2e"}}})
-        assert environment.configure(str(tmp_path)).test_plan()["e2e"]["command"] == "make e2e"
+        assert (
+            environment.configure(str(tmp_path)).test_plan()["e2e"]["command"]
+            == "make e2e"
+        )
 
     def test_a_biome_marker_outranks_the_package_manager_default(self, tmp_path):
         _write(tmp_path, "package.json", json.dumps({"name": "a", "version": "1.0.0"}))
@@ -307,7 +351,10 @@ class TestPlans:
     def test_a_marker_does_not_affect_the_test_plan(self, tmp_path):
         _write(tmp_path, "pyproject.toml", '[project]\nname = "x"\nversion = "1.0.0"\n')
         _write(tmp_path, "ruff.toml", "")
-        assert environment.configure(str(tmp_path)).test_plan()["python"]["command"] == "pytest"
+        assert (
+            environment.configure(str(tmp_path)).test_plan()["python"]["command"]
+            == "pytest"
+        )
 
     def test_plans_survive_json_serialisation(self, polyglot):
         payload = environment.configure(str(polyglot)).as_dict()
@@ -326,19 +373,31 @@ class TestDomains:
 
     def test_an_undeclared_ecosystem_still_gets_a_domain(self, tmp_path):
         """A repository may invent an ecosystem; planning it must not crash for want of a domain."""
-        _manifest(tmp_path, {"packages": [{"path": "weird", "ecosystem": "make", "name": "weird"}]})
+        _manifest(
+            tmp_path,
+            {"packages": [{"path": "weird", "ecosystem": "make", "name": "weird"}]},
+        )
         env = environment.configure(str(tmp_path))
         assert env.packages[0].domain == environment.DEFAULT_DOMAIN
         assert env.domains == {"code"}
 
     def test_a_thesis_beside_its_software_is_multi_domain(self, tmp_path):
         """The case the layer exists for: a paper and the code it documents, in one repository."""
-        _write(tmp_path, "pyproject.toml", '[project]\nname = "engine"\nversion = "0.1.0"\n')
+        _write(
+            tmp_path,
+            "pyproject.toml",
+            '[project]\nname = "engine"\nversion = "0.1.0"\n',
+        )
         _manifest(
             tmp_path,
             {
                 "packages": [
-                    {"path": ".", "ecosystem": "python", "name": "engine", "version": "0.1.0"},
+                    {
+                        "path": ".",
+                        "ecosystem": "python",
+                        "name": "engine",
+                        "version": "0.1.0",
+                    },
                     {"path": "paper", "ecosystem": "typst", "name": "thesis"},
                 ]
             },
@@ -352,7 +411,11 @@ class TestDomains:
 
     def test_the_domain_is_reported_as_plain_data(self, tmp_path):
         """Workflows branch on the domain, so it must survive the JSON round trip."""
-        _write(tmp_path, "pyproject.toml", '[project]\nname = "engine"\nversion = "0.1.0"\n')
+        _write(
+            tmp_path,
+            "pyproject.toml",
+            '[project]\nname = "engine"\nversion = "0.1.0"\n',
+        )
         payload = environment.configure(str(tmp_path)).as_dict()
         assert payload["domains"] == ["code"]
         assert payload["is_multi_domain"] is False
@@ -364,7 +427,9 @@ class TestPaperDomain:
 
     def test_typst_is_detected_and_lands_in_the_paper_domain(self, tmp_path):
         """`typst.toml` is to a paper what `Cargo.toml` is to a crate."""
-        _write(tmp_path, "typst.toml", '[package]\nname = "thesis"\nversion = "1.0.0"\n')
+        _write(
+            tmp_path, "typst.toml", '[package]\nname = "thesis"\nversion = "1.0.0"\n'
+        )
         env = environment.configure(str(tmp_path))
         assert env.ecosystems == {"typst"}
         assert env.domains == {"paper"}
@@ -381,16 +446,30 @@ class TestPaperDomain:
 
     def test_typesetting_is_the_test_and_the_build(self, tmp_path):
         """There is no separate release build of a document."""
-        _write(tmp_path, "typst.toml", '[package]\nname = "thesis"\nversion = "1.0.0"\n')
+        _write(
+            tmp_path, "typst.toml", '[package]\nname = "thesis"\nversion = "1.0.0"\n'
+        )
         env = environment.configure(str(tmp_path))
-        assert env.test_plan()["typst"]["command"] == "typst compile main.typ out/paper.pdf"
-        assert env.build_plan()["typst"]["command"] == "typst compile main.typ out/paper.pdf"
+        assert (
+            env.test_plan()["typst"]["command"]
+            == "typst compile main.typ out/paper.pdf"
+        )
+        assert (
+            env.build_plan()["typst"]["command"]
+            == "typst compile main.typ out/paper.pdf"
+        )
         assert env.build_plan()["typst"]["artifacts"] == ["out/*.pdf", "*.pdf"]
 
     def test_a_thesis_beside_its_software_plans_both(self, tmp_path):
         """The motivating case: detection alone, with no declaration, finds both domains."""
-        _write(tmp_path, "typst.toml", '[package]\nname = "thesis"\nversion = "1.0.0"\n')
-        _write(tmp_path, "engine/pyproject.toml", '[project]\nname = "engine"\nversion = "0.1.0"\n')
+        _write(
+            tmp_path, "typst.toml", '[package]\nname = "thesis"\nversion = "1.0.0"\n'
+        )
+        _write(
+            tmp_path,
+            "engine/pyproject.toml",
+            '[project]\nname = "engine"\nversion = "0.1.0"\n',
+        )
         env = environment.configure(str(tmp_path))
         assert env.domains == {"paper", "code"}
         assert env.is_multi_domain is True
@@ -404,7 +483,9 @@ class TestMathDomain:
 
     def test_a_lakefile_lands_in_the_math_domain(self, tmp_path):
         """The Lean form of the build file is a program, so its presence is the whole signal."""
-        _write(tmp_path, "lakefile.lean", "import Lake\nopen Lake DSL\npackage proofs\n")
+        _write(
+            tmp_path, "lakefile.lean", "import Lake\nopen Lake DSL\npackage proofs\n"
+        )
         env = environment.configure(str(tmp_path))
         assert env.ecosystems == {"lean"}
         assert env.domains == {"math"}
@@ -424,7 +505,9 @@ class TestMathDomain:
 
     def test_a_paper_with_its_proofs_spans_both_domains(self, tmp_path):
         """Formalised mathematics beside the paper that presents it."""
-        _write(tmp_path, "typst.toml", '[package]\nname = "thesis"\nversion = "1.0.0"\n')
+        _write(
+            tmp_path, "typst.toml", '[package]\nname = "thesis"\nversion = "1.0.0"\n'
+        )
         _write(tmp_path, "proofs/lakefile.toml", 'name = "proofs"\n')
         env = environment.configure(str(tmp_path))
         assert env.domains == {"paper", "math"}
@@ -436,7 +519,11 @@ class TestDeclarationComments:
 
     def test_a_comment_key_is_not_mistaken_for_an_ecosystem(self, tmp_path):
         """`$comment` holds a string, and treating it as settings crashed the whole plan."""
-        _write(tmp_path, "pyproject.toml", '[project]\nname = "engine"\nversion = "0.1.0"\n')
+        _write(
+            tmp_path,
+            "pyproject.toml",
+            '[project]\nname = "engine"\nversion = "0.1.0"\n',
+        )
         _manifest(
             tmp_path,
             {
@@ -451,7 +538,11 @@ class TestDeclarationComments:
 
     def test_disabling_a_build_yields_a_release_with_no_assets(self, tmp_path):
         """A pipeline or a template is tagged without anything being packaged."""
-        _write(tmp_path, "pyproject.toml", '[project]\nname = "engine"\nversion = "0.1.0"\n')
+        _write(
+            tmp_path,
+            "pyproject.toml",
+            '[project]\nname = "engine"\nversion = "0.1.0"\n',
+        )
         _manifest(tmp_path, {"release": {"python": {"enabled": False}}})
         assert environment.configure(str(tmp_path)).build_plan() == {}
         assert "python" in environment.configure(str(tmp_path)).test_plan()
@@ -462,21 +553,39 @@ class TestSubmodulesAreNotThisRepository:
 
     def test_a_submodule_is_not_detected_as_a_package(self, tmp_path):
         """A super-repository must not claim work that is already built elsewhere."""
-        _write(tmp_path, "prace/typst.toml", '[package]\nname = "thesis"\nversion = "1.0.0"\n')
-        _write(tmp_path, "engine/pyproject.toml", '[project]\nname = "e"\nversion = "0.1.0"\n')
+        _write(
+            tmp_path,
+            "prace/typst.toml",
+            '[package]\nname = "thesis"\nversion = "1.0.0"\n',
+        )
+        _write(
+            tmp_path,
+            "engine/pyproject.toml",
+            '[project]\nname = "e"\nversion = "0.1.0"\n',
+        )
         _write(
             tmp_path,
             ".gitmodules",
             '[submodule "prace"]\n\tpath = prace\n\turl = https://github.com/o/p.git\n',
         )
         env = environment.configure(str(tmp_path))
-        assert [p.path for p in env.packages] == ["engine"], "only the repository's own package"
+        assert [p.path for p in env.packages] == ["engine"], (
+            "only the repository's own package"
+        )
         assert env.domains == {"code"}
 
     def test_a_repository_of_nothing_but_submodules_declares_nothing(self, tmp_path):
         """The super-repository case: everything it holds belongs to someone else."""
-        _write(tmp_path, "prace/typst.toml", '[package]\nname = "thesis"\nversion = "1.0.0"\n')
-        _write(tmp_path, "engine/pyproject.toml", '[project]\nname = "e"\nversion = "0.1.0"\n')
+        _write(
+            tmp_path,
+            "prace/typst.toml",
+            '[package]\nname = "thesis"\nversion = "1.0.0"\n',
+        )
+        _write(
+            tmp_path,
+            "engine/pyproject.toml",
+            '[project]\nname = "e"\nversion = "0.1.0"\n',
+        )
         _write(
             tmp_path,
             ".gitmodules",

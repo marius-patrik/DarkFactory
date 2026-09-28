@@ -37,7 +37,7 @@ describe("@darkfactory/auth confidential broker", () => {
 					headers: { "content-type": "application/json" },
 				},
 			);
-		}) as typeof fetch;
+		}) as unknown as typeof fetch;
 
 		const store = new MemoryAuthTokenStore();
 		const config = { clientId: "client", clientSecret: "secret" };
@@ -69,7 +69,7 @@ describe("@darkfactory/auth confidential broker", () => {
 		const store = new MemoryAuthTokenStore();
 		await store.set("session", { token: { access_token: "access", token_type: "bearer" } });
 		const config = { clientId: "client", clientSecret: "secret" };
-		globalThis.fetch = (async () => new Response(null, { status: 204 })) as typeof fetch;
+		globalThis.fetch = (async () => new Response(null, { status: 204 })) as unknown as typeof fetch;
 		await revokeBrokerSession(config, "session", store);
 		expect(await store.get("session")).toBeUndefined();
 	});
@@ -78,7 +78,7 @@ describe("@darkfactory/auth confidential broker", () => {
 		const store = new MemoryAuthTokenStore();
 		await store.set("session", { token: { access_token: "access", token_type: "bearer" } });
 		const config = { clientId: "client", clientSecret: "secret" };
-		globalThis.fetch = (async () => new Response(null, { status: 500 })) as typeof fetch;
+		globalThis.fetch = (async () => new Response(null, { status: 500 })) as unknown as typeof fetch;
 		await expect(revokeBrokerSession(config, "session", store)).rejects.toThrow("revocation failed");
 		expect(await store.get("session")).toBeDefined();
 	});

@@ -8,7 +8,9 @@ from agent_runner import handle_interpret, handle_plan
 @patch("agent_runner.run_agent_prompt")
 @patch("agent_runner.classify_type_and_area")
 @patch("agent_runner.development_branch")
-def test_handle_interpret_includes_footer(mock_branch, mock_classify, mock_prompt, mock_run_gh):
+def test_handle_interpret_includes_footer(
+    mock_branch, mock_classify, mock_prompt, mock_run_gh
+):
     mock_classify.return_value = ("feat", "area:agents")
     mock_prompt.return_value = "Mocked Interpretation"
     mock_branch.return_value = "main"
@@ -26,7 +28,10 @@ def test_handle_interpret_includes_footer(mock_branch, mock_classify, mock_promp
     posted_comment = mock_run_gh.call_args_list[-1].args[0]
     # The comment body is the last argument in the call to 'issue comment'
     body = posted_comment[-1]
-    assert "Reply with `/df approve` to continue or `/df reject <feedback>` to revise." in body
+    assert (
+        "Reply with `/df approve` to continue or `/df reject <feedback>` to revise."
+        in body
+    )
 
 
 @patch("agent_runner.run_gh")

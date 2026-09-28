@@ -53,7 +53,9 @@ def test_the_reporter_watches_every_workflow_it_installs():
     watched = set(_triggers(caller)["workflow_run"]["workflows"])
 
     expected = {
-        yaml.safe_load(install.render_caller(name, "o/p", "abc", installed=installed))["name"]
+        yaml.safe_load(install.render_caller(name, "o/p", "abc", installed=installed))[
+            "name"
+        ]
         for name in installed
         if name != "report-failure"
     }
@@ -70,13 +72,17 @@ def test_the_pin_reaches_both_direct_runtime_checkouts():
 def test_submodule_updating_is_offered_only_where_there_are_submodules(tmp_path):
     """Installing a submodule updater in a repository with none is noise."""
     assert "update-submodules" not in install.relevant_workflows(str(tmp_path))
-    (tmp_path / ".gitmodules").write_text('[submodule "x"]\n\tpath = x\n', encoding="utf-8")
+    (tmp_path / ".gitmodules").write_text(
+        '[submodule "x"]\n\tpath = x\n', encoding="utf-8"
+    )
     assert "update-submodules" in install.relevant_workflows(str(tmp_path))
 
 
 def test_a_tooling_only_pyproject_is_declared_as_packaging_nothing(tmp_path):
     """The failure that took three repositories down is pre-empted at install time."""
-    (tmp_path / "pyproject.toml").write_text("[tool.black]\nline-length = 100\n", encoding="utf-8")
+    (tmp_path / "pyproject.toml").write_text(
+        "[tool.black]\nline-length = 100\n", encoding="utf-8"
+    )
     config = json.loads(install.render_manifest("o", "r", "abc", root=str(tmp_path)))
     assert config["repo"]["environment"]["release"]["python"]["enabled"] is False
 
@@ -93,7 +99,9 @@ def test_a_real_package_is_left_to_release_normally(tmp_path):
 def test_areas_are_offered_rather_than_asserted(tmp_path):
     """Areas describe a repository's own domains, which cannot be derived."""
     config = json.loads(install.render_manifest("o", "r", "abc", root=str(tmp_path)))
-    assert "$comment" in config["repo"]["areas"], "the starter set must say it is a starting point"
+    assert "$comment" in config["repo"]["areas"], (
+        "the starter set must say it is a starting point"
+    )
 
 
 def test_writing_never_overwrites_what_is_already_there(tmp_path):
@@ -110,12 +118,17 @@ def test_writing_never_overwrites_what_is_already_there(tmp_path):
 def test_existing_root_config_alias_is_not_duplicated(tmp_path, filename):
     """The accepted alias remains the single selected document during installation."""
     alias = tmp_path / filename
-    alias.write_text(json.dumps({"repo": {"identity": {"owner": "chosen"}}}), encoding="utf-8")
+    alias.write_text(
+        json.dumps({"repo": {"identity": {"owner": "chosen"}}}), encoding="utf-8"
+    )
 
     install.write(install.plan("o", "r", "abc", root=str(tmp_path)), str(tmp_path))
 
     assert not (tmp_path / "repo.dfconfig").exists()
-    assert json.loads(alias.read_text(encoding="utf-8"))["repo"]["identity"]["owner"] == "chosen"
+    assert (
+        json.loads(alias.read_text(encoding="utf-8"))["repo"]["identity"]["owner"]
+        == "chosen"
+    )
 
 
 def test_legacy_manifest_path_is_not_selected(tmp_path):
@@ -124,9 +137,9 @@ def test_legacy_manifest_path_is_not_selected(tmp_path):
     )
     install.write(install.plan("o", "r", "abc", root=str(tmp_path)), str(tmp_path))
     assert (
-        json.loads((tmp_path / "repo.dfconfig").read_text(encoding="utf-8"))["repo"]["identity"][
-            "owner"
-        ]
+        json.loads((tmp_path / "repo.dfconfig").read_text(encoding="utf-8"))["repo"][
+            "identity"
+        ]["owner"]
         == "o"
     )
 
@@ -136,13 +149,18 @@ def test_existing_custom_folder_config_is_not_duplicated(tmp_path, monkeypatch):
     folder = tmp_path / "configuration"
     folder.mkdir()
     alias = folder / "repo.dfconfig"
-    alias.write_text(json.dumps({"repo": {"identity": {"owner": "chosen"}}}), encoding="utf-8")
+    alias.write_text(
+        json.dumps({"repo": {"identity": {"owner": "chosen"}}}), encoding="utf-8"
+    )
     monkeypatch.setenv("DF_CONFIG_DIR", "configuration")
 
     install.write(install.plan("o", "r", "abc", root=str(tmp_path)), str(tmp_path))
 
     assert not (tmp_path / "repo.dfconfig").exists()
-    assert json.loads(alias.read_text(encoding="utf-8"))["repo"]["identity"]["owner"] == "chosen"
+    assert (
+        json.loads(alias.read_text(encoding="utf-8"))["repo"]["identity"]["owner"]
+        == "chosen"
+    )
 
 
 class TestConfigurationIssue:
@@ -194,7 +212,9 @@ def _pipeline_workflow(name: str) -> dict:
         The parsed workflow.
     """
     root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    with open(os.path.join(root, ".github", "workflows", f"{name}.yml"), encoding="utf-8") as f:
+    with open(
+        os.path.join(root, ".github", "workflows", f"{name}.yml"), encoding="utf-8"
+    ) as f:
         return yaml.safe_load(f)
 
 
@@ -206,13 +226,17 @@ def test_an_installation_includes_the_agent():
     """
     installed = install.relevant_workflows(".")
     for name in ("agent", "open-pr", "pr-approval-automerge", "verify-pr-issue"):
-        assert name in installed, f"an installation without {name} cannot run the governed flow"
+        assert name in installed, (
+            f"an installation without {name} cannot run the governed flow"
+        )
 
 
 def test_the_agent_caller_can_be_switched_off_without_a_commit():
     """`AGENT_ENABLED` gates the job, so the caller has to forward it."""
     caller = yaml.safe_load(install.render_caller("agent", "o/p", "abc"))
-    assert caller["jobs"]["agent"]["with"]["agent-enabled"] == "${{ vars.AGENT_ENABLED }}"
+    assert (
+        caller["jobs"]["agent"]["with"]["agent-enabled"] == "${{ vars.AGENT_ENABLED }}"
+    )
 
 
 def test_open_pr_declares_and_forwards_every_input():
@@ -227,7 +251,9 @@ def test_open_pr_declares_and_forwards_every_input():
         assert caller["jobs"]["open-pr"]["with"][name] == f"${{{{ inputs.{name} }}}}"
 
 
-@pytest.mark.parametrize("name", sorted(set(install.WORKFLOWS) - {"ci", "verify-pr-issue"}))
+@pytest.mark.parametrize(
+    "name", sorted(set(install.WORKFLOWS) - {"ci", "verify-pr-issue"})
+)
 def test_every_caller_targets_a_callable_pipeline_workflow(name: str):
     """A caller pointing at a workflow that does not accept calls fails only at run time.
 
@@ -235,14 +261,18 @@ def test_every_caller_targets_a_callable_pipeline_workflow(name: str):
         name: Workflow file name without its suffix.
     """
     upstream = _pipeline_workflow(name)
-    assert "workflow_call" in _triggers(upstream), f"{name} does not accept being called"
+    assert "workflow_call" in _triggers(upstream), (
+        f"{name} does not accept being called"
+    )
 
     caller = yaml.safe_load(install.render_caller(name, "o/p", "abc"))
     job = next(iter(caller["jobs"].values()))
     assert job["uses"].endswith(f".github/workflows/{name}.yml@abc")
 
 
-@pytest.mark.parametrize("name", sorted(set(install.WORKFLOWS) - {"ci", "verify-pr-issue"}))
+@pytest.mark.parametrize(
+    "name", sorted(set(install.WORKFLOWS) - {"ci", "verify-pr-issue"})
+)
 def test_every_forwarded_value_is_an_input_the_workflow_declares(name: str):
     """Passing an undeclared input is an error; omitting a required one is a failure at run time.
 
@@ -294,7 +324,9 @@ def test_every_default_check_is_emitted_by_the_full_install():
     import manifest as manifest_module
 
     installed = install.relevant_workflows(".")
-    assert set(install.required_contexts(installed)) == set(manifest_module.DEFAULT_REQUIRED_CHECKS)
+    assert set(install.required_contexts(installed)) == set(
+        manifest_module.DEFAULT_REQUIRED_CHECKS
+    )
 
 
 class TestReinstallingAdoptsTheUpdate:
@@ -324,7 +356,9 @@ class TestReinstallingAdoptsTheUpdate:
         changed = install.retarget(root, "bbbbbbb")
         assert changed, "every caller pins the ref twice and both must move"
 
-        with open(os.path.join(root, ".github", "workflows", "ci.yml"), encoding="utf-8") as f:
+        with open(
+            os.path.join(root, ".github", "workflows", "ci.yml"), encoding="utf-8"
+        ) as f:
             content = f.read()
         assert "aaaaaaa" not in content
         assert content.count("bbbbbbb") == 2
@@ -370,12 +404,12 @@ class TestReinstallingAdoptsTheUpdate:
         with open(path, encoding="utf-8") as handle:
             after = json.load(handle)
         assert after["repo"]["required_checks"], "the missing key is filled in"
-        assert (
-            after["repo"]["identity"]["display_name"] == "Chosen By Hand"
-        ), "choices are not overwritten"
-        assert (
-            after["repo"]["upstream"]["ref"] == "bbbbbbb"
-        ), "the pin is what a reinstall exists to move"
+        assert after["repo"]["identity"]["display_name"] == "Chosen By Hand", (
+            "choices are not overwritten"
+        )
+        assert after["repo"]["upstream"]["ref"] == "bbbbbbb", (
+            "the pin is what a reinstall exists to move"
+        )
         assert after["docs"] and after["providers"] == {}, "other blocks are preserved"
 
     def test_an_up_to_date_manifest_is_left_alone(self, tmp_path):
@@ -422,7 +456,9 @@ def test_every_generated_caller_pins_a_commit():
         for line in content.splitlines():
             if ".yml@" in line:
                 ref = line.rsplit("@", 1)[1].strip()
-                assert re.fullmatch(r"[0-9a-f]{7,40}", ref), f"{path} pins {ref!r}, not a commit"
+                assert re.fullmatch(r"[0-9a-f]{7,40}", ref), (
+                    f"{path} pins {ref!r}, not a commit"
+                )
 
 
 class TestThePipelineIsNotItsOwnConsumer:
@@ -445,7 +481,11 @@ class TestThePipelineIsNotItsOwnConsumer:
     def test_a_different_pipeline_can_install_into_darkfactory(self):
         """The name is not what is refused; being one's own upstream is."""
         assert install.plan(
-            "marius-patrik", "DarkFactory", "abc", root=".", pipeline_repo="someone/Other"
+            "marius-patrik",
+            "DarkFactory",
+            "abc",
+            root=".",
+            pipeline_repo="someone/Other",
         )
 
 
@@ -514,7 +554,9 @@ class TestACallerMustPassItsSecrets:
         root = str(tmp_path)
         os.makedirs(os.path.join(root, ".github", "workflows"), exist_ok=True)
         with open(
-            os.path.join(root, ".github", "workflows", "agent.yml"), "w", encoding="utf-8"
+            os.path.join(root, ".github", "workflows", "agent.yml"),
+            "w",
+            encoding="utf-8",
         ) as handle:
             handle.write(body)
         return root
@@ -557,7 +599,10 @@ class TestACallerMustPassItsSecrets:
             os.path.join(root, ".github", "workflows", "agent.yml"), encoding="utf-8"
         ) as handle:
             after = handle.read()
-        assert "DARKFACTORY_APP_PRIVATE_KEY: ${{ secrets.DARKFACTORY_APP_PRIVATE_KEY }}" in after
+        assert (
+            "DARKFACTORY_APP_PRIVATE_KEY: ${{ secrets.DARKFACTORY_APP_PRIVATE_KEY }}"
+            in after
+        )
 
     def test_a_caller_that_already_passes_is_untouched(self, tmp_path):
         """Repeating the line would be churn, and a caller already carrying the App key is untouched."""

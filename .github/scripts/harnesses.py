@@ -141,7 +141,9 @@ class Auth:
         return self._numbered(declared, account)
 
     def login_file_names(self, account: int = 1) -> Tuple[str, ...]:
-        return self._numbered((self.login_file.env,) if self.login_file else (), account)
+        return self._numbered(
+            (self.login_file.env,) if self.login_file else (), account
+        )
 
     def credential_names(self, account: int = 1) -> Tuple[str, ...]:
         return self.env_names(account) + self.login_file_names(account)
@@ -155,7 +157,9 @@ class Auth:
         Returns:
             Client id and secret variable names, renamed for the account.
         """
-        declared = tuple(name for name in (self.client_id_env, self.client_secret_env) if name)
+        declared = tuple(
+            name for name in (self.client_id_env, self.client_secret_env) if name
+        )
         return self._numbered(declared, account)
 
     def secret_names(self) -> Tuple[str, ...]:
@@ -243,9 +247,13 @@ class Harness:
         that needs it.
         """
         if self.login_file and self.auth is None:
-            object.__setattr__(self, "auth", Auth(kind="static", login_file=self.login_file))
+            object.__setattr__(
+                self, "auth", Auth(kind="static", login_file=self.login_file)
+            )
         elif self.login_file and self.auth and not self.auth.login_file:
-            object.__setattr__(self, "auth", replace(self.auth, login_file=self.login_file))
+            object.__setattr__(
+                self, "auth", replace(self.auth, login_file=self.login_file)
+            )
 
     def install_command(self) -> str:
         """Returns the shell that installs this harness, or an empty string when it declares none.
@@ -504,7 +512,15 @@ REGISTRY: Dict[str, Harness] = {
         name="kimi",
         install="npm install -g @moonshot-ai/kimi-cli",
         binary="kimi",
-        template=["--prompt", PROMPT, "--model", MODEL, "--output-format", "text", "--yolo"],
+        template=[
+            "--prompt",
+            PROMPT,
+            "--model",
+            MODEL,
+            "--output-format",
+            "text",
+            "--yolo",
+        ],
         pools=(),
         auth=Auth(
             kind="static",
@@ -512,7 +528,9 @@ REGISTRY: Dict[str, Harness] = {
             alternatives=("KIMI_API_KEY",),
             note="Moonshot API key, under either of the two names the CLI accepts.",
         ),
-        login_file=LoginFile(env="KIMI_AUTH_JSON", path=".kimi-code/credentials/kimi-code.json"),
+        login_file=LoginFile(
+            env="KIMI_AUTH_JSON", path=".kimi-code/credentials/kimi-code.json"
+        ),
         description="Moonshot Kimi CLI",
     ),
     "grok": Harness(
@@ -710,12 +728,16 @@ def resolve_attempts(
             print(f"Unknown harness {name!r} in chain; skipping.")
             continue
         if require_available and not harness.is_available():
-            print(f"Harness {name!r} unavailable ({harness.binary} not on PATH); skipping.")
+            print(
+                f"Harness {name!r} unavailable ({harness.binary} not on PATH); skipping."
+            )
             continue
 
         accounts = harness.accounts()
         if not accounts:
-            print(f"Harness {name!r} has no credentials in {list(harness.credentials)}; skipping.")
+            print(
+                f"Harness {name!r} has no credentials in {list(harness.credentials)}; skipping."
+            )
             continue
 
         pools: Sequence[Optional[str]]
@@ -744,5 +766,7 @@ def describe_chain() -> str:
     for attempt in attempts:
         model = f" model `{attempt.model}`" if attempt.model else ""
         account = f" account {attempt.account}" if attempt.account > 1 else ""
-        lines.append(f"- `{attempt.harness.name}` ({attempt.harness.binary}){model}{account}")
+        lines.append(
+            f"- `{attempt.harness.name}` ({attempt.harness.binary}){model}{account}"
+        )
     return "\n".join(lines)

@@ -53,7 +53,9 @@ def _gh(
         bot_token = os.environ.get("BOT_TOKEN", "")
         if bot_token:
             env["GH_TOKEN"] = bot_token
-    return subprocess.run(["gh"] + args, capture_output=True, text=True, check=check, env=env)
+    return subprocess.run(
+        ["gh"] + args, capture_output=True, text=True, check=check, env=env
+    )
 
 
 def submit_proxy_review(pr_number: int, repo: str, actor: str) -> bool:
@@ -104,7 +106,9 @@ def submit_proxy_review(pr_number: int, repo: str, actor: str) -> bool:
             file=sys.stderr,
         )
 
-    check = _gh(["api", f"repos/{repo}/pulls/{pr_number}/reviews", "--jq", ".[].state"], repo)
+    check = _gh(
+        ["api", f"repos/{repo}/pulls/{pr_number}/reviews", "--jq", ".[].state"], repo
+    )
     approved = "APPROVED" in (check.stdout or "")
     if not approved:
         print(
@@ -150,7 +154,14 @@ def reconcile_post_merge(
         client: Optional injected project client, used by tests.
     """
     view = _gh(
-        ["pr", "view", str(pr_number), "--json", "state,closingIssuesReferences,body,url"], repo
+        [
+            "pr",
+            "view",
+            str(pr_number),
+            "--json",
+            "state,closingIssuesReferences,body,url",
+        ],
+        repo,
     )
     if view.returncode != 0:
         print(f"Failed to view PR #{pr_number} for post-merge reconciliation.")
@@ -223,7 +234,9 @@ def handle_pr_approval() -> None:
         issue_author=os.environ.get("ISSUE_AUTHOR", ""),
         user_type=os.environ.get("APPROVER_TYPE", ""),
     ):
-        print(f"Actor {actor} is not the author nor OWNER/MEMBER/COLLABORATOR. Skipping.")
+        print(
+            f"Actor {actor} is not the author nor OWNER/MEMBER/COLLABORATOR. Skipping."
+        )
         sys.exit(0)
 
     pr_number, is_approved = detect_approval()
@@ -233,7 +246,11 @@ def handle_pr_approval() -> None:
 
     print(f"PR #{pr_number} approved by @{actor}. Preparing for auto-merge.")
 
-    view = _gh(["pr", "view", str(pr_number), "--json", "isDraft,state,reviewDecision"], repo, True)
+    view = _gh(
+        ["pr", "view", str(pr_number), "--json", "isDraft,state,reviewDecision"],
+        repo,
+        True,
+    )
     data = json.loads(view.stdout)
     if data.get("state") != "OPEN":
         print(f"PR #{pr_number} is {data.get('state')}. Exiting.")
@@ -247,11 +264,15 @@ def handle_pr_approval() -> None:
         submit_proxy_review(int(pr_number), repo, actor)
 
     print(f"Enabling auto-merge for PR #{pr_number} with --delete-branch...")
-    result = _gh(["pr", "merge", str(pr_number), "--auto", "--merge", "--delete-branch"], repo)
+    result = _gh(
+        ["pr", "merge", str(pr_number), "--auto", "--merge", "--delete-branch"], repo
+    )
     print(f"Auto-merge result:\n{result.stdout}\n{result.stderr}")
     if result.returncode != 0:
         print("Attempting direct merge in case requirements are already satisfied...")
-        direct = _gh(["pr", "merge", str(pr_number), "--merge", "--delete-branch"], repo)
+        direct = _gh(
+            ["pr", "merge", str(pr_number), "--merge", "--delete-branch"], repo
+        )
         print(f"Direct merge result:\n{direct.stdout}\n{direct.stderr}")
 
     for _ in range(MERGE_POLL_ATTEMPTS):

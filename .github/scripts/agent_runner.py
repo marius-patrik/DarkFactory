@@ -35,7 +35,9 @@ GOOGLE_TOKEN_ENDPOINT = "https://oauth2.googleapis.com/token"
 
 _CANDIDATE_DIRS = [
     os.path.dirname(os.path.abspath(__file__)),
-    os.path.join(os.environ.get("GITHUB_WORKSPACE", "/workspace"), ".github", "scripts"),
+    os.path.join(
+        os.environ.get("GITHUB_WORKSPACE", "/workspace"), ".github", "scripts"
+    ),
     "/usr/local/share/darkfactory-scripts",
     "/workspace/.github/scripts",
 ]
@@ -85,7 +87,9 @@ DEFAULT_MODEL_FALLBACK_CHAIN: List[str] = [
 ]
 
 QUOTA_EXHAUSTION_PATTERNS: List[re.Pattern] = [
-    re.compile(r"(?:status[_\s]*(?:code)?|http|error|code)\s*[:=]?\s*429\b", re.IGNORECASE),
+    re.compile(
+        r"(?:status[_\s]*(?:code)?|http|error|code)\s*[:=]?\s*429\b", re.IGNORECASE
+    ),
     re.compile(
         r"\b429\s*[:=\-]?\s*(?:too\s*many\s*requests|resource[_\s]*exhausted|quota|rate\s*limit)",
         re.IGNORECASE,
@@ -124,7 +128,9 @@ QUOTA_EXHAUSTION_PATTERNS: List[re.Pattern] = [
     re.compile(r"\bout\s*of\s*credits?\b", re.IGNORECASE),
     re.compile(r"\binsufficient\s*credits?\b", re.IGNORECASE),
     re.compile(r"\bupgrade\s*(?:your\s*)?plan\b", re.IGNORECASE),
-    re.compile(r"\b(?:model|service|endpoint)\s*(?:is\s*)?unavailable\b", re.IGNORECASE),
+    re.compile(
+        r"\b(?:model|service|endpoint)\s*(?:is\s*)?unavailable\b", re.IGNORECASE
+    ),
     re.compile(r"\b(?:model|server|service)\s*(?:is\s*)?overloaded\b", re.IGNORECASE),
 ]
 
@@ -155,7 +161,11 @@ def refresh_google_oauth_token(
     Raises:
         RuntimeError: If the token exchange fails.
     """
-    client_id = client_id or ANTIGRAVITY_CLIENT_ID or os.environ.get("ANTIGRAVITY_CLIENT_ID", "")
+    client_id = (
+        client_id
+        or ANTIGRAVITY_CLIENT_ID
+        or os.environ.get("ANTIGRAVITY_CLIENT_ID", "")
+    )
     client_secret = (
         client_secret
         or ANTIGRAVITY_CLIENT_SECRET
@@ -182,7 +192,9 @@ def refresh_google_oauth_token(
             return data
     except urllib.error.HTTPError as e:
         err_body = e.read().decode("utf-8", errors="ignore")
-        raise RuntimeError(f"Google OAuth token refresh failed ({e.code}): {err_body}") from e
+        raise RuntimeError(
+            f"Google OAuth token refresh failed ({e.code}): {err_body}"
+        ) from e
     except Exception as e:
         raise RuntimeError(f"Unexpected error during token refresh: {e}") from e
 
@@ -249,7 +261,9 @@ def prepare_credentials(harness: Any, account: int = 1) -> Optional[str]:
     return response.get("access_token")
 
 
-def prepare_login_file(base: Dict[str, str], attempt: Any) -> Optional[Tuple[str, str, str]]:
+def prepare_login_file(
+    base: Dict[str, str], attempt: Any
+) -> Optional[Tuple[str, str, str]]:
     """Materialize the selected subscription login and return (path, secret, original)."""
     auth = getattr(attempt.harness, "auth", None)
     login = getattr(auth, "login_file", None) if auth else None
@@ -268,7 +282,9 @@ def prepare_login_file(base: Dict[str, str], attempt: Any) -> Optional[Tuple[str
     return path, secret_name, content
 
 
-def finish_login_file(state: Optional[Tuple[str, str, str]], rotates: bool = True) -> None:
+def finish_login_file(
+    state: Optional[Tuple[str, str, str]], rotates: bool = True
+) -> None:
     """Persist a changed login file under the account that supplied it, then remove it."""
     if not state:
         return
@@ -354,7 +370,9 @@ def credential_env(base: Dict[str, str], attempt: Any) -> Dict[str, str]:
         # there as well failed every run with "401 API key is invalid".
         for name in _export_names(auth, attempt.account, base):
             env[name] = credential
-    for source, target in zip(auth.companion_names(attempt.account), auth.companion_names(1)):
+    for source, target in zip(
+        auth.companion_names(attempt.account), auth.companion_names(1)
+    ):
         if base.get(source):
             env[target] = base[source]
     return env
@@ -397,7 +415,8 @@ def persist_rotated_token(secret: str, value: str) -> bool:
             # person's token is the one with the rights, exactly as for Projects v2.
             env={
                 **os.environ,
-                "GH_TOKEN": os.environ.get("GH_PROJECT_TOKEN") or os.environ.get("GH_TOKEN", ""),
+                "GH_TOKEN": os.environ.get("GH_PROJECT_TOKEN")
+                or os.environ.get("GH_TOKEN", ""),
             },
         )
         print(f"{secret} was rotated by the provider and has been written back.")
@@ -579,7 +598,10 @@ def setup_antigravity_credentials(
                 )
                 p_store.communicate(input=encoded)
             except Exception as e:
-                print(f"secret-tool store notice ({service}/{attr_name}): {e}", file=sys.stderr)
+                print(
+                    f"secret-tool store notice ({service}/{attr_name}): {e}",
+                    file=sys.stderr,
+                )
         print("Successfully populated SecretService keyring for agy CLI.")
 
     return cred_file
@@ -706,9 +728,13 @@ def _pacific_offset_hours(moment: datetime) -> int:
     """
     year = moment.year
     march_first = datetime(year, 3, 1, tzinfo=timezone.utc)
-    second_sunday_march = march_first + timedelta(days=(6 - march_first.weekday()) % 7 + 7)
+    second_sunday_march = march_first + timedelta(
+        days=(6 - march_first.weekday()) % 7 + 7
+    )
     november_first = datetime(year, 11, 1, tzinfo=timezone.utc)
-    first_sunday_november = november_first + timedelta(days=(6 - november_first.weekday()) % 7)
+    first_sunday_november = november_first + timedelta(
+        days=(6 - november_first.weekday()) % 7
+    )
     dst_start = second_sunday_march.replace(hour=10)  # 02:00 PST
     dst_end = first_sunday_november.replace(hour=9)  # 02:00 PDT
     return -7 if dst_start <= moment < dst_end else -8
@@ -729,7 +755,9 @@ def _next_pacific_midnight(now: float) -> float:
         local.year, local.month, local.day, tzinfo=timezone.utc
     ) + timedelta(days=1)
     guess = local_next_midnight - timedelta(hours=_pacific_offset_hours(utc_now))
-    return (local_next_midnight - timedelta(hours=_pacific_offset_hours(guess))).timestamp()
+    return (
+        local_next_midnight - timedelta(hours=_pacific_offset_hours(guess))
+    ).timestamp()
 
 
 def next_quota_reset(error_detail: str, now: float) -> float:
@@ -765,7 +793,9 @@ def next_quota_reset(error_detail: str, now: float) -> float:
     # 3. retryDelay or Please retry in Ns
     retry_match = re.search(r'"retryDelay"\s*:\s*(\d+)', error_detail)
     if not retry_match:
-        retry_match = re.search(r"please\s+retry\s+in\s+(\d+)s", error_detail, re.IGNORECASE)
+        retry_match = re.search(
+            r"please\s+retry\s+in\s+(\d+)s", error_detail, re.IGNORECASE
+        )
     if retry_match:
         try:
             delay = int(retry_match.group(1))
@@ -810,7 +840,10 @@ def record_quota_block(
         .replace("+00:00", "Z")
     )
     blocked_iso = (
-        datetime.now(timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z")
+        datetime.now(timezone.utc)
+        .replace(microsecond=0)
+        .isoformat()
+        .replace("+00:00", "Z")
     )
     payload = {
         "item": item_number,
@@ -850,9 +883,15 @@ def record_quota_block(
                     repo=repo,
                 )
             except Exception as ee:
-                print(f"Notice: Failed to patch quota variable {var_name}: {ee}", file=sys.stderr)
+                print(
+                    f"Notice: Failed to patch quota variable {var_name}: {ee}",
+                    file=sys.stderr,
+                )
         else:
-            print(f"Notice: Failed to create quota variable {var_name}: {e}", file=sys.stderr)
+            print(
+                f"Notice: Failed to create quota variable {var_name}: {e}",
+                file=sys.stderr,
+            )
     prov_name = "DARKFACTORY_QUOTA_PROVIDERS"
     existing = {}
     try:
@@ -905,12 +944,20 @@ def record_quota_block(
                     repo=repo,
                 )
             except Exception as ee:
-                print(f"Notice: Failed to patch provider map {prov_name}: {ee}", file=sys.stderr)
+                print(
+                    f"Notice: Failed to patch provider map {prov_name}: {ee}",
+                    file=sys.stderr,
+                )
         else:
-            print(f"Notice: Failed to create provider map {prov_name}: {e}", file=sys.stderr)
+            print(
+                f"Notice: Failed to create provider map {prov_name}: {e}",
+                file=sys.stderr,
+            )
 
 
-def try_gh(args: List[str], repo: Optional[str] = None, doing: str = "") -> Optional[str]:
+def try_gh(
+    args: List[str], repo: Optional[str] = None, doing: str = ""
+) -> Optional[str]:
     """Runs a `gh` command whose failure must not end the run.
 
     Classification is the clearest case: an agent that cannot apply a label has still read the
@@ -999,17 +1046,21 @@ def is_quota_exhausted(error_message: str) -> bool:
 #: because an unused credential is always a better answer than failing. Matched against the same
 #: subprocess output as quota, never against an agent's answer text.
 AUTH_FAILURE_PATTERNS: List[re.Pattern] = [
-    re.compile(r"(?:status[_\s]*(?:code)?|http|error|code)\s*[:=]?\s*40[123]\b", re.IGNORECASE),
+    re.compile(
+        r"(?:status[_\s]*(?:code)?|http|error|code)\s*[:=]?\s*40[123]\b", re.IGNORECASE
+    ),
     re.compile(r"\b401\s*[:=\-]?\s*(?:unauthorized|invalid|expired)", re.IGNORECASE),
     re.compile(r"\bunauthorized\b", re.IGNORECASE),
     re.compile(
-        r"\binvalid[_\s-]*(?:api[_\s-]*key|token|oauth|grant|credentials?)\b", re.IGNORECASE
+        r"\binvalid[_\s-]*(?:api[_\s-]*key|token|oauth|grant|credentials?)\b",
+        re.IGNORECASE,
     ),
     re.compile(r"\bexpired[_\s-]*token\b", re.IGNORECASE),
     re.compile(r"\binvalid_grant\b", re.IGNORECASE),
     re.compile(r"\bauthentication\s*(?:failed|expired|required)\b", re.IGNORECASE),
     re.compile(
-        r"\b(?:token|credential|api[_\s-]*key)\s*(?:expired|invalid|revoked)\b", re.IGNORECASE
+        r"\b(?:token|credential|api[_\s-]*key)\s*(?:expired|invalid|revoked)\b",
+        re.IGNORECASE,
     ),
 ]
 
@@ -1063,7 +1114,10 @@ def is_quota_exhaustion_notice(result: str) -> bool:
 #: reply, so a reply carrying it is a failed attempt like any other.
 PRINT_TIMEOUT_PATTERNS: List[re.Pattern] = [
     re.compile(r"\bprint[_\s-]?timeout\b", re.IGNORECASE),
-    re.compile(r"\btimed?\s*out\b[^\n]{0,60}\b(?:print|output|response|result)\b", re.IGNORECASE),
+    re.compile(
+        r"\btimed?\s*out\b[^\n]{0,60}\b(?:print|output|response|result)\b",
+        re.IGNORECASE,
+    ),
     re.compile(r"\bprint\b[^\n]{0,40}\btimed?\s*out\b", re.IGNORECASE),
 ]
 
@@ -1159,13 +1213,20 @@ def rewrite_file_links(text: str, repo: str = "", branch: str = "") -> str:
     def _replace(match: re.Match) -> str:
         raw = match.group(1).strip()
         path = raw.lstrip("/")
-        for prefix in ("home/agent/", "home/runner/work/", "github/workspace/", "workspace/"):
+        for prefix in (
+            "home/agent/",
+            "home/runner/work/",
+            "github/workspace/",
+            "workspace/",
+        ):
             if path.startswith(prefix):
                 path = path[len(prefix) :]
                 break
         path = re.sub(r"^home/[^/]+/", "", path)
         path = re.sub(
-            r"^[^/]+/[^/]+/[^/]+/(?=\.github/|\.agents/|src/|tests/|docs/|bin/)", "", path
+            r"^[^/]+/[^/]+/[^/]+/(?=\.github/|\.agents/|src/|tests/|docs/|bin/)",
+            "",
+            path,
         )
         if not path:
             return match.group(0)
@@ -1350,7 +1411,9 @@ def load_checkpoint(cwd: Optional[str] = None) -> Optional[Dict[str, Any]]:
                 data = json.load(f)
             if isinstance(data, dict):
                 return data
-            print(f"Notice: Checkpoint data is not a dict: {type(data)}", file=sys.stderr)
+            print(
+                f"Notice: Checkpoint data is not a dict: {type(data)}", file=sys.stderr
+            )
             return None
         except Exception as e:
             print(f"Notice: Failed to read checkpoint file: {e}", file=sys.stderr)
@@ -1452,7 +1515,10 @@ def update_project_status_blocked(
 
             client = GitHubProjectClient(owner=owner, project_number=PROJECT_NUMBER)
         except Exception as e:
-            print(f"Notice: Failed to instantiate GitHubProjectClient: {e}", file=sys.stderr)
+            print(
+                f"Notice: Failed to instantiate GitHubProjectClient: {e}",
+                file=sys.stderr,
+            )
             client = None
 
     if client is not None:
@@ -1514,7 +1580,10 @@ def unblock_entity(
 
             client = GitHubProjectClient(owner=owner, project_number=PROJECT_NUMBER)
         except Exception as e:
-            print(f"Notice: Failed to instantiate GitHubProjectClient: {e}", file=sys.stderr)
+            print(
+                f"Notice: Failed to instantiate GitHubProjectClient: {e}",
+                file=sys.stderr,
+            )
             client = None
 
     if client is not None:
@@ -1527,7 +1596,9 @@ def unblock_entity(
                 item_id = client.add_item(entity_url)
                 if item_id:
                     client.edit_status(item_id, target_status)
-                    print(f"Updated project board status to {target_status} for {entity_url}")
+                    print(
+                        f"Updated project board status to {target_status} for {entity_url}"
+                    )
         except Exception as e:
             print(f"Notice: Failed to update project status: {e}", file=sys.stderr)
 
@@ -1582,13 +1653,20 @@ def checkpoint_and_notify_exhaustion(
             status = run_git(["status", "--porcelain"], cwd=work_dir)
             if status:
                 run_git(
-                    ["commit", "-m", "chore(ci): checkpoint progress on quota exhaustion"],
+                    [
+                        "commit",
+                        "-m",
+                        "chore(ci): checkpoint progress on quota exhaustion",
+                    ],
                     cwd=work_dir,
                 )
                 try:
                     run_git(["push", "origin", branch_name], cwd=work_dir)
                 except Exception as pe:
-                    print(f"Notice: Git push during checkpoint notice: {pe}", file=sys.stderr)
+                    print(
+                        f"Notice: Git push during checkpoint notice: {pe}",
+                        file=sys.stderr,
+                    )
         except Exception as ge:
             print(f"Notice: Git checkpoint notice: {ge}", file=sys.stderr)
 
@@ -1625,11 +1703,19 @@ def checkpoint_and_notify_exhaustion(
 
     try:
         if is_pr:
-            run_gh(["pr", "comment", str(issue_number), "--body", comment_body], repo=repo)
+            run_gh(
+                ["pr", "comment", str(issue_number), "--body", comment_body], repo=repo
+            )
         else:
-            run_gh(["issue", "comment", str(issue_number), "--body", comment_body], repo=repo)
+            run_gh(
+                ["issue", "comment", str(issue_number), "--body", comment_body],
+                repo=repo,
+            )
     except Exception as e:
-        print(f"Notice: Failed to post quota exhaustion notice comment: {e}", file=sys.stderr)
+        print(
+            f"Notice: Failed to post quota exhaustion notice comment: {e}",
+            file=sys.stderr,
+        )
 
     # 4. Update Project Board Status to Blocked
     update_project_status_blocked(issue_number, repo=repo, is_pr=is_pr, client=client)
@@ -1682,10 +1768,10 @@ def _post_agent_failure_notice(
             run_gh(["pr", "comment", str(issue_number), "--body", body], repo=repo)
         else:
             run_gh(["issue", "comment", str(issue_number), "--body", body], repo=repo)
-    except (
-        Exception
-    ) as e:  # noqa: BLE001 - the run is already failing; a notice must not replace it
-        print(f"Notice: Failed to post agent output failure notice: {e}", file=sys.stderr)
+    except Exception as e:  # noqa: BLE001 - the run is already failing; a notice must not replace it
+        print(
+            f"Notice: Failed to post agent output failure notice: {e}", file=sys.stderr
+        )
 
 
 #: Appended to every prompt. The pipeline posts or parses the agent's final message, and nobody can
@@ -1739,7 +1825,8 @@ def parse_df_json_output(stdout: str) -> str:
             if isinstance(delta, str) and delta:
                 segments[-1].append(delta)
         elif kind in ("tool_start", "tool_end", "failover") or (
-            kind == "step" and (event.get("errorMessage") or event.get("stopReason") == "error")
+            kind == "step"
+            and (event.get("errorMessage") or event.get("stopReason") == "error")
         ):
             # A new segment starts after each tool call and after an attempt that failed; the
             # closing ``step`` of a successful turn follows its text and must not clear it.
@@ -1803,7 +1890,9 @@ def df_failure_detail(exc: "subprocess.CalledProcessError", detail: str) -> str:
     if exc.returncode == DF_EXIT_QUOTA_EXHAUSTED:
         parts.append("df exit code 2: quota exhausted on every candidate in the chain")
     elif exc.returncode == DF_EXIT_AUTH_FAILED:
-        parts.append("df exit code 3: authentication failed on every candidate in the chain")
+        parts.append(
+            "df exit code 3: authentication failed on every candidate in the chain"
+        )
     return "\n".join(parts).strip() or str(exc)
 
 
@@ -1860,10 +1949,14 @@ def find_df_config() -> Optional[str]:
     def candidates(root: str) -> List[str]:
         root = os.path.abspath(os.path.normpath(root))
         configured = os.environ.get("DF_CONFIG_DIR", "").strip() or ".darkfactory"
-        directory = configured if os.path.isabs(configured) else os.path.join(root, configured)
+        directory = (
+            configured if os.path.isabs(configured) else os.path.join(root, configured)
+        )
         directory = os.path.abspath(os.path.normpath(directory))
         root_candidates = [
-            os.path.join(root, name) for name in names if os.path.isfile(os.path.join(root, name))
+            os.path.join(root, name)
+            for name in names
+            if os.path.isfile(os.path.join(root, name))
         ]
         folder_candidates = (
             []
@@ -2048,7 +2141,9 @@ def finish_df_login_files(states: List[Tuple[str, str, Optional[Any]]]) -> None:
             except ValueError:
                 pass
         if curr_val != orig_val:
-            serialized = json.dumps(current) if not isinstance(current, str) else current
+            serialized = (
+                json.dumps(current) if not isinstance(current, str) else current
+            )
             persist_rotated_token(secret, serialized)
             print(f"Rotated df account {account} written back to {secret}.")
 
@@ -2127,8 +2222,12 @@ def run_agent_prompt(
         # A template carrying ``{{PROMPT_FILE}}`` (df) receives the prompt by path rather than as
         # an argv element, so long prompts never meet an argument-length limit. The file is written
         # per retry and removed in the loop's ``finally`` below.
-        needs_prompt_file = any(harnesses.PROMPT_FILE in token for token in harness.template)
-        argv = harness.build_argv(prompt + ANSWER_CONTRACT, current_model, timeout, kind=kind)
+        needs_prompt_file = any(
+            harnesses.PROMPT_FILE in token for token in harness.template
+        )
+        argv = harness.build_argv(
+            prompt + ANSWER_CONTRACT, current_model, timeout, kind=kind
+        )
 
         try:
             env = credential_env(base_env, attempt)
@@ -2162,7 +2261,9 @@ def run_agent_prompt(
             df_login_state = snapshot_df_login_files() if harness.name == "df" else None
             retry_prompt_file: Optional[str] = None
             if needs_prompt_file:
-                fd, retry_prompt_file = tempfile.mkstemp(prefix="df-prompt-", suffix=".md")
+                fd, retry_prompt_file = tempfile.mkstemp(
+                    prefix="df-prompt-", suffix=".md"
+                )
                 with os.fdopen(fd, "w", encoding="utf-8") as stream:
                     stream.write(prompt + ANSWER_CONTRACT)
                 argv = harness.build_argv(
@@ -2173,7 +2274,9 @@ def run_agent_prompt(
                     kind=kind,
                 )
             try:
-                res = subprocess.run(argv, capture_output=True, text=True, check=True, env=env)
+                res = subprocess.run(
+                    argv, capture_output=True, text=True, check=True, env=env
+                )
             except FileNotFoundError:
                 print(
                     f"Harness binary {harness.binary!r} vanished between resolution and "
@@ -2258,7 +2361,9 @@ def run_agent_prompt(
                 login_file = getattr(harness, "login_file", None) or getattr(
                     getattr(harness, "auth", None), "login_file", None
                 )
-                finish_login_file(login_state, login_file.rotates if login_file else False)
+                finish_login_file(
+                    login_state, login_file.rotates if login_file else False
+                )
                 if df_login_state is not None:
                     finish_df_login_files(df_login_state)
                 if retry_prompt_file is not None:
@@ -2290,7 +2395,9 @@ def run_agent_prompt(
                         if rotation_available
                         else "Nothing left to rotate to."
                     )
-                    cause = "Quota exhausted" if short_quota else "Authentication failed"
+                    cause = (
+                        "Quota exhausted" if short_quota else "Authentication failed"
+                    )
                     print(
                         f"{cause} on {label} (reported on stdout); "
                         f"detail: {last_error_detail[:400]}. {where}",
@@ -2357,7 +2464,9 @@ def run_agent_prompt(
                 break
 
             if len(tried) > 1:
-                print(f"Succeeded on {label} after {len(tried) - 1} exhausted attempt(s).")
+                print(
+                    f"Succeeded on {label} after {len(tried) - 1} exhausted attempt(s)."
+                )
             return output
 
     if saw_no_output:
@@ -2452,7 +2561,9 @@ def handle_interpret(issue_number: int, repo: str, feedback: str = ""):
         ],
         "is_pr": False,
     }
-    interpretation = run_agent_prompt(prompt, checkpoint_context=checkpoint_ctx, kind="classify")
+    interpretation = run_agent_prompt(
+        prompt, checkpoint_context=checkpoint_ctx, kind="classify"
+    )
 
     if is_quota_exhaustion_notice(interpretation):
         return
@@ -2464,7 +2575,9 @@ def handle_interpret(issue_number: int, repo: str, feedback: str = ""):
             f"{interpretation}\n"
         )
         run_gh(["issue", "comment", str(issue_number), "--body", comment], repo=repo)
-        fail_agent_run(f"Interpretation failed on issue #{issue_number}; Execution Error posted.")
+        fail_agent_run(
+            f"Interpretation failed on issue #{issue_number}; Execution Error posted."
+        )
     comment = (
         "<!-- darkfactory-agent -->\n"
         f"### DarkFactory Agent Interpretation\n\n"
@@ -2478,7 +2591,9 @@ def handle_interpret(issue_number: int, repo: str, feedback: str = ""):
 def create_child_plan_issue(request_number: int, repo: str) -> int:
     """Creates a child Plan issue natively linked via --parent to the Request issue."""
     req_data = json.loads(
-        run_gh(["issue", "view", str(request_number), "--json", "title,body"], repo=repo)
+        run_gh(
+            ["issue", "view", str(request_number), "--json", "title,body"], repo=repo
+        )
     )
     raw_title = req_data.get("title", "")
     plan_title = f"Plan: {raw_title.removeprefix('Request: ').strip()}"
@@ -2512,7 +2627,16 @@ def create_child_plan_issue(request_number: int, repo: str) -> int:
 
     # Fallback: create then link parent
     out = run_gh(
-        ["issue", "create", "--title", plan_title, "--body", initial_body, "--label", "Plan"],
+        [
+            "issue",
+            "create",
+            "--title",
+            plan_title,
+            "--body",
+            initial_body,
+            "--label",
+            "Plan",
+        ],
         repo=repo,
     )
     match = re.search(r"/issues/(\d+)", out)
@@ -2520,12 +2644,23 @@ def create_child_plan_issue(request_number: int, repo: str) -> int:
         raise RuntimeError(f"Could not parse created issue number from output: {out}")
     plan_num = int(match.group(1))
     try:
-        run_gh(["issue", "edit", str(plan_num), "--parent", str(request_number)], repo=repo)
-        print(f"Linked parent #{request_number} to child Plan issue #{plan_num} via edit")
+        run_gh(
+            ["issue", "edit", str(plan_num), "--parent", str(request_number)], repo=repo
+        )
+        print(
+            f"Linked parent #{request_number} to child Plan issue #{plan_num} via edit"
+        )
     except Exception as e:
         try:
             run_gh(
-                ["issue", "edit", str(request_number), "--add-sub-issue", str(plan_num)], repo=repo
+                [
+                    "issue",
+                    "edit",
+                    str(request_number),
+                    "--add-sub-issue",
+                    str(plan_num),
+                ],
+                repo=repo,
             )
             print(f"Added sub-issue #{plan_num} to parent #{request_number} via edit")
         except Exception as e2:
@@ -2555,7 +2690,9 @@ def has_plan(issue_number: int, repo: str) -> bool:
         True when a plan comment is present.
     """
     try:
-        raw = run_gh(["issue", "view", str(issue_number), "--json", "comments"], repo=repo)
+        raw = run_gh(
+            ["issue", "view", str(issue_number), "--json", "comments"], repo=repo
+        )
     except Exception as exc:  # noqa: BLE001 - treated as "no plan yet", which re-plans safely
         print(f"Could not read comments on #{issue_number}: {exc}", file=sys.stderr)
         return False
@@ -2579,7 +2716,9 @@ def _is_plan_comment(body: str) -> bool:
     """
     if PLAN_MARKER in body:
         return True
-    return "### Implementation Plan" in body or body.lstrip().startswith("## Implementation Plan")
+    return "### Implementation Plan" in body or body.lstrip().startswith(
+        "## Implementation Plan"
+    )
 
 
 def handle_plan(request_number: int, plan_number: int, repo: str, feedback: str = ""):
@@ -2594,7 +2733,9 @@ def handle_plan(request_number: int, plan_number: int, repo: str, feedback: str 
             the plan is re-run with the feedback instead of starting over.
     """
     req_data = json.loads(
-        run_gh(["issue", "view", str(request_number), "--json", "title,body"], repo=repo)
+        run_gh(
+            ["issue", "view", str(request_number), "--json", "title,body"], repo=repo
+        )
     )
     prompt = (
         f"Draft a detailed, step-by-step Implementation Plan for Request #{request_number}:\n"
@@ -2644,7 +2785,9 @@ def handle_plan(request_number: int, plan_number: int, repo: str, feedback: str 
     print(f"Plan posted on issue #{plan_number}")
 
 
-def handle_respond(issue_or_pr_num: int, comment_text: str, repo: str, is_pr: bool = False):
+def handle_respond(
+    issue_or_pr_num: int, comment_text: str, repo: str, is_pr: bool = False
+):
     """Generates a contextual agent response to human feedback."""
     checkpoint_ctx = {
         "issue_number": issue_or_pr_num,
@@ -2669,7 +2812,9 @@ def handle_respond(issue_or_pr_num: int, comment_text: str, repo: str, is_pr: bo
         if is_pr:
             run_gh(["pr", "comment", str(issue_or_pr_num), "--body", body], repo=repo)
         else:
-            run_gh(["issue", "comment", str(issue_or_pr_num), "--body", body], repo=repo)
+            run_gh(
+                ["issue", "comment", str(issue_or_pr_num), "--body", body], repo=repo
+            )
         fail_agent_run(f"Respond failed on #{issue_or_pr_num}; Execution Error posted.")
     body = (
         "<!-- darkfactory-agent -->\n### DarkFactory Agent Response\n\n"
@@ -2688,10 +2833,17 @@ def _looks_like_file_path(token: str) -> bool:
     token = token.strip("`'\",:;()[]{}")
     if not token or len(token) > 250:
         return False
-    if token.startswith("http://") or token.startswith("https://") or token.startswith("file://"):
+    if (
+        token.startswith("http://")
+        or token.startswith("https://")
+        or token.startswith("file://")
+    ):
         return False
     # Avoid command invocations or code snippets with spaces or shell operators
-    if any(ch in token for ch in (" ", "\t", "\n", ";", "|", "&", ">", "<", "$", "{", "}", "*")):
+    if any(
+        ch in token
+        for ch in (" ", "\t", "\n", ";", "|", "&", ">", "<", "$", "{", "}", "*")
+    ):
         return False
     known_exts = (
         ".py",
@@ -2859,7 +3011,9 @@ def is_test_file(file_path: str) -> bool:
     )
 
 
-def check_scope(changed_files: List[str], plan_files: Set[str]) -> Tuple[List[str], List[str]]:
+def check_scope(
+    changed_files: List[str], plan_files: Set[str]
+) -> Tuple[List[str], List[str]]:
     """Separates changed files into in-scope and out-of-scope files relative to the plan.
 
     Args:
@@ -2907,7 +3061,13 @@ def resolve_base_refs(base: str, cwd: Optional[str] = None) -> List[str]:
         # The base endpoint is verified rather than the range: `git rev-parse --verify a...b`
         # reports failure for an empty range, which a base that equals HEAD legitimately produces.
         check = subprocess.run(
-            ["git", "rev-parse", "--verify", "--quiet", f"{ref.removesuffix('...HEAD')}^{{commit}}"],
+            [
+                "git",
+                "rev-parse",
+                "--verify",
+                "--quiet",
+                f"{ref.removesuffix('...HEAD')}^{{commit}}",
+            ],
             cwd=directory,
             capture_output=True,
             text=True,
@@ -2927,7 +3087,9 @@ def resolve_base_refs(base: str, cwd: Optional[str] = None) -> List[str]:
     )
 
 
-def get_pr_changed_files(base_branch_name: str = "", cwd: str = WORKSPACE_DIR) -> List[str]:
+def get_pr_changed_files(
+    base_branch_name: str = "", cwd: str = WORKSPACE_DIR
+) -> List[str]:
     """Returns the list of changed files between the current branch and the base branch.
 
     Raises:
@@ -2939,7 +3101,9 @@ def get_pr_changed_files(base_branch_name: str = "", cwd: str = WORKSPACE_DIR) -
     files: List[str] = []
     for ref in resolve_base_refs(base, cwd=cwd):
         out = run_git(["diff", "--name-only", ref], cwd=cwd)
-        files = [line.strip().replace("\\", "/") for line in out.splitlines() if line.strip()]
+        files = [
+            line.strip().replace("\\", "/") for line in out.splitlines() if line.strip()
+        ]
         if files:
             break
     return files
@@ -2964,7 +3128,9 @@ def revert_out_of_scope_files(
             would delete it rather than restore it.
     """
     base = base_branch_name or development_branch()
-    base_refs = [ref for ref in resolve_base_refs(base, cwd=cwd) if not ref.endswith("...HEAD")]
+    base_refs = [
+        ref for ref in resolve_base_refs(base, cwd=cwd) if not ref.endswith("...HEAD")
+    ]
     for f in out_of_scope_files:
         exists_in_base = False
         for ref in base_refs:
@@ -2997,7 +3163,9 @@ def revert_out_of_scope_files(
 def extract_plan_scope(plan_text: str, fallback_title: str = "") -> str:
     """Extracts the scope section from an implementation plan, or returns a fallback summary."""
     scope_match = re.search(
-        r"(?:^|\n)#{2,4}\s*Scope\s*\n(.*?)(?=\n#{2,4}\s|\Z)", plan_text, re.DOTALL | re.IGNORECASE
+        r"(?:^|\n)#{2,4}\s*Scope\s*\n(.*?)(?=\n#{2,4}\s|\Z)",
+        plan_text,
+        re.DOTALL | re.IGNORECASE,
     )
     if scope_match:
         scope = scope_match.group(1).strip()
@@ -3104,7 +3272,9 @@ def find_parent_request_number(plan_number: int, repo: str) -> Optional[int]:
     Returns:
         Parent Request issue number, or None if not found.
     """
-    raw = run_gh(["issue", "view", str(plan_number), "--json", "body,parent,comments"], repo=repo)
+    raw = run_gh(
+        ["issue", "view", str(plan_number), "--json", "body,parent,comments"], repo=repo
+    )
     data = json.loads(raw)
 
     # 1. Native GitHub sub-issue parent metadata
@@ -3114,7 +3284,9 @@ def find_parent_request_number(plan_number: int, repo: str) -> Optional[int]:
 
     # 2. Regex search in body (supports "Parent Request #N", "Parent Request: #N", "Linked Parent: #N")
     body = data.get("body", "")
-    match = re.search(r"(?:Parent Request|Linked Parent):?\s*#(\d+)", body, re.IGNORECASE)
+    match = re.search(
+        r"(?:Parent Request|Linked Parent):?\s*#(\d+)", body, re.IGNORECASE
+    )
     if match:
         return int(match.group(1))
 
@@ -3144,12 +3316,20 @@ def find_plan_issue_for_pr(pr_number: int, repo: str) -> Optional[int]:
     """
     try:
         raw = run_gh(
-            ["pr", "view", str(pr_number), "--json", "body,closingIssuesReferences,comments"],
+            [
+                "pr",
+                "view",
+                str(pr_number),
+                "--json",
+                "body,closingIssuesReferences,comments",
+            ],
             repo=repo,
         )
         data = json.loads(raw)
     except Exception as e:
-        print(f"Warning: Failed to fetch PR #{pr_number} metadata: {e}", file=sys.stderr)
+        print(
+            f"Warning: Failed to fetch PR #{pr_number} metadata: {e}", file=sys.stderr
+        )
         data = {}
 
     # 1. Native closingIssuesReferences
@@ -3173,7 +3353,9 @@ def find_plan_issue_for_pr(pr_number: int, repo: str) -> Optional[int]:
     # 3. Check comments for Plan reference
     for c in data.get("comments", []):
         c_body = c.get("body", "") if isinstance(c, dict) else str(c)
-        m = re.search(r"(?:Plan|Child Plan|\*\*Plan\*\*):?\s*#(\d+)", c_body, re.IGNORECASE)
+        m = re.search(
+            r"(?:Plan|Child Plan|\*\*Plan\*\*):?\s*#(\d+)", c_body, re.IGNORECASE
+        )
         if m:
             return int(m.group(1))
 
@@ -3190,7 +3372,9 @@ def find_plan_issue_for_pr(pr_number: int, repo: str) -> Optional[int]:
 
     for num in reversed(candidates):
         try:
-            issue_raw = run_gh(["issue", "view", str(num), "--json", "labels,title"], repo=repo)
+            issue_raw = run_gh(
+                ["issue", "view", str(num), "--json", "labels,title"], repo=repo
+            )
             issue_data = json.loads(issue_raw)
             labels = [
                 l.get("name", "").lower() if isinstance(l, dict) else str(l).lower()
@@ -3256,7 +3440,9 @@ def _node_script_command(cwd: str, script: str) -> Optional[List[str]]:
     declared = package.get("packageManager")
     preferred = str(declared).split("@", 1)[0] if isinstance(declared, str) else ""
     runners = [preferred] if preferred in {"bun", "pnpm", "npm", "yarn"} else []
-    runners.extend(name for name in ("bun", "pnpm", "npm", "yarn") if name not in runners)
+    runners.extend(
+        name for name in ("bun", "pnpm", "npm", "yarn") if name not in runners
+    )
     for runner in runners:
         if not shutil.which(runner):
             continue
@@ -3313,7 +3499,9 @@ def verify_repository(cwd: str) -> subprocess.CompletedProcess:
         The completed process of the first failing suite, or of the last suite that ran. A synthetic
         successful result is returned when no suite is present at all.
     """
-    last = subprocess.CompletedProcess(args=["true"], returncode=0, stdout="", stderr="")
+    last = subprocess.CompletedProcess(
+        args=["true"], returncode=0, stdout="", stderr=""
+    )
     suites = [
         ("pyproject.toml", ["python3", "-m", "pytest", "tests/", "-q"]),
         ("Cargo.toml", ["cargo", "test", "--workspace", "--quiet"]),
@@ -3370,7 +3558,9 @@ def handle_implement(plan_number: int, request_number: int, repo: str):
         run_gh(["issue", "view", str(plan_number), "--json", "title,body"], repo=repo)
     )
     request_data = json.loads(
-        run_gh(["issue", "view", str(request_number), "--json", "title,body"], repo=repo)
+        run_gh(
+            ["issue", "view", str(request_number), "--json", "title,body"], repo=repo
+        )
     )
     plan_title = plan_data.get("title", "")
     plan_body = plan_data.get("body", "")
@@ -3389,23 +3579,34 @@ def handle_implement(plan_number: int, request_number: int, repo: str):
         run_git(["fetch", "origin"], cwd=cwd)
         remote_branches = run_git(["branch", "-r"], cwd=cwd)
         if f"origin/{branch_name}" in remote_branches:
-            local_branches = [b.strip("* ") for b in run_git(["branch"], cwd=cwd).splitlines()]
+            local_branches = [
+                b.strip("* ") for b in run_git(["branch"], cwd=cwd).splitlines()
+            ]
             if branch_name in local_branches:
                 run_git(["checkout", branch_name], cwd=cwd)
             else:
-                run_git(["checkout", "-b", branch_name, f"origin/{branch_name}"], cwd=cwd)
+                run_git(
+                    ["checkout", "-b", branch_name, f"origin/{branch_name}"], cwd=cwd
+                )
             run_git(["pull", "--ff-only", "origin", branch_name], cwd=cwd)
         else:
-            local_branches = [b.strip("* ") for b in run_git(["branch"], cwd=cwd).splitlines()]
+            local_branches = [
+                b.strip("* ") for b in run_git(["branch"], cwd=cwd).splitlines()
+            ]
             if branch_name in local_branches:
                 run_git(["checkout", branch_name], cwd=cwd)
             else:
                 # Branching from origin/main fails outright where the trunk is called something
                 # else. #107 replaced the literals in the pull request calls and missed this one,
                 # because the guard test looked for `"main",` and this reads `origin/main`.
-                run_git(["checkout", "-b", branch_name, f"origin/{development_branch()}"], cwd=cwd)
+                run_git(
+                    ["checkout", "-b", branch_name, f"origin/{development_branch()}"],
+                    cwd=cwd,
+                )
     except subprocess.CalledProcessError as e:
-        err_msg = f"Failed to create/checkout branch {branch_name}: {e.stderr or e.stdout}"
+        err_msg = (
+            f"Failed to create/checkout branch {branch_name}: {e.stderr or e.stdout}"
+        )
         print(err_msg, file=sys.stderr)
         run_gh(
             [
@@ -3417,7 +3618,9 @@ def handle_implement(plan_number: int, request_number: int, repo: str):
             ],
             repo=repo,
         )
-        fail_agent_run(f"Branch setup failed for plan #{plan_number}; Execution Error posted.")
+        fail_agent_run(
+            f"Branch setup failed for plan #{plan_number}; Execution Error posted."
+        )
 
     # Check for saved checkpoint on the branch or workspace
     checkpoint = load_checkpoint(cwd=cwd)
@@ -3462,9 +3665,13 @@ def handle_implement(plan_number: int, request_number: int, repo: str):
         return
 
     # 5. Run agy to implement the plan (longer timeout for implementation)
-    already_implemented = any("Implemented code and test changes" in s for s in completed_steps)
+    already_implemented = any(
+        "Implemented code and test changes" in s for s in completed_steps
+    )
     if already_implemented:
-        print("Implementation already completed according to checkpoint; resuming pipeline.")
+        print(
+            "Implementation already completed according to checkpoint; resuming pipeline."
+        )
         impl_result = "Implementation resumed from checkpoint."
     else:
         implement_prompt = (
@@ -3603,7 +3810,9 @@ def handle_implement(plan_number: int, request_number: int, repo: str):
             ],
             repo=repo,
         )
-        fail_agent_run(f"Commit/push failed for plan #{plan_number}; Execution Error posted.")
+        fail_agent_run(
+            f"Commit/push failed for plan #{plan_number}; Execution Error posted."
+        )
 
     # 9. Open Draft PR via workflow dispatch
     # The base is resolved through the same check the scope gate uses, so a run that cannot reach
@@ -3725,7 +3934,9 @@ def start_self_review(
         request_number: The parent Request issue; falls back to the plan's parent, then the plan.
         repo: Repository slug (owner/name).
     """
-    request = request_number or find_parent_request_number(plan_number, repo) or plan_number
+    request = (
+        request_number or find_parent_request_number(plan_number, repo) or plan_number
+    )
     dispatch_stage(
         repo,
         {
@@ -3741,14 +3952,23 @@ def start_self_review(
 
 def dispatch_stage(repo: str, payload: Dict[str, Any]):
     """Dispatches the agent-dispatch event to the repository."""
-    payload_data = json.dumps({"event_type": "agent-dispatch", "client_payload": payload})
+    payload_data = json.dumps(
+        {"event_type": "agent-dispatch", "client_payload": payload}
+    )
     temp_path = None
     try:
         with tempfile.NamedTemporaryFile("w", delete=False) as f:
             f.write(payload_data)
             temp_path = f.name
         run_gh(
-            ["api", f"repos/{repo}/dispatches", "--method", "POST", "--input", temp_path],
+            [
+                "api",
+                f"repos/{repo}/dispatches",
+                "--method",
+                "POST",
+                "--input",
+                temp_path,
+            ],
             repo=repo,
         )
     except Exception as e:
@@ -3802,7 +4022,9 @@ def parse_review_findings(text: str) -> List[str]:
         if not stripped:
             continue
         starts_numbered = re.match(r"^\d+\.\s*", stripped)
-        starts_bullet = stripped.startswith(("* ", "- ")) or stripped.startswith(("*", "-"))
+        starts_bullet = stripped.startswith(("* ", "- ")) or stripped.startswith(
+            ("*", "-")
+        )
         if starts_numbered or starts_bullet:
             flush_item()
             in_item = True
@@ -3848,10 +4070,15 @@ def configure_git_identity(cwd: str = WORKSPACE_DIR) -> None:
         try:
             run_git(args, cwd=cwd)
         except (subprocess.CalledProcessError, OSError) as error:
-            print(f"Git config notice: {getattr(error, 'stderr', None) or error}", file=sys.stderr)
+            print(
+                f"Git config notice: {getattr(error, 'stderr', None) or error}",
+                file=sys.stderr,
+            )
 
 
-def checkout_pr_branch(pr_number: int, repo: str, cwd: str = WORKSPACE_DIR) -> Optional[str]:
+def checkout_pr_branch(
+    pr_number: int, repo: str, cwd: str = WORKSPACE_DIR
+) -> Optional[str]:
     """Checks out a pull request's head branch in the working copy, ready for commits.
 
     Dispatched stages start from the default branch; review and fix runs must read and change the
@@ -3875,7 +4102,10 @@ def checkout_pr_branch(pr_number: int, repo: str, cwd: str = WORKSPACE_DIR) -> O
         run_git(["checkout", "-B", head, f"origin/{head}"], cwd=cwd)
         return head
     except (subprocess.CalledProcessError, KeyError, ValueError, TypeError) as error:
-        print(f"Could not check out the branch of PR #{pr_number}: {error}", file=sys.stderr)
+        print(
+            f"Could not check out the branch of PR #{pr_number}: {error}",
+            file=sys.stderr,
+        )
         return None
 
 
@@ -3906,7 +4136,10 @@ def run_pr_feedback_fix(
     # Retrieve the approved plan content.
     try:
         plan_data = json.loads(
-            run_gh(["issue", "view", str(plan_number), "--json", "title,body,comments"], repo=repo)
+            run_gh(
+                ["issue", "view", str(plan_number), "--json", "title,body,comments"],
+                repo=repo,
+            )
         )
     except Exception as e:
         print(f"Failed to load plan #{plan_number}: {e}", file=sys.stderr)
@@ -3964,7 +4197,9 @@ def run_pr_feedback_fix(
             run_git(["commit", "-m", "fix(feedback): address owner feedback"], cwd=cwd)
             run_git(["push", "origin", "HEAD"], cwd=cwd)
         else:
-            failure = "The agent finished without changing any file, so nothing was pushed."
+            failure = (
+                "The agent finished without changing any file, so nothing was pushed."
+            )
     except subprocess.CalledProcessError as e:
         print(f"Git error during feedback fix: {e.stderr or e.stdout}", file=sys.stderr)
         failure = f"Committing or pushing the revision failed:\n\n```\n{(e.stderr or e.stdout or str(e)).strip()[:1500]}\n```"
@@ -4104,7 +4339,8 @@ def run_self_review_iteration(
 
     # Build findings list: out of scope files + parsed review findings
     findings_items = [
-        f"Out of scope: {path} (not in the approved plan)" for path in out_of_scope_files
+        f"Out of scope: {path} (not in the approved plan)"
+        for path in out_of_scope_files
     ]
     findings_items.extend(parse_review_findings(review_result))
     K = len(findings_items)  # number of findings, not lines
@@ -4119,7 +4355,9 @@ def run_self_review_iteration(
     # First, check for previous iteration marker to get prior digest
     prior_digest = None
     try:
-        comments_res = run_gh(["issue", "view", str(pr_number), "--json", "comments"], repo=repo)
+        comments_res = run_gh(
+            ["issue", "view", str(pr_number), "--json", "comments"], repo=repo
+        )
         comments = json.loads(comments_res or "{}").get("comments", []) or []
         # Find the marker from iteration N-1
         for c in comments:
@@ -4136,7 +4374,7 @@ def run_self_review_iteration(
 
     # Build findings display as `1.`, `2., ...
     findings_display = (
-        "\n".join(f"{i+1}. {f}" for i, f in enumerate(findings_items))
+        "\n".join(f"{i + 1}. {f}" for i, f in enumerate(findings_items))
         if findings_items
         else "No actionable findings."
     )
@@ -4241,7 +4479,9 @@ def run_self_review_fix(
 
     # 1. Read latest PR comment carrying the iteration-N marker
     try:
-        comments_res = run_gh(["issue", "view", str(pr_number), "--json", "comments"], repo=repo)
+        comments_res = run_gh(
+            ["issue", "view", str(pr_number), "--json", "comments"], repo=repo
+        )
         comments = json.loads(comments_res or "{}").get("comments", []) or []
     except Exception as e:
         print(f"Failed to read comments for PR #{pr_number}: {e}", file=sys.stderr)
@@ -4274,7 +4514,9 @@ def run_self_review_fix(
         block_entity(pr_number, repo=repo, is_pr=True)
         if request_number:
             block_entity(request_number, repo=repo, is_pr=False)
-        print(f"No iteration {iteration} findings comment found on PR #{pr_number}; set Blocked.")
+        print(
+            f"No iteration {iteration} findings comment found on PR #{pr_number}; set Blocked."
+        )
         return
 
     # 2. Parse findings
@@ -4293,11 +4535,15 @@ def run_self_review_fix(
     # 3. Out-of-scope file findings: restore those files from the base branch in their own commit
     revert_sha = None
     if out_of_scope_files:
-        revert_sha = revert_out_of_scope_files(out_of_scope_files, development_branch(), cwd=cwd)
+        revert_sha = revert_out_of_scope_files(
+            out_of_scope_files, development_branch(), cwd=cwd
+        )
 
     # 4. Other findings: one agent fix run on the PR branch with the findings as prompt
     if other_findings:
-        formatted_findings = "\n".join(f"{i+1}. {f}" for i, f in enumerate(other_findings))
+        formatted_findings = "\n".join(
+            f"{i + 1}. {f}" for i, f in enumerate(other_findings)
+        )
         fix_prompt = (
             f"Fix the following code review findings in the workspace:\n\n"
             f"{formatted_findings}\n\nMake the necessary changes to resolve all findings."
@@ -4352,7 +4598,9 @@ def run_self_review_fix(
             else:
                 print(f"No changes after fix attempt on iteration {iteration}")
         except subprocess.CalledProcessError as e:
-            print(f"Git error during review fix: {e.stderr or e.stdout}", file=sys.stderr)
+            print(
+                f"Git error during review fix: {e.stderr or e.stdout}", file=sys.stderr
+            )
             run_gh(
                 [
                     "pr",
@@ -4377,7 +4625,8 @@ def run_self_review_fix(
         )
     if other_findings:
         summary_parts.append(
-            f"Applied fixes for findings:\n" + "\n".join(f"- {f}" for f in other_findings)
+            f"Applied fixes for findings:\n"
+            + "\n".join(f"- {f}" for f in other_findings)
         )
 
     summary_body = f"### Self-Review fixes — iteration {iteration}\n\n" + (
@@ -4406,7 +4655,9 @@ def run_self_review_fix(
     print(f"Dispatched self-review iteration {iteration + 1}")
 
 
-def handle_plan_alignment(pr_number: int, plan_number: int, request_number: int, repo: str):
+def handle_plan_alignment(
+    pr_number: int, plan_number: int, request_number: int, repo: str
+):
     """Verifies that the PR implementation matches the plan scope exactly.
 
     Separate step from self-review. Compares the final PR diff against the Plan
@@ -4488,7 +4739,9 @@ def handle_plan_alignment(pr_number: int, plan_number: int, request_number: int,
             ],
             repo=repo,
         )
-        fail_agent_run(f"Plan alignment failed on issue #{plan_number}; Execution Error posted.")
+        fail_agent_run(
+            f"Plan alignment failed on issue #{plan_number}; Execution Error posted."
+        )
 
     if "MATCHES_PLAN_YES" in alignment_result.upper()[:50]:
         # Post Implementation Review on Plan issue
@@ -4514,7 +4767,9 @@ def handle_plan_alignment(pr_number: int, plan_number: int, request_number: int,
         unblock_entity(pr_number, repo, is_pr=True, target_status="In Progress")
         unblock_entity(plan_number, repo, is_pr=False, target_status="In Progress")
         if request_number:
-            unblock_entity(request_number, repo, is_pr=False, target_status="In Progress")
+            unblock_entity(
+                request_number, repo, is_pr=False, target_status="In Progress"
+            )
 
         # Clear checkpoint on successful completion
         clear_checkpoint(cwd=WORKSPACE_DIR)
@@ -4566,7 +4821,9 @@ def post_command_hint_once(issue_number: int, repo: str) -> bool:
         True when a hint was posted.
     """
     try:
-        raw = run_gh(["issue", "view", str(issue_number), "--json", "comments"], repo=repo)
+        raw = run_gh(
+            ["issue", "view", str(issue_number), "--json", "comments"], repo=repo
+        )
     except Exception as exc:  # noqa: BLE001 - an unreadable issue must not fail the run
         print(f"Could not read comments on #{issue_number}: {exc}", file=sys.stderr)
         return False
@@ -4574,7 +4831,9 @@ def post_command_hint_once(issue_number: int, repo: str) -> bool:
         comments = json.loads(raw or "{}").get("comments", []) or []
     except Exception:  # noqa: BLE001 - malformed output means "unknown", so stay silent
         return False
-    if any(HINT_MARKER in (c.get("body") or "") for c in comments if isinstance(c, dict)):
+    if any(
+        HINT_MARKER in (c.get("body") or "") for c in comments if isinstance(c, dict)
+    ):
         return False
     try_gh(
         ["issue", "comment", str(issue_number), "--body", COMMAND_HINT_BODY],
@@ -4705,11 +4964,14 @@ def claim_failure_dispatch(issue_number: int, effect: str, repo: str) -> bool:
         ``True`` when this run won the election and should dispatch.
     """
     wanted = f"{CLAIM_PREFIX}{effect}{CLAIM_SUFFIX}"
-    if try_gh(
-        ["issue", "comment", str(issue_number), "--body", wanted],
-        repo=repo,
-        doing=f"claim the repair of {effect}",
-    ) is None:
+    if (
+        try_gh(
+            ["issue", "comment", str(issue_number), "--body", wanted],
+            repo=repo,
+            doing=f"claim the repair of {effect}",
+        )
+        is None
+    ):
         return False
 
     listed = try_gh(
@@ -4727,7 +4989,9 @@ def claim_failure_dispatch(issue_number: int, effect: str, repo: str) -> bool:
         return True
 
     claims = sorted(
-        int(row["id"]) for row in _claim_rows(listed) if str(row.get("b", "")).strip() == wanted
+        int(row["id"])
+        for row in _claim_rows(listed)
+        if str(row.get("b", "")).strip() == wanted
     )
     # GitHub issues comment ids in creation order, so the lowest claim is the earliest writer and
     # the highest is this run's own. A run that cannot tell them apart dispatches rather than
@@ -4780,13 +5044,19 @@ def dispatch_event(event_path: str, event_name: str):
             iteration = client_payload.get("iteration", 1)
 
             if stage == "self-review":
-                run_self_review_iteration(pr_number, plan_issue, request_issue, iteration, repo)
+                run_self_review_iteration(
+                    pr_number, plan_issue, request_issue, iteration, repo
+                )
             elif stage == "self-review-fix":
-                run_self_review_fix(pr_number, plan_issue, request_issue, iteration, repo)
+                run_self_review_fix(
+                    pr_number, plan_issue, request_issue, iteration, repo
+                )
             elif stage == "pr-feedback-fix":
                 # New stage for handling owner feedback on a PR
                 feedback = client_payload.get("feedback")
-                run_pr_feedback_fix(pr_number, plan_issue, request_issue, feedback, repo)
+                run_pr_feedback_fix(
+                    pr_number, plan_issue, request_issue, feedback, repo
+                )
             elif stage == "resume":
                 item = client_payload.get("item")
                 is_pr = client_payload.get("is_pr")
@@ -4797,7 +5067,10 @@ def dispatch_event(event_path: str, event_name: str):
         action = payload.get("action")
         issue = payload.get("issue", {})
         issue_num = issue.get("number")
-        labels = [l.get("name") if isinstance(l, dict) else str(l) for l in issue.get("labels", [])]
+        labels = [
+            l.get("name") if isinstance(l, dict) else str(l)
+            for l in issue.get("labels", [])
+        ]
 
         if action in ("opened", "labeled") and issue_num:
             lowered = {str(lbl).lower() for lbl in labels}
@@ -4819,7 +5092,11 @@ def dispatch_event(event_path: str, event_name: str):
             # `Request`, so that is the label intake is keyed on.
             if action == "labeled":
                 applied = payload.get("label")
-                applied_name = str(applied.get("name", "")).lower() if isinstance(applied, dict) else ""
+                applied_name = (
+                    str(applied.get("name", "")).lower()
+                    if isinstance(applied, dict)
+                    else ""
+                )
                 if applied_name != "request":
                     return
 
@@ -4829,7 +5106,9 @@ def dispatch_event(event_path: str, event_name: str):
             # What bounds the loop is not a label but the effect identity of the failing run: one
             # repair in flight per run, elected in `claim_failure_dispatch`.
             effect = failure_effect_id(issue.get("body", "") or "")
-            if effect is not None and not claim_failure_dispatch(issue_num, effect, repo):
+            if effect is not None and not claim_failure_dispatch(
+                issue_num, effect, repo
+            ):
                 return
 
             if not lowered & {"request", "plan"}:
@@ -4859,7 +5138,8 @@ def dispatch_event(event_path: str, event_name: str):
         # Only process human comments from owner/collaborators, ignore bot/agent comments
         if action == "created" and issue_num:
             labels = [
-                l.get("name") if isinstance(l, dict) else str(l) for l in issue.get("labels", [])
+                l.get("name") if isinstance(l, dict) else str(l)
+                for l in issue.get("labels", [])
             ]
             issue_body = issue.get("body", "") or ""
 
@@ -4873,12 +5153,16 @@ def dispatch_event(event_path: str, event_name: str):
             if refailure is not None:
                 if not claim_failure_dispatch(issue_num, refailure, repo):
                     return
-                print(f"#{issue_num} failed again as {refailure}; dispatching the repair.")
+                print(
+                    f"#{issue_num} failed again as {refailure}; dispatching the repair."
+                )
                 handle_interpret(issue_num, repo)
                 return
 
             if is_bot_or_agent_comment(comment_user, comment_body):
-                print(f"Skipping comment on #{issue_num} authored by bot/agent ({comment_user}).")
+                print(
+                    f"Skipping comment on #{issue_num} authored by bot/agent ({comment_user})."
+                )
                 return
 
             # Every other comment on a failure report is chatter about a red build, not an answer to
@@ -4928,7 +5212,8 @@ def dispatch_event(event_path: str, event_name: str):
                                 "stage": "pr-feedback-fix",
                                 "pr": issue_num,
                                 "plan": plan,
-                                "request": find_parent_request_number(plan, repo) or plan,
+                                "request": find_parent_request_number(plan, repo)
+                                or plan,
                                 "feedback": feedback,
                             },
                         )
@@ -4946,8 +5231,12 @@ def dispatch_event(event_path: str, event_name: str):
                         if request_num:
                             handle_plan(request_num, issue_num, repo, feedback=feedback)
                         else:
-                            print(f"Could not find parent Request for Plan #{issue_num}")
-                            handle_respond(issue_num, comment_body, repo=repo, is_pr=is_pr)
+                            print(
+                                f"Could not find parent Request for Plan #{issue_num}"
+                            )
+                            handle_respond(
+                                issue_num, comment_body, repo=repo, is_pr=is_pr
+                            )
                     else:
                         handle_respond(issue_num, comment_body, repo=repo, is_pr=is_pr)
             else:
@@ -4986,8 +5275,14 @@ def dispatch_event(event_path: str, event_name: str):
             if review_command in ("approve", "resume"):
                 resume_item(pr_num, True, repo)
                 return
-            print(f"PR review comment on #{pr_num} from @{comment_user}: {comment_body[:80]}...")
-            plan = find_plan_issue_for_pr(pr_num, repo) if review_command == "reject" else None
+            print(
+                f"PR review comment on #{pr_num} from @{comment_user}: {comment_body[:80]}..."
+            )
+            plan = (
+                find_plan_issue_for_pr(pr_num, repo)
+                if review_command == "reject"
+                else None
+            )
             if plan:
                 # A rejection with feedback becomes a code revision on the pull request's branch.
                 dispatch_stage(
@@ -5054,7 +5349,9 @@ def resume_item(
         # The comment path already has the labels from its event; a dispatched resume reads them.
         if labels is None:
             # Issue case: fetch labels to decide type
-            issue_raw = run_gh(["issue", "view", str(item_number), "--json", "labels"], repo=repo)
+            issue_raw = run_gh(
+                ["issue", "view", str(item_number), "--json", "labels"], repo=repo
+            )
             if isinstance(issue_raw, str):
                 try:
                     issue_raw = json.loads(issue_raw)
@@ -5076,13 +5373,17 @@ def resume_item(
             unblock_entity(item_number, repo, is_pr=False, target_status="In Progress")
             request_num = find_parent_request_number(item_number, repo)
             if request_num:
-                unblock_entity(request_num, repo, is_pr=False, target_status="In Progress")
+                unblock_entity(
+                    request_num, repo, is_pr=False, target_status="In Progress"
+                )
                 handle_implement(item_number, request_num, repo)
             else:
                 print(f"Could not find parent Request for Plan #{item_number}")
         else:
             # Only Requests and Plans have stages to resume; anything else is left untouched.
-            print(f"Issue #{item_number} is neither a Request nor a Plan; nothing to resume.")
+            print(
+                f"Issue #{item_number} is neither a Request nor a Plan; nothing to resume."
+            )
     else:
         # PR case
         unblock_entity(item_number, repo, is_pr=True, target_status="In Progress")
@@ -5116,7 +5417,9 @@ def main():
     parser.add_argument("--request-issue", type=int, help="Parent request issue number")
     parser.add_argument("--plan-issue", type=int, help="Child plan issue number")
     parser.add_argument("--pr-number", type=int, help="Pull request number")
-    parser.add_argument("--iteration", type=int, default=1, help="Self-review iteration number")
+    parser.add_argument(
+        "--iteration", type=int, default=1, help="Self-review iteration number"
+    )
     # Defaulting to a named repository sends a stray invocation at somebody else's project. The
     # environment says where this is running; the manifest says what the repository calls itself.
     parser.add_argument(
@@ -5125,7 +5428,9 @@ def main():
         help="Repository full name; defaults to GITHUB_REPOSITORY, then the manifest",
     )
     parser.add_argument("--comment", help="Comment body for respond command")
-    parser.add_argument("--is-pr", action="store_true", help="Flag if comment is on pull request")
+    parser.add_argument(
+        "--is-pr", action="store_true", help="Flag if comment is on pull request"
+    )
 
     args = parser.parse_args()
 
@@ -5164,7 +5469,11 @@ def main():
         and args.request_issue
     ):
         run_self_review_fix(
-            args.pr_number, args.plan_issue, args.request_issue, args.iteration, args.repo
+            args.pr_number,
+            args.plan_issue,
+            args.request_issue,
+            args.iteration,
+            args.repo,
         )
 
     elif (
@@ -5173,7 +5482,9 @@ def main():
         and args.plan_issue
         and args.request_issue
     ):
-        handle_plan_alignment(args.pr_number, args.plan_issue, args.request_issue, args.repo)
+        handle_plan_alignment(
+            args.pr_number, args.plan_issue, args.request_issue, args.repo
+        )
 
     elif args.command == "respond" and args.issue:
         handle_respond(args.issue, args.comment or "", args.repo, is_pr=args.is_pr)

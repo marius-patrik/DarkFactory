@@ -50,17 +50,23 @@ class TestIdentity:
         assert manifest_module.load(str(tmp_path)).agent_slug == "widget-agent"
 
     def test_the_project_title_falls_back_to_the_display_name(self, tmp_path):
-        _write_manifest(tmp_path, {"identity": {"owner": "a", "repo": "b", "display_name": "Bee"}})
+        _write_manifest(
+            tmp_path, {"identity": {"owner": "a", "repo": "b", "display_name": "Bee"}}
+        )
         assert manifest_module.load(str(tmp_path)).project_title == "Bee"
 
-    def test_a_missing_manifest_still_yields_a_usable_object(self, tmp_path, monkeypatch):
+    def test_a_missing_manifest_still_yields_a_usable_object(
+        self, tmp_path, monkeypatch
+    ):
         monkeypatch.setenv("GITHUB_REPOSITORY", "acme/fallback")
         loaded = manifest_module.load(str(tmp_path))
         assert loaded.slug == "acme/fallback"
         assert loaded.topics == []
 
     def test_a_malformed_manifest_fails_closed(self, tmp_path):
-        with open(os.path.join(str(tmp_path), "repo.dfconfig"), "w", encoding="utf-8") as handle:
+        with open(
+            os.path.join(str(tmp_path), "repo.dfconfig"), "w", encoding="utf-8"
+        ) as handle:
             handle.write("{ this is not json")
         with pytest.raises(ValueError, match="Invalid DarkFactory configuration JSON"):
             manifest_module.load(str(tmp_path))
@@ -73,7 +79,11 @@ class TestIdentity:
     def test_areas_may_carry_keywords(self, tmp_path):
         _write_manifest(
             tmp_path,
-            {"areas": {"core": {"description": "The core", "keywords": ["kernel", "bus"]}}},
+            {
+                "areas": {
+                    "core": {"description": "The core", "keywords": ["kernel", "bus"]}
+                }
+            },
         )
         loaded = manifest_module.load(str(tmp_path))
         assert loaded.areas["core"] == "The core"
@@ -81,13 +91,17 @@ class TestIdentity:
 
     def test_an_area_without_keywords_matches_its_own_name(self, tmp_path):
         _write_manifest(tmp_path, {"areas": {"telemetry": "Metrics"}})
-        assert manifest_module.load(str(tmp_path)).area_keywords["telemetry"] == ["telemetry"]
+        assert manifest_module.load(str(tmp_path)).area_keywords["telemetry"] == [
+            "telemetry"
+        ]
 
     def test_labels_are_prefixed_and_coloured(self, tmp_path):
         _write_manifest(tmp_path, {"areas": {"core": "The core"}})
         labels = manifest_module.load(str(tmp_path)).area_labels
         assert labels[0][0] == "area:core"
-        assert re.fullmatch(r"[0-9a-f]{6}", labels[0][1]), "colour must be a bare hex triple"
+        assert re.fullmatch(r"[0-9a-f]{6}", labels[0][1]), (
+            "colour must be a bare hex triple"
+        )
 
     def test_every_area_gets_a_distinct_colour(self, tmp_path):
         _write_manifest(tmp_path, {"areas": {f"a{i}": str(i) for i in range(9)}})
@@ -99,7 +113,9 @@ class TestIdentity:
         assert manifest_module.load(str(tmp_path)).area_scopes == ["a", "b"]
 
     def test_a_declared_default_area_is_used(self, tmp_path):
-        _write_manifest(tmp_path, {"areas": {"$default": "ops", "ops": "Ops", "app": "App"}})
+        _write_manifest(
+            tmp_path, {"areas": {"$default": "ops", "ops": "Ops", "app": "App"}}
+        )
         assert manifest_module.load(str(tmp_path)).default_area == "ops"
 
     def test_comment_keys_are_not_areas(self, tmp_path):
@@ -108,7 +124,9 @@ class TestIdentity:
 
     def test_a_repository_declaring_no_areas_still_has_a_taxonomy(self, tmp_path):
         _write_manifest(tmp_path, {})
-        assert manifest_module.load(str(tmp_path)).areas == manifest_module.DEFAULT_AREAS
+        assert (
+            manifest_module.load(str(tmp_path)).areas == manifest_module.DEFAULT_AREAS
+        )
 
 
 class TestPages:
@@ -120,7 +138,9 @@ class TestPages:
 
     def test_an_undeclared_source_defaults_to_the_actions_build(self, tmp_path):
         _write_manifest(tmp_path, {})
-        assert manifest_module.load(str(tmp_path)).pages_payload() == {"build_type": "workflow"}
+        assert manifest_module.load(str(tmp_path)).pages_payload() == {
+            "build_type": "workflow"
+        }
 
 
 class TestUpstream:
@@ -131,7 +151,8 @@ class TestUpstream:
 
     def test_a_consumer_pins_a_ref(self, tmp_path):
         _write_manifest(
-            tmp_path, {"upstream": {"repo": "marius-patrik/DarkFactory", "ref": "abc123"}}
+            tmp_path,
+            {"upstream": {"repo": "marius-patrik/DarkFactory", "ref": "abc123"}},
         )
         loaded = manifest_module.load(str(tmp_path))
         assert not loaded.is_upstream
@@ -144,7 +165,10 @@ class TestBoards:
     def test_the_repositorys_own_board_is_always_linked(self, tmp_path):
         _write_manifest(
             tmp_path,
-            {"identity": {"owner": "a", "repo": "b", "project_title": "Bee"}, "board": {}},
+            {
+                "identity": {"owner": "a", "repo": "b", "project_title": "Bee"},
+                "board": {},
+            },
         )
         assert "Bee" in manifest_module.load(str(tmp_path)).linked_boards
 
@@ -163,7 +187,9 @@ class TestNoForeignIdentityLeaks:
     #: Identifiers that belong to omnis, not to a generic pipeline.
     FOREIGN = ("omnis", "substrate bus", "microkernel", "cell-grid", "pglite", "omnisd")
 
-    @pytest.mark.parametrize("filename", ["repo_settings.py", "manifest.py", "environment.py"])
+    @pytest.mark.parametrize(
+        "filename", ["repo_settings.py", "manifest.py", "environment.py"]
+    )
     def test_shared_scripts_name_no_other_project(self, filename):
         path = os.path.join(SCRIPT_DIR, filename)
         content = open(path, encoding="utf-8").read().lower()
@@ -172,7 +198,9 @@ class TestNoForeignIdentityLeaks:
 
     def test_the_area_taxonomy_is_not_another_projects(self):
         areas = set(manifest_module.load(REPO_ROOT).areas)
-        assert not areas & {"term", "browser", "ext", "ui"}, "omnis's areas are still declared"
+        assert not areas & {"term", "browser", "ext", "ui"}, (
+            "omnis's areas are still declared"
+        )
 
 
 class TestRequiredChecks:
@@ -185,7 +213,8 @@ class TestRequiredChecks:
 
     def test_a_consumer_can_still_override_required_checks(self, tmp_path):
         _write_manifest(
-            tmp_path, {"required_checks": ["pipeline / pipeline (3.12)", "pipeline / docs"]}
+            tmp_path,
+            {"required_checks": ["pipeline / pipeline (3.12)", "pipeline / docs"]},
         )
         assert manifest_module.load(str(tmp_path)).required_checks == [
             "pipeline / pipeline (3.12)",
@@ -295,7 +324,9 @@ class TestConfigDocumentDiscovery:
     def test_empty_basename_alias_is_selected(self, tmp_path):
         path = tmp_path / ".dfconfig"
         path.write_text(
-            json.dumps({"repo": {"identity": {"owner": "acme", "repo": "empty-alias"}}}),
+            json.dumps(
+                {"repo": {"identity": {"owner": "acme", "repo": "empty-alias"}}}
+            ),
             encoding="utf-8",
         )
         assert manifest_module.resolve_manifest_path(str(tmp_path)) == str(path)
@@ -322,18 +353,30 @@ class TestConfigDocumentDiscovery:
         assert manifest_module.load(str(tmp_path)).repo == "fallback"
 
     def test_duplicate_aliases_in_one_scope_are_rejected(self, tmp_path):
-        (tmp_path / "repo.dfconfig").write_text(json.dumps({"repo": {}}), encoding="utf-8")
-        (tmp_path / "config.dfconfig").write_text(json.dumps({"repo": {}}), encoding="utf-8")
+        (tmp_path / "repo.dfconfig").write_text(
+            json.dumps({"repo": {}}), encoding="utf-8"
+        )
+        (tmp_path / "config.dfconfig").write_text(
+            json.dumps({"repo": {}}), encoding="utf-8"
+        )
         (tmp_path / ".dfconfig").write_text(json.dumps({"repo": {}}), encoding="utf-8")
-        with pytest.raises(ValueError, match="Ambiguous DarkFactory configuration aliases"):
+        with pytest.raises(
+            ValueError, match="Ambiguous DarkFactory configuration aliases"
+        ):
             manifest_module.resolve_manifest_path(str(tmp_path))
 
     def test_root_and_folder_candidates_are_rejected(self, tmp_path):
-        (tmp_path / "repo.dfconfig").write_text(json.dumps({"repo": {}}), encoding="utf-8")
+        (tmp_path / "repo.dfconfig").write_text(
+            json.dumps({"repo": {}}), encoding="utf-8"
+        )
         fallback = tmp_path / ".darkfactory"
         fallback.mkdir()
-        (fallback / "config.dfconfig").write_text(json.dumps({"repo": {}}), encoding="utf-8")
-        with pytest.raises(ValueError, match="candidates exist in both the repository root"):
+        (fallback / "config.dfconfig").write_text(
+            json.dumps({"repo": {}}), encoding="utf-8"
+        )
+        with pytest.raises(
+            ValueError, match="candidates exist in both the repository root"
+        ):
             manifest_module.resolve_manifest_path(str(tmp_path))
 
     @pytest.mark.parametrize("filename", ["repo.df", "config.df"])
@@ -346,10 +389,16 @@ class TestConfigDocumentDiscovery:
         assert manifest_module.resolve_manifest_path(str(tmp_path)) == os.path.join(
             str(tmp_path), ".darkfactory", "repo.dfconfig"
         )
-        assert manifest_module.load(str(tmp_path)).areas == manifest_module.DEFAULT_AREAS
+        assert (
+            manifest_module.load(str(tmp_path)).areas == manifest_module.DEFAULT_AREAS
+        )
 
-    @pytest.mark.parametrize("filename", ["repo.dfconfig", "config.dfconfig", ".dfconfig"])
-    def test_supported_names_select_the_same_combined_document(self, tmp_path, filename):
+    @pytest.mark.parametrize(
+        "filename", ["repo.dfconfig", "config.dfconfig", ".dfconfig"]
+    )
+    def test_supported_names_select_the_same_combined_document(
+        self, tmp_path, filename
+    ):
         path = tmp_path / filename
         document = {
             "repo": {"identity": {"owner": "acme", "repo": filename}},
@@ -359,9 +408,12 @@ class TestConfigDocumentDiscovery:
         path.write_text(json.dumps(document), encoding="utf-8")
         assert manifest_module.resolve_manifest_path(str(tmp_path)) == str(path)
         assert manifest_module.load(str(tmp_path)).repo == filename
-        assert manifest_module.load_config_block(str(tmp_path), "docs") == document["docs"]
         assert (
-            manifest_module.load_config_block(str(tmp_path), "providers") == document["providers"]
+            manifest_module.load_config_block(str(tmp_path), "docs") == document["docs"]
+        )
+        assert (
+            manifest_module.load_config_block(str(tmp_path), "providers")
+            == document["providers"]
         )
 
     def test_repo_consumer_does_not_read_provider_fields(self, tmp_path):

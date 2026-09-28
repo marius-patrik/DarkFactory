@@ -344,7 +344,9 @@ class Manifest:
         """
         labels: List[Tuple[str, str, str]] = []
         for index, (name, description) in enumerate(sorted(self.areas.items())):
-            labels.append((f"area:{name}", AREA_COLOURS[index % len(AREA_COLOURS)], description))
+            labels.append(
+                (f"area:{name}", AREA_COLOURS[index % len(AREA_COLOURS)], description)
+            )
         return labels
 
     @property
@@ -464,7 +466,8 @@ class Manifest:
             Board titles, always including this repository's own board.
         """
         declared = [
-            str(title) for title in (self.data.get("board", {}) or {}).get("link_boards", [])
+            str(title)
+            for title in (self.data.get("board", {}) or {}).get("link_boards", [])
         ]
         if self.project_title not in declared:
             declared.append(self.project_title)
@@ -549,7 +552,9 @@ def main() -> None:  # pragma: no cover - thin CLI wrapper
     """Prints the resolved manifest identity as JSON."""
     import argparse
 
-    parser = argparse.ArgumentParser(description="Report the resolved repository manifest.")
+    parser = argparse.ArgumentParser(
+        description="Report the resolved repository manifest."
+    )
     parser.add_argument("--repo-root", default=".", help="repository to inspect")
     args = parser.parse_args()
     loaded = load(args.repo_root)

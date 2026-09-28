@@ -77,7 +77,9 @@ def test_rejection_carries_its_reason_as_feedback(body: str, expected: str):
     assert command_feedback(body) == expected
 
 
-@pytest.mark.parametrize("body", ["approve when ready", "/approve please", "rejected", "/revision"])
+@pytest.mark.parametrize(
+    "body", ["approve when ready", "/approve please", "rejected", "/revision"]
+)
 def test_approval_like_prose_is_not_a_command(body: str):
     """Approvals and resumes stand alone; trailing text (or a longer word) voids them.
 
@@ -237,7 +239,9 @@ def test_the_request_author_may_approve():
     """Owner decision 9c: the author approves their own request."""
     assert (
         is_allowed_approver(
-            actor="marius-patrik", author_association="CONTRIBUTOR", issue_author="Marius-Patrik"
+            actor="marius-patrik",
+            author_association="CONTRIBUTOR",
+            issue_author="Marius-Patrik",
         )
         is True
     )
@@ -252,7 +256,9 @@ def test_strangers_may_not_approve(association: str):
     """
     assert (
         is_allowed_approver(
-            actor="stranger", author_association=association, issue_author="marius-patrik"
+            actor="stranger",
+            author_association=association,
+            issue_author="marius-patrik",
         )
         is False
     )
@@ -267,6 +273,9 @@ def test_bots_may_never_approve():
         is False
     )
     assert (
-        is_allowed_approver(actor="someone", author_association="OWNER", user_type="Bot") is False
+        is_allowed_approver(
+            actor="someone", author_association="OWNER", user_type="Bot"
+        )
+        is False
     )
     assert is_allowed_approver(actor="", author_association="OWNER") is False
