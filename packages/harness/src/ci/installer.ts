@@ -1,6 +1,5 @@
-import { existsSync } from "node:fs";
-import { mkdir, readdir, readFile, writeFile } from "node:fs/promises";
-import { dirname, join } from "node:path";
+import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { join } from "node:path";
 import { detectRepositoryEvidence } from "@darkfactory/core/repository-evidence";
 import {
 	renderWorkflowTemplate,
