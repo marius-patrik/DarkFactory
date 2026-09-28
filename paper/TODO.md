@@ -1,7 +1,6 @@
 # Otevřené body práce
 
-Práce *Vzrůst Agentického AI: úvod do agentického inženýrství a implementace
-software factory* (DarkFactory). Zbývající body, o kterých je známo, že nejsou
+Práce *Agentické inženýrství ve vývoji softwaru*, s podtitulkem *Návrh a implementace DarkFactory* (DarkFactory). Zbývající body, o kterých je známo, že nejsou
 vyřešené. Nové položky přidat na konec příslušné sekce.
 
 Stav zkontrolován po commitu `1c2233bf`, 43 stran, sazba bez varování.

@@ -10,6 +10,8 @@
   #image("/components/img/logo.jpeg", width: 3cm)
   #v(1fr)
   #text(size: 24pt, weight: "bold", hyphenate: false)[#meta.title]
+  #v(0.4cm)
+  #text(size: 16pt)[#meta.subtitle]
   #v(0.7cm)
   #text(size: 15pt, tracking: 2pt)[ODBORNÁ PRÁCE]
   #v(1fr)
