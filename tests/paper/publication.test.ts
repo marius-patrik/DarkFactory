@@ -26,9 +26,13 @@ test("publication check does not mutate PAPER.pdf", async () => {
 		new Response(child.stderr).text(),
 	]);
 	const after = await snapshot(PDF);
-	expect(exitCode === 0 || (stdout + stderr).includes("generated PDF does not match repository-root PAPER.pdf")).toBe(
-		true,
-	);
-	expect(after.bytes.equals(before.bytes)).toBe(true);
+
+	// Report what the check said. The assertion used to be a bare `toBe(true)` over a disjunction
+	// with a message the script cannot produce, so a failure in CI said only `Expected: true` and
+	// nobody could tell whether typst, the fonts, or the entrypoint was at fault.
+	expect(exitCode === 0 ? "" : `publication check exited ${exitCode}:\n${stdout}${stderr}`).toBe("");
+
+	// The tracked artifact is the contract: a check run must not rewrite it.
+	expect(after.bytes.equals(before.bytes) ? "" : "PAPER.pdf was mutated by the check").toBe("");
 	expect(after.mode).toBe(before.mode);
 });

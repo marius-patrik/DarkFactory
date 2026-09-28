@@ -237,7 +237,9 @@ def test_the_request_author_may_approve():
     """Owner decision 9c: the author approves their own request."""
     assert (
         is_allowed_approver(
-            actor="marius-patrik", author_association="CONTRIBUTOR", issue_author="Marius-Patrik"
+            actor="marius-patrik",
+            author_association="CONTRIBUTOR",
+            issue_author="Marius-Patrik",
         )
         is True
     )
@@ -252,7 +254,9 @@ def test_strangers_may_not_approve(association: str):
     """
     assert (
         is_allowed_approver(
-            actor="stranger", author_association=association, issue_author="marius-patrik"
+            actor="stranger",
+            author_association=association,
+            issue_author="marius-patrik",
         )
         is False
     )

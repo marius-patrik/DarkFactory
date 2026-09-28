@@ -131,7 +131,8 @@ class TestUpstream:
 
     def test_a_consumer_pins_a_ref(self, tmp_path):
         _write_manifest(
-            tmp_path, {"upstream": {"repo": "marius-patrik/DarkFactory", "ref": "abc123"}}
+            tmp_path,
+            {"upstream": {"repo": "marius-patrik/DarkFactory", "ref": "abc123"}},
         )
         loaded = manifest_module.load(str(tmp_path))
         assert not loaded.is_upstream
@@ -144,7 +145,10 @@ class TestBoards:
     def test_the_repositorys_own_board_is_always_linked(self, tmp_path):
         _write_manifest(
             tmp_path,
-            {"identity": {"owner": "a", "repo": "b", "project_title": "Bee"}, "board": {}},
+            {
+                "identity": {"owner": "a", "repo": "b", "project_title": "Bee"},
+                "board": {},
+            },
         )
         assert "Bee" in manifest_module.load(str(tmp_path)).linked_boards
 
@@ -185,7 +189,8 @@ class TestRequiredChecks:
 
     def test_a_consumer_can_still_override_required_checks(self, tmp_path):
         _write_manifest(
-            tmp_path, {"required_checks": ["pipeline / pipeline (3.12)", "pipeline / docs"]}
+            tmp_path,
+            {"required_checks": ["pipeline / pipeline (3.12)", "pipeline / docs"]},
         )
         assert manifest_module.load(str(tmp_path)).required_checks == [
             "pipeline / pipeline (3.12)",

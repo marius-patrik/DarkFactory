@@ -7,7 +7,11 @@ from typing import Any, Dict, List
 import pytest
 
 import handle_pr_approval
-from handle_pr_approval import collect_bound_issues, detect_approval, submit_proxy_review
+from handle_pr_approval import (
+    collect_bound_issues,
+    detect_approval,
+    submit_proxy_review,
+)
 
 
 def test_collect_bound_issues_merges_both_sources():
@@ -59,7 +63,9 @@ def test_detect_approval_from_comment(monkeypatch: pytest.MonkeyPatch, body: str
     assert approved is expected
 
 
-def test_detect_approval_ignores_comments_outside_pull_requests(monkeypatch: pytest.MonkeyPatch):
+def test_detect_approval_ignores_comments_outside_pull_requests(
+    monkeypatch: pytest.MonkeyPatch,
+):
     """An `approve` on a plain issue is a plan gate, not a merge instruction.
 
     Args:

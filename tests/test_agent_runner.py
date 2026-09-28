@@ -285,7 +285,8 @@ def test_node_verification_fails_cleanly_without_a_package_runner(monkeypatch, t
 def test_runner_defaults_to_this_repository():
     """The runner points at DarkFactory by default."""
     with open(
-        os.path.join(REPO_ROOT, ".github", "scripts", "agent_runner.py"), encoding="utf-8"
+        os.path.join(REPO_ROOT, ".github", "scripts", "agent_runner.py"),
+        encoding="utf-8",
     ) as f:
         source = f.read()
     assert "ChessWithQuests" not in source
@@ -473,7 +474,11 @@ class TestPlanIssuesAreNotInterpreted:
         """
         return {
             "action": action,
-            "issue": {"number": 92, "labels": [{"name": n} for n in labels], "body": body},
+            "issue": {
+                "number": 92,
+                "labels": [{"name": n} for n in labels],
+                "body": body,
+            },
             "repository": {"full_name": "marius-patrik/DarkFactory"},
         }
 
@@ -488,21 +493,31 @@ class TestPlanIssuesAreNotInterpreted:
         module.dispatch_event(str(path), "issues")
         assert called == [], "a Plan issue must not be interpreted"
 
-    def test_a_pipeline_failure_issue_is_interpreted_after_claiming_its_effect(self, monkeypatch, tmp_path):
+    def test_a_pipeline_failure_issue_is_interpreted_after_claiming_its_effect(
+        self, monkeypatch, tmp_path
+    ):
         """#1193. This used to return without interpreting, which is what muted the whole loop: the
-        failure reporter files this issue for a red build and the runner then refused to act on it."""
+        failure reporter files this issue for a red build and the runner then refused to act on it.
+        """
         called = []
         module = agent_runner_module()
         monkeypatch.setattr(module, "handle_interpret", lambda n, r: called.append(n))
         monkeypatch.setattr(module, "run_gh", lambda *a, **k: "")
-        monkeypatch.setattr(module, "claim_failure_dispatch", lambda n, e, r: called.append(("claim", e)) or True)
+        monkeypatch.setattr(
+            module,
+            "claim_failure_dispatch",
+            lambda n, e, r: called.append(("claim", e)) or True,
+        )
         path = tmp_path / "event.json"
         path.write_text(
             json.dumps(self._payload(["pipeline-failure"], body=_failure_body("CI", "3600000001"))),
             encoding="utf-8",
         )
         module.dispatch_event(str(path), "issues")
-        assert ("claim", "CI@3600000001") in called, "the failing run's effect identity must be claimed"
+        assert (
+            "claim",
+            "CI@3600000001",
+        ) in called, "the failing run's effect identity must be claimed"
         assert 92 in called, "a red build must reach the agent, not be ignored"
 
     def test_a_request_issue_is_still_interpreted(self, monkeypatch, tmp_path):
@@ -520,7 +535,8 @@ class TestPlanIssuesAreNotInterpreted:
 class TestPipelineCanStartOnAnExistingIssue:
     """v1 exit criterion 6. The graph's only entry edge carries the `Request` label, so an issue that
     already existed when the trigger was written - including every failure report - could never enter
-    the pipeline: only `issues.opened` fired, and opening one is the one thing that had not happened."""
+    the pipeline: only `issues.opened` fired, and opening one is the one thing that had not happened.
+    """
 
     def _dispatch(self, monkeypatch, tmp_path, labels, action, applied="Request"):
         called = []
@@ -530,7 +546,11 @@ class TestPipelineCanStartOnAnExistingIssue:
         monkeypatch.setattr(module, "run_gh", lambda *a, **k: "")
         payload = {
             "action": action,
-            "issue": {"number": 92, "labels": [{"name": n} for n in labels], "body": ""},
+            "issue": {
+                "number": 92,
+                "labels": [{"name": n} for n in labels],
+                "body": "",
+            },
             "label": {"name": applied},
             "repository": {"full_name": "marius-patrik/DarkFactory"},
         }
@@ -545,13 +565,21 @@ class TestPipelineCanStartOnAnExistingIssue:
     def test_a_failure_report_labelled_as_a_request_starts_it(self, monkeypatch, tmp_path):
         """The failure reporter labels what it files, and a human can add `Request` to any open
         failure; both are the only way to start the pipeline on a failure that already exists."""
-        assert self._dispatch(monkeypatch, tmp_path, ["pipeline-failure", "Request"], "labeled") == [92]
+        assert self._dispatch(
+            monkeypatch, tmp_path, ["pipeline-failure", "Request"], "labeled"
+        ) == [92]
 
     def test_an_unrelated_label_does_not_start_a_second_run(self, monkeypatch, tmp_path):
         """`labeled` carries the issue's whole label set, so keying on that set would re-enter the
         pipeline every time a triage label was added to a Request."""
         assert (
-            self._dispatch(monkeypatch, tmp_path, ["Request", "Triage"], "labeled", applied="Triage")
+            self._dispatch(
+                monkeypatch,
+                tmp_path,
+                ["Request", "Triage"],
+                "labeled",
+                applied="Triage",
+            )
             == []
         )
 
@@ -838,7 +866,9 @@ class TestTheAccountsCredentialReachesTheCli:
         monkeypatch.setenv("ANTIGRAVITY_CLIENT_SECRET_2", "secret-two")
         monkeypatch.setenv("ANTIGRAVITY_REFRESH_TOKEN_2", "refresh-two")
         monkeypatch.setattr(
-            agent_runner, "exchange_refresh_token", lambda *a, **k: {"access_token": "fresh"}
+            agent_runner,
+            "exchange_refresh_token",
+            lambda *a, **k: {"access_token": "fresh"},
         )
         env = agent_runner.credential_env(dict(os.environ), self._attempt("antigravity", 2))
         assert env["ANTIGRAVITY_CLIENT_ID"] == "client-two"
@@ -865,7 +895,10 @@ class TestLoginFileCredentialLifecycle:
         import sys
 
         monkeypatch.setenv("HOME", str(tmp_path))
-        base = {"HOME": str(tmp_path), "CODEX_AUTH_JSON_2": '{"token": "codex-account-2"}'}
+        base = {
+            "HOME": str(tmp_path),
+            "CODEX_AUTH_JSON_2": '{"token": "codex-account-2"}',
+        }
         attempt = self._attempt("codex", 2)
 
         chmod_calls = []
@@ -1368,7 +1401,9 @@ class TestAnswersAboutQuotaArePosted:
 
     def test_a_response_that_discusses_quota_is_posted(self, monkeypatch):
         posted = self._run(
-            monkeypatch, lambda m: m.handle_respond(220, "what about 429s?", REPO_SLUG), self.ANSWER
+            monkeypatch,
+            lambda m: m.handle_respond(220, "what about 429s?", REPO_SLUG),
+            self.ANSWER,
         )
         assert len(posted) == 1 and self.ANSWER in posted[0]
 
@@ -1418,8 +1453,8 @@ class TestPlanAlignmentStatus:
         monkeypatch.setattr(
             module,
             "unblock_entity",
-            lambda number, repo, is_pr=False, target_status="In Progress", **_k: statuses.append(
-                (number, is_pr, target_status)
+            lambda number, repo, is_pr=False, target_status="In Progress", **_k: (
+                statuses.append((number, is_pr, target_status))
             ),
         )
 
@@ -1643,9 +1678,9 @@ class TestFailureEffectIdentity:
         """The marker lives in the body precisely so a human renaming the issue cannot fork it."""
         module = agent_runner_module()
         body = _failure_body("CI", "3600000001")
-        assert module.failure_effect_id(body.replace("Pipeline failure: CI", "ci is red again")) == (
-            "CI@3600000001"
-        )
+        assert module.failure_effect_id(
+            body.replace("Pipeline failure: CI", "ci is red again")
+        ) == ("CI@3600000001")
 
     def test_an_ordinary_issue_has_no_failure_identity(self):
         module = agent_runner_module()
@@ -1747,7 +1782,10 @@ class TestFailureDispatchElection:
             if args[0] == "issue" and args[1] == "comment":
                 return "ok"
             return "\n".join(
-                [json.dumps([{"id": 99, "b": claim}]), json.dumps([{"id": 7, "b": claim}])]
+                [
+                    json.dumps([{"id": 99, "b": claim}]),
+                    json.dumps([{"id": 7, "b": claim}]),
+                ]
             )
 
         monkeypatch.setattr(module, "try_gh", fake_try_gh)
@@ -1758,7 +1796,9 @@ class TestFailureDispatchElection:
         monkeypatch.setattr(module, "try_gh", lambda *a, **k: None)
         assert module.claim_failure_dispatch(1, "CI@1", "o/r") is False
 
-    def test_unreadable_claims_fall_back_to_dispatching_rather_than_muting_forever(self, monkeypatch):
+    def test_unreadable_claims_fall_back_to_dispatching_rather_than_muting_forever(
+        self, monkeypatch
+    ):
         """The claim list is best-effort. Losing the election must never be the failure mode, because
         that is the mute this change exists to remove."""
         module = agent_runner_module()
@@ -1819,7 +1859,10 @@ class TestRejectRoutesBack:
     def test_reject_is_never_an_approval(self, monkeypatch, tmp_path):
         """Even the strict `/df reject` must not advance either gate."""
         calls = _dispatch_issue_comment(
-            monkeypatch, tmp_path, _issue_comment_payload("/df reject"), plan_exists=True
+            monkeypatch,
+            tmp_path,
+            _issue_comment_payload("/df reject"),
+            plan_exists=True,
         )
         assert calls["implement"] == []
 
@@ -1854,7 +1897,10 @@ class TestWhoMayApprove:
             monkeypatch,
             tmp_path,
             _issue_comment_payload(
-                "/df approve", login="author", assoc="CONTRIBUTOR", issue_author="author"
+                "/df approve",
+                login="author",
+                assoc="CONTRIBUTOR",
+                issue_author="author",
             ),
         )
         assert len(calls["plan"]) == 1
@@ -1866,7 +1912,10 @@ class TestWhoMayApprove:
             monkeypatch,
             tmp_path,
             _issue_comment_payload(
-                "lgtm", login="helper", assoc="COLLABORATOR", issue_author="someone-else"
+                "lgtm",
+                login="helper",
+                assoc="COLLABORATOR",
+                issue_author="someone-else",
             ),
         )
         assert len(calls["plan"]) == 1
@@ -2091,7 +2140,9 @@ class TestAuthFailuresRotate:
 
         monkeypatch.setattr(agent_runner.subprocess, "run", fake_run)
         monkeypatch.setattr(
-            agent_runner, "checkpoint_and_notify_exhaustion", lambda **k: checkpoints.append(1)
+            agent_runner,
+            "checkpoint_and_notify_exhaustion",
+            lambda **k: checkpoints.append(1),
         )
         result = agent_runner.run_agent_prompt("do it")
         assert result.startswith("[DarkFactory Agent Execution Error]")
@@ -2112,7 +2163,9 @@ class TestAuthFailuresRotate:
         monkeypatch.setenv("OPENAI_API_KEY", "one")
         checkpoints: List[int] = []
         monkeypatch.setattr(
-            agent_runner, "checkpoint_and_notify_exhaustion", lambda **k: checkpoints.append(1)
+            agent_runner,
+            "checkpoint_and_notify_exhaustion",
+            lambda **k: checkpoints.append(1),
         )
 
         def fake_run(argv, **kwargs):
@@ -2303,7 +2356,10 @@ class TestDeterministicScopeCheck:
     def test_check_scope_detects_out_of_scope_files(self):
         module = agent_runner_module()
         plan_files = {".github/scripts/commands.py", "tests/test_commands.py"}
-        changed = [".github/scripts/commands.py", ".github/scripts/project_automation.py"]
+        changed = [
+            ".github/scripts/commands.py",
+            ".github/scripts/project_automation.py",
+        ]
         in_scope, out_of_scope = module.check_scope(changed, plan_files)
         assert in_scope == [".github/scripts/commands.py"]
         assert out_of_scope == [".github/scripts/project_automation.py"]
@@ -2384,7 +2440,11 @@ class TestScopeCheckKeepsTestsAndVaguePlans:
     def test_new_test_files_are_never_out_of_scope(self):
         """#267's plan named tests/test_commands.py; the implementation added tests/test_footers.py."""
         in_scope, out = agent_runner.check_scope(
-            [".github/scripts/commands.py", "tests/test_footers.py", "packages/harness/test/router.test.ts"],
+            [
+                ".github/scripts/commands.py",
+                "tests/test_footers.py",
+                "packages/harness/test/router.test.ts",
+            ],
             {".github/scripts/commands.py", "tests/test_commands.py"},
         )
         assert out == []
@@ -2520,7 +2580,11 @@ class TestSelfReviewFix:
         monkeypatch.setattr(module, "format_repository", lambda *a, **k: None)
 
         module.run_self_review_fix(
-            pr_number=10, plan_number=20, request_number=30, iteration=1, repo="owner/repo"
+            pr_number=10,
+            plan_number=20,
+            request_number=30,
+            iteration=1,
+            repo="owner/repo",
         )
 
         assert reverted_files == ["extra.py"]
@@ -2552,14 +2616,22 @@ class TestSelfReviewFix:
 
         monkeypatch.setattr(module, "run_gh", fake_run_gh)
         monkeypatch.setattr(
-            module, "block_entity", lambda num, repo, is_pr: blocked_calls.append((num, is_pr))
+            module,
+            "block_entity",
+            lambda num, repo, is_pr: blocked_calls.append((num, is_pr)),
         )
         monkeypatch.setattr(
-            module, "dispatch_stage", lambda repo, payload: dispatched_payloads.append(payload)
+            module,
+            "dispatch_stage",
+            lambda repo, payload: dispatched_payloads.append(payload),
         )
 
         module.run_self_review_fix(
-            pr_number=10, plan_number=20, request_number=30, iteration=1, repo="owner/repo"
+            pr_number=10,
+            plan_number=20,
+            request_number=30,
+            iteration=1,
+            repo="owner/repo",
         )
 
         assert (10, True) in blocked_calls
@@ -2599,7 +2671,11 @@ class TestSelfReviewFix:
         )
 
         module.run_self_review_fix(
-            pr_number=10, plan_number=20, request_number=30, iteration=1, repo="owner/repo"
+            pr_number=10,
+            plan_number=20,
+            request_number=30,
+            iteration=1,
+            repo="owner/repo",
         )
 
         assert blocked == [10] and dispatched == []
@@ -2630,7 +2706,9 @@ class TestSelfReviewFix:
 
         monkeypatch.setattr(module, "run_gh", fake_run_gh)
         monkeypatch.setattr(
-            module, "dispatch_stage", lambda repo, payload: dispatched_payloads.append(payload)
+            module,
+            "dispatch_stage",
+            lambda repo, payload: dispatched_payloads.append(payload),
         )
         monkeypatch.setattr(
             module,
@@ -2641,7 +2719,11 @@ class TestSelfReviewFix:
         monkeypatch.setattr(module, "format_repository", lambda *a, **k: None)
 
         module.run_self_review_fix(
-            pr_number=15, plan_number=25, request_number=35, iteration=2, repo="owner/repo"
+            pr_number=15,
+            plan_number=25,
+            request_number=35,
+            iteration=2,
+            repo="owner/repo",
         )
 
         assert len(agent_prompts) == 1
@@ -2674,14 +2756,22 @@ class TestSelfReviewFix:
         monkeypatch.setattr(module, "run_gh", fake_run_gh)
         monkeypatch.setattr(module, "revert_out_of_scope_files", fake_revert)
         monkeypatch.setattr(
-            module, "dispatch_stage", lambda repo, payload: dispatched_payloads.append(payload)
+            module,
+            "dispatch_stage",
+            lambda repo, payload: dispatched_payloads.append(payload),
         )
         monkeypatch.setattr(
-            module, "run_agent_prompt", lambda prompt, **kwargs: agent_prompts.append(prompt)
+            module,
+            "run_agent_prompt",
+            lambda prompt, **kwargs: agent_prompts.append(prompt),
         )
 
         module.run_self_review_fix(
-            pr_number=10, plan_number=20, request_number=30, iteration=1, repo="owner/repo"
+            pr_number=10,
+            plan_number=20,
+            request_number=30,
+            iteration=1,
+            repo="owner/repo",
         )
 
         assert reverted_files == ["unwanted.py"]
@@ -2701,7 +2791,10 @@ class TestRunSelfReviewIterationAndFindings:
         # Numbered multi-line items -> one finding each; 10. prefix stripped
         text1 = "10. This is finding one\n  with a second line.\n20. This is finding two."
         res1 = agent_runner.parse_review_findings(text1)
-        assert res1 == ["This is finding one with a second line.", "This is finding two."]
+        assert res1 == [
+            "This is finding one with a second line.",
+            "This is finding two.",
+        ]
 
         # Bullets without losing characters for *text/-text
         text2 = "* Bullet one\n*Bullet two\n- Bullet three\n-Bullet four"
@@ -2728,8 +2821,10 @@ class TestRunSelfReviewIterationAndFindings:
         monkeypatch.setattr(
             module,
             "run_gh",
-            lambda args, **k: gh_calls.append(args)
-            or (json.dumps({"comments": []}) if args[:2] == ["issue", "view"] else "diff"),
+            lambda args, **k: (
+                gh_calls.append(args)
+                or (json.dumps({"comments": []}) if args[:2] == ["issue", "view"] else "diff")
+            ),
         )
         monkeypatch.setattr(
             module, "run_agent_prompt", lambda *a, **k: "1. Finding A\n2. Finding B"
@@ -2739,11 +2834,17 @@ class TestRunSelfReviewIterationAndFindings:
         monkeypatch.setattr(module, "check_scope", lambda *a, **k: (["file.py"], []))
         monkeypatch.setattr(module, "development_branch", lambda *a, **k: "main")
         monkeypatch.setattr(
-            module, "dispatch_stage", lambda repo, payload: dispatch_calls.append(payload)
+            module,
+            "dispatch_stage",
+            lambda repo, payload: dispatch_calls.append(payload),
         )
 
         res = module.run_self_review_iteration(
-            pr_number=10, plan_number=20, request_number=30, iteration=1, repo="owner/repo"
+            pr_number=10,
+            plan_number=20,
+            request_number=30,
+            iteration=1,
+            repo="owner/repo",
         )
 
         assert res == "fix-dispatched"
@@ -2771,8 +2872,10 @@ class TestRunSelfReviewIterationAndFindings:
         monkeypatch.setattr(
             module,
             "run_gh",
-            lambda args, **k: gh_calls.append(args)
-            or (json.dumps({"comments": []}) if args[:2] == ["issue", "view"] else "diff"),
+            lambda args, **k: (
+                gh_calls.append(args)
+                or (json.dumps({"comments": []}) if args[:2] == ["issue", "view"] else "diff")
+            ),
         )
         monkeypatch.setattr(module, "run_agent_prompt", lambda *a, **k: "NO_FINDINGS")
         monkeypatch.setattr(module, "get_pr_changed_files", lambda *a, **k: ["file.py"])
@@ -2784,7 +2887,11 @@ class TestRunSelfReviewIterationAndFindings:
         )
 
         res = module.run_self_review_iteration(
-            pr_number=10, plan_number=20, request_number=30, iteration=1, repo="owner/repo"
+            pr_number=10,
+            plan_number=20,
+            request_number=30,
+            iteration=1,
+            repo="owner/repo",
         )
 
         assert res == "clean"
@@ -2799,8 +2906,10 @@ class TestRunSelfReviewIterationAndFindings:
         monkeypatch.setattr(
             module,
             "run_gh",
-            lambda args, **k: gh_calls.append(args)
-            or (json.dumps({"comments": []}) if args[:2] == ["issue", "view"] else "diff"),
+            lambda args, **k: (
+                gh_calls.append(args)
+                or (json.dumps({"comments": []}) if args[:2] == ["issue", "view"] else "diff")
+            ),
         )
         monkeypatch.setattr(module, "run_agent_prompt", lambda *a, **k: "NO_FINDINGS")
         monkeypatch.setattr(module, "get_pr_changed_files", lambda *a, **k: ["file.py", "extra.py"])
@@ -2808,11 +2917,17 @@ class TestRunSelfReviewIterationAndFindings:
         monkeypatch.setattr(module, "check_scope", lambda *a, **k: (["file.py"], ["extra.py"]))
         monkeypatch.setattr(module, "development_branch", lambda *a, **k: "main")
         monkeypatch.setattr(
-            module, "dispatch_stage", lambda repo, payload: dispatch_calls.append(payload)
+            module,
+            "dispatch_stage",
+            lambda repo, payload: dispatch_calls.append(payload),
         )
 
         res = module.run_self_review_iteration(
-            pr_number=10, plan_number=20, request_number=30, iteration=1, repo="owner/repo"
+            pr_number=10,
+            plan_number=20,
+            request_number=30,
+            iteration=1,
+            repo="owner/repo",
         )
 
         assert res == "fix-dispatched"
@@ -2840,11 +2955,13 @@ class TestRunSelfReviewIterationAndFindings:
         monkeypatch.setattr(
             module,
             "run_gh",
-            lambda args, **k: gh_calls.append(args)
-            or (
-                json.dumps({"comments": [{"body": c_prev}]})
-                if args[:2] == ["issue", "view"]
-                else "diff"
+            lambda args, **k: (
+                gh_calls.append(args)
+                or (
+                    json.dumps({"comments": [{"body": c_prev}]})
+                    if args[:2] == ["issue", "view"]
+                    else "diff"
+                )
             ),
         )
         monkeypatch.setattr(module, "run_agent_prompt", lambda *a, **k: "1. Finding A")
@@ -2853,11 +2970,17 @@ class TestRunSelfReviewIterationAndFindings:
         monkeypatch.setattr(module, "check_scope", lambda *a, **k: (["file.py"], []))
         monkeypatch.setattr(module, "development_branch", lambda *a, **k: "main")
         monkeypatch.setattr(
-            module, "block_entity", lambda num, repo, is_pr: blocked_calls.append((num, is_pr))
+            module,
+            "block_entity",
+            lambda num, repo, is_pr: blocked_calls.append((num, is_pr)),
         )
 
         res = module.run_self_review_iteration(
-            pr_number=10, plan_number=20, request_number=30, iteration=2, repo="owner/repo"
+            pr_number=10,
+            plan_number=20,
+            request_number=30,
+            iteration=2,
+            repo="owner/repo",
         )
 
         assert res == "blocked"
@@ -2887,11 +3010,17 @@ class TestRunSelfReviewIterationAndFindings:
         monkeypatch.setattr(module, "check_scope", lambda *a, **k: (["file.py"], []))
         monkeypatch.setattr(module, "development_branch", lambda *a, **k: "main")
         monkeypatch.setattr(
-            module, "block_entity", lambda num, repo, is_pr: blocked_calls.append((num, is_pr))
+            module,
+            "block_entity",
+            lambda num, repo, is_pr: blocked_calls.append((num, is_pr)),
         )
 
         res = module.run_self_review_iteration(
-            pr_number=10, plan_number=20, request_number=30, iteration=1, repo="owner/repo"
+            pr_number=10,
+            plan_number=20,
+            request_number=30,
+            iteration=1,
+            repo="owner/repo",
         )
 
         assert res == "blocked"
@@ -2918,7 +3047,13 @@ class TestSelfReviewDispatchCycle:
         assert sent == [
             (
                 "owner/repo",
-                {"stage": "self-review", "pr": 10, "plan": 20, "request": 20, "iteration": 1},
+                {
+                    "stage": "self-review",
+                    "pr": 10,
+                    "plan": 20,
+                    "request": 20,
+                    "iteration": 1,
+                },
             )
         ]
 
@@ -3086,7 +3221,9 @@ def test_checkout_pr_branch_switches_to_the_head_branch(monkeypatch):
     module = agent_runner_module()
     git_calls = []
     monkeypatch.setattr(
-        module, "run_gh", lambda args, repo=None: json.dumps({"headRefName": "feature/x"})
+        module,
+        "run_gh",
+        lambda args, repo=None: json.dumps({"headRefName": "feature/x"}),
     )
     monkeypatch.setattr(module, "run_git", lambda args, cwd=None: git_calls.append(args) or "")
     assert module.checkout_pr_branch(10, "owner/repo", cwd="/work") == "feature/x"
@@ -3098,7 +3235,9 @@ def test_checkout_pr_branch_switches_to_the_head_branch(monkeypatch):
     assert ["config", "user.email", module.GIT_BOT_EMAIL] in git_calls[:-2]
 
 
-def test_configure_git_identity_sets_the_bot_identity_and_survives_git_errors(monkeypatch):
+def test_configure_git_identity_sets_the_bot_identity_and_survives_git_errors(
+    monkeypatch,
+):
     """Every git config call goes through run_git, and a failing one does not stop the others."""
     module = agent_runner_module()
     calls = []
@@ -3112,7 +3251,10 @@ def test_configure_git_identity_sets_the_bot_identity_and_survives_git_errors(mo
     monkeypatch.setattr(module, "run_git", fake_git)
     module.configure_git_identity("/work")
     assert (["config", "user.name", module.GIT_BOT_NAME], "/work") in calls
-    assert (["config", "--global", "user.email", module.GIT_BOT_EMAIL], "/work") in calls
+    assert (
+        ["config", "--global", "user.email", module.GIT_BOT_EMAIL],
+        "/work",
+    ) in calls
     assert len(calls) == 5
 
 
@@ -3123,7 +3265,9 @@ class TestPrFeedbackRevision:
         module = agent_runner_module()
         calls = {"dispatch": [], "respond": []}
         monkeypatch.setattr(
-            module, "dispatch_stage", lambda repo, payload: calls["dispatch"].append(payload)
+            module,
+            "dispatch_stage",
+            lambda repo, payload: calls["dispatch"].append(payload),
         )
         monkeypatch.setattr(module, "handle_respond", lambda *a, **k: calls["respond"].append(a))
         monkeypatch.setattr(module, "find_plan_issue_for_pr", lambda n, r: plan)
@@ -3186,7 +3330,9 @@ class TestPrFeedbackRevision:
         monkeypatch.setattr(module, "run_git", fake_git)
         monkeypatch.setattr(module, "format_repository", lambda cwd: None)
         monkeypatch.setattr(
-            module, "run_agent_prompt", lambda prompt, **k: "Renamed the helper and added a test."
+            module,
+            "run_agent_prompt",
+            lambda prompt, **k: "Renamed the helper and added a test.",
         )
         monkeypatch.setattr(module, "start_self_review", lambda *a: reviews.append(a))
         module.run_pr_feedback_fix(10, 20, 30, "rename the helper", "owner/repo")
@@ -3202,8 +3348,9 @@ class TestPrFeedbackRevision:
         monkeypatch.setattr(
             module,
             "run_gh",
-            lambda args, repo=None: gh_calls.append(args)
-            or json.dumps({"body": "", "comments": []}),
+            lambda args, repo=None: (
+                gh_calls.append(args) or json.dumps({"body": "", "comments": []})
+            ),
         )
         monkeypatch.setattr(
             module,
@@ -3241,8 +3388,9 @@ class TestPrFeedbackRevision:
         monkeypatch.setattr(
             module,
             "run_gh",
-            lambda args, repo=None: gh_calls.append(args)
-            or json.dumps({"body": "Plan", "comments": []}),
+            lambda args, repo=None: (
+                gh_calls.append(args) or json.dumps({"body": "Plan", "comments": []})
+            ),
         )
         monkeypatch.setattr(module, "run_git", fake_git)
         monkeypatch.setattr(module, "format_repository", lambda cwd: None)
@@ -3257,7 +3405,9 @@ class TestPrFeedbackRevision:
         assert expected in comments[0] and "### Feedback addressed" not in comments[0]
 
 
-def test_checkpoint_and_notify_exhaustion_includes_resume_time_and_instructions(monkeypatch):
+def test_checkpoint_and_notify_exhaustion_includes_resume_time_and_instructions(
+    monkeypatch,
+):
     """The quota exhaustion notice states the automatic resume time (UTC) and names /df resume."""
     module = agent_runner_module()
     posted_comments = []
@@ -3274,8 +3424,8 @@ def test_checkpoint_and_notify_exhaustion_includes_resume_time_and_instructions(
     monkeypatch.setattr(
         module,
         "record_quota_block",
-        lambda repo, item_number, is_pr, reset_at, providers, run_id: recorded_blocks.append(
-            (repo, item_number, is_pr, reset_at, providers, run_id)
+        lambda repo, item_number, is_pr, reset_at, providers, run_id: (
+            recorded_blocks.append((repo, item_number, is_pr, reset_at, providers, run_id))
         ),
     )
     monkeypatch.setattr(

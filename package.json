@@ -15,7 +15,8 @@
     "docs": "bun scripts/build-docs.ts",
     "release:version": "bun scripts/versioning.ts",
     "release:targets": "bun packages/harness/scripts/release-targets.ts",
-    "format:check": "biome format ."
+    "format:check": "biome format .",
+    "lint": "biome lint ."
   },
   "devDependencies": {
     "@biomejs/biome": "2.5.13",

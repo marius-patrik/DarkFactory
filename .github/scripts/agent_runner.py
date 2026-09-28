@@ -579,7 +579,10 @@ def setup_antigravity_credentials(
                 )
                 p_store.communicate(input=encoded)
             except Exception as e:
-                print(f"secret-tool store notice ({service}/{attr_name}): {e}", file=sys.stderr)
+                print(
+                    f"secret-tool store notice ({service}/{attr_name}): {e}",
+                    file=sys.stderr,
+                )
         print("Successfully populated SecretService keyring for agy CLI.")
 
     return cred_file
@@ -850,9 +853,15 @@ def record_quota_block(
                     repo=repo,
                 )
             except Exception as ee:
-                print(f"Notice: Failed to patch quota variable {var_name}: {ee}", file=sys.stderr)
+                print(
+                    f"Notice: Failed to patch quota variable {var_name}: {ee}",
+                    file=sys.stderr,
+                )
         else:
-            print(f"Notice: Failed to create quota variable {var_name}: {e}", file=sys.stderr)
+            print(
+                f"Notice: Failed to create quota variable {var_name}: {e}",
+                file=sys.stderr,
+            )
     prov_name = "DARKFACTORY_QUOTA_PROVIDERS"
     existing = {}
     try:
@@ -905,9 +914,15 @@ def record_quota_block(
                     repo=repo,
                 )
             except Exception as ee:
-                print(f"Notice: Failed to patch provider map {prov_name}: {ee}", file=sys.stderr)
+                print(
+                    f"Notice: Failed to patch provider map {prov_name}: {ee}",
+                    file=sys.stderr,
+                )
         else:
-            print(f"Notice: Failed to create provider map {prov_name}: {e}", file=sys.stderr)
+            print(
+                f"Notice: Failed to create provider map {prov_name}: {e}",
+                file=sys.stderr,
+            )
 
 
 def try_gh(args: List[str], repo: Optional[str] = None, doing: str = "") -> Optional[str]:
@@ -1003,13 +1018,15 @@ AUTH_FAILURE_PATTERNS: List[re.Pattern] = [
     re.compile(r"\b401\s*[:=\-]?\s*(?:unauthorized|invalid|expired)", re.IGNORECASE),
     re.compile(r"\bunauthorized\b", re.IGNORECASE),
     re.compile(
-        r"\binvalid[_\s-]*(?:api[_\s-]*key|token|oauth|grant|credentials?)\b", re.IGNORECASE
+        r"\binvalid[_\s-]*(?:api[_\s-]*key|token|oauth|grant|credentials?)\b",
+        re.IGNORECASE,
     ),
     re.compile(r"\bexpired[_\s-]*token\b", re.IGNORECASE),
     re.compile(r"\binvalid_grant\b", re.IGNORECASE),
     re.compile(r"\bauthentication\s*(?:failed|expired|required)\b", re.IGNORECASE),
     re.compile(
-        r"\b(?:token|credential|api[_\s-]*key)\s*(?:expired|invalid|revoked)\b", re.IGNORECASE
+        r"\b(?:token|credential|api[_\s-]*key)\s*(?:expired|invalid|revoked)\b",
+        re.IGNORECASE,
     ),
 ]
 
@@ -1063,7 +1080,10 @@ def is_quota_exhaustion_notice(result: str) -> bool:
 #: reply, so a reply carrying it is a failed attempt like any other.
 PRINT_TIMEOUT_PATTERNS: List[re.Pattern] = [
     re.compile(r"\bprint[_\s-]?timeout\b", re.IGNORECASE),
-    re.compile(r"\btimed?\s*out\b[^\n]{0,60}\b(?:print|output|response|result)\b", re.IGNORECASE),
+    re.compile(
+        r"\btimed?\s*out\b[^\n]{0,60}\b(?:print|output|response|result)\b",
+        re.IGNORECASE,
+    ),
     re.compile(r"\bprint\b[^\n]{0,40}\btimed?\s*out\b", re.IGNORECASE),
 ]
 
@@ -1159,13 +1179,20 @@ def rewrite_file_links(text: str, repo: str = "", branch: str = "") -> str:
     def _replace(match: re.Match) -> str:
         raw = match.group(1).strip()
         path = raw.lstrip("/")
-        for prefix in ("home/agent/", "home/runner/work/", "github/workspace/", "workspace/"):
+        for prefix in (
+            "home/agent/",
+            "home/runner/work/",
+            "github/workspace/",
+            "workspace/",
+        ):
             if path.startswith(prefix):
                 path = path[len(prefix) :]
                 break
         path = re.sub(r"^home/[^/]+/", "", path)
         path = re.sub(
-            r"^[^/]+/[^/]+/[^/]+/(?=\.github/|\.agents/|src/|tests/|docs/|bin/)", "", path
+            r"^[^/]+/[^/]+/[^/]+/(?=\.github/|\.agents/|src/|tests/|docs/|bin/)",
+            "",
+            path,
         )
         if not path:
             return match.group(0)
@@ -1452,7 +1479,10 @@ def update_project_status_blocked(
 
             client = GitHubProjectClient(owner=owner, project_number=PROJECT_NUMBER)
         except Exception as e:
-            print(f"Notice: Failed to instantiate GitHubProjectClient: {e}", file=sys.stderr)
+            print(
+                f"Notice: Failed to instantiate GitHubProjectClient: {e}",
+                file=sys.stderr,
+            )
             client = None
 
     if client is not None:
@@ -1514,7 +1544,10 @@ def unblock_entity(
 
             client = GitHubProjectClient(owner=owner, project_number=PROJECT_NUMBER)
         except Exception as e:
-            print(f"Notice: Failed to instantiate GitHubProjectClient: {e}", file=sys.stderr)
+            print(
+                f"Notice: Failed to instantiate GitHubProjectClient: {e}",
+                file=sys.stderr,
+            )
             client = None
 
     if client is not None:
@@ -1582,13 +1615,20 @@ def checkpoint_and_notify_exhaustion(
             status = run_git(["status", "--porcelain"], cwd=work_dir)
             if status:
                 run_git(
-                    ["commit", "-m", "chore(ci): checkpoint progress on quota exhaustion"],
+                    [
+                        "commit",
+                        "-m",
+                        "chore(ci): checkpoint progress on quota exhaustion",
+                    ],
                     cwd=work_dir,
                 )
                 try:
                     run_git(["push", "origin", branch_name], cwd=work_dir)
                 except Exception as pe:
-                    print(f"Notice: Git push during checkpoint notice: {pe}", file=sys.stderr)
+                    print(
+                        f"Notice: Git push during checkpoint notice: {pe}",
+                        file=sys.stderr,
+                    )
         except Exception as ge:
             print(f"Notice: Git checkpoint notice: {ge}", file=sys.stderr)
 
@@ -1627,9 +1667,15 @@ def checkpoint_and_notify_exhaustion(
         if is_pr:
             run_gh(["pr", "comment", str(issue_number), "--body", comment_body], repo=repo)
         else:
-            run_gh(["issue", "comment", str(issue_number), "--body", comment_body], repo=repo)
+            run_gh(
+                ["issue", "comment", str(issue_number), "--body", comment_body],
+                repo=repo,
+            )
     except Exception as e:
-        print(f"Notice: Failed to post quota exhaustion notice comment: {e}", file=sys.stderr)
+        print(
+            f"Notice: Failed to post quota exhaustion notice comment: {e}",
+            file=sys.stderr,
+        )
 
     # 4. Update Project Board Status to Blocked
     update_project_status_blocked(issue_number, repo=repo, is_pr=is_pr, client=client)
@@ -2512,7 +2558,16 @@ def create_child_plan_issue(request_number: int, repo: str) -> int:
 
     # Fallback: create then link parent
     out = run_gh(
-        ["issue", "create", "--title", plan_title, "--body", initial_body, "--label", "Plan"],
+        [
+            "issue",
+            "create",
+            "--title",
+            plan_title,
+            "--body",
+            initial_body,
+            "--label",
+            "Plan",
+        ],
         repo=repo,
     )
     match = re.search(r"/issues/(\d+)", out)
@@ -2525,7 +2580,14 @@ def create_child_plan_issue(request_number: int, repo: str) -> int:
     except Exception as e:
         try:
             run_gh(
-                ["issue", "edit", str(request_number), "--add-sub-issue", str(plan_num)], repo=repo
+                [
+                    "issue",
+                    "edit",
+                    str(request_number),
+                    "--add-sub-issue",
+                    str(plan_num),
+                ],
+                repo=repo,
             )
             print(f"Added sub-issue #{plan_num} to parent #{request_number} via edit")
         except Exception as e2:
@@ -2907,7 +2969,13 @@ def resolve_base_refs(base: str, cwd: Optional[str] = None) -> List[str]:
         # The base endpoint is verified rather than the range: `git rev-parse --verify a...b`
         # reports failure for an empty range, which a base that equals HEAD legitimately produces.
         check = subprocess.run(
-            ["git", "rev-parse", "--verify", "--quiet", f"{ref.removesuffix('...HEAD')}^{{commit}}"],
+            [
+                "git",
+                "rev-parse",
+                "--verify",
+                "--quiet",
+                f"{ref.removesuffix('...HEAD')}^{{commit}}",
+            ],
             cwd=directory,
             capture_output=True,
             text=True,
@@ -2997,7 +3065,9 @@ def revert_out_of_scope_files(
 def extract_plan_scope(plan_text: str, fallback_title: str = "") -> str:
     """Extracts the scope section from an implementation plan, or returns a fallback summary."""
     scope_match = re.search(
-        r"(?:^|\n)#{2,4}\s*Scope\s*\n(.*?)(?=\n#{2,4}\s|\Z)", plan_text, re.DOTALL | re.IGNORECASE
+        r"(?:^|\n)#{2,4}\s*Scope\s*\n(.*?)(?=\n#{2,4}\s|\Z)",
+        plan_text,
+        re.DOTALL | re.IGNORECASE,
     )
     if scope_match:
         scope = scope_match.group(1).strip()
@@ -3144,7 +3214,13 @@ def find_plan_issue_for_pr(pr_number: int, repo: str) -> Optional[int]:
     """
     try:
         raw = run_gh(
-            ["pr", "view", str(pr_number), "--json", "body,closingIssuesReferences,comments"],
+            [
+                "pr",
+                "view",
+                str(pr_number),
+                "--json",
+                "body,closingIssuesReferences,comments",
+            ],
             repo=repo,
         )
         data = json.loads(raw)
@@ -3403,7 +3479,10 @@ def handle_implement(plan_number: int, request_number: int, repo: str):
                 # Branching from origin/main fails outright where the trunk is called something
                 # else. #107 replaced the literals in the pull request calls and missed this one,
                 # because the guard test looked for `"main",` and this reads `origin/main`.
-                run_git(["checkout", "-b", branch_name, f"origin/{development_branch()}"], cwd=cwd)
+                run_git(
+                    ["checkout", "-b", branch_name, f"origin/{development_branch()}"],
+                    cwd=cwd,
+                )
     except subprocess.CalledProcessError as e:
         err_msg = f"Failed to create/checkout branch {branch_name}: {e.stderr or e.stdout}"
         print(err_msg, file=sys.stderr)
@@ -3748,7 +3827,14 @@ def dispatch_stage(repo: str, payload: Dict[str, Any]):
             f.write(payload_data)
             temp_path = f.name
         run_gh(
-            ["api", f"repos/{repo}/dispatches", "--method", "POST", "--input", temp_path],
+            [
+                "api",
+                f"repos/{repo}/dispatches",
+                "--method",
+                "POST",
+                "--input",
+                temp_path,
+            ],
             repo=repo,
         )
     except Exception as e:
@@ -3848,7 +3934,10 @@ def configure_git_identity(cwd: str = WORKSPACE_DIR) -> None:
         try:
             run_git(args, cwd=cwd)
         except (subprocess.CalledProcessError, OSError) as error:
-            print(f"Git config notice: {getattr(error, 'stderr', None) or error}", file=sys.stderr)
+            print(
+                f"Git config notice: {getattr(error, 'stderr', None) or error}",
+                file=sys.stderr,
+            )
 
 
 def checkout_pr_branch(pr_number: int, repo: str, cwd: str = WORKSPACE_DIR) -> Optional[str]:
@@ -3875,7 +3964,10 @@ def checkout_pr_branch(pr_number: int, repo: str, cwd: str = WORKSPACE_DIR) -> O
         run_git(["checkout", "-B", head, f"origin/{head}"], cwd=cwd)
         return head
     except (subprocess.CalledProcessError, KeyError, ValueError, TypeError) as error:
-        print(f"Could not check out the branch of PR #{pr_number}: {error}", file=sys.stderr)
+        print(
+            f"Could not check out the branch of PR #{pr_number}: {error}",
+            file=sys.stderr,
+        )
         return None
 
 
@@ -3906,7 +3998,10 @@ def run_pr_feedback_fix(
     # Retrieve the approved plan content.
     try:
         plan_data = json.loads(
-            run_gh(["issue", "view", str(plan_number), "--json", "title,body,comments"], repo=repo)
+            run_gh(
+                ["issue", "view", str(plan_number), "--json", "title,body,comments"],
+                repo=repo,
+            )
         )
     except Exception as e:
         print(f"Failed to load plan #{plan_number}: {e}", file=sys.stderr)
@@ -4136,7 +4231,7 @@ def run_self_review_iteration(
 
     # Build findings display as `1.`, `2., ...
     findings_display = (
-        "\n".join(f"{i+1}. {f}" for i, f in enumerate(findings_items))
+        "\n".join(f"{i + 1}. {f}" for i, f in enumerate(findings_items))
         if findings_items
         else "No actionable findings."
     )
@@ -4297,7 +4392,7 @@ def run_self_review_fix(
 
     # 4. Other findings: one agent fix run on the PR branch with the findings as prompt
     if other_findings:
-        formatted_findings = "\n".join(f"{i+1}. {f}" for i, f in enumerate(other_findings))
+        formatted_findings = "\n".join(f"{i + 1}. {f}" for i, f in enumerate(other_findings))
         fix_prompt = (
             f"Fix the following code review findings in the workspace:\n\n"
             f"{formatted_findings}\n\nMake the necessary changes to resolve all findings."
@@ -4705,11 +4800,14 @@ def claim_failure_dispatch(issue_number: int, effect: str, repo: str) -> bool:
         ``True`` when this run won the election and should dispatch.
     """
     wanted = f"{CLAIM_PREFIX}{effect}{CLAIM_SUFFIX}"
-    if try_gh(
-        ["issue", "comment", str(issue_number), "--body", wanted],
-        repo=repo,
-        doing=f"claim the repair of {effect}",
-    ) is None:
+    if (
+        try_gh(
+            ["issue", "comment", str(issue_number), "--body", wanted],
+            repo=repo,
+            doing=f"claim the repair of {effect}",
+        )
+        is None
+    ):
         return False
 
     listed = try_gh(
@@ -4819,7 +4917,9 @@ def dispatch_event(event_path: str, event_name: str):
             # `Request`, so that is the label intake is keyed on.
             if action == "labeled":
                 applied = payload.get("label")
-                applied_name = str(applied.get("name", "")).lower() if isinstance(applied, dict) else ""
+                applied_name = (
+                    str(applied.get("name", "")).lower() if isinstance(applied, dict) else ""
+                )
                 if applied_name != "request":
                     return
 
@@ -5164,7 +5264,11 @@ def main():
         and args.request_issue
     ):
         run_self_review_fix(
-            args.pr_number, args.plan_issue, args.request_issue, args.iteration, args.repo
+            args.pr_number,
+            args.plan_issue,
+            args.request_issue,
+            args.iteration,
+            args.repo,
         )
 
     elif (

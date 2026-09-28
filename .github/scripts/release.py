@@ -241,7 +241,10 @@ def sync_metadata(root: str, version: str) -> List[str]:
 
         if package.manifest.endswith(".json"):
             updated = re.sub(
-                r'("version"\s*:\s*)"[^"]*"', lambda m: f'{m.group(1)}"{version}"', content, count=1
+                r'("version"\s*:\s*)"[^"]*"',
+                lambda m: f'{m.group(1)}"{version}"',
+                content,
+                count=1,
             )
         else:
             updated = re.sub(
@@ -503,7 +506,8 @@ def main() -> None:  # pragma: no cover - thin CLI wrapper
     if args.record_version:
         print(
             json.dumps(
-                record_version(args.repo_root, args.record_version, args.released_tag), indent=2
+                record_version(args.repo_root, args.record_version, args.released_tag),
+                indent=2,
             )
         )
         return

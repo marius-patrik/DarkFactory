@@ -74,7 +74,11 @@ LABELS: List[Sequence[str]] = [
     ("Plan", "006b75", "Implementation plan child issue"),
     ("epic", "b60205", "Container issue tracking a whole area of work"),
     ("decision", "5319e7", "Architecture decision requiring an ADR"),
-    ("pipeline-failure", "b91c1c", "Opened by the pipeline when one of its own workflows failed"),
+    (
+        "pipeline-failure",
+        "b91c1c",
+        "Opened by the pipeline when one of its own workflows failed",
+    ),
     # Conventional Commit types.
     ("feat", "0e8a16", "New feature"),
     ("bug", "d73a4a", "Something isn't working"),
@@ -184,7 +188,11 @@ class Runner:
         return result.stdout.strip()
 
     def api(
-        self, method: str, path: str, fields: Optional[Dict[str, Any]] = None, **kwargs: Any
+        self,
+        method: str,
+        path: str,
+        fields: Optional[Dict[str, Any]] = None,
+        **kwargs: Any,
     ) -> Optional[str]:
         """Calls the GitHub REST API with a JSON body.
 
@@ -358,7 +366,11 @@ def apply_actions_permissions(run: Runner) -> None:
         run: Command runner.
     """
     print("\n== Actions permissions ==")
-    run.api("PUT", f"repos/{SLUG}/actions/permissions", {"enabled": True, "allowed_actions": "all"})
+    run.api(
+        "PUT",
+        f"repos/{SLUG}/actions/permissions",
+        {"enabled": True, "allowed_actions": "all"},
+    )
     run.api(
         "PUT",
         f"repos/{SLUG}/actions/permissions/workflow",
@@ -475,7 +487,16 @@ def apply_project_board(run: Runner) -> Optional[int]:
         return None
     if number is None:
         created = run.gh(
-            ["project", "create", "--owner", OWNER, "--title", PROJECT_TITLE, "--format", "json"]
+            [
+                "project",
+                "create",
+                "--owner",
+                OWNER,
+                "--title",
+                PROJECT_TITLE,
+                "--format",
+                "json",
+            ]
         )
         if created:
             number = int(json.loads(created)["number"])
@@ -506,7 +527,8 @@ def apply_project_board(run: Runner) -> Optional[int]:
         return number
 
     status = next(
-        (f for f in json.loads(fields).get("fields", []) if f.get("name") == "Status"), None
+        (f for f in json.loads(fields).get("fields", []) if f.get("name") == "Status"),
+        None,
     )
     if status is None:
         print("  no Status field on this project; create one in the UI first")
@@ -562,7 +584,10 @@ def apply_status_options(run: Runner, field_id: str, existing: List[str]) -> Non
         "{updateProjectV2Field(input:{fieldId:$fieldId,singleSelectOptions:$options})"
         "{projectV2Field{... on ProjectV2SingleSelectField{options{name}}}}}"
     )
-    payload = {"query": mutation, "variables": {"fieldId": field_id, "options": options}}
+    payload = {
+        "query": mutation,
+        "variables": {"fieldId": field_id, "options": options},
+    }
 
     if not run.apply:
         print(f"  would set Status options to {STATUS_OPTIONS}")
@@ -583,7 +608,8 @@ def apply_status_options(run: Runner, field_id: str, existing: List[str]) -> Non
     if result.returncode != 0:
         detail = (result.stderr or result.stdout).strip().splitlines()
         print(
-            f"  FAILED to set Status options: {detail[0] if detail else 'unknown'}", file=sys.stderr
+            f"  FAILED to set Status options: {detail[0] if detail else 'unknown'}",
+            file=sys.stderr,
         )
         run.failures.append("updateProjectV2Field singleSelectOptions")
         return

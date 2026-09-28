@@ -336,7 +336,10 @@ def git_tags(repo_root: str) -> List[str]:
             text=True,
             check=True,
         )
-    except (OSError, subprocess.CalledProcessError):  # pragma: no cover - environment guard
+    except (
+        OSError,
+        subprocess.CalledProcessError,
+    ):  # pragma: no cover - environment guard
         return []
     return [line.strip() for line in result.stdout.splitlines() if line.strip()]
 
@@ -360,7 +363,10 @@ def commits_since(repo_root: str, tag: Optional[str]) -> List[str]:
             text=True,
             check=True,
         )
-    except (OSError, subprocess.CalledProcessError):  # pragma: no cover - environment guard
+    except (
+        OSError,
+        subprocess.CalledProcessError,
+    ):  # pragma: no cover - environment guard
         return []
     return [chunk.strip() for chunk in result.stdout.split("\0") if chunk.strip()]
 

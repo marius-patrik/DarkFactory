@@ -20,7 +20,12 @@ PIPELINE_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(
 DIRECT_WORKFLOW_TEMPLATES = {
     "ci": os.path.join(PIPELINE_ROOT, "packages", "harness", "assets", "workflows", "ci.yml.tmpl"),
     "verify-pr-issue": os.path.join(
-        PIPELINE_ROOT, "packages", "harness", "assets", "workflows", "verify-bound-issue.yml.tmpl"
+        PIPELINE_ROOT,
+        "packages",
+        "harness",
+        "assets",
+        "workflows",
+        "verify-bound-issue.yml.tmpl",
     ),
 }
 
@@ -105,7 +110,12 @@ WORKFLOWS: Dict[str, Dict[str, str]] = {
         "on": "workflow_dispatch:",
         "permissions": "contents: write\n  pull-requests: write\n  actions: write",
         "inputs": {
-            "branch": ("Head branch name (e.g. feature/my-feature)", "string", True, None),
+            "branch": (
+                "Head branch name (e.g. feature/my-feature)",
+                "string",
+                True,
+                None,
+            ),
             "title": ("Pull Request title", "string", True, None),
             "body": ("Pull Request description", "string", True, None),
             "base": ("Target base branch", "string", False, "{branch}"),
@@ -125,7 +135,15 @@ STARTER_AREAS: Dict[str, object] = {
     },
     "docs": {
         "description": "Documentation compiler, API reference and shared web surfaces",
-        "keywords": ["doc", "docs", "documentation", "tsdoc", "typedoc", "readme", "site"],
+        "keywords": [
+            "doc",
+            "docs",
+            "documentation",
+            "tsdoc",
+            "typedoc",
+            "readme",
+            "site",
+        ],
     },
 }
 
@@ -569,12 +587,13 @@ def retarget(root: str, ref: str) -> List[str]:
 
         if name == "ci.yml" and "Check out pinned DarkFactory runtime" in content:
             updated = DIRECT_CI_REF_PATTERN.sub(
-                lambda m: f'{m.group("prefix")}{ref}{m.group("suffix")}', content
+                lambda m: f"{m.group('prefix')}{ref}{m.group('suffix')}", content
             )
         else:
             updated = PIN_PATTERN.sub(lambda m: m.group("prefix") + ref, content)
         updated = REF_INPUT_PATTERN.sub(
-            lambda m: f'{m.group("prefix")}{m.group("quote")}{ref}{m.group("quote")}', updated
+            lambda m: f"{m.group('prefix')}{m.group('quote')}{ref}{m.group('quote')}",
+            updated,
         )
         if updated != content:
             with open(path, "w", encoding="utf-8") as handle:
@@ -613,7 +632,8 @@ def ensure_secrets_pass(root: str) -> List[str]:
         if not any(".github/workflows/" in line and "uses:" in line for line in lines):
             continue
         explicit = next(
-            (i for i, line in enumerate(lines) if line.strip().startswith("secrets:")), None
+            (i for i, line in enumerate(lines) if line.strip().startswith("secrets:")),
+            None,
         )
         if explicit is not None:
             if lines[explicit].strip() != "secrets:":

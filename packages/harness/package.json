@@ -12,7 +12,8 @@
     "build": "bun run ./scripts/build.ts",
     "format": "biome format --write .",
     "lint": "biome lint .",
-    "check": "biome ci ."
+    "check": "biome ci .",
+    "format:check": "biome format ."
   },
   "dependencies": {
     "@darkfactory/capability": "workspace:*",

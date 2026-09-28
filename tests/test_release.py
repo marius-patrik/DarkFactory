@@ -56,10 +56,14 @@ def monorepo(tmp_path):
     )
     _write(tmp_path, "bun.lock", "")
     _write(
-        tmp_path, "packages/web/package.json", json.dumps({"name": "@acme/web", "version": "1.4.0"})
+        tmp_path,
+        "packages/web/package.json",
+        json.dumps({"name": "@acme/web", "version": "1.4.0"}),
     )
     _write(
-        tmp_path, "packages/cli/package.json", json.dumps({"name": "@acme/cli", "version": "1.3.9"})
+        tmp_path,
+        "packages/cli/package.json",
+        json.dumps({"name": "@acme/cli", "version": "1.3.9"}),
     )
     _write(tmp_path, "repo.dfconfig", json.dumps({"repo": {}}))
     return tmp_path
@@ -82,13 +86,17 @@ class TestNotes:
 
     def test_breaking_changes_lead(self):
         notes = release.build_notes(
-            ["fix(ci): small thing", "feat(agents)!: change the contract"], "2.0.0", "1.0.0"
+            ["fix(ci): small thing", "feat(agents)!: change the contract"],
+            "2.0.0",
+            "1.0.0",
         )
         assert notes.index("### Breaking changes") < notes.index("### Fixes")
 
     def test_a_breaking_change_trailer_is_recognised(self):
         notes = release.build_notes(
-            ["refactor(ci): rework\n\nBREAKING CHANGE: ids are namespaced"], "2.0.0", "1.0.0"
+            ["refactor(ci): rework\n\nBREAKING CHANGE: ids are namespaced"],
+            "2.0.0",
+            "1.0.0",
         )
         assert "### Breaking changes" in notes
 
@@ -144,7 +152,11 @@ class TestAssetPlanning:
 
     def test_a_declared_asset_may_be_a_bare_glob(self, tmp_path):
         _write(tmp_path, "README.md", "x")
-        _write(tmp_path, "repo.dfconfig", json.dumps({"repo": {"release": {"assets": ["out/*"]}}}))
+        _write(
+            tmp_path,
+            "repo.dfconfig",
+            json.dumps({"repo": {"release": {"assets": ["out/*"]}}}),
+        )
         assert release.plan_assets(str(tmp_path))[0]["globs"] == ["out/*"]
 
     def test_a_repository_with_no_build_plans_nothing(self, tmp_path):
@@ -286,7 +298,8 @@ class TestRecordVersion:
             _write(work, "VERSION", f"{version}\n")
         subprocess.run(["git", "-C", str(work), "add", "-A"], check=True)
         subprocess.run(
-            ["git", "-C", str(work), "commit", "-q", "-m", "chore(ci): seed"], check=True
+            ["git", "-C", str(work), "commit", "-q", "-m", "chore(ci): seed"],
+            check=True,
         )
         identity = (manifest or {}).get("identity", {})
         branch = identity.get("development_branch") or identity.get("default_branch") or "main"
@@ -332,7 +345,14 @@ class TestRecordVersion:
         remote = tmp_path / "remote.git"
         assert (
             subprocess.run(
-                ["git", "-C", str(remote), "rev-parse", "--verify", "release/record-3a.2.0"],
+                [
+                    "git",
+                    "-C",
+                    str(remote),
+                    "rev-parse",
+                    "--verify",
+                    "release/record-3a.2.0",
+                ],
                 capture_output=True,
             ).returncode
             == 0
@@ -350,13 +370,17 @@ class TestRecordVersion:
         )
         release.record_version(str(work), "3a.2.0", "v3a.2.0")
         first = subprocess.run(
-            ["git", "-C", str(work), "rev-parse", "HEAD"], capture_output=True, text=True
+            ["git", "-C", str(work), "rev-parse", "HEAD"],
+            capture_output=True,
+            text=True,
         ).stdout
         again = release.record_version(str(work), "3a.2.0", "v3a.2.0")
         assert again["recorded"] is False
         assert again["pull_request"] is None
         second = subprocess.run(
-            ["git", "-C", str(work), "rev-parse", "HEAD"], capture_output=True, text=True
+            ["git", "-C", str(work), "rev-parse", "HEAD"],
+            capture_output=True,
+            text=True,
         ).stdout
         assert first == second
         assert log.read_text().count("pr create") == 1

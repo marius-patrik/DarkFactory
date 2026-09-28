@@ -464,7 +464,10 @@ def expected_status(
         "duplicate",
         "superseded",
     )
-    has_dropped = "dropped" in normalized_labels or state_reason in ("not_planned", "not-planned")
+    has_dropped = "dropped" in normalized_labels or state_reason in (
+        "not_planned",
+        "not-planned",
+    )
     has_blocked = "blocked" in normalized_labels
     has_in_progress = "in progress" in normalized_labels
     has_backlog = "backlog" in normalized_labels
@@ -732,10 +735,15 @@ class GitHubRestClient:
         del existing_labels  # kept for callers; the POST response is the fresh label list
         try:
             current = self.request(
-                "POST", f"/repos/{repo}/issues/{issue_number}/labels", {"labels": [status_name]}
+                "POST",
+                f"/repos/{repo}/issues/{issue_number}/labels",
+                {"labels": [status_name]},
             )
         except Exception as exc:
-            print(f"Error setting status label on #{issue_number}: {_detail(exc)}", file=sys.stderr)
+            print(
+                f"Error setting status label on #{issue_number}: {_detail(exc)}",
+                file=sys.stderr,
+            )
             return
         for lbl in current if isinstance(current, list) else []:
             name = lbl.get("name") if isinstance(lbl, dict) else str(lbl)
@@ -761,9 +769,16 @@ class GitHubRestClient:
             label: Label name.
         """
         try:
-            self.request("POST", f"/repos/{repo}/issues/{issue_number}/labels", {"labels": [label]})
+            self.request(
+                "POST",
+                f"/repos/{repo}/issues/{issue_number}/labels",
+                {"labels": [label]},
+            )
         except Exception as exc:
-            print(f"Error adding label to issue #{issue_number}: {_detail(exc)}", file=sys.stderr)
+            print(
+                f"Error adding label to issue #{issue_number}: {_detail(exc)}",
+                file=sys.stderr,
+            )
 
     def close_issue(self, repo: str, issue_number: int, reason: str = "completed") -> None:
         """Closes an issue with a specific state reason.
@@ -780,7 +795,10 @@ class GitHubRestClient:
                 {"state": "closed", "state_reason": reason},
             )
         except Exception as exc:
-            print(f"Notice: issue #{issue_number} close attempt: {_detail(exc)}", file=sys.stderr)
+            print(
+                f"Notice: issue #{issue_number} close attempt: {_detail(exc)}",
+                file=sys.stderr,
+            )
 
 
 class GitHubGraphQLClient:
@@ -928,7 +946,8 @@ class GitHubGraphQLClient:
             if is_rate_limited(exc):
                 mark_rate_limited()
             print(
-                f"Error fetching project fields for {project_id}: {_detail(exc)}", file=sys.stderr
+                f"Error fetching project fields for {project_id}: {_detail(exc)}",
+                file=sys.stderr,
             )
             return []
 
@@ -1257,7 +1276,16 @@ def resolve_boards(
     if not by_title:
         # Fallback to subprocess if API failed (e.g. legacy test environment)
         try:
-            args = ["project", "list", "--owner", owner, "--limit", "100", "--format", "json"]
+            args = [
+                "project",
+                "list",
+                "--owner",
+                owner,
+                "--limit",
+                "100",
+                "--format",
+                "json",
+            ]
             output = subprocess.run(
                 ["gh", *args],
                 capture_output=True,
@@ -1316,7 +1344,11 @@ class GitHubProjectClient:
     def run_gh(self, args: List[str]) -> str:
         """Runs a legacy `gh` command (provided for backward compatibility with tests)."""
         result = subprocess.run(
-            ["gh"] + args, capture_output=True, text=True, check=True, env=_env_for(args)
+            ["gh"] + args,
+            capture_output=True,
+            text=True,
+            check=True,
+            env=_env_for(args),
         )
         return result.stdout.strip()
 
@@ -1593,7 +1625,10 @@ class GitHubProjectClient:
             except Exception as exc:
                 if is_rate_limited(exc):
                     mark_rate_limited()
-                print(f"Error editing status via fallback: {_detail(exc)}", file=sys.stderr)
+                print(
+                    f"Error editing status via fallback: {_detail(exc)}",
+                    file=sys.stderr,
+                )
                 return False
         return True
 
@@ -1718,7 +1753,11 @@ class BoardGroup:
         if self.clients:
             return self.clients[0].run_gh(args)
         result = subprocess.run(
-            ["gh"] + args, capture_output=True, text=True, check=True, env=_env_for(args)
+            ["gh"] + args,
+            capture_output=True,
+            text=True,
+            check=True,
+            env=_env_for(args),
         )
         return result.stdout.strip()
 
@@ -2579,7 +2618,10 @@ def main() -> None:
             repo_slugs=[args.repo] if args.repo else None,
         )
         if RATE_LIMITED:
-            print("Notice: Project board rate limit reached; exiting cleanly.", file=sys.stderr)
+            print(
+                "Notice: Project board rate limit reached; exiting cleanly.",
+                file=sys.stderr,
+            )
             sys.exit(0)
         if FAILURES:
             sys.exit(1)
@@ -2592,7 +2634,10 @@ def main() -> None:
         if not event_name or event_name in ("schedule", "workflow_dispatch"):
             process_event(event_name or "workflow_dispatch", {})
             if RATE_LIMITED:
-                print("Notice: Project board rate limit reached; exiting cleanly.", file=sys.stderr)
+                print(
+                    "Notice: Project board rate limit reached; exiting cleanly.",
+                    file=sys.stderr,
+                )
                 sys.exit(0)
             if FAILURES:
                 sys.exit(1)
@@ -2606,7 +2651,10 @@ def main() -> None:
     process_event(event_name, payload)
 
     if RATE_LIMITED:
-        print("Notice: Project board rate limit reached; exiting cleanly.", file=sys.stderr)
+        print(
+            "Notice: Project board rate limit reached; exiting cleanly.",
+            file=sys.stderr,
+        )
         sys.exit(0)
 
     if FAILURES:

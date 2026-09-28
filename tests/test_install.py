@@ -445,7 +445,11 @@ class TestThePipelineIsNotItsOwnConsumer:
     def test_a_different_pipeline_can_install_into_darkfactory(self):
         """The name is not what is refused; being one's own upstream is."""
         assert install.plan(
-            "marius-patrik", "DarkFactory", "abc", root=".", pipeline_repo="someone/Other"
+            "marius-patrik",
+            "DarkFactory",
+            "abc",
+            root=".",
+            pipeline_repo="someone/Other",
         )
 
 
@@ -514,7 +518,9 @@ class TestACallerMustPassItsSecrets:
         root = str(tmp_path)
         os.makedirs(os.path.join(root, ".github", "workflows"), exist_ok=True)
         with open(
-            os.path.join(root, ".github", "workflows", "agent.yml"), "w", encoding="utf-8"
+            os.path.join(root, ".github", "workflows", "agent.yml"),
+            "w",
+            encoding="utf-8",
         ) as handle:
             handle.write(body)
         return root

@@ -59,7 +59,12 @@ class TestDfJsonOutput:
             {"type": "session", "sessionId": "s1"},
             {"type": "text_delta", "delta": "early narration "},
             {"type": "tool_start", "toolCallId": "t1", "toolName": "read", "input": {}},
-            {"type": "tool_end", "toolCallId": "t1", "toolName": "read", "isError": False},
+            {
+                "type": "tool_end",
+                "toolCallId": "t1",
+                "toolName": "read",
+                "isError": False,
+            },
             {"type": "text_delta", "delta": "final answer"},
             {"type": "result", "stopReason": "end_turn"},
         )
@@ -69,9 +74,19 @@ class TestDfJsonOutput:
         """Only the segment after the final tool activity survives."""
         stdout = _stream(
             {"type": "text_delta", "delta": "first"},
-            {"type": "tool_end", "toolCallId": "t1", "toolName": "bash", "isError": False},
+            {
+                "type": "tool_end",
+                "toolCallId": "t1",
+                "toolName": "bash",
+                "isError": False,
+            },
             {"type": "text_delta", "delta": "second"},
-            {"type": "tool_end", "toolCallId": "t2", "toolName": "edit", "isError": False},
+            {
+                "type": "tool_end",
+                "toolCallId": "t2",
+                "toolName": "edit",
+                "isError": False,
+            },
             {"type": "text_delta", "delta": "third"},
         )
         assert agent_runner.parse_df_json_output(stdout) == "third"
@@ -96,7 +111,12 @@ class TestDfJsonOutput:
             {"type": "thinking_delta", "delta": "Developing the Implementation Plan"},
             {"type": "text_delta", "delta": "the real plan"},
             {"type": "tool_start", "toolCallId": "t1", "toolName": "read", "input": {}},
-            {"type": "tool_end", "toolCallId": "t1", "toolName": "read", "isError": False},
+            {
+                "type": "tool_end",
+                "toolCallId": "t1",
+                "toolName": "read",
+                "isError": False,
+            },
             {"type": "thinking_delta", "delta": "more internal reasoning"},
             {"type": "text_delta", "delta": "final answer"},
             {"type": "result", "stopReason": "end_turn"},
@@ -223,7 +243,10 @@ class TestDfPromptFile:
                 seen["prompt"] = handle.read()
             seen["path"] = argv[4]
             return subprocess.CompletedProcess(
-                argv, 0, stdout=_stream({"type": "text_delta", "delta": "done"}), stderr=""
+                argv,
+                0,
+                stdout=_stream({"type": "text_delta", "delta": "done"}),
+                stderr="",
             )
 
         monkeypatch.setattr(agent_runner.subprocess, "run", fake_run)
@@ -238,7 +261,10 @@ class TestDfPromptFile:
         def fake_run(argv, **kwargs):
             seen["argv"] = list(argv)
             return subprocess.CompletedProcess(
-                argv, 0, stdout=_stream({"type": "text_delta", "delta": "reviewed"}), stderr=""
+                argv,
+                0,
+                stdout=_stream({"type": "text_delta", "delta": "reviewed"}),
+                stderr="",
             )
 
         monkeypatch.setattr(agent_runner.subprocess, "run", fake_run)
@@ -317,7 +343,15 @@ class TestDfSetup:
             df_home,
         ) in account_calls
         assert (
-            ["df", "account", "set", "openrouter:acct2", "api_key", "--type", "api_key"],
+            [
+                "df",
+                "account",
+                "set",
+                "openrouter:acct2",
+                "api_key",
+                "--type",
+                "api_key",
+            ],
             "or-key",
             df_home,
         ) in account_calls
@@ -481,12 +515,14 @@ class TestDfLoginRotation:
         df_home.mkdir()
         monkeypatch.setenv("DF_HOME", str(df_home))
         (df_home / "credentials.json").write_text(
-            json.dumps({"accounts": {"openai-codex:pipeline": {"auth": "v1"}}}), encoding="utf-8"
+            json.dumps({"accounts": {"openai-codex:pipeline": {"auth": "v1"}}}),
+            encoding="utf-8",
         )
         monkeypatch.setenv("DF_ACCOUNT_OPENAI_CODEX", '{"auth": "v1"}')
         states = agent_runner.snapshot_df_login_files()
         (df_home / "credentials.json").write_text(
-            json.dumps({"accounts": {"openai-codex:pipeline": {"auth": "v2"}}}), encoding="utf-8"
+            json.dumps({"accounts": {"openai-codex:pipeline": {"auth": "v2"}}}),
+            encoding="utf-8",
         )
 
         persisted = []
@@ -507,7 +543,8 @@ class TestDfLoginRotation:
         df_home.mkdir()
         monkeypatch.setenv("DF_HOME", str(df_home))
         (df_home / "credentials.json").write_text(
-            json.dumps({"accounts": {"openai-codex:pipeline": {"auth": "same"}}}), encoding="utf-8"
+            json.dumps({"accounts": {"openai-codex:pipeline": {"auth": "same"}}}),
+            encoding="utf-8",
         )
         monkeypatch.setenv("DF_ACCOUNT_OPENAI_CODEX", '{"auth": "same"}')
         states = agent_runner.snapshot_df_login_files()
@@ -524,7 +561,8 @@ class TestDfLoginRotation:
         df_home.mkdir()
         monkeypatch.setenv("DF_HOME", str(df_home))
         (df_home / "credentials.json").write_text(
-            json.dumps({"accounts": {"openai-codex:pipeline": {"auth": "v1"}}}), encoding="utf-8"
+            json.dumps({"accounts": {"openai-codex:pipeline": {"auth": "v1"}}}),
+            encoding="utf-8",
         )
         monkeypatch.setenv("DF_ACCOUNT_OPENAI_CODEX", '{"auth": "v1"}')
         persisted = []
@@ -536,7 +574,10 @@ class TestDfLoginRotation:
                 encoding="utf-8",
             )
             return subprocess.CompletedProcess(
-                argv, 0, stdout=_stream({"type": "text_delta", "delta": "ok"}), stderr=""
+                argv,
+                0,
+                stdout=_stream({"type": "text_delta", "delta": "ok"}),
+                stderr="",
             )
 
         monkeypatch.setattr(agent_runner.subprocess, "run", fake_run)
@@ -560,7 +601,10 @@ class TestDfLoginRotation:
 
         def fake_run(argv, **kwargs):
             return subprocess.CompletedProcess(
-                argv, 0, stdout=_stream({"type": "text_delta", "delta": "ok"}), stderr=""
+                argv,
+                0,
+                stdout=_stream({"type": "text_delta", "delta": "ok"}),
+                stderr="",
             )
 
         monkeypatch.setattr(agent_runner.subprocess, "run", fake_run)

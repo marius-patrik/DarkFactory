@@ -267,7 +267,8 @@ def _write_checkpoint(directory, issue_number, timestamp):
     """Writes a checkpoint with the given timestamp, as save_checkpoint does."""
     path = directory / ".antigravity_checkpoint.json"
     path.write_text(
-        json.dumps({"issue_number": issue_number, "timestamp": timestamp}), encoding="utf-8"
+        json.dumps({"issue_number": issue_number, "timestamp": timestamp}),
+        encoding="utf-8",
     )
     return path
 
@@ -484,7 +485,12 @@ def test_reconciliation_uses_labels_not_a_blanket_todo(monkeypatch: pytest.Monke
         "items": [
             {"id": "i1", "labels": ["epic", "Backlog"], "content": {"title": "epic"}},
             {"id": "i2", "labels": ["bug"], "content": {"title": "untriaged"}},
-            {"id": "i3", "labels": [], "status": "Done", "content": {"title": "already set"}},
+            {
+                "id": "i3",
+                "labels": [],
+                "status": "Done",
+                "content": {"title": "already set"},
+            },
             {"id": "i4", "labels": [], "content": {"title": "closed", "closed": True}},
         ]
     }
@@ -629,7 +635,7 @@ class TestBoardResolution:
         monkeypatch.setattr(
             project_automation.subprocess,
             "run",
-            lambda cmd, **kwargs: seen.append(cmd) or type("R", (), {"stdout": "done\n"})(),
+            lambda cmd, **kwargs: (seen.append(cmd) or type("R", (), {"stdout": "done\n"})()),
         )
         group = project_automation.BoardGroup([])
         assert group.run_gh(["issue", "list"]) == "done"
@@ -807,7 +813,13 @@ class TestMembershipReconciliation:
     def test_every_open_item_reaches_the_boards(self):
         """Both boards, because track goes through the group covering own and global."""
         client = self._client(
-            [{"number": 1, "url": "https://x/issues/1", "labels": [{"name": "Backlog"}]}],
+            [
+                {
+                    "number": 1,
+                    "url": "https://x/issues/1",
+                    "labels": [{"name": "Backlog"}],
+                }
+            ],
             [{"number": 2, "url": "https://x/pull/2", "labels": [], "isDraft": False}],
         )
         assert project_automation.reconcile_membership(client, "o/r") == 2
@@ -841,7 +853,13 @@ class TestMembershipReconciliation:
     def test_membership_reconciliation_tracks_all_boards_in_group(self):
         """Membership reconciliation works with BoardGroup, tracking across all clients."""
         first = self._client(
-            [{"number": 1, "url": "https://x/issues/1", "labels": [{"name": "Backlog"}]}],
+            [
+                {
+                    "number": 1,
+                    "url": "https://x/issues/1",
+                    "labels": [{"name": "Backlog"}],
+                }
+            ],
             [],
         )
         second = self._client([], [])
@@ -943,7 +961,9 @@ class TestRateLimitingAndQuotaReserve:
         edited = []
         monkeypatch.setattr(client, "add_item", lambda url: pytest.fail("should not add"))
         monkeypatch.setattr(
-            client, "edit_status", lambda item_id, st: edited.append((item_id, st)) or True
+            client,
+            "edit_status",
+            lambda item_id, st: edited.append((item_id, st)) or True,
         )
         client.track("https://github.com/o/r/issues/1", "In Progress")
         assert edited == [("item-1", "In Progress")]
@@ -963,7 +983,9 @@ class TestRateLimitingAndQuotaReserve:
             lambda url, content_id=None: added.append(url) or f"item-{len(added)}",
         )
         monkeypatch.setattr(
-            client, "edit_status", lambda item_id, st: edited.append((item_id, st)) or True
+            client,
+            "edit_status",
+            lambda item_id, st: edited.append((item_id, st)) or True,
         )
 
         # Well past the old default budget of 25 - every item must still be written.
@@ -982,7 +1004,9 @@ class TestRateLimitingAndQuotaReserve:
         client = GitHubProjectClient(project_number=10)
         client._items_cache = {}
         monkeypatch.setattr(
-            client, "load_existing_items", lambda: pytest.fail("should not query the board")
+            client,
+            "load_existing_items",
+            lambda: pytest.fail("should not query the board"),
         )
         monkeypatch.setattr(client, "add_item", lambda *a, **k: pytest.fail("should not add"))
         monkeypatch.setattr(client, "edit_status", lambda *a, **k: pytest.fail("should not edit"))
@@ -1089,7 +1113,9 @@ class TestRateLimitingAndQuotaReserve:
         assert ("https://x/pull/4", "Done") in client.tracked
         assert ("https://x/pull/5", "Dropped") in client.tracked
 
-    def test_reconcile_unassigned_statuses_overrides_stale_in_progress_with_done_label(self):
+    def test_reconcile_unassigned_statuses_overrides_stale_in_progress_with_done_label(
+        self,
+    ):
         """On a closed item, a Done label wins over a stale In Progress board status."""
         from project_automation import reconcile_unassigned_statuses
 
@@ -1258,9 +1284,11 @@ class TestRateLimitingAndQuotaReserve:
             calls.append((method, path, data))
             if method == "POST":
                 # GitHub answers "add labels" with every label now on the issue.
-                return [{"name": "bug"}, {"name": "area:governance"}, {"name": "In Progress"}] + [
-                    {"name": n} for n in data["labels"]
-                ]
+                return [
+                    {"name": "bug"},
+                    {"name": "area:governance"},
+                    {"name": "In Progress"},
+                ] + [{"name": n} for n in data["labels"]]
             return None
 
         rest.request = mock_request
@@ -1281,7 +1309,12 @@ class TestRateLimitingAndQuotaReserve:
         def mock_request(method, path, data=None):
             calls.append((method, path, data))
             if method == "POST":
-                return [{"name": "Request"}, {"name": "ci"}, {"name": "area:ci"}, {"name": "ToDo"}]
+                return [
+                    {"name": "Request"},
+                    {"name": "ci"},
+                    {"name": "area:ci"},
+                    {"name": "ToDo"},
+                ]
             return None
 
         rest.request = mock_request
@@ -1320,7 +1353,9 @@ class TestRateLimitingAndQuotaReserve:
 
         added = []
         monkeypatch.setattr(
-            client.graphql, "add_item", lambda pid, cid: added.append((pid, cid)) or "item-99"
+            client.graphql,
+            "add_item",
+            lambda pid, cid: added.append((pid, cid)) or "item-99",
         )
 
         edited = []
@@ -1331,7 +1366,10 @@ class TestRateLimitingAndQuotaReserve:
         )
 
         client.track(
-            "https://github.com/o/r/issues/10", "ToDo", content_id="NODE_456", fast_path=True
+            "https://github.com/o/r/issues/10",
+            "ToDo",
+            content_id="NODE_456",
+            fast_path=True,
         )
 
         # Must NOT have fetched existing board items
@@ -1368,13 +1406,19 @@ class TestRateLimitingAndQuotaReserve:
 
         # 1. Matching historical item -> 0 mutations
         client.track(
-            "https://github.com/o/r/issues/1", "Done", content_id="NODE_1", fast_path=False
+            "https://github.com/o/r/issues/1",
+            "Done",
+            content_id="NODE_1",
+            fast_path=False,
         )
         assert mutations == []
 
         # 2. Outdated historical item -> exactly 1 status edit
         client.track(
-            "https://github.com/o/r/issues/2", "Done", content_id="NODE_2", fast_path=False
+            "https://github.com/o/r/issues/2",
+            "Done",
+            content_id="NODE_2",
+            fast_path=False,
         )
         assert mutations == [("item-2", "opt-done")]
 
@@ -1392,7 +1436,9 @@ class TestScopedBoardRouting:
         # resolve_boards() falls back to subprocess `gh` when the GraphQL client returns nothing;
         # force that path deterministically instead of depending on real network reachability.
         monkeypatch.setattr(
-            project_automation.GitHubGraphQLClient, "resolve_projects", lambda self, owner: {}
+            project_automation.GitHubGraphQLClient,
+            "resolve_projects",
+            lambda self, owner: {},
         )
         monkeypatch.setattr(
             project_automation.subprocess,
@@ -1426,10 +1472,9 @@ class TestScopedBoardRouting:
         monkeypatch.setattr(
             project_automation,
             "reconcile_membership",
-            lambda client, repo, state=None: reconciled.append(
-                (repo, [member.project_number for member in client.clients])
-            )
-            or 0,
+            lambda client, repo, state=None: (
+                reconciled.append((repo, [member.project_number for member in client.clients])) or 0
+            ),
         )
         monkeypatch.setattr(
             project_automation, "reconcile_unassigned_statuses", lambda client: None
@@ -1438,10 +1483,15 @@ class TestScopedBoardRouting:
         monkeypatch.setattr(
             project_automation,
             "reconcile",
-            lambda client=None, repo_slugs=None, state="all", **kwargs: corrected.append(
-                (tuple(repo_slugs or ()), [member.project_number for member in client.clients])
-            )
-            or {},
+            lambda client=None, repo_slugs=None, state="all", **kwargs: (
+                corrected.append(
+                    (
+                        tuple(repo_slugs or ()),
+                        [member.project_number for member in client.clients],
+                    )
+                )
+                or {}
+            ),
         )
 
         process_event("schedule", {})
@@ -1477,10 +1527,9 @@ class TestScopedBoardRouting:
         monkeypatch.setattr(
             project_automation,
             "reconcile_membership",
-            lambda client, repo, state=None: reconciled.append(
-                (repo, [member.project_number for member in client.clients])
-            )
-            or 0,
+            lambda client, repo, state=None: (
+                reconciled.append((repo, [member.project_number for member in client.clients])) or 0
+            ),
         )
         monkeypatch.setattr(
             project_automation, "reconcile_unassigned_statuses", lambda client: None
@@ -1489,10 +1538,15 @@ class TestScopedBoardRouting:
         monkeypatch.setattr(
             project_automation,
             "reconcile",
-            lambda client=None, repo_slugs=None, state="all", **kwargs: corrected.append(
-                (tuple(repo_slugs or ()), [member.project_number for member in client.clients])
-            )
-            or {},
+            lambda client=None, repo_slugs=None, state="all", **kwargs: (
+                corrected.append(
+                    (
+                        tuple(repo_slugs or ()),
+                        [member.project_number for member in client.clients],
+                    )
+                )
+                or {}
+            ),
         )
 
         process_event("schedule", {})
@@ -1573,48 +1627,94 @@ class TestExpectedStatusTable:
             ({"is_pr": True, "state": "closed", "merged": False}, {}, "Dropped"),
             # - PR closed unmerged with duplicate/superseded -> Superseded
             (
-                {"is_pr": True, "state": "closed", "merged": False, "labels": ["Superseded"]},
+                {
+                    "is_pr": True,
+                    "state": "closed",
+                    "merged": False,
+                    "labels": ["Superseded"],
+                },
                 {},
                 "Superseded",
             ),
             (
-                {"is_pr": True, "state": "closed", "merged": False, "labels": ["duplicate"]},
+                {
+                    "is_pr": True,
+                    "state": "closed",
+                    "merged": False,
+                    "labels": ["duplicate"],
+                },
                 {},
                 "Superseded",
             ),
             # - PR open ready / draft -> In Progress
             ({"is_pr": True, "state": "open", "draft": False}, {}, "In Progress"),
             ({"is_pr": True, "state": "open", "draft": True}, {}, "In Progress"),
-            ({"is_pr": True, "state": "open", "labels": ["In Progress"]}, {}, "In Progress"),
+            (
+                {"is_pr": True, "state": "open", "labels": ["In Progress"]},
+                {},
+                "In Progress",
+            ),
             # - PR open but blocked by label or checkpoint
             ({"is_pr": True, "state": "open", "labels": ["Blocked"]}, {}, "Blocked"),
             ({"is_pr": True, "state": "open"}, {"checkpoint": True}, "Blocked"),
             # Issues:
             # - issue closed completed -> Done
-            ({"kind": "Issue", "state": "closed", "state_reason": "completed"}, {}, "Done"),
+            (
+                {"kind": "Issue", "state": "closed", "state_reason": "completed"},
+                {},
+                "Done",
+            ),
             ({"kind": "Issue", "state": "closed", "labels": ["Done"]}, {}, "Done"),
             # - issue closed with bound PR merged -> Done
-            ({"kind": "Issue", "state": "closed"}, {"bound_prs": [{"merged": True}]}, "Done"),
+            (
+                {"kind": "Issue", "state": "closed"},
+                {"bound_prs": [{"merged": True}]},
+                "Done",
+            ),
             # - issue closed not planned -> Dropped
-            ({"kind": "Issue", "state": "closed", "state_reason": "not_planned"}, {}, "Dropped"),
-            ({"kind": "Issue", "state": "closed", "labels": ["Dropped"]}, {}, "Dropped"),
+            (
+                {"kind": "Issue", "state": "closed", "state_reason": "not_planned"},
+                {},
+                "Dropped",
+            ),
+            (
+                {"kind": "Issue", "state": "closed", "labels": ["Dropped"]},
+                {},
+                "Dropped",
+            ),
             # - issue closed as duplicate or superseded -> Superseded
-            ({"kind": "Issue", "state": "closed", "state_reason": "duplicate"}, {}, "Superseded"),
+            (
+                {"kind": "Issue", "state": "closed", "state_reason": "duplicate"},
+                {},
+                "Superseded",
+            ),
             (
                 {"kind": "Issue", "state": "closed", "state_reason": "superseded"},
                 {},
                 "Superseded",
             ),
-            ({"kind": "Issue", "state": "closed", "labels": ["Superseded"]}, {}, "Superseded"),
+            (
+                {"kind": "Issue", "state": "closed", "labels": ["Superseded"]},
+                {},
+                "Superseded",
+            ),
             # - closed issue without implementation / no reason -> Dropped
             ({"kind": "Issue", "state": "closed"}, {}, "Dropped"),
             # - closed issue with stale In Progress label -> Dropped
-            ({"kind": "Issue", "state": "closed", "labels": ["In Progress"]}, {}, "Dropped"),
+            (
+                {"kind": "Issue", "state": "closed", "labels": ["In Progress"]},
+                {},
+                "Dropped",
+            ),
             # - open issue with quota checkpoint or Blocked label -> Blocked
             ({"kind": "Issue", "state": "open", "labels": ["Blocked"]}, {}, "Blocked"),
             ({"kind": "Issue", "state": "open"}, {"checkpoint": True}, "Blocked"),
             # - open issue with bound PR ready / In Progress label -> In Progress
-            ({"kind": "Issue", "state": "open", "labels": ["In Progress"]}, {}, "In Progress"),
+            (
+                {"kind": "Issue", "state": "open", "labels": ["In Progress"]},
+                {},
+                "In Progress",
+            ),
             (
                 {"kind": "Issue", "state": "open"},
                 {"bound_prs": [{"state": "open", "draft": False}]},

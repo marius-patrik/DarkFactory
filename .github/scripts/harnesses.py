@@ -504,7 +504,15 @@ REGISTRY: Dict[str, Harness] = {
         name="kimi",
         install="npm install -g @moonshot-ai/kimi-cli",
         binary="kimi",
-        template=["--prompt", PROMPT, "--model", MODEL, "--output-format", "text", "--yolo"],
+        template=[
+            "--prompt",
+            PROMPT,
+            "--model",
+            MODEL,
+            "--output-format",
+            "text",
+            "--yolo",
+        ],
         pools=(),
         auth=Auth(
             kind="static",

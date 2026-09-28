@@ -150,7 +150,14 @@ def reconcile_post_merge(
         client: Optional injected project client, used by tests.
     """
     view = _gh(
-        ["pr", "view", str(pr_number), "--json", "state,closingIssuesReferences,body,url"], repo
+        [
+            "pr",
+            "view",
+            str(pr_number),
+            "--json",
+            "state,closingIssuesReferences,body,url",
+        ],
+        repo,
     )
     if view.returncode != 0:
         print(f"Failed to view PR #{pr_number} for post-merge reconciliation.")
@@ -233,7 +240,11 @@ def handle_pr_approval() -> None:
 
     print(f"PR #{pr_number} approved by @{actor}. Preparing for auto-merge.")
 
-    view = _gh(["pr", "view", str(pr_number), "--json", "isDraft,state,reviewDecision"], repo, True)
+    view = _gh(
+        ["pr", "view", str(pr_number), "--json", "isDraft,state,reviewDecision"],
+        repo,
+        True,
+    )
     data = json.loads(view.stdout)
     if data.get("state") != "OPEN":
         print(f"PR #{pr_number} is {data.get('state')}. Exiting.")

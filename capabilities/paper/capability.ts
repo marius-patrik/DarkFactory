@@ -19,7 +19,7 @@ export const capability = defineCapability({
 			kind: "typecheck",
 			description: "Typeset the Typst manuscript. Typst is statically typed, so compiling it IS the typecheck.",
 			ecosystems: ["typst"],
-			command: "mkdir -p out && typst compile main.typ out/paper.pdf",
+			command: 'mkdir -p out && typst compile "$(bun ../scripts/paper/entrypoint.ts)" out/paper.pdf',
 		},
 		{
 			kind: "typecheck",
