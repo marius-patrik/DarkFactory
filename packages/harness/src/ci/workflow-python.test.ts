@@ -46,14 +46,12 @@ function pushPathFilter(workflow: string): string[] {
  */
 const REMAINING_PYTHON_STEPS: Record<string, string[]> = {
 	"agent.yml": ["run-agent / Resolve target environment"],
-	"branch-policy.yml": ["reconcile / Reconcile default branch and protection"],
 	"ci.yml": ["quality-run / Install Python package manager"],
 	"install.yml": [
 		"install / Generate the installation",
 		"install / Open the configuration issue",
 		"install / Reconcile labels, board and settings",
 	],
-	"pr-approval-automerge.yml": ["on-approval / Handle Approval and Auto-Merge"],
 	"release.yml": [
 		"resolve / Install dependencies",
 		"resolve / Confirm the TypeScript resolver agrees with the Python pipeline",
@@ -71,6 +69,8 @@ const CONVERTED: Array<[workflow: string, step: string, expected: string]> = [
 	["release.yml", "Decide which build tooling is needed", "jq -r"],
 	["release.yml", "Build release assets", "jq -r"],
 	["project-automation.yml", "Run Project Board Automation", 'bun "$ROOT/packages/harness/src/board/main.ts"'],
+	["branch-policy.yml", "Reconcile default branch and protection", "bun packages/harness/src/ci/repo-settings.ts"],
+	["pr-approval-automerge.yml", "Handle Approval and Auto-Merge", "pr-approval-main.ts"],
 ];
 
 describe("steps that no longer need an interpreter", () => {
