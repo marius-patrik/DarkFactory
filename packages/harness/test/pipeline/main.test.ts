@@ -444,6 +444,16 @@ describe("the command surface: a rejected invocation", () => {
 });
 
 describe("a required flag that is absent is a no-op, exactly as it was", () => {
+	test("the fall-through is reported as a skip, not as a run and not as a failure", async () => {
+		// The Python's chain simply ended: no branch matched, the function returned, the process
+		// exited 0. Reading that as "ran" would claim a stage happened; reading it as a failure would
+		// file noise on every stage with nothing to name.
+		const handle = ports();
+		const outcome = await runCommand(await surface(["interpret"]), handle.ports);
+
+		expect(outcome).toEqual({ kind: "skipped", command: "interpret" });
+	});
+
 	test("interpret without --issue reaches no body and does not fail", async () => {
 		const handle = ports();
 		const status = await runnerMain(["interpret"], { ports: handle.ports });
@@ -584,6 +594,26 @@ describe("the exit status is the entry point's alone", () => {
 
 		expect(status).toBe(1);
 		expect(reported.join("\n")).toContain("event file is not JSON");
+	});
+
+	test("a board write a failing run started still lands before the process exits", async () => {
+		// The Python's `block_entity` was a synchronous call, so an item blocked on the way out was
+		// blocked before the process exited. Now that the write is asynchronous, not waiting for it
+		// would lose exactly the write that matters most.
+		const handle = ports({
+			issues: { [ISSUE]: { body: "Please port main." } },
+			answers: [`${AGENT_ERROR_PREFIX}: the agent produced nothing`],
+		});
+		let settled = false;
+		handle.ports.settle = async () => {
+			await new Promise<void>((resolve) => setTimeout(resolve, 1));
+			settled = true;
+		};
+
+		const status = await runnerMain(["interpret", "--issue", String(ISSUE)], { ports: handle.ports });
+
+		expect(status).toBe(1);
+		expect(settled).toBe(true);
 	});
 });
 

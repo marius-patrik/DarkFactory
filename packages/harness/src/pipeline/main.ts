@@ -647,7 +647,6 @@ export async function runnerMain(argv: readonly string[], options: RunnerMainOpt
 
 	try {
 		await runCommand(args, ports);
-		await ports.settle();
 		return 0;
 	} catch (error) {
 		if (error instanceof AgentRunFailure) {
@@ -658,5 +657,10 @@ export async function runnerMain(argv: readonly string[], options: RunnerMainOpt
 		}
 		warn(errorMessage(error));
 		return RUN_FAILED;
+	} finally {
+		// A board write started by a failing run still has to land. The Python's `block_entity` was a
+		// synchronous call, so an item blocked on the way out was blocked before the process exited;
+		// waiting here is what keeps that true now that the write is asynchronous.
+		await ports.settle();
 	}
 }
