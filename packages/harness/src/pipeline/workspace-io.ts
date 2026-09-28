@@ -14,7 +14,7 @@
  */
 
 import { spawnSync } from "node:child_process";
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, lstatSync, readFileSync, rmSync } from "node:fs";
 import { join } from "node:path";
 import { runGit } from "../workspace/git.ts";
 import { errorMessage } from "./pipeline-io.ts";
@@ -57,6 +57,9 @@ interface CompletedCommand {
 	stderr: string;
 }
 
+/** What {@link WorkspaceIo.removePath} found at a path. */
+export type RemovedPath = "file" | "directory" | undefined;
+
 /**
  * Everything the pipeline's implementation and verification stages do to the working copy.
  *
@@ -84,6 +87,20 @@ export interface WorkspaceIo {
 	 * @throws When git exits non-zero, carrying git's own stderr in the message.
 	 */
 	git(args: readonly string[]): string;
+
+	/**
+	 * Remove a path from the working copy, and report what was there.
+	 *
+	 * The Python reached for `os.path.isfile`/`islink`, then `os.remove`, and separately for
+	 * `os.path.isdir` then `shutil.rmtree`, because the two cases reach for different git commands
+	 * afterwards. Reporting which of them applied keeps that difference in the caller, where the git
+	 * call is made, rather than hiding it in the removal.
+	 *
+	 * @param path - The repository-relative path to remove.
+	 * @returns `"file"` for a file or a symlink, `"directory"` for a directory, and `undefined` when
+	 *   nothing is there.
+	 */
+	removePath(path: string): RemovedPath;
 
 	/**
 	 * The base refs that actually resolve in the workspace, in preference order.
@@ -280,6 +297,23 @@ export function localWorkspaceIo(
 
 		git(args) {
 			return runGit(workspaceDir, args);
+		},
+
+		removePath(path) {
+			const full = join(workspaceDir, path);
+			// A symlink is stat-ed before its target, so `isFile` on a dangling link is false and
+			// `isSymbolicLink` is not - which is the Python's `isfile(...) or islink(...)`.
+			const stats = lstatSync(full, { throwIfNoEntry: false });
+			if (!stats) return undefined;
+			if (stats.isSymbolicLink() || stats.isFile()) {
+				rmSync(full, { force: true });
+				return "file";
+			}
+			if (stats.isDirectory()) {
+				rmSync(full, { recursive: true, force: true });
+				return "directory";
+			}
+			return undefined;
 		},
 
 		resolveBaseRefs(base) {
