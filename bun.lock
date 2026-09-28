@@ -10,35 +10,35 @@
         "typescript": "5.9.2",
       },
     },
-    "capabilities/code": {
+    ".darkfactory/plugins/code": {
       "name": "@darkfactory/capability-code",
       "version": "0.0.0",
       "dependencies": {
         "@darkfactory/capability": "workspace:*",
       },
     },
-    "capabilities/hooks": {
+    ".darkfactory/plugins/hooks": {
       "name": "@darkfactory/capability-hooks",
       "version": "0.0.0",
       "dependencies": {
         "@darkfactory/capability": "workspace:*",
       },
     },
-    "capabilities/math": {
+    ".darkfactory/plugins/math": {
       "name": "@darkfactory/capability-math",
       "version": "0.0.0",
       "dependencies": {
         "@darkfactory/capability": "workspace:*",
       },
     },
-    "capabilities/paper": {
+    ".darkfactory/plugins/paper": {
       "name": "@darkfactory/capability-paper",
       "version": "0.0.0",
       "dependencies": {
         "@darkfactory/capability": "workspace:*",
       },
     },
-    "capabilities/release": {
+    ".darkfactory/plugins/release": {
       "name": "@darkfactory/capability-release",
       "version": "0.0.0",
       "dependencies": {
@@ -241,15 +241,15 @@
 
     "@darkfactory/capability": ["@darkfactory/capability@workspace:packages/capability"],
 
-    "@darkfactory/capability-code": ["@darkfactory/capability-code@workspace:capabilities/code"],
+    "@darkfactory/capability-code": ["@darkfactory/capability-code@workspace:.darkfactory/plugins/code"],
 
-    "@darkfactory/capability-hooks": ["@darkfactory/capability-hooks@workspace:capabilities/hooks"],
+    "@darkfactory/capability-hooks": ["@darkfactory/capability-hooks@workspace:.darkfactory/plugins/hooks"],
 
-    "@darkfactory/capability-math": ["@darkfactory/capability-math@workspace:capabilities/math"],
+    "@darkfactory/capability-math": ["@darkfactory/capability-math@workspace:.darkfactory/plugins/math"],
 
-    "@darkfactory/capability-paper": ["@darkfactory/capability-paper@workspace:capabilities/paper"],
+    "@darkfactory/capability-paper": ["@darkfactory/capability-paper@workspace:.darkfactory/plugins/paper"],
 
-    "@darkfactory/capability-release": ["@darkfactory/capability-release@workspace:capabilities/release"],
+    "@darkfactory/capability-release": ["@darkfactory/capability-release@workspace:.darkfactory/plugins/release"],
 
     "@darkfactory/cli": ["@darkfactory/cli@workspace:packages/cli"],
 
