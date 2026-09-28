@@ -21,11 +21,14 @@ interface PluginSpec {
 }
 
 /** A repository containing plugin declarations, with the real directory shape. */
-function repository(specs: PluginSpec[]): string {
+function repository(specs: PluginSpec[], pluginsBlock?: Record<string, unknown>): string {
 	const root = mkdtempSync(join(tmpdir(), "df-plugins-"));
 	roots.push(root);
 	const plugins = join(root, ".darkfactory", "plugins");
 	mkdirSync(plugins, { recursive: true });
+	if (pluginsBlock !== undefined) {
+		writeFileSync(join(root, "repo.dfconfig"), JSON.stringify({ plugins: pluginsBlock }));
+	}
 
 	for (const spec of specs) {
 		const dir = join(plugins, spec.name);
@@ -220,6 +223,75 @@ describe("plugin validation", () => {
 		const result = validatePlugins(root);
 		expect(result.findings.map((finding) => finding.rule)).toContain("manifest/codex-missing");
 		expect(result.findings.every((finding) => finding.level === "warning")).toBe(true);
+	});
+});
+
+describe("declared plugin policy", () => {
+	// The host rules were constants. Every one is now declared, so a repository that wants a limit
+	// raised or a rule dropped says so instead of editing the package, and a repository that
+	// declares no block still gets what the four hosts require today.
+	test("an unconfigured repository still gets the host requirements", () => {
+		const root = repository([
+			{ name: "alpha", skills: [{ dir: "one", frontmatter: "---\nname: one\n---\n\n# One\n" }] },
+		]);
+		expect(validatePlugins(root).findings.map((finding) => finding.rule)).toContain("skill/description");
+	});
+
+	test("a declared limit is enforced instead of the default", () => {
+		const long = "x".repeat(90);
+		const spec = [
+			{
+				name: "alpha",
+				skills: [
+					{
+						dir: long,
+						frontmatter: `---\nname: ${long}\ndescription: Use when testing a declared limit.\n---\n\n# Long\n`,
+					},
+				],
+			},
+		];
+		expect(validatePlugins(repository(spec)).findings.map((f) => f.rule)).toContain("skill/name-length");
+		const raised = repository(spec, { hosts: { shared: { max_name_length: 200 } } });
+		expect(validatePlugins(raised).findings.map((f) => f.rule)).not.toContain("skill/name-length");
+	});
+
+	test("declaring no host rules checks nothing, because that is what the repository asked for", () => {
+		const long = "y".repeat(90);
+		const spec: PluginSpec[] = [
+			{
+				name: "alpha",
+				skills: [{ dir: long, frontmatter: `---\nname: ${long}\n---\n\n# Undescribed\n` }],
+			},
+		];
+		const rules = (root: string) => validatePlugins(root).findings.map((finding) => finding.rule);
+		expect(rules(repository(spec))).toEqual(expect.arrayContaining(["skill/description", "skill/name-length"]));
+		expect(rules(repository(spec, { hosts: {} }))).toEqual([]);
+	});
+
+	test("a declared reserved name is enforced", () => {
+		const spec = [
+			{
+				name: "alpha",
+				skills: [
+					{
+						dir: "taken",
+						frontmatter: "---\nname: taken\ndescription: Use when testing reserved names.\n---\n\n# Taken\n",
+					},
+				],
+			},
+		];
+		expect(validatePlugins(repository(spec)).findings.map((f) => f.rule)).not.toContain("skill/reserved-name");
+		const declared = repository(spec, { hosts: { claude: { reserved_names: ["taken"] } } });
+		expect(validatePlugins(declared).findings.map((f) => f.rule)).toContain("skill/reserved-name");
+	});
+
+	test("a declared skills directory name is discovered", () => {
+		const root = repository([{ name: "alpha", skills: [{ dir: "one", frontmatter: goodSkill("one") }] }]);
+		const moved = join(root, ".darkfactory", "plugins", "alpha", "capabilities");
+		renameSync(join(root, ".darkfactory", "plugins", "alpha", "skills"), moved);
+		expect(validatePlugins(root).skillCount).toBe(0);
+		writeFileSync(join(root, "repo.dfconfig"), JSON.stringify({ plugins: { layout: { skills: "capabilities" } } }));
+		expect(validatePlugins(root).skillCount).toBe(1);
 	});
 });
 

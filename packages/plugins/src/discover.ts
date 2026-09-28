@@ -1,6 +1,6 @@
-import { darkFactoryDirectory } from "@darkfactory/protocol/config-document";
+import { loadPluginsConfig, pluginRootsFromConfig, type PluginLayout, type PluginsConfig } from "./config.ts";
 import { existsSync, readdirSync } from "node:fs";
-import { dirname, join, relative, resolve, sep } from "node:path";
+import { dirname, join, relative, sep } from "node:path";
 
 /** A skill as declared by a plugin. */
 export interface PluginSkill {
@@ -37,28 +37,29 @@ export interface Plugin {
  * A plugin appears in both when df runs from a checkout of the repository that declares it, so the
  * first root wins and the second is treated as the derived copy it is.
  */
-export function pluginRoots(repoRoot = process.cwd()): string[] {
-	return [resolve(repoRoot, darkFactoryDirectory(), "plugins"), resolve(dirname(process.execPath), "plugins")].filter(
-		(candidate) => existsSync(candidate),
-	);
+export function pluginRoots(repoRoot = process.cwd(), config: PluginsConfig = loadPluginsConfig(repoRoot)): string[] {
+	return pluginRootsFromConfig(config, repoRoot, dirname(process.execPath));
 }
 
-function isPluginDirectory(path: string): boolean {
+function isPluginDirectory(path: string, layout: PluginLayout): boolean {
 	return (
-		existsSync(join(path, ".claude-plugin", "plugin.json")) ||
-		existsSync(join(path, ".codex-plugin", "plugin.json")) ||
-		existsSync(join(path, "skills"))
+		Object.values(layout.manifests).some((manifest) => existsSync(join(path, manifest))) ||
+		existsSync(join(path, layout.skills))
 	);
 }
 
-/** Every `<plugin>/skills/<skill>/SKILL.md` under every root, including one name declared in two roots. */
-export function discoverPluginSkills(repoRoot = process.cwd()): PluginSkill[] {
+/** Every `<plugin>/<skills>/<skill>/SKILL.md` under every root, including one name declared twice. */
+export function discoverPluginSkills(
+	repoRoot = process.cwd(),
+	config: PluginsConfig = loadPluginsConfig(repoRoot),
+): PluginSkill[] {
 	const found: PluginSkill[] = [];
-	for (const root of pluginRoots(repoRoot)) {
+	const layout = config.layout;
+	for (const root of pluginRoots(repoRoot, config)) {
 		for (const entry of readdirSync(root, { withFileTypes: true })) {
-			// `.claude-plugin` and `.codex-plugin` hold a plugin's manifests, never a skill.
+			// A manifest directory holds a plugin's manifests, never a skill.
 			if (!entry.isDirectory() || entry.name.startsWith(".")) continue;
-			const skills = join(root, entry.name, "skills");
+			const skills = join(root, entry.name, layout?.skills ?? "skills");
 			if (!existsSync(skills)) continue;
 			for (const skill of readdirSync(skills, { withFileTypes: true })) {
 				if (!skill.isDirectory()) continue;
@@ -87,28 +88,34 @@ export function discoverPluginSkills(repoRoot = process.cwd()): PluginSkill[] {
  * repeated *skill* name across two different plugins is a reportable conflict, and neither plugin
  * may lose the declaration over it, so `df plugin list` and `describe` both keep showing it.
  */
-export function discoverPlugins(repoRoot = process.cwd()): Plugin[] {
-	const all = discoverPluginSkills(repoRoot);
+export function discoverPlugins(
+	repoRoot = process.cwd(),
+	config: PluginsConfig = loadPluginsConfig(repoRoot),
+): Plugin[] {
+	const all = discoverPluginSkills(repoRoot, config);
+	const layout = config.layout;
 	const plugins: Plugin[] = [];
 	const seen = new Set<string>();
-	for (const root of pluginRoots(repoRoot)) {
+	for (const root of pluginRoots(repoRoot, config)) {
 		for (const entry of readdirSync(root, { withFileTypes: true })) {
 			if (!entry.isDirectory() || entry.name.startsWith(".")) continue;
 			const path = join(root, entry.name);
-			// A directory is a plugin when it carries a manifest or a skills directory: the shapes the
-			// hosts recognise. Anything else beside them is reported by validate rather than guessed at.
-			if (!isPluginDirectory(path) || seen.has(entry.name)) continue;
-			const claude = join(path, ".claude-plugin", "plugin.json");
-			const codex = join(path, ".codex-plugin", "plugin.json");
+			// A directory is a plugin when it carries a declared manifest or the declared skills
+			// directory. Anything else beside them is reported by validate rather than guessed at.
+			if (!isPluginDirectory(path, layout as PluginLayout) || seen.has(entry.name)) continue;
 			seen.add(entry.name);
 			plugins.push({
 				name: entry.name,
 				path,
-				claudeManifest: existsSync(claude) ? claude : undefined,
-				codexManifest: existsSync(codex) ? codex : undefined,
+				claudeManifest: existsSync(join(path, layout?.manifests?.claude ?? ".claude-plugin/plugin.json"))
+					? join(path, layout?.manifests?.claude ?? ".claude-plugin/plugin.json")
+					: undefined,
+				codexManifest: existsSync(join(path, layout?.manifests?.codex ?? ".codex-plugin/plugin.json"))
+					? join(path, layout?.manifests?.codex ?? ".codex-plugin/plugin.json")
+					: undefined,
 				skills: all.filter((skill) => skill.plugin === entry.name && skill.root === root),
-				hasHooks: existsSync(join(path, "hooks", "hooks.json")),
-				hasScripts: existsSync(join(path, "scripts")),
+				hasHooks: existsSync(join(path, layout?.hooks ?? "hooks/hooks.json")),
+				hasScripts: existsSync(join(path, layout?.scripts ?? "scripts")),
 			});
 		}
 	}

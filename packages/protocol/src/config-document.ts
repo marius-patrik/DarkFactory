@@ -2,7 +2,7 @@ import { existsSync } from "node:fs";
 import { join, resolve } from "node:path";
 
 /** Recognized semantic blocks in a DarkFactory combined configuration document. */
-export type DarkFactoryConfigBlock = "repo" | "docs" | "providers";
+export type DarkFactoryConfigBlock = "repo" | "docs" | "providers" | "plugins";
 
 /**
  * The DarkFactory directory holding plugins, skills and the configuration document, relative to the
@@ -22,6 +22,7 @@ export interface DarkFactoryConfigDocument {
 	repo?: unknown;
 	docs?: unknown;
 	providers?: unknown;
+	plugins?: unknown;
 	[key: string]: unknown;
 }
 
