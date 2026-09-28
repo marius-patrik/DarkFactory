@@ -1,3 +1,4 @@
+import { RULES_PLUGIN } from "./content.ts";
 import type { RepositoryEvidence } from "@darkfactory/core/repository-evidence";
 
 /** High-level kinds of change that can require canonical documentation updates. */
@@ -58,9 +59,8 @@ function configDocumentPaths(): ReadonlySet<string> {
 function isDocumentationFile(path: string): boolean {
 	return (
 		path === ".agents/PRD.md" ||
-		path === ".agents/AGENTS.md" ||
 		configDocumentPaths().has(path) ||
-		path.startsWith(".agents/rules/") ||
+		path.startsWith(RULES_PLUGIN + "/skills/") ||
 		path.startsWith(".agents/adr/")
 	);
 }
@@ -76,8 +76,7 @@ function isProductContractFile(path: string): boolean {
 
 function isGovernanceFile(path: string): boolean {
 	return (
-		path === ".agents/AGENTS.md" ||
-		path.startsWith(".agents/rules/") ||
+		path.startsWith(RULES_PLUGIN + "/skills/") ||
 		path.startsWith(".agents/adr/") ||
 		path.startsWith(".github/workflows/") ||
 		path.startsWith("packages/harness/assets/workflows/")

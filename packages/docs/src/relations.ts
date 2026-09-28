@@ -1,4 +1,4 @@
-import { basename } from "node:path";
+import { basename, dirname } from "node:path";
 import type { DocsContentGraph, DocsPage } from "./content.ts";
 
 /** Parsed metadata for one canonical repository rule. */
@@ -81,7 +81,7 @@ export function analyzeRuleNoteRelations(graph: DocsContentGraph): RuleNoteRelat
 		const number = ruleNumber(id);
 		if (!number) findings.push(`${page.source}: invalid rule id ${id}`);
 		if (status !== "normative") findings.push(`${page.source}: canonical rule status must be normative`);
-		if (number && !basename(page.source).startsWith(`${number}-`)) {
+		if (number && !basename(dirname(page.source)).startsWith(`${number}-`)) {
 			findings.push(`${page.source}: filename must start with canonical rule number ${number}-`);
 		}
 		const heading = page.markdown.match(/^# Rule\s+(\d+)\s+—\s+(.+)$/mu);
@@ -100,12 +100,12 @@ export function analyzeRuleNoteRelations(graph: DocsContentGraph): RuleNoteRelat
 		rules.push({ id, title, page });
 	}
 
-	if (rules.length === 0) findings.push(".agents/rules: at least one canonical rule is required");
+	if (rules.length === 0) findings.push("rules: at least one canonical rule is required");
 
 	const ruleNumbers = rules.map((rule) => Number(ruleNumber(rule.id))).filter((number) => Number.isFinite(number));
 	const expectedRuleNumbers = Array.from({ length: ruleNumbers.length }, (_, index) => index + 1);
 	if (ruleNumbers.some((number, index) => number !== expectedRuleNumbers[index])) {
-		findings.push(`.agents/rules: rule numbers must be contiguous from 001; found ${ruleNumbers.join(", ")}`);
+		findings.push(`rules: rule numbers must be contiguous from 001; found ${ruleNumbers.join(", ")}`);
 	}
 
 	const notes: DocsNoteRelationEntry[] = [];
@@ -116,6 +116,7 @@ export function analyzeRuleNoteRelations(graph: DocsContentGraph): RuleNoteRelat
 		const note = noteIdentity(page);
 		const number = adrNumber(note.id);
 		if (!number) findings.push(`${page.source}: invalid ADR id ${note.id}`);
+		// An ADR is still a flat file, so its number is in the file name.
 		if (number && !basename(page.source).startsWith(`${number}-`)) {
 			findings.push(`${page.source}: filename must start with canonical ADR number ${number}-`);
 		}

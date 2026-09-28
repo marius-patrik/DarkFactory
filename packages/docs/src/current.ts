@@ -1,6 +1,5 @@
 import { lstatSync, readFileSync, readlinkSync, realpathSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
-import { renderAgentsMarkdown } from "./agents.ts";
 import type { DocsContentGraph } from "./content.ts";
 import { analyzeRuleNoteRelations } from "./relations.ts";
 
@@ -12,7 +11,6 @@ export interface DocumentationTruthFinding {
 
 const CURRENT_ALIASES = [
 	{ path: "README.md", target: ".agents/PRD.md" },
-	{ path: "CONTRIBUTING.md", target: ".agents/AGENTS.md" },
 	{ path: join(".agents", "notes", "README.md"), target: "../../README.md" },
 ] as const;
 
@@ -116,30 +114,6 @@ export function currentDocumentationFindings(
 	const relations = analyzeRuleNoteRelations(graph);
 	for (const message of relations.findings) findings.push({ path: ".agents", message });
 	if (relations.findings.length > 0) return findings;
-
-	const agentsPath = join(repoRoot, ".agents", "AGENTS.md");
-	let agentsStat: ReturnType<typeof lstatSync>;
-	try {
-		agentsStat = lstatSync(agentsPath);
-	} catch (error) {
-		if ((error as NodeJS.ErrnoException).code === "ENOENT") {
-			findings.push({ path: ".agents/AGENTS.md", message: "generated AGENTS projection is missing" });
-			return findings;
-		}
-		throw error;
-	}
-	if (!agentsStat.isFile()) {
-		findings.push({ path: ".agents/AGENTS.md", message: "generated AGENTS projection must be a regular file" });
-		return findings;
-	}
-	const actual = readFileSync(agentsPath, "utf8").replaceAll("\r\n", "\n");
-	const expected = renderAgentsMarkdown(graph);
-	if (actual !== expected) {
-		findings.push({
-			path: ".agents/AGENTS.md",
-			message: "committed AGENTS differs from the canonical repository-rules projection",
-		});
-	}
 
 	return findings;
 }

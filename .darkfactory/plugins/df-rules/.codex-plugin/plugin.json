@@ -1,0 +1,6 @@
+{
+	"name": "df-rules",
+	"version": "1.0.0",
+	"description": "The binding development rules of DarkFactory, one skill per rule.",
+	"license": "MIT"
+}

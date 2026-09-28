@@ -96,6 +96,9 @@ function titleFromMarkdown(markdown: string, fallback: string): string {
 function idFromSource(source: string): string {
 	return source
 		.replaceAll("\\", "/")
+		// A rule is a skill, so its document is SKILL.md inside a per-rule directory. The directory
+		// name is the identity; the constant file name would otherwise end every rule id in "-skill".
+		.replace(/\/SKILL\.md$/u, "")
 		.replace(/\.md$/u, "")
 		.replace(/^\.?\//u, "")
 		.replace(/[^A-Za-z0-9]+/gu, "-")
@@ -123,6 +126,26 @@ function markdownFiles(directory: string): string[] {
 	return readdirSync(directory, { withFileTypes: true })
 		.filter((entry) => entry.isFile() && entry.name.endsWith(".md"))
 		.map((entry) => entry.name)
+		.sort((a, b) => a.localeCompare(b));
+}
+
+/** The plugin holding the binding repository rules, one skill per rule. */
+export const RULES_PLUGIN = ".darkfactory/plugins/df-rules";
+
+/**
+ * Every canonical rule, as a relative source path.
+ *
+ * A rule is a skill, so it lives at `<plugin>/skills/<rule-number-slug>/SKILL.md` rather than in a
+ * flat directory of markdown. An agent then loads the one rule its change needs instead of carrying
+ * the whole rulebook in every session, which is the point of a skill. The rule's own front matter
+ * fields are kept verbatim, so `ruleFrontMatterField` still reads them and a rule is declared once.
+ */
+export function ruleSources(repoRoot: string): string[] {
+	const skills = join(repoRoot, RULES_PLUGIN, "skills");
+	if (!existsSync(skills)) return [];
+	return readdirSync(skills, { withFileTypes: true })
+		.filter((entry) => entry.isDirectory() && existsSync(join(skills, entry.name, "SKILL.md")))
+		.map((entry) => `${RULES_PLUGIN}/skills/${entry.name}/SKILL.md`)
 		.sort((a, b) => a.localeCompare(b));
 }
 
@@ -175,9 +198,7 @@ export function compileDocsContentGraph(
 	api?: DocsApiReference,
 ): DocsContentGraph {
 	const pages: DocsPage[] = [markdownPage(repoRoot, config.home, "home", "home")];
-	const rulesRoot = join(repoRoot, ".agents", "rules");
-	for (const name of markdownFiles(rulesRoot))
-		pages.push(markdownPage(repoRoot, join(".agents", "rules", name), "rule"));
+	for (const source of ruleSources(repoRoot)) pages.push(markdownPage(repoRoot, source, "rule"));
 	const adrRoot = join(repoRoot, ".agents", "adr");
 	for (const name of markdownFiles(adrRoot)) pages.push(markdownPage(repoRoot, join(".agents", "adr", name), "adr"));
 	const workflowRoot = join(repoRoot, ".github", "workflows");

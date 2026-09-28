@@ -92,7 +92,7 @@ describe("canonical documentation truth", () => {
 	test("the canonical document set is discovered rather than empty", () => {
 		expect(DOCUMENTS.length).toBeGreaterThan(20);
 		expect(DOCUMENTS).toContain(".darkfactory/PRD.md");
-		expect(DOCUMENTS).toContain(".darkfactory/rules/001-unit-tests.md");
+		expect(DOCUMENTS).toContain(".darkfactory/plugins/df-rules/skills/001-unit-tests/SKILL.md");
 		expect(DOCUMENTS).toContain(".darkfactory/plugins/df-operations/skills/darkfactory-auth/SKILL.md");
 	});
 

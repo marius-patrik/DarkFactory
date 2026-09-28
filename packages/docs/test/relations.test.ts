@@ -8,7 +8,7 @@ function rule(id: string): DocsPage {
 		id: id.toLowerCase(),
 		kind: "rule",
 		title: `Rule ${number} — Test`,
-		source: `.agents/rules/${String(number).padStart(3, "0")}-test.md`,
+		source: `.darkfactory/plugins/df-rules/skills/${String(number).padStart(3, "0")}-test/SKILL.md`,
 		markdown: `---
 id: ${id}
 title: Test
@@ -74,7 +74,7 @@ describe("rule/note relationships", () => {
 	test("fails closed when canonical governance disappears entirely", () => {
 		const empty = graph([]);
 		const findings = analyzeRuleNoteRelations(empty).findings;
-		expect(findings).toContain(".agents/rules: at least one canonical rule is required");
+		expect(findings).toContain("rules: at least one canonical rule is required");
 		expect(findings).toContain(".agents/adr: at least one accepted ADR is required");
 		expect(() => assertRuleNoteRelations(empty)).toThrow("Rule/note relationship contract failed");
 	});
@@ -104,21 +104,21 @@ describe("rule/note relationships", () => {
 	test("fails when a canonical rule has no accepted note", () => {
 		const content = graph([rule("DF-RULE-001")]);
 		expect(analyzeRuleNoteRelations(content).findings).toContain(
-			".agents/rules/001-test.md: canonical rule must be related by at least one accepted ADR",
+			".darkfactory/plugins/df-rules/skills/001-test/SKILL.md: canonical rule must be related by at least one accepted ADR",
 		);
 	});
 
 	test("fails on malformed canonical record identity", () => {
-		const badRule = { ...rule("DF-RULE-001"), source: ".agents/rules/099-test.md" };
+		const badRule = { ...rule("DF-RULE-001"), source: ".darkfactory/plugins/df-rules/skills/099-test/SKILL.md" };
 		const findings = analyzeRuleNoteRelations(graph([badRule, adr("ADR-0001", "DF-RULE-001")])).findings;
-		expect(findings).toContain(".agents/rules/099-test.md: filename must start with canonical rule number 001-");
+		expect(findings).toContain(".darkfactory/plugins/df-rules/skills/099-test/SKILL.md: filename must start with canonical rule number 001-");
 	});
 
 	test("fails when rule index metadata and prose heading titles drift", () => {
 		const concise = rule("DF-RULE-001");
 		const changed = { ...concise, markdown: concise.markdown.replace("title: Test", "title: Testing") };
 		expect(analyzeRuleNoteRelations(graph([changed, adr("ADR-0001", "DF-RULE-001")])).findings).toContain(
-			".agents/rules/001-test.md: rule heading title must match front-matter title",
+			".darkfactory/plugins/df-rules/skills/001-test/SKILL.md: rule heading title must match front-matter title",
 		);
 	});
 
@@ -137,7 +137,7 @@ describe("rule/note relationships", () => {
 			{ ...badAdr, markdown: badAdr.markdown.replace("## Consequences\n\nTest.\n", "") },
 		]);
 		const findings = analyzeRuleNoteRelations(content).findings;
-		expect(findings).toContain(".agents/rules/001-test.md: canonical rule is missing non-empty Enforcement section");
+		expect(findings).toContain(".darkfactory/plugins/df-rules/skills/001-test/SKILL.md: canonical rule is missing non-empty Enforcement section");
 		expect(findings).toContain(".agents/adr/0001-test.md: accepted ADR is missing non-empty Consequences section");
 	});
 
