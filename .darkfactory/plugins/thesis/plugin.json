@@ -1,9 +1,0 @@
-{
-	"$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
-	"name": "thesis",
-	"version": "1.0.0",
-	"description": "Writing, reviewing and verifying the Czech thesis on agentic software engineering.",
-	"license": "MIT",
-	"shipped": false,
-	"skills": "./skills"
-}

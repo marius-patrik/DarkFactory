@@ -1,8 +1,0 @@
-{
-	"$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
-	"name": "hooks",
-	"version": "1.0.0",
-	"description": "Require a detected test change when detected source files change.",
-	"license": "MIT",
-	"shipped": false
-}

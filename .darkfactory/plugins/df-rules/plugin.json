@@ -1,9 +1,0 @@
-{
-	"$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
-	"name": "df-rules",
-	"version": "1.0.0",
-	"description": "The binding development rules of DarkFactory, one skill per rule.",
-	"license": "MIT",
-	"shipped": true,
-	"skills": "./skills"
-}

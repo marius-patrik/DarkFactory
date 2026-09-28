@@ -104,6 +104,7 @@
         "@darkfactory/cli": "workspace:*",
         "@darkfactory/core": "workspace:*",
         "@darkfactory/keychain": "workspace:*",
+        "@darkfactory/plugins": "workspace:*",
         "@darkfactory/protocol": "workspace:*",
         "@earendil-works/pi-agent-core": "0.85.1",
         "@earendil-works/pi-ai": "0.85.1",
@@ -131,6 +132,10 @@
         "jose": "6.1.0",
         "zod": "4.1.5",
       },
+    },
+    "packages/plugins": {
+      "name": "@darkfactory/plugins",
+      "version": "0.0.0",
     },
     "packages/protocol": {
       "name": "@darkfactory/protocol",
@@ -262,6 +267,8 @@
     "@darkfactory/harness": ["@darkfactory/harness@workspace:packages/harness"],
 
     "@darkfactory/keychain": ["@darkfactory/keychain@workspace:packages/keychain"],
+
+    "@darkfactory/plugins": ["@darkfactory/plugins@workspace:packages/plugins"],
 
     "@darkfactory/protocol": ["@darkfactory/protocol@workspace:packages/protocol"],
 

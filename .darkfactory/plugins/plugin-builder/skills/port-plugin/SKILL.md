@@ -87,10 +87,15 @@ Because a hook that matters must be verifiable another way, never let a hook be 
 ## Checking
 
 ```sh
-bun .agents/plugins/plugin-builder/scripts/validate-skills.ts
-bun .agents/plugins/plugin-builder/scripts/validate-skills.ts --strict
+df plugin list
+df plugin describe <name>
+df plugin validate --strict
 ```
 
-The validator is shared with the repository test, so it is the contract, not a convenience. If a
-rule matters enough to state in a skill, it belongs in the validator too - prose that nothing
-checks is a comment.
+`df plugin validate` is shared with the repository test, so it is the contract rather than a
+convenience. If a rule matters enough to state in a skill, it belongs in the validator too - prose
+that nothing checks is a comment.
+
+The plugin needs both host manifests. `.claude-plugin/plugin.json` is what Claude Code reads and
+`.codex-plugin/plugin.json` is what Codex reads; `validate` warns when one is missing, because a
+plugin without it is simply not loadable by that host.

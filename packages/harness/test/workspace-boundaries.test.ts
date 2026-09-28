@@ -15,6 +15,12 @@ const expectedNames = new Set(required.map((name) => `@darkfactory/${name}`));
  */
 const privatePackages = ["harness"] as const;
 
+/**
+ * First-party packages that are private without being the runtime, so they carry no `df`
+ * entrypoint. `plugins` is the agent plugin registry the `df plugin` command is built on.
+ */
+const privateLibraries = ["plugins"] as const;
+
 async function manifest(name: string): Promise<Record<string, unknown>> {
 	return JSON.parse(await readFile(resolve(packageRoot, name, "package.json"), "utf8")) as Record<string, unknown>;
 }
@@ -43,7 +49,7 @@ describe("publishable workspace boundaries", () => {
 			.filter((entry) => entry.isDirectory())
 			.map((entry) => entry.name)
 			.sort();
-		expect(directories).toEqual([...required, ...privatePackages].sort());
+		expect(directories).toEqual([...required, ...privatePackages, ...privateLibraries].sort());
 
 		for (const name of required) {
 			const pkg = await manifest(name);
@@ -51,6 +57,14 @@ describe("publishable workspace boundaries", () => {
 			expect(pkg.private).not.toBe(true);
 			expect(pkg.type).toBe("module");
 			expect((pkg.exports as Record<string, string>)["."]).toBe("./src/index.ts");
+		}
+
+		for (const name of privateLibraries) {
+			const pkg = await manifest(name);
+			expect(pkg.name).toBe(`@darkfactory/${name}`);
+			expect(pkg.private).toBe(true);
+			expect(pkg.type).toBe("module");
+			expect(pkg.bin).toBeUndefined();
 		}
 
 		// The relocated runtime keeps its own identity and its `df` entrypoint, so the bin every

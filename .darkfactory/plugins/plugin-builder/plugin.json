@@ -1,9 +1,0 @@
-{
-	"$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
-	"name": "plugin-builder",
-	"version": "1.0.0",
-	"description": "Author, validate and port agent plugins for Claude Code, Codex, opencode and pi.",
-	"license": "MIT",
-	"skills": "./skills",
-	"hooks": "./hooks/hooks.json"
-}

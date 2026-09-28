@@ -56,11 +56,6 @@ uv.lock
 # Test fixtures create temporary trees beside the suite; they are not repository content.
 packages/harness/.*-test-*/
 
-# Installed by `df ci install` from .darkfactory/plugins/. Tracked copies would be a
-# second source of truth for the same content (DF-RULE-015 single-declaration).
-# `.agents` is a symlink to `.darkfactory`, and git does not descend symlinks, so the
-# real path is what has to be ignored.
-.darkfactory/skills/
 
 # Relocated to packages/harness in #1227. Nothing belongs at this path any more;
 # Root-anchored. A bare `harness/` matches any directory of that name at any depth, which silently

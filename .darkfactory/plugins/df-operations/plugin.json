@@ -1,9 +1,0 @@
-{
-	"$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
-	"name": "df-operations",
-	"version": "1.0.0",
-	"description": "Operating df: credentials, accounts, providers and the pipeline.",
-	"license": "MIT",
-	"shipped": true,
-	"skills": "./skills"
-}

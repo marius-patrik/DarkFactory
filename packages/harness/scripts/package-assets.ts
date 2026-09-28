@@ -2,27 +2,6 @@ import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { copyFile, cp, mkdir } from "node:fs/promises";
 import { dirname, join } from "node:path";
 
-/**
- * Plugins a release ships to every repository, named by their manifests.
- *
- * `.agents/plugins/` is the single tracked declaration of every skill (DF-RULE-015). The copy under
- * `dist/assets/plugins/` is build output, so a plugin marked `shipped` reaches a consuming
- * repository without becoming a second source, and a repository-local plugin such as the thesis
- * plugin stays where it was written.
- */
-export function shippedPlugins(pluginsDir: string): string[] {
-	if (!existsSync(pluginsDir)) return [];
-	const shipped: string[] = [];
-	for (const entry of readdirSync(pluginsDir, { withFileTypes: true })) {
-		if (!entry.isDirectory() || entry.name.startsWith(".")) continue;
-		const manifest = join(pluginsDir, entry.name, "plugin.json");
-		if (!existsSync(manifest)) continue;
-		const parsed = JSON.parse(readFileSync(manifest, "utf-8")) as { shipped?: unknown };
-		if (parsed.shipped === true) shipped.push(entry.name);
-	}
-	return shipped.sort();
-}
-
 export interface NativeAssetCandidate {
 	platform: string;
 	arch: string;
@@ -71,11 +50,6 @@ export async function packageAssets(
 		join(dist, "photon_rs_bg.wasm"),
 	);
 	await cp(join(root, "assets"), join(dist, "assets"), { recursive: true });
-
-	const pluginsDir = join(root, "..", "..", ".darkfactory", "plugins");
-	for (const plugin of shippedPlugins(pluginsDir)) {
-		await cp(join(pluginsDir, plugin), join(dist, "assets", "plugins", plugin), { recursive: true });
-	}
 
 	const candidates = nativeAssetCandidates(platform, arch);
 	if (candidates.length === 0) return;

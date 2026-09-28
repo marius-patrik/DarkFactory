@@ -31,11 +31,12 @@ license: MIT
 Validate before committing:
 
 ```sh
-bun .agents/plugins/plugin-builder/scripts/validate-skills.ts
+df plugin validate
+df plugin validate --strict   # warnings become failures
 ```
 
-The same script backs the repository test, so a clean run is what CI checks. `--strict` also
-fails on warnings.
+`df plugin validate` is what the repository test calls, so a clean run is what CI checks. It
+enforces the same rules this skill states, in one implementation, so the two cannot drift.
 
 ## Body
 
