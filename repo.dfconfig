@@ -320,7 +320,7 @@
       "name": "DarkFactory",
       "description": "Autonomous, governed software delivery built around a self-hosting df engine, versioned capabilities and GitHub as the durable control plane."
     },
-    "home": ".agents/PRD.md"
+    "home": "README.md"
   },
   "providers": {
     "cooldownTtlMs": 120000,

@@ -10,7 +10,6 @@ export interface DocumentationTruthFinding {
 }
 
 const CURRENT_ALIASES = [
-	{ path: "README.md", target: ".agents/PRD.md" },
 	{ path: join(".agents", "notes", "README.md"), target: "../../README.md" },
 ] as const;
 

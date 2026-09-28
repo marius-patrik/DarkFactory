@@ -81,7 +81,7 @@ describe("documentation impact policy", () => {
 	});
 
 	test("accepts an actual docs update for classified product impact", () => {
-		const result = evaluateDocumentationImpact(["repo.dfconfig", ".agents/PRD.md"], evidence);
+		const result = evaluateDocumentationImpact(["repo.dfconfig", "README.md"], evidence);
 		expect(result.findings).toEqual([]);
 	});
 

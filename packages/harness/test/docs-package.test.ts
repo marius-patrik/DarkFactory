@@ -19,7 +19,7 @@ async function fixture(withApi = false): Promise<string> {
 	await mkdir(join(root, ".darkfactory", "plugins", "df-rules", "skills", "001-test"), { recursive: true });
 	await mkdir(join(root, ".agents", "adr"), { recursive: true });
 	await mkdir(join(root, ".github", "workflows"), { recursive: true });
-	const config: any = { version: 1, site: { name: "Fixture", description: "Fixture docs" }, home: ".agents/PRD.md" };
+	const config: any = { version: 1, site: { name: "Fixture", description: "Fixture docs" }, home: "README.md" };
 	if (withApi) {
 		config.api = { typescript: { name: "Fixture API", entryPoints: ["api.ts"], tsconfig: "tsconfig.json" } };
 		await writeFile(
@@ -34,9 +34,9 @@ async function fixture(withApi = false): Promise<string> {
 			}),
 		);
 	}
+	// The root README is the canonical product document, not a projection of another file.
+	await writeFile(join(root, "README.md"), "# Home\n\nSee the sections below.\n");
 	await writeFile(join(root, "repo.dfconfig"), JSON.stringify({ repo: {}, docs: config }));
-	await writeFile(join(root, ".agents", "PRD.md"), "# Home\n\nSee [the PRD](./PRD.md).\n");
-	await writeFile(join(root, "PRD.md"), "# Product\n");
 	await writeFile(join(root, "PLAN.md"), "# Plan\n");
 	await writeFile(
 		join(root, ".darkfactory", "plugins", "df-rules", "skills", "001-test", "SKILL.md"),
@@ -61,12 +61,12 @@ describe("@darkfactory/docs", () => {
 	test("parses the combined docs block including TypeScript API ownership", () => {
 		expect(
 			parseDocsConfig(
-				'{"version":1,"site":{"name":"Docs"},"home":".agents/PRD.md","api":{"typescript":{"entryPoints":["src/index.ts"],"tsconfig":"tsconfig.json"}}}',
+				'{"version":1,"site":{"name":"Docs"},"home":"README.md","api":{"typescript":{"entryPoints":["src/index.ts"],"tsconfig":"tsconfig.json"}}}',
 			),
 		).toEqual({
 			version: 1,
 			site: { name: "Docs" },
-			home: ".agents/PRD.md",
+			home: "README.md",
 			api: { typescript: { entryPoints: ["src/index.ts"], tsconfig: "tsconfig.json" } },
 		});
 	});
@@ -87,7 +87,7 @@ describe("@darkfactory/docs", () => {
 		const root = await fixture();
 		const graph = compileDocsContentGraph(root, loadDocsConfig(root));
 		expect(graph.pages.map((page) => page.id)).toEqual(["home", "darkfactory-plugins-df-rules-skills-001-test", "agents-adr-0001-test"]);
-		expect(graph.pages[0]?.source).toBe(".agents/PRD.md");
+		expect(graph.pages[0]?.source).toBe("README.md");
 		expect(graph.workflows).toEqual([{ source: ".github/workflows/ci.yml", name: "CI", jobs: ["test"] }]);
 	});
 

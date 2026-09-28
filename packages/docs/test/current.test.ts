@@ -11,7 +11,7 @@ function graph(): DocsContentGraph {
 		site: { name: "DarkFactory" },
 		home: "home",
 		pages: [
-			{ id: "home", kind: "home", title: "DarkFactory", source: ".agents/PRD.md", markdown: "# DarkFactory\n" },
+			{ id: "home", kind: "home", title: "DarkFactory", source: "README.md", markdown: "# DarkFactory\n" },
 			{
 				id: "rule-001",
 				kind: "rule",
@@ -44,9 +44,10 @@ function withRepo(run: (repoRoot: string) => void): void {
 
 function writeCurrentAliases(repoRoot: string, omit?: string): void {
 	mkdirSync(join(repoRoot, ".agents"), { recursive: true });
-	writeFileSync(join(repoRoot, ".agents", "PRD.md"), "# product\n");
+	// The root README is the canonical product document itself, and the notes alias resolves to it,
+	// so the fixture has to lay down a real file there rather than a projection.
+	writeFileSync(join(repoRoot, "README.md"), "# product\n");
 	const aliases = [
-		["README.md", ".agents/PRD.md"],
 		[".agents/notes/README.md", "../../README.md"],
 	] as const;
 	for (const [path, target] of aliases) {
@@ -66,22 +67,14 @@ describe("current documentation truth", () => {
 		});
 	});
 
-	test("does not compare root README contents", () => {
-		withRepo((repoRoot) => {
-			const content = graph();
-			writeCurrentAliases(repoRoot);
-			writeFileSync(join(repoRoot, ".agents", "PRD.md"), "# changed product\n");
-			expect(currentDocumentationFindings(repoRoot, content)).toEqual([]);
-		});
-	});
 
 
 	test("fails when a required current alias is missing", () => {
 		withRepo((repoRoot) => {
 			const content = graph();
-			writeCurrentAliases(repoRoot, "README.md");
+			writeCurrentAliases(repoRoot, ".agents/notes/README.md");
 			expect(currentDocumentationFindings(repoRoot, content)).toContainEqual({
-				path: "README.md",
+				path: ".agents/notes/README.md",
 				message: "required documentation discovery alias is missing",
 			});
 		});
@@ -91,9 +84,9 @@ describe("current documentation truth", () => {
 		withRepo((repoRoot) => {
 			const content = graph();
 			writeCurrentAliases(repoRoot);
-			unlinkSync(join(repoRoot, ".agents", "PRD.md"));
+			unlinkSync(join(repoRoot, "README.md"));
 			expect(currentDocumentationFindings(repoRoot, content)).toContainEqual({
-				path: "README.md",
+				path: ".agents/notes/README.md",
 				message: "documentation discovery alias target is missing",
 			});
 		});

@@ -14,7 +14,7 @@ license: MIT
 
 ## Requirement
 
-`.agents/PRD.md` is the single normative product requirements document. Current active Request/Planning records define approved feature-specific behavior and executable delivery scope. Accepted ADRs record durable architectural decisions and rationale.
+`README.md` is the single normative product requirements document. Current active Request/Planning records define approved feature-specific behavior and executable delivery scope. Accepted ADRs record durable architectural decisions and rationale.
 
 Executable declarations use the final DarkFactory contracts:
 
@@ -23,11 +23,11 @@ Executable declarations use the final DarkFactory contracts:
 - the `providers` block for runtime/user/provider configuration;
 - the `docs` block for native documentation configuration;
 - the declarable workflow graph for execution topology;
-- `.agents/rules/*.md` for mandatory contribution/governance behavior.
+- `.agents/plugins/df-rules/skills/` for mandatory contribution/governance behavior, one skill per rule.
 
 `DF_CONFIG_DIR` (default `.darkfactory`) may hold the same combined document for supported discovery, but `.darkfactory` is not a committed source in this repository. Ambiguous root/folder or alias candidates fail closed and are never merged.
 
-A material deviation from `.agents/PRD.md` MUST be owner-approved and recorded as an accepted numbered ADR before implementation.
+A material deviation from `README.md` MUST be owner-approved and recorded as an accepted numbered ADR before implementation.
 
 Long-term notes and normative rules form one bidirectional current-truth graph:
 

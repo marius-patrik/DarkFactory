@@ -1,6 +1,6 @@
 ---
 name: df-operator
-description: operating df runs day to day - checking capacity, routing, limits and run health.
+description: Use when operating df day to day: checking capacity, routing, limits and run health.
 ---
 
 # DarkFactory operator guide

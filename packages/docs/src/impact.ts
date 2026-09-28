@@ -58,7 +58,7 @@ function configDocumentPaths(): ReadonlySet<string> {
 
 function isDocumentationFile(path: string): boolean {
 	return (
-		path === ".agents/PRD.md" ||
+		path === "README.md" ||
 		configDocumentPaths().has(path) ||
 		path.startsWith(RULES_PLUGIN + "/skills/") ||
 		path.startsWith(".agents/adr/")
@@ -104,7 +104,7 @@ export function classifyDocumentationImpact(
 
 	for (const path of files) {
 		if (apiEntries.has(path)) impactKinds.add("public-api");
-		if (isProductContractFile(path) || path === ".agents/PRD.md") impactKinds.add("product");
+		if (isProductContractFile(path) || path === "README.md") impactKinds.add("product");
 		if (isGovernanceFile(path)) impactKinds.add("governance");
 	}
 

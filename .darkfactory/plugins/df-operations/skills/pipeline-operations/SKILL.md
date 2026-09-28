@@ -1,6 +1,6 @@
 ---
 name: pipeline-operations
-description: Steering the DarkFactory pipeline on issues and pull requests with comment commands.
+description: Use when steering the DarkFactory pipeline on issues and pull requests with comment commands.
 ---
 
 # DarkFactory pipeline operations

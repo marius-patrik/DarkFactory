@@ -1,6 +1,6 @@
 ---
 name: provider-onboarding
-description: Adding a model provider or a new account key to df.
+description: Use when adding a model provider or a new account key to df.
 ---
 
 # Provider onboarding

@@ -1,6 +1,6 @@
 ---
 name: darkfactory-auth
-description: Give DarkFactory's df agent the model accounts and repository secrets it needs. Use when an agent run is unauthenticated, a key was rotated, or a newly installed repository has no secrets yet.
+description: Use when a df agent run is unauthenticated, a key was rotated, or a newly installed repository has no secrets yet.
 ---
 
 # DarkFactory authentication

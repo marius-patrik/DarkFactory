@@ -18,7 +18,7 @@ Specification proceeds in one direction, and each stage is settled before implem
 it:
 
 ```text
-.agents/PRD.md  →  accepted ADRs when a durable architecture decision is required  →  Request/Planning
+README.md  →  accepted ADRs when a durable architecture decision is required  →  Request/Planning
 ```
 
 - **Issues track settled intent and executable work, not unresolved architecture debates.** An issue
