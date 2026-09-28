@@ -6,9 +6,14 @@ on:
     types: [opened, synchronize, reopened]
   push:
     branches: [develop]
+    # What the reconcile actually reads: the configuration document (default branch, development
+    # branch, required checks) and the two scripts that apply it. `repo.df` and `config.df` were
+    # named here and are not repository files, so the one file the policy is derived from was not
+    # in the filter and a change to the required checks reconciled nothing.
     paths:
-      - "repo.df"
-      - "config.df"
+      - "repo.dfconfig"
+      - "config.dfconfig"
+      - ".dfconfig"
       - ".github/scripts/manifest.py"
       - ".github/scripts/repo_settings.py"
       - ".github/workflows/branch-policy.yml"
@@ -44,5 +49,20 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Set up Bun
+        uses: oven-sh/setup-bun@v2
+
+      - name: Install the harness dependencies
+        # The command is a file in the checked-out tree, so the tree has to be installable. Frozen,
+        # because the lockfile is what the branch this reconciles is meant to be protected by.
+        run: bun install --frozen-lockfile
+
       - name: Reconcile default branch and protection
-        run: python3 "${PIPELINE_SCRIPTS:-.github/scripts}/repo_settings.py" --apply --branches-only
+        # `repo-settings.ts` implements the `--branches-only` half of `repo_settings.py`: the
+        # default branch from the manifest, then branch protection, then exit 1 if either failed.
+        #
+        # The other eight operations that script performs are NOT ported, and this command rejects
+        # the flags that would select them rather than accepting and ignoring them. A flag that
+        # parses and does nothing is how a workflow comes to believe it applied protection it never
+        # touched. `install.yml` needs those eight and still runs the Python.
+        run: bun packages/harness/src/ci/repo-settings.ts --apply --branches-only

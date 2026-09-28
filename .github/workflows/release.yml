@@ -140,6 +140,10 @@ jobs:
           fi
           echo "Both resolvers agree on $ts_tag."
 
+      # Still a heredoc, and the reason is a test rather than a dependency:
+      # `repository-governance.test.ts` asserts this step contains the literal `sys.exit(1)`, and
+      # that file is outside this workflow. Once that assertion reads for a failing `exit 1` next to
+      # `metadata_problems`, this is the same three-line `jq` the two steps below use.
       - name: Verify package metadata agrees with the release
         if: steps.version.outputs.warranted == 'true'
         run: |
@@ -187,15 +191,14 @@ jobs:
         id: tooling
         # Read once into an output rather than testing inline: a suppressed error in a conditional
         # silently takes the "nothing needed" branch, which is how a missing build backend went
-        # unnoticed across three repositories.
+        # unnoticed across three repositories. The steps array is required for the same reason.
         run: |
-          python - <<'PY' >> "$GITHUB_OUTPUT"
-          import json, os
-
-          steps = json.load(open(os.environ["RUNNER_TEMP"] + "/release.json"))["steps"]
-          commands = " ".join(step.get("command") or "" for step in steps)
-          print(f"python={'true' if 'python -m build' in commands else 'false'}")
-          PY
+          needs_python=$(jq -r '
+            if (.steps | type) != "array"
+            then error("release.json does not carry a steps array")
+            else ([.steps[] | .command // ""] | join(" ") | contains("python -m build")) end
+          ' "$RUNNER_TEMP/release.json")
+          echo "python=$needs_python" >> "$GITHUB_OUTPUT"
 
       - name: Install the build backend
         # The pipeline provides the tooling its own default commands need. Requiring every consumer
@@ -206,13 +209,21 @@ jobs:
       - name: Build release assets
         if: steps.version.outputs.warranted == 'true'
         run: |
-          python - <<'PY' > "$RUNNER_TEMP/steps.sh"
-          import json, os, shlex
-          data = json.load(open(os.environ["RUNNER_TEMP"] + "/release.json"))
-          for step in data["steps"]:
-              if step.get("command"):
-                  print(f"( cd {shlex.quote(step['cwd'])} && {step['command']} )")
-          PY
+          # `@sh` is the quoting the generated script depends on: a cwd with a space in it would
+          # otherwise split the line into two commands. Both `steps` and each step's `cwd` are
+          # required, because a step the script cannot enter is a release that builds the wrong
+          # thing quietly.
+          jq -r '
+            if (.steps | type) != "array"
+            then error("release.json does not carry a steps array")
+            else .steps[]
+              | select((.command // "") != "")
+              | if (.cwd | type) != "string"
+                then error("a build step carries no cwd")
+                else "( cd \(.cwd | @sh) && \(.command) )"
+                end
+            end
+          ' "$RUNNER_TEMP/release.json" > "$RUNNER_TEMP/steps.sh"
           # Only where a document is going to be written; an unconditional mkdir leaves a stray
           # directory that setuptools then discovers as a rival top-level package.
           if [ "${{ steps.paper.outputs.typst }}" = "true" ] \

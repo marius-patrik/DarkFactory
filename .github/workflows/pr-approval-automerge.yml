@@ -62,18 +62,28 @@ jobs:
           ref: ${{ inputs.pipeline-ref }}
           path: .darkfactory-pipeline
 
-      - name: Put the pipeline scripts on the path
+      - name: Resolve the pinned pipeline
+        # ROOT is the same resolution the other converted workflows use: a repository pinned to a
+        # pipeline ref runs that ref's code rather than its own. It replaces PYTHONPATH and
+        # PIPELINE_SCRIPTS, which only existed to locate a Python script.
         run: |
-          if [ -d .darkfactory-pipeline/.github/scripts ]; then
-            echo "PYTHONPATH=$GITHUB_WORKSPACE/.darkfactory-pipeline/.github/scripts" >> "$GITHUB_ENV"
-            echo "PIPELINE_SCRIPTS=$GITHUB_WORKSPACE/.darkfactory-pipeline/.github/scripts" >> "$GITHUB_ENV"
+          if [ -d .darkfactory-pipeline/packages/harness ]; then
+            echo "DF_ROOT=$GITHUB_WORKSPACE/.darkfactory-pipeline" >> "$GITHUB_ENV"
           else
-            echo "PYTHONPATH=$GITHUB_WORKSPACE/.github/scripts" >> "$GITHUB_ENV"
-            echo "PIPELINE_SCRIPTS=$GITHUB_WORKSPACE/.github/scripts" >> "$GITHUB_ENV"
+            echo "DF_ROOT=$GITHUB_WORKSPACE" >> "$GITHUB_ENV"
           fi
 
+      - name: Set up Bun
+        uses: oven-sh/setup-bun@v2
+
+      - name: Install the pipeline runtime
+        run: bun install --frozen-lockfile --cwd "$DF_ROOT"
+
       - name: Handle Approval and Auto-Merge
-        run: python3 "${PIPELINE_SCRIPTS:-.github/scripts}/handle_pr_approval.py"
+        # `pr-approval-main.ts` is the entry `handle_pr_approval.py` was. It takes no arguments, reads
+        # the same environment, and exits 0 on every path the Python reached — a declined event must
+        # not redden the workflow. A rejected board write propagates, as it did in the Python.
+        run: bun "$DF_ROOT/packages/harness/src/board/pr-approval-main.ts"
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token || secrets.GH_PROJECT_TOKEN || secrets.GITHUB_TOKEN }}
           # The proxy approval must come from github-actions[bot], which is neither the App nor
