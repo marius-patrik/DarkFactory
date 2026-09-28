@@ -17,11 +17,14 @@ import {
 import type { ImplementContext } from "../../src/pipeline/implement.ts";
 import type { AreaTaxonomy } from "../../src/pipeline/labels.ts";
 import type {
+	ClosingIssue,
 	IssueCommentRow,
 	IssueField,
 	IssueView,
 	PipelineIo,
 	PrCreateInput,
+	PrField,
+	PrView,
 } from "../../src/pipeline/pipeline-io.ts";
 import type { VerificationResult, WorkspaceIo } from "../../src/pipeline/workspace-io.ts";
 
@@ -65,9 +68,45 @@ export interface IssueFixture {
 	comments?: string[];
 	/** The comment ids GitHub would have assigned, in creation order. */
 	commentIds?: number[];
+	/** The parent of a sub-issue, when the handler asks for it. */
+	parentIssue?: number;
 }
 
-const EMPTY_ISSUE: Required<IssueFixture> = { title: "", body: "", labels: [], comments: [], commentIds: [] };
+const EMPTY_ISSUE: Required<IssueFixture> = {
+	title: "",
+	body: "",
+	labels: [],
+	comments: [],
+	commentIds: [],
+	parentIssue: 0,
+};
+
+/** The pull request a {@link RecordingIo} serves when a handler reads one. */
+export interface PullFixture {
+	/** The pull request body. */
+	body?: string;
+	/** The pull request's comment bodies, oldest first. */
+	comments?: string[];
+	/** The issues the pull request closes. */
+	closingIssues?: Array<{ number: number; labels?: Array<{ name?: string } | string>; title?: string }>;
+}
+
+/** An empty pull request, with unread fields left out. */
+function pullView(fixture: PullFixture, fields: readonly PrField[]): PrView {
+	return {
+		body: fields.includes("body") ? (fixture.body ?? "") : "",
+		comments: fields.includes("comments") ? (fixture.comments ?? []) : [],
+		closingIssues: fields.includes("closingIssues")
+			? (fixture.closingIssues ?? []).map(
+					(issue): ClosingIssue => ({
+						number: issue.number,
+						labels: issue.labels ?? [],
+						title: issue.title ?? "",
+					}),
+				)
+			: [],
+	};
+}
 
 /**
  * A recording `PipelineIo`.
@@ -78,9 +117,14 @@ const EMPTY_ISSUE: Required<IssueFixture> = { title: "", body: "", labels: [], c
  *
  * @param issues - Issues to serve by number, so a handler reading issue 7 and issue 3 gets each.
  * @param behaviour - Per-operation overrides, applied ahead of the issue fixtures.
+ * @param pullRequests - Pull requests to serve by number.
  * @returns The recording port and its call log.
  */
-export function recordingIo(issues: Record<number, IssueFixture> = {}, behaviour: IoBehaviour = {}): RecordingIo {
+export function recordingIo(
+	issues: Record<number, IssueFixture> = {},
+	behaviour: IoBehaviour = {},
+	pullRequests: Record<number, PullFixture> = {},
+): RecordingIo {
 	const calls: RecordedCall[] = [];
 
 	/** Reads an issue, preferring an explicit override so a test can inject a failure. */
@@ -93,6 +137,7 @@ export function recordingIo(issues: Record<number, IssueFixture> = {}, behaviour
 			body: fixture.body,
 			labels: fields.includes("labels") ? fixture.labels : [],
 			comments: fields.includes("comments") ? fixture.comments : [],
+			parentIssue: fields.includes("parent") && fixture.parentIssue ? fixture.parentIssue : undefined,
 		};
 	};
 
@@ -127,6 +172,7 @@ export function recordingIo(issues: Record<number, IssueFixture> = {}, behaviour
 		changeLabels: async (repo, number, change) => {
 			record("changeLabels", [repo, number, change], undefined);
 		},
+		prView: async (repo, pr, fields) => record("prView", [repo, pr, fields], pullView(pullRequests[pr] ?? {}, fields)),
 		prDiff: async (repo, pr) => record("prDiff", [repo, pr], ""),
 		prReady: async (repo, pr) => {
 			record("prReady", [repo, pr], undefined);

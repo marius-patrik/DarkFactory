@@ -16,7 +16,7 @@ import type { GitHubClient } from "../github/client.ts";
 import type { AgentDispatchPayload, LabelLike } from "./dispatch.ts";
 
 /** The issue fields a handler can ask for, mirroring `gh issue view --json`. */
-export type IssueField = "title" | "body" | "labels" | "comments";
+export type IssueField = "title" | "body" | "labels" | "comments" | "parent";
 
 /** A comment as the handlers read it. */
 export interface IssueCommentRow {
@@ -36,6 +36,37 @@ export interface IssueView {
 	labels: LabelLike[];
 	/** The issue's comment bodies, oldest first, when asked for. */
 	comments: string[];
+	/**
+	 * The parent issue of a sub-issue, when asked for.
+	 *
+	 * GitHub exposes the parent relationship only through GraphQL, so asking for it costs a
+	 * different request than the REST issue read; that cost is the caller's to choose, exactly as
+	 * `comments` is.
+	 */
+	parentIssue?: number | undefined;
+}
+
+/** The pull request fields a handler can ask for, mirroring `gh pr view --json`. */
+export type PrField = "body" | "comments" | "closingIssues";
+
+/** An issue a pull request closes, as the plan resolver reads it. */
+export interface ClosingIssue {
+	/** The issue number. */
+	number: number;
+	/** The issue's labels. */
+	labels: LabelLike[];
+	/** The issue title. */
+	title: string;
+}
+
+/** The subset of a pull request a handler reads. */
+export interface PrView {
+	/** The pull request body. */
+	body: string;
+	/** The pull request's comment bodies, oldest first, when asked for. */
+	comments: string[];
+	/** The issues the pull request closes, when asked for. */
+	closingIssues: ClosingIssue[];
 }
 
 /** A label to add to, or remove from, an issue or pull request. */
@@ -104,6 +135,20 @@ export interface PipelineIo {
 	changeLabels(repo: string, number: number, change: LabelChange & { add: boolean }): Promise<void>;
 
 	/**
+	 * Read fields off a pull request.
+	 *
+	 * Separate from {@link PipelineIo.issueView} because a pull request's conversation comment is
+	 * an issue comment, but its *closing references* are not: they are a GraphQL-only relationship
+	 * that a pull request is what has, and the plan resolver needs them.
+	 *
+	 * @param repo - Repository slug, `owner/name`.
+	 * @param pr - The pull request number.
+	 * @param fields - The fields to read; `comments` and `closingIssues` each cost a second request.
+	 * @returns The requested fields, with unread ones as empty.
+	 */
+	prView(repo: string, pr: number, fields: readonly PrField[]): Promise<PrView>;
+
+	/**
 	 * Read a pull request's unified diff.
 	 *
 	 * @param repo - Repository slug, `owner/name`.
@@ -167,6 +212,65 @@ const DIFF_ACCEPT = "application/vnd.github.v3.diff";
 const AGENT_DISPATCH_EVENT_TYPE = "agent-dispatch";
 
 /**
+ * The sub-issue parent of an issue.
+ *
+ * GitHub exposes this relationship only through GraphQL, so the REST issue read cannot answer it
+ * and asking for it is a second request. The Python asked `gh` for `body,parent,comments` in one
+ * command, which hid that cost.
+ */
+const PARENT_ISSUE_QUERY = `query ($owner: String!, $name: String!, $number: Int!) {
+	repository(owner: $owner, name: $name) {
+		issue(number: $number) {
+			parent { number }
+		}
+	}
+}`;
+
+/** The body, comments and closing references of a pull request. */
+const PR_VIEW_QUERY = `query ($owner: String!, $name: String!, $number: Int!) {
+	repository(owner: $owner, name: $name) {
+		pullRequest(number: $number) {
+			body
+			comments(first: 100) { nodes { body } }
+			closingIssuesReferences(first: 50) {
+				nodes { number title labels(first: 50) { nodes { name } } }
+			}
+		}
+	}
+}`;
+
+/** Split a repository slug into its owner and name, the way both GraphQL queries want them. */
+function splitRepo(repo: string): { owner: string; name: string } {
+	const slash = repo.indexOf("/");
+	if (slash < 0) return { owner: repo, name: "" };
+	return { owner: repo.slice(0, slash), name: repo.slice(slash + 1) };
+}
+
+/** Pull the bodies out of a GraphQL `comments` connection. */
+function commentBodies(nodes: unknown): string[] {
+	if (!Array.isArray(nodes)) return [];
+	return nodes.map((node) => String((node as { body?: unknown } | null)?.body ?? ""));
+}
+
+/** Pull the issues out of a GraphQL `closingIssuesReferences` connection. */
+function closingIssues(nodes: unknown): ClosingIssue[] {
+	if (!Array.isArray(nodes)) return [];
+	const issues: ClosingIssue[] = [];
+	for (const node of nodes) {
+		const issue = node as { number?: unknown; title?: unknown; labels?: { nodes?: unknown } } | null;
+		if (typeof issue?.number !== "number") continue;
+		issues.push({
+			number: issue.number,
+			title: String(issue.title ?? ""),
+			labels: Array.isArray(issue.labels?.nodes)
+				? issue.labels.nodes.map((label) => String((label as { name?: unknown } | null)?.name ?? ""))
+				: [],
+		});
+	}
+	return issues;
+}
+
+/**
  * The `PipelineIo` backed by {@link GitHubClient}.
  *
  * The client's ETag cache is per-URL and invalidated on every write, which is the right shape here:
@@ -202,6 +306,45 @@ export function githubPipelineIo(client: GitHubClient): PipelineIo {
 		return rows.map((row, index) => ({ id: row.id ?? index, body: row.body ?? "" }));
 	};
 
+	/**
+	 * Read an issue's sub-issue parent, or `undefined` when it has none.
+	 *
+	 * A repository that has not enabled sub-issues answers `null` here, which is not an error: the
+	 * plan resolver falls through to the body and the comments.
+	 */
+	const readParentIssue = async (repo: string, issue: number): Promise<number | undefined> => {
+		const { owner, name } = splitRepo(repo);
+		if (!owner || !name) return undefined;
+		const data = await client.graphql<{
+			repository?: { issue?: { parent?: { number?: number } | null } | null } | null;
+		}>(PARENT_ISSUE_QUERY, { owner, name, number: issue });
+		const number = data.repository?.issue?.parent?.number;
+		return typeof number === "number" ? number : undefined;
+	};
+
+	/** Read a pull request's body, comments and closing references in one GraphQL round trip. */
+	const readPrView = async (repo: string, pr: number, fields: readonly PrField[]): Promise<PrView> => {
+		const view: PrView = { body: "", comments: [], closingIssues: [] };
+		if (fields.length === 0) return view;
+		const { owner, name } = splitRepo(repo);
+		if (!owner || !name) return view;
+		const data = await client.graphql<{
+			repository?: {
+				pullRequest?: {
+					body?: string | null;
+					comments?: { nodes?: unknown };
+					closingIssuesReferences?: { nodes?: unknown };
+				} | null;
+			} | null;
+		}>(PR_VIEW_QUERY, { owner, name, number: pr });
+		const pull = data.repository?.pullRequest;
+		if (!pull) return view;
+		view.body = pull.body ?? "";
+		if (fields.includes("comments")) view.comments = commentBodies(pull.comments?.nodes);
+		if (fields.includes("closingIssues")) view.closingIssues = closingIssues(pull.closingIssuesReferences?.nodes);
+		return view;
+	};
+
 	return {
 		async issueView(repo, issue, fields) {
 			const body = await client.rest<{
@@ -221,6 +364,11 @@ export function githubPipelineIo(client: GitHubClient): PipelineIo {
 			// want a title and a body.
 			if (fields.includes("comments")) {
 				view.comments = (await listComments(repo, Number(issue))).map((row) => row.body);
+			}
+			// The parent of a sub-issue is GraphQL-only, so it is a third request rather than a field
+			// of the first. See {@link PARENT_ISSUE_QUERY}.
+			if (fields.includes("parent")) {
+				view.parentIssue = await readParentIssue(repo, issue);
 			}
 			return view;
 		},
@@ -242,6 +390,10 @@ export function githubPipelineIo(client: GitHubClient): PipelineIo {
 			for (const label of change.labels) {
 				await client.rest("DELETE", `${issuePath}/labels/${encodeURIComponent(label)}`);
 			}
+		},
+
+		async prView(repo, pr, fields) {
+			return readPrView(repo, pr, fields);
 		},
 
 		async prDiff(repo, pr) {
