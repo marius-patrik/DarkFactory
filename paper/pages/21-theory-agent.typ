@@ -9,13 +9,38 @@
 // in the introduction, and are not repeated here.
 #heading(level: 2)[Agent: Co to je a jak funguje] <theory-first>
 
+#strong[Agent je model plus harness] @langchain-harness: model navrhuje a harness mu
+dopředuje kontext, nástroje a pravidla, jejichž prostřednictvím se návrh mění v čin.
+Následující oddíly rozkládají, co všechno musí být kolem modelu, aby takový běh vznikl.
+
 #heading(level: 3)[Jazykový model (LLM)]
 
-Současný jazykový model stojí na architektuře #strong[Transformer], kterou představil Google v roce 2017 v jejich nyní proslulé práci #strong[#emph[„Attention Is All You Need“]] @vaswani2017. Místo zpracovávání tokenů jeden po druhém přiřazuje architektura význam každému tokenu současně se všemi ostatními. Mechanismus, na kterém je architektura postavená, se nazývá #strong[attention] a je dodnes používaný i v pozdějších generacích modelů @brown2020. Přitom ke každému tokenu připočítá vážený součet hodnot ostatních tokenů, takže jeho reprezentace nese informaci z celého kontextu a vzdálenost mezi pozicemi nemusí být pevně daná jejich pořadím. Právě to dovoluje zpracovat kontext najednou a vyhovět dnešním požadavkům na délku a složitost konverzace.
+Současný jazykový model stojí na architektuře #strong[Transformer], kterou představil Google
+v roce 2017 v jejich nyní proslulé práci #strong[#emph[„Attention Is All You Need“]] @vaswani2017.
+Místo zpracovávání tokenů jeden po druhém přiřazuje architektura význam každému tokenu
+současně se všemi ostatními.
 
-Na této architektuře je založen i jazykový model (#strong[LLM]), který předpovídá další token na základě toho, co je před ním obsaženo v #strong[kontextu]. Při #strong[inferenci] model zpracuje obsah kontextového okna a vytvoří posloupnost výstupních tokenů.
+Mechanismus, na kterém je architektura postavená, se nazývá #strong[attention]. Ke každému
+tokenu připočítá vážený součet hodnot ostatních tokenů, takže jeho reprezentace nese
+informaci z celého kontextu a vzdálenost mezi pozicemi nemusí být pevně daná jejich
+pořadím. Právě to dovoluje zpracovat kontext najednou a vyhovět dnešním požadavkům na délku
+a složitost konverzace; mechanismus je používaný i v pozdějších generacích modelů
+@brown2020.
 
-Vektorové reprezentace, označované jako #strong[embeddingy], zachycují sémantické vztahy v prostoru vektorů. Známým příkladem je vztah mezi vektory slov král, královna, muž a žena @mikolov2013linguistic. Tento vztah schematicky znázorňuje @fig-embedding-queen.
+Jazykový model je sám o sobě jen funkce. Na základě toho, co dostane v kontextu, vypočítá
+rozložení pravděpodobností nad následujícím tokenem a jeden z nich vybere. Mezi voláními si
+nic nepamatuje, nezná nic mimo text, který mu byl předložen, a nemá přístup k souborům,
+příkazům ani stavu práce. Všechno, co o zadání ví, je v kontextu, a jinudy se to do něj
+nedostane.
+
+Při #strong[inferenci] tedy model zpracuje obsah kontextového okna a vytváří výstupní tokeny
+jeden za druhým, přičemž každý nový token se stane součástí kontextu pro další krok. To je
+celá jeho schopnost: převést kontext na posloupnost tokenů. Stav mezi kroky, nástroje,
+ukládání výsledků a oprávnění musí přijít zvenčí — a to je právě to, co doplňuje harness.
+
+Vektorové reprezentace, označované jako #strong[embeddingy], zachycují sémantické vztahy
+v prostoru vektorů. Známým příkladem je vztah mezi vektory slov král, královna, muž a žena
+@mikolov2013linguistic. Tento vztah schematicky znázorňuje @fig-embedding-queen.
 
 #figure(
   image("/components/img/vector-embedding-queen.svg", width: 100%),
