@@ -7,7 +7,7 @@
 //
 // The three-step progression and the line between a chatbot and an agent are stated once,
 // in the introduction, and are not repeated here.
-#heading(level: 2)[Co je to agent a jak funguje?] <theory-first>
+#heading(level: 2)[Agent: Co to je a jak funguje] <theory-first>
 
 Současný jazykový model stojí na architektuře #strong[Transformer], kterou představil Google v roce 2017 v jejich nyní proslulé práci #strong[#emph[„Attention Is All You Need“]] @vaswani2017. Místo zpracovávání tokenů jeden po druhém přiřazuje architektura význam každému tokenu současně se všemi ostatními. Mechanismus, na kterém je architektura postavená, se nazývá #strong[attention] a je dodnes používaný i v pozdějších generacích modelů @brown2020. Přitom ke každému tokenu připočítá vážený součet hodnot ostatních tokenů, takže jeho reprezentace nese informaci z celého kontextu a vzdálenost mezi pozicemi nemusí být pevně daná jejich pořadím. Právě to dovoluje zpracovat kontext najednou a vyhovět dnešním požadavkům na délku a složitost konverzace.
 
@@ -54,5 +54,7 @@ Zadání určuje, co má agent udělat; co mu je dovoleno udělat, určuje harne
 - #strong[Skills] spojují opakovaně použitelné instrukce, skripty a zdroje pro určitý typ úlohy @agentskills-spec.
 - #strong[Hooks] reagují na události životního cyklu a mohou před akcí či po ní vynutit deterministickou kontrolu @openai-agents-lifecycle.
 - #strong[Model Context Protocol] (#strong[MCP]) standardizuje napojení externích nástrojů a datových zdrojů prostřednictvím rozhraní klient--server @mcp-specification.
+
+Instrukce lze uchovat ve standardizovaném souboru #strong[`AGENTS.md`] @agents-md přímo v repozitáři (Anthropic ojedinele využívá #strong[CLAUDE.md]). Skilly, scripty a hooky lze uchovat pod složkou #strong[`.agents/`] v projektu nebo v konfigurační složce harnessu.
 
 Tato dělba má přímý důsledek pro praxi. Oprávnění udělená nástroji a rozsah zadání se dají omezovat nezávisle: lze agentovi odebrat právo měnit cokoli mimo vyjmenované soubory, aniž by se změnil úkol, a lze zúžit úkol, aniž by mu přibyla schopnost. Kontrola, která by tyto dvě roviny zaměnila, by pak nedokázala říct, zda selhal úkol, nebo oprávnění.
