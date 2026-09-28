@@ -347,13 +347,18 @@ export function rewriteFileLinks(text: string, repo = "", branch = ""): string {
 	if (!text.includes("file://")) return text;
 	return text.replace(FILE_URL_RE, (match, raw: string) => {
 		const trimmed = raw.trim();
-		const path = repositoryPathFrom(trimmed);
+		// Trailing sentence punctuation belongs to the sentence, not the path. `FILE_URL_RE` stops at
+		// whitespace or a bracket, so a citation at the end of a sentence captured the full stop and
+		// produced a link to `respond.ts.` — a path that does not exist, and a link that 404s for
+		// anyone who follows it. Strip it here and put it back after the rewritten form.
+		const trailing = /[.,;:]+$/u.exec(trimmed)?.[0] ?? "";
+		const path = repositoryPathFrom(trailing ? trimmed.slice(0, -trailing.length) : trimmed);
 		if (!path) return match;
 		if (NON_REPOSITORY_ROOTS.some((root) => path.startsWith(root))) {
 			const name = trimmed.replace(/\/+$/u, "").split("/").pop();
-			return `\`${name || trimmed}\``;
+			return `\`${name || trimmed}\`${trailing}`;
 		}
-		if (repo && branch) return `[${path}](https://github.com/${repo}/blob/${branch}/${path})`;
-		return `\`${path}\``;
+		if (repo && branch) return `[${path}](https://github.com/${repo}/blob/${branch}/${path})${trailing}`;
+		return `\`${path}\`${trailing}`;
 	});
 }
