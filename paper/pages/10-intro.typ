@@ -9,12 +9,24 @@
 
 #heading(level: 2)[Motivace: Vývoj a adopce generativní AI] <motivace>
 
-Nástroje založené na jazykových modelech se v krátké době drasticky zlepšily a jejich vývoj lze členit do tří stupňů. Nejprve doplňovaly kód v editoru @github-copilot-completion, potom přišly konverzační chatboty
-@github-copilot-chat, v nichž model sestavuje odpověď, ale nástroje mu zpravidla nebyly k dispozici, takže i nadále všechno provedl uživatel. #figure(
+Nástroje založené na jazykových modelech se v krátké době drasticky zlepšily a jejich vývoj
+lze členit do tří stupňů. Nejprve doplňovaly kód v editoru @github-copilot-completion.
+
+#figure(
   image("/components/img/vscode-copilot-inline-suggestions.png", width: 100%),
   caption: [Doplňování kódu přímo v editoru: model navrhuje pokračování řádku, které člověk
   přijme nebo odmítne @github-copilot-completion.],
 ) <fig-copilot-inline>
+
+Potom přišly konverzační chatboty @github-copilot-chat, v nichž model sestavuje odpověď, ale
+nástroje mu zpravidla nebyly k dispozici, takže i nadále všechno provedl uživatel.
+
+#figure(
+  image("/components/img/chatgpt-cannot-see-image.jpg", width: 100%),
+  caption: [Chatbot odpovídá textem a práci nechává člověku: místo aby snímek posoudil, přizná,
+  že obrázky neumí, a je to uživatel, kdo musí dojít k závěru. Screenshot z bezplatné verze
+  ChatGPT, převzato z @khurana2023chatgpt.],
+) <fig-chatgpt-cannot-see>
 
 Až třetí stupeň, #emph[coding agenti] @github-copilot-agent @openai-codex-2025 @openai-codex-app-2026,
 dostal přístup k souborům, příkazům a běhovému prostředí — a tím se poprvé změnila věta, kdo pracuje.
