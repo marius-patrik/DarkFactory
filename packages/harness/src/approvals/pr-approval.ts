@@ -51,12 +51,12 @@ export type GhRunner = (args: readonly string[], repo: string, options?: GhOptio
 
 /** The board mutations post-merge reconciliation needs. */
 export interface ProjectBoardClient {
-	/** Adds a board item for a pull request or issue URL, returning its item id. */
-	addItem(url: string): string | null;
+	/** Adds a board item for a pull request or issue URL, resolving its item id or `null`. */
+	addItem(url: string): Promise<string | null>;
 	/** Moves a board item to a status. */
-	editStatus(itemId: string, status: string): void;
+	editStatus(itemId: string, status: string): Promise<boolean>;
 	/** Labels an issue or pull request with the named board status. */
-	setStatusLabel(repo: string, number: number, status: string): void;
+	setStatusLabel(repo: string, number: number, status: string): Promise<unknown>;
 }
 
 /** Where the handler narrates what it is doing. */
@@ -111,7 +111,7 @@ export interface HandlePrApprovalDeps {
 	logger?: PrApprovalLogger;
 	env?: PrApprovalEnvironment;
 	/** Replaces the poll's sleep so a test need not wait out the interval. */
-	sleep?: (milliseconds: number) => void;
+	sleep?: (milliseconds: number) => void | Promise<void>;
 }
 
 /** The default logger: stdout for progress, stderr for anything an operator must act on. */
@@ -257,13 +257,13 @@ export function detectApproval(env: PrApprovalEnvironment = process.env): Approv
  * @param run - The `gh` runner the issue-closing commands are issued through.
  * @param client - The board client that resolves field and option ids at runtime.
  */
-export function reconcilePostMerge(
+export async function reconcilePostMerge(
 	prNumber: number,
 	repo: string,
 	run: GhRunner,
 	client: ProjectBoardClient,
 	logger: PrApprovalLogger = CONSOLE,
-): void {
+): Promise<void> {
 	const view = run(["pr", "view", String(prNumber), "--json", "state,closingIssuesReferences,body,url"], repo);
 	if (view.exitCode !== 0) {
 		logger.out(`Failed to view PR #${prNumber} for post-merge reconciliation.`);
@@ -279,17 +279,25 @@ export function reconcilePostMerge(
 	const issueNumbers = collectBoundIssues(data);
 	logger.out(`Reconciling post-merge for PR #${prNumber}. Bound issues: [${issueNumbers.join(", ")}]`);
 
+	// Every write is awaited. The Python's client was synchronous, so `add_item` had returned by the
+	// time the next line ran; a GraphQL client is not, and without the await a failure surfaces as an
+	// unhandled rejection after this function has already returned — which is a board that silently
+	// stopped being updated, the exact outcome this reconciliation exists to prevent.
+	//
+	// A `null` item id is still tolerated, and still only that: the Python wrote `if item_id:` before
+	// editing the status, so a null skips the edit and nothing else. A rejected write propagates, which
+	// is what the Python did too — it had no try/except around these calls.
 	if (data.url) {
-		const itemId = client.addItem(data.url);
-		if (itemId) client.editStatus(itemId, "Done");
-		client.setStatusLabel(repo, prNumber, "Done");
+		const itemId = await client.addItem(data.url);
+		if (itemId) await client.editStatus(itemId, "Done");
+		await client.setStatusLabel(repo, prNumber, "Done");
 	}
 
 	for (const num of issueNumbers) {
 		run(["issue", "close", String(num), "--repo", repo, "--reason", "completed"], repo);
-		client.setStatusLabel(repo, num, "Done");
-		const itemId = client.addItem(`https://github.com/${repo}/issues/${num}`);
-		if (itemId) client.editStatus(itemId, "Done");
+		await client.setStatusLabel(repo, num, "Done");
+		const itemId = await client.addItem(`https://github.com/${repo}/issues/${num}`);
+		if (itemId) await client.editStatus(itemId, "Done");
 		logger.out(`Closed issue #${num} and marked it Done on the project board`);
 	}
 }
@@ -300,7 +308,14 @@ export function reconcilePostMerge(
  * Every early return is a success: an event that is not an approval is not a failure, and the
  * workflow step should not redden because a stranger commented.
  */
-export function handlePrApproval(deps: HandlePrApprovalDeps): PrApprovalOutcome {
+/**
+ * Now asynchronous, because the post-merge reconciliation it calls writes to a GraphQL board client
+ * and those writes must complete before this returns. It was synchronous because the fake client in
+ * the test suite was, and a synchronous fake makes a real asynchronous dependency look like a
+ * synchronous one — the signature was shaped by the test rather than by the code it would run against
+ * in production.
+ */
+export async function handlePrApproval(deps: HandlePrApprovalDeps): Promise<PrApprovalOutcome> {
 	const { client, run } = deps;
 	const logger = deps.logger ?? CONSOLE;
 	const env = deps.env ?? process.env;
@@ -357,10 +372,10 @@ export function handlePrApproval(deps: HandlePrApprovalDeps): PrApprovalOutcome 
 		const check = run(["pr", "view", String(pr), "--json", "state"], repo);
 		if (check.exitCode === 0 && (JSON.parse(check.stdout) as { state?: string }).state === "MERGED") {
 			logger.out(`PR #${pr} merged successfully.`);
-			reconcilePostMerge(pr, repo, run, client, logger);
+			await reconcilePostMerge(pr, repo, run, client, logger);
 			return { entered: true, reason: null, merged: true };
 		}
-		sleep(MERGE_POLL_INTERVAL_SECONDS);
+		await sleep(MERGE_POLL_INTERVAL_SECONDS);
 	}
 
 	logger.out(
