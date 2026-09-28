@@ -1,6 +1,6 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 940 560" role="img" aria-labelledby="t d">
-  <title id="t">Agentní smyčka ReAct</title>
-  <desc id="d">ReAct střídá uvažování s akcí. Uvnitř modelu vznikne nejprve úvaha, pak požadavek na nástroj; ten se teprve venku provede v běhovém prostředí a jeho výsledek se vrátí jako pozorování připojené k přepisu konverzace. Cyklus se opakuje, dokud model místo dalšího požadavku na nástroj nevydá závěrečnou odpověď.</desc>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 980 600" role="img" aria-labelledby="t d">
+  <title id="t">Vzor ReAct</title>
+  <desc id="d">ReAct střídá myšlenku, akci a pozorování. Zadání vyvolá myšlenku, myšlenka vyjádří akci, prostředí akci provede a vrátí pozorování, pozorování vyvolá další myšlenku. Myšlenka, akce i pozorování se postupně připojují do kontextu, který tak roste, a smyčka končí odpovědí místo další akce.</desc>
   <defs>
     <marker id="a" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto">
       <path d="M0 0L10 5L0 10Z" fill="#1a1a1a"/>
@@ -9,56 +9,71 @@
   <style>
     .box{fill:#fff;stroke:#1a1a1a;stroke-width:1.8}
     .soft{fill:#f2f2f2;stroke:#1a1a1a;stroke-width:1.8}
-    .bound{fill:none;stroke:#8a8a8a;stroke-width:1.6;stroke-dasharray:7 5}
-    .boundlab{font:italic 15px Caladea,serif;fill:#6b6b6b}
-    .label{font:700 20px Caladea,serif;fill:#1a1a1a}
-    .sub{font:15px Caladea,serif;fill:#333}
-    .edge{fill:none;stroke:#1a1a1a;stroke-width:1.8;marker-end:url(#a)}
-    .edgelab{font:italic 14px Caladea,serif;fill:#333}
-    .note{font:italic 15px Caladea,serif;fill:#4a4a4a}
+    .label{font:700 19px Caladea,serif;fill:#1a1a1a}
+    .note{font:italic 15px Caladea,serif;fill:#333}
+    .small{font:italic 14px Caladea,serif;fill:#5a5a5a}
+    .onDark{fill:#fff}
+    .onLight{fill:#1a1a1a}
+    .arrow{fill:none;stroke:#1a1a1a;stroke-width:1.8;marker-end:url(#a)}
   </style>
 
-  <!-- The model boundary. Reasoning, acting and the final answer all happen inside it;
-       only the action itself leaves, to be executed outside. -->
-  <rect x="56" y="44" width="828" height="286" rx="10" class="bound"/>
-  <text x="70" y="70" class="boundlab">Model</text>
+  <text x="40" y="34" class="label">Trajektorie</text>
+  <text x="40" y="56" class="small">jeden průchod smyčkou; cyklus se opakuje, dokud model neodpoví</text>
 
-  <rect x="90" y="92" width="230" height="92" rx="6" class="box"/>
-  <text x="205" y="132" text-anchor="middle" class="label">Uvažování</text>
-  <text x="205" y="160" text-anchor="middle" class="sub">model zdůvodní, co udělá</text>
+  <rect x="40" y="76" width="240" height="40" rx="6" class="box"/>
+  <text x="56" y="102" class="label">Zadání</text>
+  <path d="M160 116V138" class="arrow"/>
 
-  <rect x="620" y="92" width="230" height="92" rx="6" class="box"/>
-  <text x="735" y="132" text-anchor="middle" class="label">Akce</text>
-  <text x="735" y="160" text-anchor="middle" class="sub">požadavek na nástroj</text>
+  <rect x="40" y="140" width="240" height="40" rx="6" class="box"/>
+  <text x="56" y="166" class="label">Myšlenka 1</text>
+  <text x="306" y="166" class="note">model nejprve zdůvodní, co udělá</text>
+  <path d="M160 180V202" class="arrow"/>
 
-  <rect x="355" y="222" width="230" height="80" rx="6" class="box"/>
-  <text x="470" y="256" text-anchor="middle" class="label">Výsledek</text>
-  <text x="470" y="282" text-anchor="middle" class="sub">závěrečná odpověď</text>
+  <rect x="40" y="204" width="240" height="40" rx="6" class="soft"/>
+  <text x="56" y="230" class="label">Akce 1</text>
+  <text x="306" y="230" class="note">požadavek na nástroj, ne odpověď</text>
+  <path d="M160 244V266" class="arrow"/>
 
-  <rect x="620" y="392" width="230" height="92" rx="6" class="soft"/>
-  <text x="735" y="432" text-anchor="middle" class="label">Nástroj / prostředí</text>
-  <text x="735" y="460" text-anchor="middle" class="sub">provedeno mimo model</text>
+  <rect x="40" y="268" width="240" height="40" rx="6" class="soft"/>
+  <text x="56" y="294" class="label">Pozorování 1</text>
+  <text x="306" y="294" class="note">výsledek akce, ne předpoklad modelu</text>
+  <path d="M160 308V330" class="arrow"/>
 
-  <rect x="90" y="392" width="230" height="92" rx="6" class="soft"/>
-  <text x="205" y="432" text-anchor="middle" class="label">Pozorování</text>
-  <text x="205" y="460" text-anchor="middle" class="sub">skutečný výsledek akce</text>
+  <rect x="40" y="332" width="240" height="40" rx="6" class="box"/>
+  <text x="56" y="358" class="label">Myšlenka 2</text>
+  <path d="M160 372V394" class="arrow"/>
 
-  <!-- the cycle: reasoning turns into acting, acting leaves, the result comes back -->
-  <path d="M320 138H614" class="edge"/>
-  <text x="467" y="170" text-anchor="middle" class="edgelab">uvážení přechází v akci</text>
+  <rect x="40" y="396" width="240" height="40" rx="6" class="soft"/>
+  <text x="56" y="422" class="label">Akce 2</text>
+  <path d="M160 436V458" class="arrow"/>
 
-  <path d="M735 184V386" class="edge"/>
-  <text x="722" y="350" text-anchor="end" class="edgelab">předání akce</text>
+  <rect x="40" y="460" width="240" height="40" rx="6" class="soft"/>
+  <text x="56" y="486" class="label">Pozorování 2</text>
+  <text x="306" y="422" class="note">druhý průchod běží stejně, s delším kontextem</text>
+  <text x="306" y="486" class="note">smyčka pokračuje, dokud okno nedojde k hranici</text>
+  <path d="M160 500V520" class="arrow"/>
 
-  <path d="M614 438H326" class="edge"/>
-  <text x="470" y="472" text-anchor="middle" class="edgelab">výsledek se vrací do přepisu</text>
+  <rect x="40" y="524" width="240" height="40" rx="6" class="box"/>
+  <text x="56" y="550" class="label">Odpověď</text>
+  <text x="306" y="550" class="note">místo další akce — a tím smyčka končí</text>
 
-  <path d="M205 386V190" class="edge"/>
-  <text x="218" y="352" class="edgelab">výsledek se připojí ke kontextu</text>
+  <!-- what the model actually has: every step above is appended, so the context grows -->
+  <text x="700" y="34" class="label">Kontext</text>
+  <text x="700" y="56" class="small">co model v daném okamžiku vidí</text>
+  <rect x="700" y="76" width="240" height="508" rx="6" class="box"/>
 
-  <!-- the loop ends when the model answers instead of acting -->
-  <path d="M282 186L394 219" class="edge"/>
-  <text x="404" y="212" class="edgelab">místo další akce</text>
+  <rect x="716" y="556" width="208" height="24" fill="#3f3f3f"/>
+  <rect x="716" y="486" width="208" height="66" fill="#d9d9d9"/>
+  <rect x="716" y="412" width="208" height="70" fill="#b8b8b8"/>
+  <rect x="716" y="332" width="208" height="76" fill="#8c8c8c"/>
 
-  <text x="470" y="536" text-anchor="middle" class="note">Uvažování i akce vznikají v modelu; ven se předává až akce, a to je celý rozdíl mezi smyčkou a prostou posloupností promptů.</text>
+  <text x="820" y="573" text-anchor="middle" class="small onDark">zadání</text>
+  <text x="820" y="525" text-anchor="middle" class="note onLight">myšlenka 1</text>
+  <text x="820" y="453" text-anchor="middle" class="note onLight">akce 1</text>
+  <text x="820" y="376" text-anchor="middle" class="note onDark">pozorování 1</text>
+  <text x="820" y="200" text-anchor="middle" class="small">další kroky přidávají</text>
+  <text x="820" y="220" text-anchor="middle" class="small">další tokeny, až okno</text>
+  <text x="820" y="240" text-anchor="middle" class="small">dojde k hranici</text>
+  <text x="820" y="140" text-anchor="middle" class="small">a pozornosti už</text>
+  <text x="820" y="160" text-anchor="middle" class="small">vystačí</text>
 </svg>

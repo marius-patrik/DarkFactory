@@ -23,8 +23,6 @@ V praxi to znamená, že se plán nevzniká až během práce agenta, ale před 
 
 Pokud mají podúlohy jasné hranice a jejich výsledky lze znovu integrovat, rozsáhlou úlohu lze rozdělit do více agentních běhů. Ve vzoru #strong[coordinator/subagent] koordinátor deleguje dílčí úkol specializovanému subagentovi s vlastním kontextem a přebírá jeho výsledek. Nezávislé podúlohy mohou zpracovat paralelní pracovníci. Claude Code jde dál: u dynamických workflow Claude napíše skript, který runtime vykonává na pozadí. Smyčku, větvení i mezivýsledky pak drží skript místo kontextu modelu, takže plán je program, který lze přečíst a znovu spustit @anthropic-dynamic-workflows.
 
-Vzorec koordinátor a subagent je běžně dostupný i v komerčních CLI harnessích, jak ukazuje @fig-antigravity-subagents.
-
 #figure(
   image("/components/img/antigravity-cli-subagents.jpg", width: 100%),
   caption: [Rozhraní Google Antigravity CLI, tedy harnessu agenta běžícího v terminálu: koordinátor definuje tři specializované subagenty a spouští je souběžně; každý běží vlastním kontextem @antigravity-cli.],
@@ -40,8 +38,9 @@ V praxi se to projevuje v několika ustálených vzorech:
   tokeny, počet nástrojů a doba běhu. Screenshot pochází z komunitního příspěvku; rozhraní
   i jeho chování popisuje dokumentace @anthropic-dynamic-workflows.],
 ) <fig-dynamic-workflows>
-- #strong[Agent Swarm] dynamicky rozkládá úlohu na heterogenní podproblémy a spouští specializované agenty paralelně pod řízením orchestrátoru @kimi-k25-swarm.
+
 - #strong[Goal loop] je nadřazená řídicí smyčka: po dílčím dokončení ReAct smyčky se pozorovaný stav porovná s cílem a podmínkami přijetí a běh skončí, nebo pokračuje další iterací. Vzor pochází z tzv. #strong[Ralph loop], který v roce 2025 popsal Geoffrey Huntley jako smyčku, jež opakovaně spouští agenta se stejným zadáním a stav si drží v pracovním stromu, nikoli v přepisu konverzace @huntley2025ralph. Dnes je to běžná funkce Claude Code i Codexu @claude-goal @openai-goals.
+
 #figure(
   image("/components/img/codex-goal-complete.png", width: 100%),
   caption: [Cíl, proti němuž agent postupuje, a jeho splnění: po dokončení dílčího kroku se stav

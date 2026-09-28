@@ -37,8 +37,26 @@ poznat, zda předchozí krok vůbec uspěl; průběh shrnuje @fig-react-loop.
 
 #figure(
   image("/components/img/react-loop.svg", width: 100%),
-  caption: [Agentní smyčka ReAct: model střídá uvažování s akcí, akci provádí harness mimo model a pozorování se vrací do kontextu. Smyčka končí, když model místo další akce vydá závěrečnou odpověď @yao2022.],
+  caption: [Vzor ReAct: myšlenka, akce a pozorování se střídají a každý z nich se připojí do kontextu,
+  takže smyčka pokračuje na tom, co už model viděl. Končí odpovědí místo dalšího požadavku na
+  nástroj @yao2022.]
 ) <fig-react-loop>
+
+Konkrétní implementace tuto trajektorii skládá do jednoho kontextového okna, a to je
+právě místo, kde se smyčka začne potýkat se svými náklady. Výsledky nástrojů,
+které jsou staré, se z přepisu vyčistí a když okno dojde k hranici, přepis se nahradí
+souhrnem, se kterým se pokračuje dál @anthropic-context-engineering; rozhodující je, co
+se v souhrnu udrží. Živé zpracování jednoho běhu v Claude Code shrnuje
+@fig-claude-code-context.
+
+#figure(
+  image("/components/img/claude-code-context-lifecycle.svg", width: 100%),
+  caption: [Kontextové okno v Claude Code: systémový prompt, nástroje a zadání zůstávají, zatímco
+  myšlenky, volání nástrojů a jejich výsledky se postupně vrší. Když okno dojde k hranici,
+  kompakce nahradí přepis souhrnem a běh pokračuje s ním a s pěti naposledy otevřenými soubory.
+  Vedle toho běží tři věci: výsledky starších nástrojů se čistí, poznámky se ukládají mimo okno
+  a obsah souborů se načítá až tehdy, když je agent potřebuje @anthropic-context-engineering.],
+) <fig-claude-code-context>
 
 
 #heading(level: 3)[Context window a kompakce]

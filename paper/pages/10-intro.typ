@@ -9,8 +9,7 @@
 
 #heading(level: 2)[Motivace: Vývoj a adopce generativní AI] <motivace>
 
-Nástroje založené na jazykových modelech se v krátké době drasticky zlepšily a jejich vývoj
-lze členit do tří stupňů. Nejprve doplňovaly kód v editoru @github-copilot-completion.
+Nástroje založené na jazykových modelech prošli v krátké době velkým rozvojem. Nejprve doplňovaly kód v editoru @github-copilot-completion.
 
 #figure(
   image("/components/img/vscode-copilot-inline-suggestions.png", width: 100%),
@@ -28,87 +27,37 @@ nástroje mu zpravidla nebyly k dispozici, takže i nadále všechno provedl už
   ChatGPT, převzato z @khurana2023chatgpt.],
 ) <fig-chatgpt-cannot-see>
 
-Až třetí stupeň, #emph[coding agenti] @github-copilot-agent @openai-codex-2025 @openai-codex-app-2026,
-dostal přístup k souborům, příkazům a běhovému prostředí — a tím se poprvé změnila věta, kdo pracuje.
-
-Tuto hranici lze pojmenovat přesněji: #strong[agent je model plus harness] @langchain-harness. Harness je všechen kód, konfigurace a vykonávací logika, která není samotným modelem. Model sám o sobě neumí udržet stav mezi kroky, spustit kód, přistupovat k údajům, které se po jeho tréninku změnily, ani připravit si prostředí — a právě to všechno mu musí dodat harness. Hrubý model tedy agentem je teprve tehdy, když mu harness dodá stav, vykonávání nástrojů, zpětné vazby a vynutitelná omezení.
-
-Praktickou hranicí mezi konverzačním chatbotem a agentem je právě míra delegovaného provádění. Samotná #strong[inference] však nemění soubory, nespouští příkazy ani neuchovává stav mezi kroky. Tyto činnosti zajišťuje harness, který modelu zpřístupňuje nástroje, vyřizuje oprávnění a sestavuje prompt z přepisu konverzace. Rozdělení modelu a harnessu je tedy věcí odpovědnosti, nikoli pouhé implementace: první navrhuje, druhý jedná.
+Až třetí stupeň, #emph[agenti] @github-copilot-agent @openai-codex-2025 @openai-codex-app-2026,
+dostal přístup k souborům, příkazům a běhovému prostředí — a tím se poprvé změnilo kdo pracuje.
 
 #figure(
   image("/components/img/gradually-ai-usage-2026.svg", width: 100%),
   caption: [Odhad rozdělení uživatelů generativní AI podle typu @gradually-ai-usage-2026.]
 ) <fig-gradually-usage>
 
-Rozsah veřejného použití je přitom stále úzký. Jeden ze zveřejněných odhadů klade počet
-uživatelů chatbotů na 28~% populace a pravidelné užití #emph[coding agentů] na
-0,36~% světové populace @gradually-ai-usage-2026; @fig-gradually-usage tyto dvě skupiny
-odlišuje.
-
-Aby takový agent mohl na projektu pracovat, nestačí generovat odpovědi. Potřebuje kontext
-z repozitáře, přístup k prostředí, nástroje pro spouštění příkazů, stav, který přežije
-jednotlivé kroky, a vymezený bod, v němž člověk rozhodne o přijetí výsledku
-@anthropic-harness-design @anthropic-managed-agents. Všechno z toho dodává vrstva, která
-model pouze obaluje. Rozdíl mezi schopností modelu a návrhem systému, v němž model pracuje,
-je předmětem celé práce; význam pojmů, které ho vyjadřují a které se v češtině dosud
-neustálily, je sezbrán v @terminologie.
-
-Harness-Bench prošel 5~194 běhových
-trajektorií a zjistil, že výslednost se podle dvojice model–harness mění výrazně, takže
-schopnost agenta se má podávat na úrovni této dvojice a nikoli samotného modelu
-@yao2026harnessbench. HarnessX změřil průměrné zlepšení o 14,5~% na pěti benchmarkech,
-největší tam, kde byly výchozí výsledky nejhorší @chen2026harnessx. Ding a jeho
-spolupracovníci ukázali, že část toho, co harness přidává k výsledku, lze po tréninku
-převést do parametrů modelu @ding2026scaffold. Thangarajah a jeho spolupracovníci ukázali
-opačnou věc: co se převede, převádí se pouze v konvencích toho jediného scaffoldu, na němž
-se model trénoval @thangarajah2026dcas. Představitelná práce, která architekturu rozkládá na
-vrstvy a mluví o ní jako o předmětu vlastního bádání, je poziční a dodává k tomu vlastní
-referenční implementaci, takže je citovatelná za slovník a za rámcování, nikoli za měření
-@gu2026harness.
-
-Tvrzení, že návrh systému je důležitější než
-schopnost modelu, samo o sobě neplatí; pole, které této práci předchází, samo píše, že
-další pokrok bude záviset #emph[stejně] na návrhu systému jako na silnějších modelech, a
-nikoli místo nich @gu2026harness. Stejně tak není doloženo, že se návrh systému od modelu
-oddělit nedá. Zajímavé není, co tvrzení říkají jednotlivě, ale v čem se liší: co lze do modelu
-přenést, co zůstává venku a podle čeho se o tom rozhoduje. To je předmětem teoretické
-části, která proto nepočítá s tím, že by měla vyhrát, ale s tím, že bude muset říct, kde
-se shoduje a kde ne.
+S rozvojem nástrojů roste i jejich adopce. Rozsah veřejného použití samotných agentůje přitom stále úzký. Jeden ze zveřejněných odhadů klade počet uživatelů chatbotů na 28~% populace a pravidelné užití #emph[agentů] na
+0,36~% světové populace @gradually-ai-usage-2026 @fig-gradually-usage. Přesto je zřejmé, že se jedná o technologii, která se rychle šíří a mění způsob práce, proto v této práci chci ukázat čeho jsou plnohodnotné systémy schopné.
 
 #heading(level: 2)[Cíl, výzkumná otázka, hypotéza a vymezení] <intro-goal>
 
-Rozhodující součástí agentického vývoje softwaru není schopnost jazykového modelu, ale
-návrh systému, v němž model pracuje. Cílem práce je tento názor vyargumentovat z dostupných
-zdrojů a prověřit na záměrně minimální implementaci, že právě tento návrh je nositelem
-schopnosti, o níž mluvíme.
-
 Výzkumná otázka práce zní: #emph[Které principy musí agentický systém splnit, aby
-vykonával inženýrskou práci?] Inženýrskou prací se zde rozumí změna repozitáře, kterou
+spolehlivě vykonával inženýrskou práci?] Inženýrskou prací se zde rozumí změna repozitáře, kterou
 může jiný člověk než její autor přezkoumat a sloučit, aniž by musel agenta na cokoli ptát;
 v tomto smyslu je měřena schopnost systému a v tomto smyslu je brána člověka
 nezaměnitelnou. Sloveso #emph[musí] je přitom míněno podmíněně: nutné jsou ty principy,
-které samotný model bez zásady okolí neposkytne. Které to jsou, se s rostoucí schopností
-modelů posouvá — a právě tato posunutost, nikoli její vymizení, je předmětem dalšího
-argumentu práce.
+které samotný model bez zásady okolí neposkytne.
 
 Práce předpokládá tuto hypotézu:
 
 Praktická autonomie je vlastností návrhu systému, který práci řídí, a nikoli vlastností
-modelu, který v něm pracuje. Strukturu, kterou práce popisuje, autor navrhuje sám; úsudek o
-tom, co je v jednotlivém kroku správné, však přebírá od smyčky, kterou nevlastní — a právě
-v tomto rozdílu leží hranice, za kterou teprve vlastní harness pomůže.
+modelu, který v něm pracuje.
 
 Hypotéza se ověřuje v praktické části a z jejího výsledku práce vychází.
 
 Praktická část popisuje DarkFactory, záměrně minimální produkční pipeline pro
 AI-asistovaný softwarový vývoj @darkfactory-d576ec8f. Její běh, brány a uložený stav
 tvoří harness této práce; jako vykonávací engine používá produkční harnessy, protože to je
-pro popsanou míru detailu nejjednodušší. Z toho plyne úzká, ale zřetelně formulovaná
-otázka, kterou metodická část ponechává otevřenou: protože vnější vrstva je sama o sobě
-harnessem, setkává se model během jednoho běhu se dvěma soubory konvencí současně — s
-konvencemi této vrstvy a s konvencemi harnessu, který modelové kroky vykonává. Kterých
-konvencí model v takovém uspořádání následuje a co vnější vrstva stojí, je otázka, na
-kterou teoretická část neodpovídá.
+pro popsanou míru detailu nejjednodušší.
 
 Rozsah práce je záměrně úzký a odpovídá jedné revizi repozitáře: popisuje počáteční
 implementaci, v níž je agentní smyčka (#emph[Agent Loop]) provedena cizím nástrojem. Její rozsah slouží jako
