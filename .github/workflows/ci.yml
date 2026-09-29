@@ -137,9 +137,11 @@ jobs:
           deno-version: v2.x
 
       - name: Set up Typst
-        # The paper package's own test compiles the manuscript, so its job needs typst even
-        # though it is a node job.
-        if: matrix.ecosystem == 'typst' || matrix.cwd == 'paper'
+        # The manuscript is compiled by `tests/paper`, which the node job now runs because there is
+        # one test command for the whole repository. It used to run only in the paper package's own
+        # job, selected by `matrix.cwd == 'paper'` — a condition that no longer matches anything now
+        # that the node job's cwd is the repository root.
+        if: matrix.ecosystem == 'typst' || matrix.cwd == '.' || matrix.cwd == 'paper'
         uses: typst-community/setup-typst@v5
 
       - name: Set up Lean
