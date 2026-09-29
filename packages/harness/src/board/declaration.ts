@@ -1,5 +1,5 @@
 import { readFileSync } from "node:fs";
-import { configBlock, parseConfigDocument, resolveConfigDocumentPath } from "@darkfactory/protocol/config-document";
+import { configBlock, parseConfigDocument, resolveConfigDocumentPath } from "../../../protocol/src/config-document.ts";
 
 /**
  * Which boards this repository is linked to, read from the one declaration.

@@ -1,4 +1,4 @@
-import type { CanonicalStatus } from "@darkfactory/protocol/workflow";
+import type { CanonicalStatus } from "../../../protocol/src/workflow.ts";
 import { issueUrl, repoAndNumberFromContent } from "./bindings.ts";
 import { BoardGroup, type BoardTarget, ProjectClient, type ReconcilableBoard } from "./client.ts";
 import type { BoardGraphqlClient, BoardItemContent, BoardItemNode } from "./graphql.ts";

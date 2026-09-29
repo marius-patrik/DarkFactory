@@ -3,7 +3,7 @@ import {
 	captureJsonSchema,
 	getCaptureSchema,
 	listCaptureSchemas,
-} from "@darkfactory/protocol/result-capture";
+} from "../../protocol/src/result-capture.ts";
 
 /**
  * Format registered capture schemas for `--capture-schema [name]`.

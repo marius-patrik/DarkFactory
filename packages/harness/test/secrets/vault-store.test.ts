@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { mkdtemp, readFile, rm, stat, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { emptyVault, generateVaultKey } from "@darkfactory/keychain";
+import { emptyVault, generateVaultKey } from "../../../keychain/src/index.ts";
 import {
 	loadPushMap,
 	loadVault,
@@ -14,7 +14,7 @@ import {
 	vaultList,
 	vaultRm,
 	vaultSet,
-} from "@darkfactory/keychain/vault-store";
+} from "../../../keychain/src/vault-store.ts";
 
 let tempRoot = "";
 let dfHome = "";

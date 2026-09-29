@@ -4,7 +4,7 @@ import {
 	type DarkFactoryConfigDocument,
 	parseConfigDocument,
 	resolveConfigDocumentPath,
-} from "@darkfactory/protocol/config-document";
+} from "../../../protocol/src/config-document.ts";
 import { IdentitiesValidationError, validateIdentities } from "./schema.ts";
 import type { ManifestIdentities } from "./types.ts";
 

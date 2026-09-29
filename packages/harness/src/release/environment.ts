@@ -15,7 +15,7 @@
  */
 import { type Dirent, existsSync, readdirSync, readFileSync } from "node:fs";
 import { join, relative, resolve } from "node:path";
-import { configBlock, parseConfigDocument, resolveConfigDocumentPath } from "@darkfactory/protocol/config-document";
+import { configBlock, parseConfigDocument, resolveConfigDocumentPath } from "../../../protocol/src/config-document.ts";
 
 /** Directories never worth descending into when looking for package manifests. */
 const PRUNED: ReadonlySet<string> = new Set([

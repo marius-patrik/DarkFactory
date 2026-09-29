@@ -4,8 +4,8 @@ import {
 	actionsForTouchedFiles,
 	type ResolvedRepositoryAction,
 	resolveDetectedRepositoryActions,
-} from "@darkfactory/capability/actions";
-import { detectRepositoryEvidence } from "@darkfactory/core/repository-evidence";
+} from "../../../capability/src/actions.ts";
+import { detectRepositoryEvidence } from "../../../core/src/repository-evidence.ts";
 
 /** Result of a verification command run via {@link runVerify}. */
 export interface VerifyResult {

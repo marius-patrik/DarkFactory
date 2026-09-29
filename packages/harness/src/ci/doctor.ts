@@ -1,4 +1,4 @@
-import { requiredChecksForDetectedQuality } from "@darkfactory/capability/actions";
+import { requiredChecksForDetectedQuality } from "../../../capability/src/actions.ts";
 import type { GitHubRepository } from "../github/repository.ts";
 import { type DetectedQualityState, resolveDetectedQuality } from "./detected.ts";
 import { checkWorkflowsDrift } from "./installer.ts";

@@ -23,7 +23,7 @@ import { spawnSync } from "node:child_process";
 import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
-import { resolveConfigDocumentPath } from "@darkfactory/protocol/config-document";
+import { resolveConfigDocumentPath } from "../../../protocol/src/config-document.ts";
 import type { PipelineEnv } from "./handler-context.ts";
 
 /** One df account record, and the secret it was loaded from. */

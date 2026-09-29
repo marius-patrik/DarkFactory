@@ -5,7 +5,7 @@ import type {
 	CapabilityHookEvent,
 	CapabilityHookResult,
 	CapabilityRuntimeContext,
-} from "@darkfactory/capability";
+} from "./index.ts";
 
 /** One hook's verdict, with the identity needed to attribute it. */
 export interface HookOutcome {

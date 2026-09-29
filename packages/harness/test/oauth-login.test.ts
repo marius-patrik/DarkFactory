@@ -6,7 +6,7 @@ import {
 	FileCredentialStore,
 	loginProviderAccount,
 	type OAuthAuthConfig,
-} from "@darkfactory/keychain";
+} from "../../keychain/src/index.ts";
 import type { ProviderConfig } from "../src/providers/schema.ts";
 
 const roots: string[] = [];

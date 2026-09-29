@@ -1,7 +1,7 @@
 import { describe, expect, it } from "bun:test";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { CANONICAL_STATUSES } from "@darkfactory/protocol/workflow";
+import { CANONICAL_STATUSES } from "../../../protocol/src/workflow.ts";
 import {
 	appliedStatusOptions,
 	boardStatusOptions,

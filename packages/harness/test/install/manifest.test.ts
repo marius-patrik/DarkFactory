@@ -2,7 +2,7 @@ import { afterAll, describe, expect, test } from "bun:test";
 import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join, relative } from "node:path";
-import { CANONICAL_STATUSES } from "@darkfactory/protocol/workflow";
+import { CANONICAL_STATUSES } from "../../../protocol/src/workflow.ts";
 import {
 	AREA_COLOURS,
 	DEFAULT_AREAS,

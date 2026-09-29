@@ -4,7 +4,7 @@ import {
 	type RecoveryIntakeRecord,
 	type RecoverySourceIdentity,
 	recoveryIntakeRecordSchema,
-} from "@darkfactory/protocol/recovery";
+} from "../../protocol/src/recovery.ts";
 
 /** Current authoritative context used to decide whether approved Planning remains reusable. */
 export interface RecoveryPlanningContext {

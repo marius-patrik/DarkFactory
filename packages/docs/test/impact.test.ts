@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import type { RepositoryEvidence } from "@darkfactory/core/repository-evidence";
+import type { RepositoryEvidence } from "../../core/src/repository-evidence.ts";
 import { classifyDocumentationImpact, evaluateDocumentationImpact, parseDocsNoneAnnotation } from "../src/impact.ts";
 
 const evidence: RepositoryEvidence = {

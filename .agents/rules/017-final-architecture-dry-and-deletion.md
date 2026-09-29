@@ -38,12 +38,13 @@ contract.
 
 ## Enforcement
 
-`packages/harness/test/workspace-boundaries.test.ts` verifies that the first-party package dependency graph
-read from package manifests is closed and acyclic, and the documentation currentness check rejects
-retired documentation paths and broken discovery aliases.
+The repository is one workspace with one manifest at its root, so there is no first-party package
+dependency graph left to read from manifests and no per-package boundary to enforce. The documentation
+currentness check rejects retired documentation paths and broken discovery aliases, and it is what
+caught this rule's own stale reference when the per-package manifests were removed.
 
-Neither is reachability analysis. No tool in this repository walks the source import graph, so
-unreachable first-party code and source-level dependency cycles are not detected, and the duplicate
+This is not reachability analysis. No check in this repository walks the source import graph, so
+unreachable first-party code and source-level dependency cycles are not detected, and the duplicate-
 and deletion-bound ownership this rule prohibits is caught by review rather than by a check.
 
 ## Exceptions

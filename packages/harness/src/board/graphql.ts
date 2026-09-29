@@ -1,4 +1,4 @@
-import { CANONICAL_STATUSES } from "@darkfactory/protocol/workflow";
+import { CANONICAL_STATUSES } from "../../../protocol/src/workflow.ts";
 import { FetchTransport, type GitHubFetch } from "../github/transport.ts";
 import { BoardRequestError, type BoardRun, describeFailure, GraphqlError, isRateLimited } from "./run.ts";
 import type { FieldValueConnection } from "./status.ts";

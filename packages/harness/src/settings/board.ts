@@ -9,7 +9,7 @@
  * appeared in two repositories' Projects tabs.
  */
 
-import type { CanonicalStatus } from "@darkfactory/protocol/workflow";
+import type { CanonicalStatus } from "../../../protocol/src/workflow.ts";
 import { STATUS_OPTIONS, statusPresentation } from "./taxonomy.ts";
 
 /** One option of a Projects v2 single-select field. */

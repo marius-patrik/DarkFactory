@@ -1,4 +1,4 @@
-import type { CanonicalStatus } from "@darkfactory/protocol/workflow";
+import type { CanonicalStatus } from "../../../protocol/src/workflow.ts";
 import { FetchTransport, type GitHubFetch } from "../github/transport.ts";
 import { BoardRequestError, type BoardRun, describeFailure, isRateLimited } from "./run.ts";
 import type { LabelSource } from "./status.ts";

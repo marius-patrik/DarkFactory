@@ -40,8 +40,8 @@ export function dependencyAssetPath(root: string, ...segments: string[]): string
 
 export async function packageAssets(
 	root = process.cwd(),
-	platform = process.platform,
-	arch = process.arch,
+	platform: string = process.platform,
+	arch: string = process.arch,
 ): Promise<void> {
 	const dist = join(root, "dist");
 	await mkdir(dist, { recursive: true });

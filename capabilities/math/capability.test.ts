@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
-import type { CapabilityPackageContext } from "@darkfactory/capability";
-import { qualityMatrix, resolveRepositoryActions } from "@darkfactory/capability/actions";
-import { resolveCapabilities } from "@darkfactory/capability/loader";
+import { qualityMatrix, resolveRepositoryActions } from "../../packages/capability/src/actions.ts";
+import type { CapabilityPackageContext } from "../../packages/capability/src/index.ts";
+import { resolveCapabilities } from "../../packages/capability/src/loader.ts";
 import capability from "./capability.ts";
 
 /** Detected evidence for one Lean project, the ecosystem this capability exists to serve. */

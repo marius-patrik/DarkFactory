@@ -2,7 +2,7 @@ import { existsSync, readFileSync } from "node:fs";
 // Aliased deliberately: this module exports a `resolve` of its own, which would otherwise shadow
 // the path helper for the whole file and make every internal `resolve(root, "VERSION")` recursive.
 import { resolve as resolvePath } from "node:path";
-import { configBlock, parseConfigDocument, resolveConfigDocumentPath } from "@darkfactory/protocol/config-document";
+import { configBlock, parseConfigDocument, resolveConfigDocumentPath } from "../../../protocol/src/config-document.ts";
 import { runGit } from "../workspace/git.ts";
 
 /** Versioning modes, read from the manifest rather than hardcoded. */

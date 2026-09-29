@@ -1,7 +1,6 @@
 import { randomBytes, randomUUID } from "node:crypto";
 import { readdir } from "node:fs/promises";
 import { join } from "node:path";
-import { defaultDfHome, FileCredentialStore } from "@darkfactory/keychain";
 import type {
 	AuthContext,
 	AuthOperationOptions,
@@ -20,6 +19,7 @@ import {
 	SessionManager,
 	SettingsManager,
 } from "@earendil-works/pi-coding-agent";
+import { defaultDfHome, FileCredentialStore } from "../../../keychain/src/index.ts";
 import type { Candidate } from "../failover.ts";
 import { type CatalogResult, materializeCatalogModels } from "../models/catalog.ts";
 import type { ProviderConfig } from "../providers/schema.ts";

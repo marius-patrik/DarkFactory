@@ -12,7 +12,7 @@
  */
 import { existsSync, globSync, readFileSync, statSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { configBlock, parseConfigDocument, resolveConfigDocumentPath } from "@darkfactory/protocol/config-document";
+import { configBlock, parseConfigDocument, resolveConfigDocumentPath } from "../../../protocol/src/config-document.ts";
 import { configure } from "./environment.ts";
 import {
 	commitsSince,

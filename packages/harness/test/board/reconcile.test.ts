@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import type { CanonicalStatus } from "@darkfactory/protocol/workflow";
+import type { CanonicalStatus } from "../../../protocol/src/workflow.ts";
 import { BoardAutomation, type BoardAutomationOptions } from "../../src/board/automation.ts";
 import { BoardGroup, ProjectClient, type ReconcilableBoard } from "../../src/board/client.ts";
 import type { BoardDeclaration } from "../../src/board/declaration.ts";

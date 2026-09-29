@@ -16,8 +16,11 @@ describe("standalone packaging", () => {
 	});
 
 	test("compiles the worker under the exact path used by pi at runtime", async () => {
+		// The build compiles both entry points, and the worker's path is what pi loads at runtime, so
+		// the command has to name the file the worker really lives at. It moved with the single
+		// package: `src/` beside this script is now `packages/harness/src/`.
 		expect(await readFile(new URL("../scripts/build.ts", import.meta.url), "utf8")).toContain(
-			"./src/image-resize-worker.ts",
+			"./packages/harness/src/image-resize-worker.ts",
 		);
 	});
 });
@@ -65,7 +68,8 @@ describe("biome configuration", () => {
 	});
 
 	test("package.json pins Biome and exposes format, lint and check", async () => {
-		const pkg = JSON.parse(await readFile(new URL("../package.json", import.meta.url), "utf8"));
+		// One manifest, at the repository root, pins the formatter for the whole tree.
+		const pkg = JSON.parse(await readFile(new URL("../../../package.json", import.meta.url), "utf8"));
 		expect(pkg.devDependencies["@biomejs/biome"]).toMatch(/^\d+\.\d+\.\d+$/);
 		expect(pkg.scripts).toMatchObject({ format: "biome format --write .", lint: "biome lint .", check: "biome ci ." });
 	});

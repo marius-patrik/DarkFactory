@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import type { ModelCapability, RouterConfig } from "@darkfactory/protocol/model";
+import type { ModelCapability, RouterConfig } from "../../protocol/src/model.ts";
 import { routeTask } from "../src/router/router.ts";
 
 /** A model in the live catalogue. */

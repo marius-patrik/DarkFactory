@@ -3,8 +3,8 @@ import {
 	qualityMatrix,
 	type ResolvedRepositoryActions,
 	resolveDetectedRepositoryActions,
-} from "@darkfactory/capability/actions";
-import { detectRepositoryEvidence, type RepositoryEvidence } from "@darkfactory/core/repository-evidence";
+} from "../../../capability/src/actions.ts";
+import { detectRepositoryEvidence, type RepositoryEvidence } from "../../../core/src/repository-evidence.ts";
 import { runVerify, type VerifyResult } from "../workspace/runVerify.ts";
 
 /** Canonical detected repository quality state consumed by df CI/operator surfaces. */

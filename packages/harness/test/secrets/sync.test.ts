@@ -2,8 +2,8 @@ import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { emptyVault, generateVaultKey } from "@darkfactory/keychain";
-import { loadVault, saveVault } from "@darkfactory/keychain/vault-store";
+import { emptyVault, generateVaultKey } from "../../../keychain/src/index.ts";
+import { loadVault, saveVault } from "../../../keychain/src/vault-store.ts";
 import { syncDataRepo } from "../../src/secrets/sync.ts";
 
 async function git(cwd: string, ...args: string[]) {

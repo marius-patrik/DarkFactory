@@ -1,4 +1,4 @@
-import type { LimitTier } from "@darkfactory/protocol/model";
+import type { LimitTier } from "../../../protocol/src/model.ts";
 import type { Candidate } from "../failover.ts";
 import { parseChain } from "../harness/routing.ts";
 import type { LimitLedger } from "../limits/ledger.ts";

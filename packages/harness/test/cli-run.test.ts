@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, setDefaultTimeout, test } from "bun:test";
 import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { join } from "node:path";
-import { FileCredentialStore } from "@darkfactory/keychain";
+import { FileCredentialStore } from "../../keychain/src/index.ts";
 import { redactToolInput } from "../src/cli.ts";
 
 /**

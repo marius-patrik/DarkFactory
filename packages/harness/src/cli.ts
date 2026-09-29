@@ -7,7 +7,16 @@ import { homedir } from "node:os";
 import { dirname, join } from "node:path";
 import { stdin, stdout } from "node:process";
 import { createInterface } from "node:readline/promises";
-import { formatCaptureSchema } from "@darkfactory/cli/capture-schema";
+import type { AuthEvent, AuthPrompt, Provider } from "@earendil-works/pi-ai";
+import { fauxAssistantMessage, fauxProvider } from "@earendil-works/pi-ai";
+import { formatCaptureSchema } from "../../cli/src/capture-schema.ts";
+import { importAntigravityAccount, OsKeyringAdapter } from "../../keychain/src/import/antigravity.ts";
+import { importClaudeAccount } from "../../keychain/src/import/claude.ts";
+import { importCodexAccount } from "../../keychain/src/import/codex.ts";
+import { importGrokAccount } from "../../keychain/src/import/grok.ts";
+import { OsClaudeKeyringAdapter } from "../../keychain/src/import/keyring.ts";
+import { importKimiAccount } from "../../keychain/src/import/kimi.ts";
+import { OsHomeReader } from "../../keychain/src/import/reader.ts";
 import {
 	defaultDfHome,
 	exportCredentialAccount,
@@ -15,17 +24,8 @@ import {
 	importCredentialAccount,
 	loadVaultKey,
 	parseAccountId,
-} from "@darkfactory/keychain";
-import { importAntigravityAccount, OsKeyringAdapter } from "@darkfactory/keychain/import/antigravity";
-import { importClaudeAccount } from "@darkfactory/keychain/import/claude";
-import { importCodexAccount } from "@darkfactory/keychain/import/codex";
-import { importGrokAccount } from "@darkfactory/keychain/import/grok";
-import { OsClaudeKeyringAdapter } from "@darkfactory/keychain/import/keyring";
-import { importKimiAccount } from "@darkfactory/keychain/import/kimi";
-import { OsHomeReader } from "@darkfactory/keychain/import/reader";
-import { loginProviderAccount } from "@darkfactory/keychain/login";
-import type { AuthEvent, AuthPrompt, Provider } from "@earendil-works/pi-ai";
-import { fauxAssistantMessage, fauxProvider } from "@earendil-works/pi-ai";
+} from "../../keychain/src/index.ts";
+import { loginProviderAccount } from "../../keychain/src/login.ts";
 import { runCiCli } from "./ci/cli.ts";
 import { applyLicence } from "./ci/licensing.ts";
 import { reportFailure, resolveFailure } from "./ci/report-failure.ts";

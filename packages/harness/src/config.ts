@@ -1,7 +1,7 @@
 import { readFile } from "node:fs/promises";
 import { isAbsolute, resolve } from "node:path";
-import type { CredentialFallback } from "@darkfactory/keychain";
-import { configBlock, parseConfigDocument, resolveConfigDocumentPath } from "@darkfactory/protocol/config-document";
+import type { CredentialFallback } from "../../keychain/src/index.ts";
+import { configBlock, parseConfigDocument, resolveConfigDocumentPath } from "../../protocol/src/config-document.ts";
 import type { ProviderConfigFile } from "./providers/schema.ts";
 import { assertTierConfiguration } from "./router/tiers.ts";
 import type {

@@ -1,4 +1,4 @@
-import type { CanonicalStatus } from "@darkfactory/protocol/workflow";
+import type { CanonicalStatus } from "../../../protocol/src/workflow.ts";
 import type { GhRunner } from "./gh.ts";
 import type { BoardGraphqlClient, BoardItemNode, ProjectFieldNode } from "./graphql.ts";
 import type { BoardRestClient } from "./rest.ts";

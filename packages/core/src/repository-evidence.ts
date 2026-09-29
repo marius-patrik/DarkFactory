@@ -5,7 +5,7 @@
 import type { Dirent } from "node:fs";
 import { access, readdir, readFile } from "node:fs/promises";
 import { basename, dirname, join, relative, resolve } from "node:path";
-import { configBlock, parseConfigDocument, resolveConfigDocumentPath } from "@darkfactory/protocol/config-document";
+import { configBlock, parseConfigDocument, resolveConfigDocumentPath } from "../../protocol/src/config-document.ts";
 
 export type RepositoryEcosystem = "node" | "python" | "rust" | "go" | "deno" | "typst" | "latex" | "lean";
 

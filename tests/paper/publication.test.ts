@@ -22,7 +22,7 @@ async function snapshot(path: string) {
 
 test("publication check does not mutate PAPER.pdf", async () => {
 	const before = await snapshot(PDF);
-	const child = Bun.spawn(["bun", "run", "publication", "--", "--check"], {
+	const child = Bun.spawn(["bun", join(REPOSITORY_ROOT, "scripts", "paper", "publication.ts"), "--check"], {
 		cwd: PAPER_ROOT,
 		stdout: "pipe",
 		stderr: "pipe",

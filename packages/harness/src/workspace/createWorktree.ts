@@ -1,6 +1,6 @@
 import { existsSync, mkdirSync } from "node:fs";
 import { join, resolve } from "node:path";
-import { slugify } from "@darkfactory/keychain/import/slugify";
+import { slugify } from "../../../keychain/src/import/slugify.ts";
 import { GitError, runGit } from "./git.ts";
 
 /** Options for {@link createWorktree}. */

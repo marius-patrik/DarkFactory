@@ -4,7 +4,7 @@
  * Build-time documentation rendering is exposed from `@darkfactory/web/docs`. Browser code consumes only browser-safe
  * protocol/GitHub/auth contracts and never imports machine-secret keychain implementations.
  */
-export type { RouteResult, TaskProfile } from "@darkfactory/protocol/model";
+export type { RouteResult, TaskProfile } from "../../protocol/src/model.ts";
 export {
 	type QuotaAccountView,
 	type QuotaDashboardState,

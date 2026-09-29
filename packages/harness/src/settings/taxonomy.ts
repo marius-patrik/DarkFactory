@@ -25,7 +25,7 @@
  * areas in `repo.dfconfig`.
  */
 
-import { CANONICAL_STATUSES, type CanonicalStatus } from "@darkfactory/protocol/workflow";
+import { CANONICAL_STATUSES, type CanonicalStatus } from "../../../protocol/src/workflow.ts";
 
 /** One GitHub label: a name, a hex colour without the leading `#`, and a description. */
 export interface LabelDefinition {

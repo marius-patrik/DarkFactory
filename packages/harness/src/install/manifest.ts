@@ -13,8 +13,8 @@
 
 import { readFile } from "node:fs/promises";
 import { basename, isAbsolute, join, resolve } from "node:path";
-import { configBlock, parseConfigDocument, resolveConfigDocumentPath } from "@darkfactory/protocol/config-document";
-import { CANONICAL_STATUSES } from "@darkfactory/protocol/workflow";
+import { configBlock, parseConfigDocument, resolveConfigDocumentPath } from "../../../protocol/src/config-document.ts";
+import { CANONICAL_STATUSES } from "../../../protocol/src/workflow.ts";
 import { TYPE_LABELS } from "../pipeline/labels.ts";
 
 /** The filename an installation writes when a repository declares no configuration yet. */

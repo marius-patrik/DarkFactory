@@ -1,4 +1,4 @@
-import type { CanonicalStatus } from "@darkfactory/protocol/workflow";
+import type { CanonicalStatus } from "../../../protocol/src/workflow.ts";
 import { extractBoundIssues, extractClosingIssues } from "./bindings.ts";
 import type { BoardTarget, ReconcilableBoard } from "./client.ts";
 import { applyBoundIssueStatus } from "./reconcile.ts";

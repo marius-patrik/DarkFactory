@@ -1,6 +1,6 @@
-import type { LoginHydrationConfig, OAuthAuthConfig } from "@darkfactory/keychain";
+import type { LoginHydrationConfig, OAuthAuthConfig } from "../../../keychain/src/index.ts";
 
-export type { LoginHydrationConfig, OAuthAuthConfig, ValueReference } from "@darkfactory/keychain";
+export type { LoginHydrationConfig, OAuthAuthConfig, ValueReference } from "../../../keychain/src/index.ts";
 
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";

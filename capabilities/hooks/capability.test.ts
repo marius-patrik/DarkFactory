@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import type { CapabilityHookContext, CapabilityRuntimeContext } from "@darkfactory/capability";
+import type { CapabilityHookContext, CapabilityRuntimeContext } from "../../packages/capability/src/index.ts";
 import { branchName, capability, commitTypes, conventionalCommit, testsTouched } from "./capability.ts";
 
 const runtime: CapabilityRuntimeContext = {
@@ -129,7 +129,7 @@ describe("the declared hooks are reachable by the runner", () => {
 	// capability's own hooks are reachable through the same path a real invocation would use, and
 	// that a hook which fails is reported rather than silently skipped.
 	test("every declared hook is selected and executed for each of its events", async () => {
-		const { runHooks } = await import("@darkfactory/capability");
+		const { runHooks } = await import("../../packages/capability/src/index.ts");
 		const declared = (capability.hooks ?? []).flatMap((hook) =>
 			(hook.events ?? (hook.event ? [hook.event] : [])).map((event) => ({ id: hook.id, event })),
 		);
@@ -156,7 +156,7 @@ describe("the declared hooks are reachable by the runner", () => {
 	});
 
 	test("a hook that rejects the evidence is reported as a failure through the runner", async () => {
-		const { runHooks } = await import("@darkfactory/capability");
+		const { runHooks } = await import("../../packages/capability/src/index.ts");
 		const result = await runHooks(
 			[capability],
 			"pre-commit",

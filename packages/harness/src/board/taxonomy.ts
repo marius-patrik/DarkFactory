@@ -1,4 +1,4 @@
-import { CANONICAL_STATUSES, type CanonicalStatus } from "@darkfactory/protocol/workflow";
+import { CANONICAL_STATUSES, type CanonicalStatus } from "../../../protocol/src/workflow.ts";
 
 /**
  * The board's status taxonomy, and the labels that project it.

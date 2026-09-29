@@ -1,4 +1,4 @@
-import type { PushMap, VaultMeta } from "@darkfactory/keychain";
+import type { PushMap, VaultMeta } from "../../../keychain/src/index.ts";
 import type { GitHubClient } from "../github/client.ts";
 
 export interface GitHubSecretInfo {

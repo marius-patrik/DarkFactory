@@ -1,5 +1,5 @@
 import { readFile } from "node:fs/promises";
-import { configBlock, parseConfigDocument, resolveConfigDocumentPath } from "@darkfactory/protocol/config-document";
+import { configBlock, parseConfigDocument, resolveConfigDocumentPath } from "../../../protocol/src/config-document.ts";
 import { parseChain } from "../harness/routing.ts";
 import { loadIdentities } from "./loader.ts";
 

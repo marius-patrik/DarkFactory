@@ -1,4 +1,4 @@
-import type { CanonicalStatus } from "@darkfactory/protocol/workflow";
+import type { CanonicalStatus } from "../../../protocol/src/workflow.ts";
 import { checkpointCoversIssue } from "./checkpoint.ts";
 import { STATUS_FIELD_NAME } from "./taxonomy.ts";
 

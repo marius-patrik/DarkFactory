@@ -1,7 +1,7 @@
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
-import { defaultDfHome, FileCredentialStore } from "@darkfactory/keychain";
 import type { Credential, Model, Provider, ProviderHeaders } from "@earendil-works/pi-ai";
+import { defaultDfHome, FileCredentialStore } from "../../../keychain/src/index.ts";
 import type { ApiKeyAuthConfig, ModelListConfig, ProviderConfig } from "../providers/schema.ts";
 import { replaceFile } from "../storage/replace-file.ts";
 

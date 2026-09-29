@@ -22,7 +22,7 @@ describe("action resolution", () => {
 			],
 			repoDf: { environment: {} },
 		};
-		const definitions = []; // Empty definitions to force fallback to gaps
+		const definitions: Parameters<typeof resolveRepositoryActions>[1] = []; // Empty to force fallback to gaps
 		const result = resolveRepositoryActions(evidence, definitions);
 
 		// Should have gaps for test, lint, format_check, typecheck

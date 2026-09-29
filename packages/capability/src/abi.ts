@@ -1,4 +1,4 @@
-import type { TaskKind } from "@darkfactory/protocol/model";
+import type { TaskKind } from "../../protocol/src/model.ts";
 
 /** Current capability ABI compatibility version. */
 export const CAPABILITY_ABI_VERSION = "1" as const;

@@ -1,4 +1,6 @@
-import type { Candidate } from "@darkfactory/protocol/model";
+import type { AssistantMessage, Context } from "@earendil-works/pi-ai";
+import type { z } from "zod";
+import type { Candidate } from "../../protocol/src/model.ts";
 import {
 	type CaptureAttempt,
 	CaptureError,
@@ -7,9 +9,7 @@ import {
 	type ExtractedJudgement,
 	type ScopeCheckResultSummary,
 	type VerificationActionResultSummary,
-} from "@darkfactory/protocol/result-capture";
-import type { AssistantMessage, Context } from "@earendil-works/pi-ai";
-import type { z } from "zod";
+} from "../../protocol/src/result-capture.ts";
 /** Supervisor capability required for structured judgement extraction. */
 export interface JudgementSupervisor {
 	extractJudgement<T>(options: {
@@ -71,7 +71,7 @@ export {
 	reviewFindingSchema,
 	reviewResultSchema,
 	validateCaptureSchema,
-} from "@darkfactory/protocol/result-capture";
+} from "../../protocol/src/result-capture.ts";
 
 /** Canonical name of the capture tool used for structured extraction. */
 export const CAPTURE_TOOL_NAME = "capture";

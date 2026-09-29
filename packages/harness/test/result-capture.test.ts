@@ -3,8 +3,6 @@ import { mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { mkdtemp } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { CAPTURE_TOOL_NAME, captureCodeResult, extractJudgementResult } from "@darkfactory/core/result-capture";
-import { alignmentResultSchema, CaptureError, planningResultSchema, reviewResultSchema } from "@darkfactory/protocol";
 import {
 	type AssistantMessage,
 	type Context,
@@ -13,6 +11,13 @@ import {
 	fauxToolCall,
 } from "@earendil-works/pi-ai";
 import { z } from "zod";
+import { CAPTURE_TOOL_NAME, captureCodeResult, extractJudgementResult } from "../../core/src/result-capture.ts";
+import {
+	alignmentResultSchema,
+	CaptureError,
+	planningResultSchema,
+	reviewResultSchema,
+} from "../../protocol/src/index.ts";
 import type { Candidate } from "../src/failover.ts";
 import { createFailoverSupervisor } from "../src/harness/supervisor.ts";
 import { changedFiles } from "../src/workspace/changedFiles.ts";

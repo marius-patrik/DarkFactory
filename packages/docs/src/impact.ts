@@ -1,4 +1,4 @@
-import type { RepositoryEvidence } from "@darkfactory/core/repository-evidence";
+import type { RepositoryEvidence } from "../../core/src/repository-evidence.ts";
 
 /** High-level kinds of change that can require canonical documentation updates. */
 export type DocumentationImpactKind = "public-api" | "product" | "governance";

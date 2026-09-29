@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import type { CanonicalStatus } from "@darkfactory/protocol/workflow";
+import type { CanonicalStatus } from "../../../protocol/src/workflow.ts";
 import { BoardGroup, ProjectClient } from "../../src/board/client.ts";
 import { ghEnvironment } from "../../src/board/gh.ts";
 import { BoardGraphqlClient } from "../../src/board/graphql.ts";

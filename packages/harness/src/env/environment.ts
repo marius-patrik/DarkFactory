@@ -30,7 +30,7 @@
 
 import { type Dirent, existsSync, readdirSync, readFileSync } from "node:fs";
 import { join, resolve } from "node:path";
-import { configBlock, parseConfigDocument, resolveConfigDocumentPath } from "@darkfactory/protocol/config-document";
+import { configBlock, parseConfigDocument, resolveConfigDocumentPath } from "../../../protocol/src/config-document.ts";
 import {
 	ARTIFACT_GLOBS,
 	BUILD_COMMANDS,

@@ -1,5 +1,5 @@
 import { readFileSync } from "node:fs";
-import { configBlock, parseConfigDocument, resolveConfigDocumentPath } from "@darkfactory/protocol/config-document";
+import { configBlock, parseConfigDocument, resolveConfigDocumentPath } from "../../protocol/src/config-document.ts";
 
 /** Site metadata carried by the documentation content graph. */
 export interface DocsSiteConfig {

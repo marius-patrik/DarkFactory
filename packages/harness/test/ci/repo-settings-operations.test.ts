@@ -1,5 +1,5 @@
 import { describe, expect, it } from "bun:test";
-import { CANONICAL_STATUSES } from "@darkfactory/protocol/workflow";
+import { CANONICAL_STATUSES } from "../../../protocol/src/workflow.ts";
 import {
 	applyActionsPermissions,
 	applyBoardLinks,

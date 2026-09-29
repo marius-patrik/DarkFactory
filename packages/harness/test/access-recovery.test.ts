@@ -2,7 +2,7 @@ import { afterEach, expect, test } from "bun:test";
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { FileCredentialStore } from "@darkfactory/keychain";
+import { FileCredentialStore } from "../../keychain/src/index.ts";
 import { LimitLedger } from "../src/limits/ledger.ts";
 import { observeLimits } from "../src/limits/observe.ts";
 

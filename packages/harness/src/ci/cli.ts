@@ -1,4 +1,4 @@
-import { requiredChecksForDetectedQuality } from "@darkfactory/capability/actions";
+import { requiredChecksForDetectedQuality } from "../../../capability/src/actions.ts";
 import { GitHubClient } from "../github/client.ts";
 import { GitHubRepository } from "../github/repository.ts";
 import { resolveDetectedQuality, runDetectedQuality } from "./detected.ts";

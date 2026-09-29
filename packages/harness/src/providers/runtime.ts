@@ -1,4 +1,3 @@
-import { createConfiguredOAuth } from "@darkfactory/keychain/oauth";
 import type { ApiKeyAuth, Model, Provider, ProviderStreams, StreamOptions } from "@earendil-works/pi-ai";
 import { type CreateModelsOptions, createModels, createProvider, type MutableModels } from "@earendil-works/pi-ai";
 import { anthropicMessagesApi } from "@earendil-works/pi-ai/api/anthropic-messages.lazy";
@@ -6,6 +5,7 @@ import { googleGenerativeAIApi } from "@earendil-works/pi-ai/api/google-generati
 import { openAICodexResponsesApi } from "@earendil-works/pi-ai/api/openai-codex-responses.lazy";
 import { openAICompletionsApi } from "@earendil-works/pi-ai/api/openai-completions.lazy";
 import { openAIResponsesApi } from "@earendil-works/pi-ai/api/openai-responses.lazy";
+import { createConfiguredOAuth } from "../../../keychain/src/oauth.ts";
 import { cloudcodeAgentApi } from "./cloudcode-agent.ts";
 import type { ApiKeyAuthConfig, ProviderConfig, ProviderConfigFile } from "./schema.ts";
 

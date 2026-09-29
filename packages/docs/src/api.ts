@@ -1,11 +1,11 @@
 import { mkdtemp, readFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join, relative, resolve } from "node:path";
-import type { CapabilityDefinition } from "@darkfactory/capability";
-import { resolveRepositoryActions } from "@darkfactory/capability/actions";
-import { discoverCapabilities, resolveCapabilities } from "@darkfactory/capability/loader";
-import { detectRepositoryEvidence, type RepositoryEvidence } from "@darkfactory/core/repository-evidence";
 import { Application, type JSONOutput, ReflectionKind } from "typedoc";
+import { resolveRepositoryActions } from "../../capability/src/actions.ts";
+import type { CapabilityDefinition } from "../../capability/src/index.ts";
+import { discoverCapabilities, resolveCapabilities } from "../../capability/src/loader.ts";
+import { detectRepositoryEvidence, type RepositoryEvidence } from "../../core/src/repository-evidence.ts";
 import { type DocsConfig, type DocsTypeScriptApiConfig, loadDocsConfig } from "./config.ts";
 import {
 	compileDocsContentGraph,
