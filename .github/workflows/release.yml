@@ -278,7 +278,7 @@ jobs:
         run: bun install --frozen-lockfile
 
       - name: Build df for ${{ matrix.target }}
-        run: bun run --cwd packages/harness build --target=${{ matrix.target }}
+        run: bun run build --target=${{ matrix.target }}
 
       # Compiling for a platform is not the same as working on it: a bundle can build for all five
       # targets and still fail on one because a native module is missing or a worker cannot be

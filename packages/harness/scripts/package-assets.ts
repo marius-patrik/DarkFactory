@@ -43,13 +43,17 @@ export async function packageAssets(
 	platform: string = process.platform,
 	arch: string = process.arch,
 ): Promise<void> {
+	// The assets and the dist output belong to the harness, which is no longer the caller's cwd now
+	// that there is one package and the build runs from the repository root.
+	const harnessRoot = join(root, "packages", "harness");
+	const source = existsSync(join(harnessRoot, "assets")) ? harnessRoot : root;
 	const dist = join(root, "dist");
 	await mkdir(dist, { recursive: true });
 	await copyFile(
 		dependencyAssetPath(root, "@silvia-odwyer", "photon-node", "photon_rs_bg.wasm"),
 		join(dist, "photon_rs_bg.wasm"),
 	);
-	await cp(join(root, "assets"), join(dist, "assets"), { recursive: true });
+	await cp(join(source, "assets"), join(dist, "assets"), { recursive: true });
 
 	const candidates = nativeAssetCandidates(platform, arch);
 	if (candidates.length === 0) return;
