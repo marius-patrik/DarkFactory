@@ -507,8 +507,50 @@ tvrdí — `může skončit bez jakéhokoli verdiktu`. Počet se ověřuje proti
 **Vyřídil autor** (R14): necitované položky bibliografie se nechají do konce, posoudí se
 ve Fázi 6 proti finálnímu textu.
 
-**Nerozhodnuto — bez odpovědi.** Viz §3, Q-A až Q-G. Žádný krok v tomto plánu nepředbíhá
-zádné z nich, a Fáze 5 je zablokována, dokud se nerozhodne Q-C.
+**Nerozhodnuto — bez odpovědi.** Viz §3, Q-D, Q-F, Q-G. Žádný krok v tohoto plánu nepředbíhá
+žádné z nich.
+
+## 5a. Odložené na později — autor to tak rozhodl
+
+**Významky k Tier B z jazykové audity (`10`,`12`,`21`,`22`,`23`), 13 nálezů.** Autor:
+„Keep Tier B for later - put it in state file to address". Neopraveno, ale zaznamenané:
+
+| # | Kde | Co | Navržená oprava |
+| :--- | :--- | :--- | :--- |
+| R1 | `22:56–57` | „Spolehlivost tu nevzniká z modelu" opakuje `21:15–16` | `Spolehlivost tu vzniká z toho, že se chyba stane součástí dalšího kroku.` |
+| R2 | `22:4` | „Jeho předmětem není samotný agent ani jeho model, ale systém" opakuje `21:12–13` | `Jeho předmětem je systém, v němž agent pracuje` |
+| R3 | `22:4` | „efektivně a kontrolovaně" vrací „účinným, kontrolovaným" z věty nad | vypustit oba přívlastky |
+| R4 | `10:65` | znovu páruje `Agent Loop → agentní smyčka`, už vyřčeno v §1.3 | `v níž je agentní smyčka provedena cizím nástrojem` |
+| B2 | `10:15` | „velkým rozvojem" — hodnocení bez měřítka | `prošly v krátké době vývojem` |
+| B3 | `10:42` | „rychle šíří" — v rozporu s 0,36 % v předcházející větě | `Přesto je zřejmé, že mění způsob práce, proto…` |
+| B4 | `21:21` | „nyní proslulé" — nepodložené tvrzení o přijetí | ✅ hotovo `3e89f4a7` |
+| B5 | `22:55` | „Zásadní přitom je" — zdvojené zdůraznění | `Přitom nejde o jediný pokus` |
+| B6 | `21:100` | `Skilly, scripty` proti `Skills, skripty` v `21:86` | `Skills, skripty a hooky` |
+| B7 | `10:29` | `Screenshot` proti `Snímek`, který práce užívá | `Snímek` |
+| B8 | `23:18` | „co smí do výroby vstoupit" bez zdroje | **⚠ Podmínka:** jen pokud `@nato1969` to tvrzení nese. Jinak vyřadit. Zdroj nevymýšlet. |
+| B9 | `21:14`, `21:50` | „smyčka agenta" proti „agentní smyčka" ve `12:8`, `12:12`, `21:52` | `agentní smyčka`; nadpis `Agentní smyčka (Loop)` |
+
+**B1 (`21:42`) — věta popisující obrázek.** `Tento vztah schematicky znázorňuje
+@fig-embedding-queen.` Odkaz patří do věty, se kterou obrázek souvisí, a ta věta zruší:
+`Známým příkladem je vztah mezi vektory slov král, královna, muž a žena
+@mikolov2013linguistic @fig-embedding-queen.` Porušuje R3.
+
+**Záměr na rozsáhlý přepis, autor to tak nařídil:**
+- **§4 — veškeré podkapitoly na stužku.** Obsah se zkrátí na poznámky, než se všechny
+  napíší podle nejnižšího. Týká se §4.1 Zjištění, §4.2 Diskuse, §4.3 Shrnutí.
+- **§3.2–§3.5 — drasticky zkrátit a přepsat**, aby šly číst čistě, prostě a jednoduše.
+- **§2.1.2 Smyčka, §2.1.3 Nástroje, §2.2.1 Specifikace, §2.2.2 Orchestrace** — nadpisy
+  přejmenovány `3e89f4a7`, obsah se zkrátí v témže průchodu jako §3.
+- **§3.4 viz `50:22`.** @brown2020 je po `da27b0cb` necitovaný; @kimi-k25-swarm po
+  `ac60e1ee` také. Oba se posoudí ve Fázi 6, nejdřív proti finálnímu textu.
+- **Anotace a abstrakt nahradit stužkou** do dokončení přepisu;author je dořeší s citacemi
+  a závěrem na konci. DŮLEŽITÉ: aneboť jsou stužkou, **metadata a `03-outline` mohou být
+  dočasně nesouladné** — to je záměr, ne chyba.
+
+**Kontrola, která selhala a má se opakovat správně.** Subagentovi bylo zadáno „praktická
+část nesmí tvrdit, co kapitola 3 nedodává" — to je kruhové, protože **kapitola 3 je ta
+praktická část**. Správná kontrola je obrácená: zda teorie v §2 slibuje mechanismy, které
+§3 pak neukáže. Provést po přepisu §3.
 
 ## 6. Co se nebude dělat
 
