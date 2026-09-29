@@ -8,12 +8,12 @@
 // The four-layer list that opened this section is gone. It named GitHub, GitHub Actions,
 // the Python/Docker runner and the review loop, and then 3.2 to 3.5 described all four
 // again - the list was a second, compressed edition of the chapter it introduces, which is
-// how its fourth item came to contradict 3.4 (../PLAN.md, Q-E). What remains is the
+// how its fourth item came to contradict 3.4 (../STATE.md, Q-E). What remains is the
 // reproducibility record: the pinned revision, how the runner was built, and what the
 // simplification costs. The system itself is described once, in 3.2 to 3.5.
 //
 // Tři kritéria is the only level-3 subsection left. The author has directed that the
-// criteria be stated once in 1.2 and answered in 4.1, with 3.1.1 removed (../PLAN.md, R13
+// criteria be stated once in 1.2 and answered in 4.1, with 3.1.1 removed (../STATE.md, R13
 // and Q-A). That is not applied yet: what follows is the current state, and it changes when
 // the author settles Q-A.
 //

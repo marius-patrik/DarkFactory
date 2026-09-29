@@ -4,7 +4,7 @@
 // pipeline, re-lists the three criteria, or re-states the model-versus-system
 // claim. Each of those is owned elsewhere in the document and is referred to
 // symbolically or not at all, so the reader meets each idea once. The file is
-// the target of the say-once pass recorded in ../PLAN.md, phase 5.
+// the target of the say-once pass recorded in ../STATE.md, phase 5.
 #heading(level: 2)[Shrnutí]
 
 Jazykový model sám o sobě pouze generuje výstup v závislosti na vstupním kontextu. Agent z něj vzniká až propojením s nástroji, prostředím, stavem a pozorováním, které zajišťuje harness @anthropic2024tooluse @anthropic-harness-design. Ani toto propojení však pro účinné nasazení ve vývoji softwaru nestačí bez postupů agentického inženýrství, které vymezují rozsah autonomie, určují body lidského rozhodnutí a zajišťují ověřování výsledků. Na výzkumnou otázku, které principy musí agentický systém splnit, aby vykonával inženýrskou práci, odpovídá tato práce třemi principy: stav mimo model a zjistitelný, brány s druhy rozhodnutí, které se nerozplývají, a rozhodnutí člověka o tom, co vstoupí do produkce. Podmíněná nutnost znamená, že nutné je to, dokud model sám danou práci spolehlivě nevykoná; s rostoucí schopností modelů se tato hranice posouvá, ale ne mizí.
