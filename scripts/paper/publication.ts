@@ -4,8 +4,14 @@ import { join, resolve } from "node:path";
 
 const REPOSITORY_ROOT = resolve(import.meta.dir, "..", "..");
 const PAPER_ROOT = join(REPOSITORY_ROOT, "paper");
-const SOURCE = join(PAPER_ROOT, "main.typ");
-const FONT_PATH = join(PAPER_ROOT, "components", "fonts");
+// Read the entrypoint from paper/typst.toml rather than naming it: the stub on develop declares
+// index.typ and the thesis branch declares main.typ, so a hardcoded name was right on one and
+// broken on the other. entrypoint.ts is the single place that reads the declaration.
+const manifest = await Bun.file(join(PAPER_ROOT, "typst.toml")).text();
+const declared = /^\s*entrypoint\s*=\s*"([^"]+)"/mu.exec(manifest)?.[1];
+if (!declared) throw new Error("paper/typst.toml declares no entrypoint");
+const SOURCE = join(PAPER_ROOT, declared);
+const FONT_PATH = join(PAPER_ROOT, "fonts");
 const PDF = join(REPOSITORY_ROOT, "PAPER.pdf");
 const CHECK = process.argv.includes("--check");
 

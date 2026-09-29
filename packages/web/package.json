@@ -12,7 +12,7 @@
     "src"
   ],
   "scripts": {
-    "test": "bun test test/quota.test.ts",
+    "test": "bun test",
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "lint": "biome lint .",
     "format:check": "biome format ."
@@ -20,8 +20,6 @@
   "license": "GPL-3.0",
   "dependencies": {
     "@darkfactory/protocol": "workspace:*",
-    "@darkfactory/auth": "workspace:*",
-    "@darkfactory/github": "workspace:*",
     "@darkfactory/docs": "workspace:*",
     "wouter": "^3.3.5"
   },

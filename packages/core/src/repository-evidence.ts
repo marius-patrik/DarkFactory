@@ -2,6 +2,7 @@
  * Repository/package/domain evidence discovery owned by the DarkFactory core mechanism.
  */
 
+import type { Dirent } from "node:fs";
 import { access, readdir, readFile } from "node:fs/promises";
 import { basename, dirname, join, relative, resolve } from "node:path";
 import { configBlock, parseConfigDocument, resolveConfigDocumentPath } from "@darkfactory/protocol/config-document";
@@ -77,6 +78,12 @@ export interface RepositoryDfEvidence {
 		docs_check?: Readonly<Record<string, RepositoryActionOverride>>;
 		docs_extract?: Readonly<Record<string, RepositoryActionOverride>>;
 		setup?: Readonly<Record<string, RepositoryActionOverride>>;
+		/**
+		 * Actions the repository explicitly exempts per ecosystem, each with a reason. Keyed
+		 * snake_case to match the rest of the canonical contract (`docs_check`, `package_manager`);
+		 * an exemption for a tool that does not exist is the only escape from a required gap.
+		 */
+		not_applicable?: Readonly<Record<string, Readonly<Record<string, { reason: string; [key: string]: unknown }>>>>;
 		release?: Readonly<Record<string, RepositoryActionOverride>>;
 	};
 	[key: string]: unknown;
@@ -340,7 +347,7 @@ async function scan(
 	const rel = repoPath(root, directory);
 	if (rel !== "." && (ignored.has(rel) || rel.split("/").some((part) => ignored.has(part)))) return;
 	output.push(...(await discoveredPackages(directory, root)));
-	let entries;
+	let entries: Dirent[];
 	try {
 		entries = await readdir(directory, { withFileTypes: true });
 	} catch {

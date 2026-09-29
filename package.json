@@ -5,16 +5,18 @@
   "type": "module",
   "workspaces": [
     "packages/*",
-    "capabilities/*",
-    "harness",
+    ".darkfactory/plugins/*",
     "paper"
   ],
   "scripts": {
-    "test": "bun run --cwd harness test",
-    "typecheck": "bun run --cwd harness typecheck",
-    "check": "bun run --cwd harness check",
+    "test": "bun run --cwd packages/harness test",
+    "typecheck": "bun run --cwd packages/harness typecheck",
+    "check": "bun run --cwd packages/harness check",
     "docs": "bun scripts/build-docs.ts",
-    "format:check": "biome format ."
+    "release:version": "bun scripts/versioning.ts",
+    "release:targets": "bun packages/harness/scripts/release-targets.ts",
+    "format:check": "biome format .",
+    "lint": "biome lint ."
   },
   "devDependencies": {
     "@biomejs/biome": "2.5.13",

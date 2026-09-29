@@ -1,0 +1,11 @@
+{
+  "name": "hooks",
+  "version": "1.0.0",
+  "description": "Require a detected test change when detected source files change.",
+  "license": "MIT",
+  "shipped": false,
+  "author": {
+    "name": "DarkFactory"
+  },
+  "keywords": ["hooks", "capability"]
+}

@@ -69,14 +69,6 @@ jobs:
           ref: ${{ inputs.pipeline-ref }}
           path: .darkfactory-pipeline
 
-      - name: Put the pipeline scripts on the path
-        run: |
-          if [ -d .darkfactory-pipeline/.github/scripts ]; then
-            echo "PIPELINE_SCRIPTS=$GITHUB_WORKSPACE/.darkfactory-pipeline/.github/scripts" >> "$GITHUB_ENV"
-          else
-            echo "PIPELINE_SCRIPTS=$GITHUB_WORKSPACE/.github/scripts" >> "$GITHUB_ENV"
-          fi
-
       - name: Mint an installation token for the App
         # Issue and pull request work belongs to the App, which has its own rate limit. Only
         # Projects v2 needs a person's token, because GitHub scopes project permissions to

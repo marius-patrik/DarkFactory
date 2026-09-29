@@ -1,5 +1,5 @@
-import { basename } from "node:path";
-import type { DocsContentGraph, DocsPage } from "./content.ts";
+import { basename, dirname } from "node:path";
+import { adrDocumentSource, type DocsContentGraph, type DocsPage } from "./content.ts";
 
 /** Parsed metadata for one canonical repository rule. */
 export interface DocsRuleRelationEntry {
@@ -45,8 +45,15 @@ function relatedRuleIds(page: DocsPage): readonly string[] {
 	return [...new Set(ids)];
 }
 
+/**
+ * Whether a section is present and non-empty.
+ *
+ * An ADR section is nested under its `## ADR-NNNN` heading, so its own sections are level three
+ * rather than level two. Any level is accepted so the check does not encode where the record sits
+ * in the document.
+ */
 function hasSection(markdown: string, heading: string): boolean {
-	return new RegExp(`(?:^|\\n)## ${heading}\\n\\s*\\S`, "u").test(markdown);
+	return new RegExp(`^(#{2,6}) ${heading}\\s*$\\n\\s*\\S`, "mu").test(markdown);
 }
 
 function ruleNumber(id: string): string | undefined {
@@ -81,7 +88,7 @@ export function analyzeRuleNoteRelations(graph: DocsContentGraph): RuleNoteRelat
 		const number = ruleNumber(id);
 		if (!number) findings.push(`${page.source}: invalid rule id ${id}`);
 		if (status !== "normative") findings.push(`${page.source}: canonical rule status must be normative`);
-		if (number && !basename(page.source).startsWith(`${number}-`)) {
+		if (number && !basename(dirname(page.source)).startsWith(`${number}-`)) {
 			findings.push(`${page.source}: filename must start with canonical rule number ${number}-`);
 		}
 		const heading = page.markdown.match(/^# Rule\s+(\d+)\s+—\s+(.+)$/mu);
@@ -100,47 +107,47 @@ export function analyzeRuleNoteRelations(graph: DocsContentGraph): RuleNoteRelat
 		rules.push({ id, title, page });
 	}
 
-	if (rules.length === 0) findings.push(".agents/rules: at least one canonical rule is required");
+	if (rules.length === 0) findings.push("rules: at least one canonical rule is required");
 
 	const ruleNumbers = rules.map((rule) => Number(ruleNumber(rule.id))).filter((number) => Number.isFinite(number));
 	const expectedRuleNumbers = Array.from({ length: ruleNumbers.length }, (_, index) => index + 1);
 	if (ruleNumbers.some((number, index) => number !== expectedRuleNumbers[index])) {
-		findings.push(`.agents/rules: rule numbers must be contiguous from 001; found ${ruleNumbers.join(", ")}`);
+		findings.push(`rules: rule numbers must be contiguous from 001; found ${ruleNumbers.join(", ")}`);
 	}
 
 	const notes: DocsNoteRelationEntry[] = [];
 	const noteIds = new Set<string>();
+	// Every record shares one source, so they are ordered by ADR number rather than by path.
 	for (const page of graph.pages
 		.filter((candidate) => candidate.kind === "adr")
-		.sort((a, b) => a.source.localeCompare(b.source))) {
+		.sort((a, b) => (adrNumber(noteIdentity(a).id) ?? "").localeCompare(adrNumber(noteIdentity(b).id) ?? ""))) {
 		const note = noteIdentity(page);
-		const number = adrNumber(note.id);
-		if (!number) findings.push(`${page.source}: invalid ADR id ${note.id}`);
-		if (number && !basename(page.source).startsWith(`${number}-`)) {
-			findings.push(`${page.source}: filename must start with canonical ADR number ${number}-`);
-		}
+		// A finding names the record, not the file, so one file holding many records is still
+		// actionable: the anchor is the ADR number a reader searches for.
+		const where = `${page.source}#${note.id}`;
+		if (!adrNumber(note.id)) findings.push(`${where}: invalid ADR id ${note.id}`);
 		if (!/^\*\*Status\*\*:\s*Accepted\s*$/mu.test(page.markdown)) {
-			findings.push(`${page.source}: current ADR status must be Accepted`);
+			findings.push(`${where}: current ADR status must be Accepted`);
 		}
 		for (const section of ["Decision", "Consequences"]) {
 			if (!hasSection(page.markdown, section))
-				findings.push(`${page.source}: accepted ADR is missing non-empty ${section} section`);
+				findings.push(`${where}: accepted ADR is missing non-empty ${section} section`);
 		}
-		if (noteIds.has(note.id)) findings.push(`${page.source}: duplicate ADR id ${note.id}`);
+		if (noteIds.has(note.id)) findings.push(`${where}: duplicate ADR id ${note.id}`);
 		noteIds.add(note.id);
 		const ruleIdsForNote = relatedRuleIds(page);
-		if (ruleIdsForNote.length === 0) findings.push(`${page.source}: accepted ADR must declare Related rules`);
+		if (ruleIdsForNote.length === 0) findings.push(`${where}: accepted ADR must declare Related rules`);
 		for (const relatedRuleId of ruleIdsForNote) {
-			if (!ruleIds.has(relatedRuleId)) findings.push(`${page.source}: unknown related rule ${relatedRuleId}`);
+			if (!ruleIds.has(relatedRuleId)) findings.push(`${where}: unknown related rule ${relatedRuleId}`);
 		}
 		notes.push({ ...note, page, ruleIds: ruleIdsForNote });
 	}
 
 	for (const page of graph.pages.filter((candidate) => candidate.kind === "note")) {
-		findings.push(`${page.source}: current long-term notes must be accepted numbered ADRs under .agents/adr/`);
+		findings.push(`${page.source}: current long-term notes must be accepted numbered ADRs in ${adrDocumentSource()}`);
 	}
 
-	if (notes.length === 0) findings.push(".agents/adr: at least one accepted ADR is required");
+	if (notes.length === 0) findings.push(`${adrDocumentSource()}: at least one accepted ADR is required`);
 
 	const reverse = new Map<string, string[]>();
 	for (const rule of rules) reverse.set(rule.id, []);

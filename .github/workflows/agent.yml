@@ -2,7 +2,10 @@ name: Autonomous Agent
 
 on:
   issues:
-    types: [opened]
+    # `labeled` is what lets the pipeline be started on an issue that already exists. Without it a
+    # failure report filed by report-failure.yml - and any issue a human opened before this trigger
+    # existed - can never enter the graph, because the only entry edge carries the `Request` label.
+    types: [opened, labeled]
   issue_comment:
     types: [created]
   pull_request_review_comment:
@@ -77,7 +80,17 @@ jobs:
     # Comments written by a bot (the agent's own Interpretation, plan and review comments, board
     # automation) are skipped here rather than inside the container: the runner ignores them anyway,
     # and reaching that check cost a container build and two OAuth refreshes per comment.
-    if: (vars.AGENT_ENABLED == 'true' || inputs.agent-enabled == 'true') && !endsWith(github.event.comment.user.login, '[bot]') && !contains(github.event.issue.labels.*.name, 'pipeline-failure')
+    #
+    # `Failed again:` is the exception, and it is a narrow one. The failure reporter posts it on the
+    # already-open failure issue when a red build recurs after a repair, so it is the only signal
+    # that resumes a muted loop; it is recognised by shape because its author is the pipeline itself.
+    #
+    # A `pipeline-failure` issue is deliberately NOT skipped. It used to be, which muted the whole
+    # loop: report-failure.yml files exactly that issue when a red build needs attention, and the
+    # guard then refused to act on it, so every failure was reported and ignored forever. The label
+    # stays for board and triage purposes; the loop is bounded by the deterministic effect identity
+    # the runner claims in agent_runner.py (`claim_failure_dispatch`), not by a label test.
+    if: (vars.AGENT_ENABLED == 'true' || inputs.agent-enabled == 'true') && (!endsWith(github.event.comment.user.login, '[bot]') || startsWith(github.event.comment.body, 'Failed again:'))
     runs-on: ubuntu-latest
     env:
       # The secrets context cannot be read from a step-level `if`, so the test
@@ -126,62 +139,78 @@ jobs:
           INPUT_TARGET_REPO: ${{ inputs.target-repo }}
           INPUT_EVENT_NAME: ${{ inputs.event-name }}
         run: |
-          python3 - << 'PY'
-          import json, os
-
-          with open(os.environ["GITHUB_EVENT_PATH"], encoding="utf-8") as f:
-              event = json.load(f)
-
-          payload = event.get("client_payload", {}) if isinstance(event, dict) else {}
-          target_repo = payload.get("repository") or os.environ.get("INPUT_TARGET_REPO") or os.environ.get("GITHUB_REPOSITORY") or ""
-          event_name = payload.get("event_name") or os.environ.get("INPUT_EVENT_NAME") or os.environ.get("GITHUB_EVENT_NAME") or ""
-          owner = target_repo.partition("/")[0] if target_repo else ""
-
-          if event.get("action") == "agent-dispatch" or "client_payload" in event:
-              inner = payload.get("payload")
-              if inner:
-                  if isinstance(inner, str):
-                      try:
-                          inner = json.loads(inner)
-                      except Exception:
-                          pass
-                  with open("/tmp/event.json", "w", encoding="utf-8") as f:
-                      if isinstance(inner, (dict, list)):
-                          json.dump(inner, f)
-                      else:
-                          f.write(str(inner))
-                  event_path = "/tmp/event.json"
-              else:
-                  event_path = os.environ["GITHUB_EVENT_PATH"]
-          else:
-              event_path = os.environ["GITHUB_EVENT_PATH"]
-
-          is_external = "true" if target_repo != os.environ.get("GITHUB_REPOSITORY") else "false"
-
-          with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as f:
-              f.write(f"repo={target_repo}\n")
-              f.write(f"owner={owner}\n")
-              f.write(f"event_name={event_name}\n")
-              f.write(f"event_path={event_path}\n")
-              f.write(f"is_external={is_external}\n")
-          PY
+          # Unwraps a re-dispatched event: a dispatch that carries its own `client_payload.payload`
+          # has the real event one level down, and the runner has to be handed that rather than the
+          # wrapper. An inner payload that is a string is parsed when it parses and kept verbatim
+          # when it does not, because a non-JSON payload is still the payload.
+          bun -e '
+          import { appendFileSync, writeFileSync } from "node:fs";
+          const event = await Bun.file(process.env.GITHUB_EVENT_PATH).json();
+          const payload = (event && typeof event === "object" ? event.client_payload : null) ?? {};
+          const targetRepo =
+            payload.repository ||
+            process.env.INPUT_TARGET_REPO ||
+            process.env.GITHUB_REPOSITORY ||
+            "";
+          const eventName =
+            payload.event_name ||
+            process.env.INPUT_EVENT_NAME ||
+            process.env.GITHUB_EVENT_NAME ||
+            "";
+          const owner = targetRepo ? targetRepo.split("/")[0] : "";
+          let eventPath = process.env.GITHUB_EVENT_PATH;
+          if (event?.action === "agent-dispatch" || "client_payload" in (event ?? {})) {
+            const inner = payload.payload;
+            if (inner) {
+              let value = inner;
+              if (typeof value === "string") {
+                try { value = JSON.parse(value); } catch { /* kept verbatim */ }
+              }
+              const serialised =
+                value !== null && typeof value === "object" ? JSON.stringify(value) : String(value);
+              writeFileSync("/tmp/event.json", serialised);
+              eventPath = "/tmp/event.json";
+            }
+          }
+          const isExternal = targetRepo !== process.env.GITHUB_REPOSITORY;
+          appendFileSync(
+            process.env.GITHUB_OUTPUT,
+            [
+              `repo=${targetRepo}`,
+              `owner=${owner}`,
+              `event_name=${eventName}`,
+              `event_path=${eventPath}`,
+              `is_external=${isExternal}`,
+              "",
+            ].join("\n"),
+          );
+          ' >> /dev/null
 
       - name: Checkout repository
         # Checked out with the App's token, so the branches the agent pushes are pushed by the App
         # and the checks on them run. A push made with GITHUB_TOKEN triggers no workflow at all,
         # which is why a person's token was reached for here in the first place.
+        #
+        # `fetch-depth: 0` is required, not a preference. The runner diffs the branch against its
+        # base to decide what is out of plan scope, and the default shallow checkout contains one
+        # commit and no other refs, so every `origin/<base>` it tried was unresolvable. The diff
+        # then returned nothing and the scope gate passed on an empty file list.
         if: steps.delegate.outputs.delegated != 'true'
         uses: actions/checkout@v4
         with:
           repository: ${{ steps.target-env.outputs.repo }}
           token: ${{ steps.app-token.outputs.token || secrets.GH_PROJECT_TOKEN || secrets.GITHUB_TOKEN }}
+          fetch-depth: 0
 
       - name: Check out the pinned pipeline
         if: steps.delegate.outputs.delegated != 'true' && (inputs.pipeline-ref != '' || steps.target-env.outputs.is_external == 'true')
         uses: actions/checkout@v4
         with:
           repository: ${{ inputs.pipeline-repo || 'marius-patrik/DarkFactory' }}
-          ref: ${{ inputs.pipeline-ref || 'darkfactory' }}
+          # `main` is the pipeline repository's default branch. The previous `darkfactory` default
+          # names a branch that no longer exists, so this checkout failed and the agent container
+          # was never built for an external run.
+          ref: ${{ inputs.pipeline-ref || 'main' }}
           path: .darkfactory-pipeline
 
       - name: Build agent container

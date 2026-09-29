@@ -1,6 +1,6 @@
-import { lstatSync, readFileSync, readlinkSync, realpathSync } from "node:fs";
+import { lstatSync, readlinkSync, realpathSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
-import { renderAgentsMarkdown } from "./agents.ts";
+import { darkFactoryDirectory } from "@darkfactory/protocol/config-document";
 import type { DocsContentGraph } from "./content.ts";
 import { analyzeRuleNoteRelations } from "./relations.ts";
 
@@ -11,9 +11,9 @@ export interface DocumentationTruthFinding {
 }
 
 const CURRENT_ALIASES = [
-	{ path: "README.md", target: ".agents/PRD.md" },
-	{ path: "CONTRIBUTING.md", target: ".agents/AGENTS.md" },
-	{ path: join(".agents", "notes", "README.md"), target: "../../README.md" },
+	// The ADRs are authored once under the DarkFactory directory and discovered at the root by symlink,
+	// the same arrangement as `.agents` itself. Copied rather than linked would let the two drift.
+	{ path: "ADRs.md", target: join(darkFactoryDirectory(), "ADRs.md") },
 ] as const;
 
 const RETIRED_DOCUMENTATION_PATHS = [
@@ -32,10 +32,12 @@ const RETIRED_DOCUMENTATION_PATHS = [
 	"properdocs.yml",
 	"mkdocs.yml",
 	"harness/README.md",
-	join(".agents", "notes", "bootstrap.md"),
-	join(".agents", "notes", "vision_capture.md"),
-	join(".agents", "notes", "adr"),
-	join(".agents", "notes", "rules"),
+	// The notes tree is retired. It held a symlink to the README, which is what the root already is,
+	// so a file reintroduced there is content nothing reads.
+	join(".agents", "notes"),
+	join(darkFactoryDirectory(), "notes"),
+	// The records live in one document now, so the per-decision directory is a retired surface too.
+	join(darkFactoryDirectory(), "adr"),
 	"_notes",
 	"_rules",
 ] as const;
@@ -116,30 +118,6 @@ export function currentDocumentationFindings(
 	const relations = analyzeRuleNoteRelations(graph);
 	for (const message of relations.findings) findings.push({ path: ".agents", message });
 	if (relations.findings.length > 0) return findings;
-
-	const agentsPath = join(repoRoot, ".agents", "AGENTS.md");
-	let agentsStat: ReturnType<typeof lstatSync>;
-	try {
-		agentsStat = lstatSync(agentsPath);
-	} catch (error) {
-		if ((error as NodeJS.ErrnoException).code === "ENOENT") {
-			findings.push({ path: ".agents/AGENTS.md", message: "generated AGENTS projection is missing" });
-			return findings;
-		}
-		throw error;
-	}
-	if (!agentsStat.isFile()) {
-		findings.push({ path: ".agents/AGENTS.md", message: "generated AGENTS projection must be a regular file" });
-		return findings;
-	}
-	const actual = readFileSync(agentsPath, "utf8").replaceAll("\r\n", "\n");
-	const expected = renderAgentsMarkdown(graph);
-	if (actual !== expected) {
-		findings.push({
-			path: ".agents/AGENTS.md",
-			message: "committed AGENTS differs from the canonical repository-rules projection",
-		});
-	}
 
 	return findings;
 }

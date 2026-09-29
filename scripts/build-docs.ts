@@ -1,10 +1,6 @@
 import { mkdir, writeFile } from "node:fs/promises";
 import { join, resolve } from "node:path";
-import {
-	assertCurrentDocumentation,
-	compileDocsContentGraphWithDetectedApi,
-	renderAgentsMarkdown,
-} from "../packages/docs/src/index.ts";
+import { assertCurrentDocumentation, compileDocsContentGraphWithDetectedApi } from "../packages/docs/src/index.ts";
 import { renderDocsSite } from "../packages/web/src/docs.ts";
 
 function option(name: string): string | undefined {
@@ -16,7 +12,7 @@ const repoRoot = resolve(option("--repo-root") ?? process.cwd());
 const outputDir = resolve(option("--out") ?? join(repoRoot, "site"));
 const check = process.argv.includes("--check");
 const graph = await compileDocsContentGraphWithDetectedApi(repoRoot, {
-	capabilitiesRoot: resolve(import.meta.dir, "..", "capabilities"),
+	capabilitiesRoot: resolve(import.meta.dir, "..", ".darkfactory", "plugins"),
 });
 
 if (check) {
@@ -25,9 +21,6 @@ if (check) {
 	process.exit(0);
 }
 
-const agentsMarkdown = renderAgentsMarkdown(graph);
-await mkdir(join(repoRoot, ".agents"), { recursive: true });
-await writeFile(join(repoRoot, ".agents", "AGENTS.md"), agentsMarkdown);
 await renderDocsSite(graph, outputDir);
 await mkdir(join(repoRoot, ".darkfactory", "generated"), { recursive: true });
 await writeFile(join(repoRoot, ".darkfactory", "generated", "docs.json"), JSON.stringify(graph, null, 2) + "\n");

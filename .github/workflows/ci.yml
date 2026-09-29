@@ -3,8 +3,16 @@ name: CI
 on:
   push:
     branches: [develop]
+  # No `branches` filter on `pull_request`. That filter matches the pull request's *base* ref, so
+  # scoping it to `develop` left every stacked pull request in the delivery chain with zero
+  # check-runs: no `detect`, no `quality`, and a `CLEAN` mergeStateStatus computed from nothing
+  # (the stack branches are unprotected, so no required check ever gated them). One pull request
+  # in that state showed a `success` that had been computed against a different base.
+  # `edited` is in `types` because a base-only change is the one pull request edit that invalidates
+  # the previous base's results; GitHub emits no `synchronize` for it. `push` and `merge_group`
+  # stay scoped to the integration branch, so a stack branch's own pushes do not fan out.
   pull_request:
-    branches: [develop]
+    types: [opened, edited, synchronize, reopened, ready_for_review]
   merge_group:
     branches: [develop]
   workflow_dispatch:
@@ -55,7 +63,7 @@ jobs:
           if [ -d "$GITHUB_WORKSPACE/.darkfactory-runtime" ]; then
             ROOT="$GITHUB_WORKSPACE/.darkfactory-runtime"
           fi
-          bun "$ROOT/packages/cli/src/bin.ts" ci matrix             --repo "$GITHUB_WORKSPACE"             --capabilities-root "$ROOT/capabilities" > "$RUNNER_TEMP/darkfactory-quality.json"
+          bun "$ROOT/packages/cli/src/bin.ts" ci matrix             --repo "$GITHUB_WORKSPACE"             --capabilities-root "$GITHUB_WORKSPACE/.darkfactory/plugins" > "$RUNNER_TEMP/darkfactory-quality.json"
           jq -c '.matrix' "$RUNNER_TEMP/darkfactory-quality.json"             | sed 's/^/matrix=/' >> "$GITHUB_OUTPUT"
           if [ "$(jq '.matrix | length' "$RUNNER_TEMP/darkfactory-quality.json")" -gt 0 ]; then
             echo "has-actions=true" >> "$GITHUB_OUTPUT"
@@ -83,7 +91,9 @@ jobs:
           fetch-depth: 0
 
       - name: Set up Bun
-        if: matrix.packageManager == 'bun'
+        # The paper capability resolves its entrypoint with a repository script, so the typst
+        # job needs bun too even though it is not a bun job.
+        if: matrix.packageManager == 'bun' || matrix.ecosystem == 'typst'
         uses: oven-sh/setup-bun@v2
 
       - name: Set up Node
@@ -127,7 +137,9 @@ jobs:
           deno-version: v2.x
 
       - name: Set up Typst
-        if: matrix.ecosystem == 'typst'
+        # The paper package's own test compiles the manuscript, so its job needs typst even
+        # though it is a node job.
+        if: matrix.ecosystem == 'typst' || matrix.cwd == 'paper'
         uses: typst-community/setup-typst@v5
 
       - name: Set up Lean
@@ -175,29 +187,52 @@ jobs:
         env:
           DF_CONFIG_DIR: ${{ env.DF_CONFIG_DIR }}
         run: |
-          ROOT_REPO=false
-          ROOT_CONFIG=false
-          ROOT_EMPTY=false
-          FOLDER_REPO=false
-          FOLDER_CONFIG=false
-          FOLDER_EMPTY=false
-          [ -f "$GITHUB_WORKSPACE/repo.dfconfig" ] && ROOT_REPO=true
-          [ -f "$GITHUB_WORKSPACE/config.dfconfig" ] && ROOT_CONFIG=true
-          [ -f "$GITHUB_WORKSPACE/.dfconfig" ] && ROOT_EMPTY=true
-          CONFIG_DIR="${DF_CONFIG_DIR:-.darkfactory}"
+          # The one-config-per-scope candidate matrix. It is the same rule
+          # `.github/scripts/resolver.py` enforces for the runtime, and
+          # `tests/test_workflows.py::test_the_workflow_gate_and_the_resolver_agree_on_the_candidate_matrix`
+          # runs both against the same fixtures so the two cannot drift.
+          CONFIG_FILENAMES="repo.dfconfig config.dfconfig .dfconfig"
+          DEFAULT_CONFIG_DIR=".darkfactory"
+          # Lexical path normalisation, the equivalent of the resolver's `os.path.normpath`: collapse
+          # `.`, `..` and repeated separators without touching the filesystem. `realpath -m` would
+          # also resolve symlinks, which the resolver does not, and is a GNU-only option.
+          normpath() {
+            local path="$1" out="" part saved_ifs="$IFS"
+            IFS="/"
+            set -f
+            for part in $path; do
+              case "$part" in
+                ""|".") ;;
+                "..") out="${out%/*}" ;;
+                *) out="$out/$part" ;;
+              esac
+            done
+            set +f
+            IFS="$saved_ifs"
+            printf '%s' "${out:-/}"
+          }
+          count_candidates() {
+            local dir="$1" n=0 name
+            for name in $CONFIG_FILENAMES; do
+              if [ -f "$dir/$name" ]; then n=$((n + 1)); fi
+            done
+            printf '%s' "$n"
+          }
+          # A blank or whitespace-only value is the default, matching the resolver's `.strip() or`.
+          CONFIG_DIR="${DF_CONFIG_DIR}"
+          CONFIG_DIR="${CONFIG_DIR#"${CONFIG_DIR%%[![:space:]]*}"}"
+          CONFIG_DIR="${CONFIG_DIR%"${CONFIG_DIR##*[![:space:]]}"}"
+          CONFIG_DIR="${CONFIG_DIR:-$DEFAULT_CONFIG_DIR}"
+          WORKSPACE="$(normpath "$GITHUB_WORKSPACE")"
           case "$CONFIG_DIR" in
-            /*) FOLDER="$(realpath -m "$CONFIG_DIR")" ;;
-            *) FOLDER="$(realpath -m "$GITHUB_WORKSPACE/$CONFIG_DIR")" ;;
+            /*) FOLDER="$(normpath "$CONFIG_DIR")" ;;
+            *) FOLDER="$(normpath "$WORKSPACE/$CONFIG_DIR")" ;;
           esac
-          if [ "$FOLDER" != "$GITHUB_WORKSPACE" ]; then
-            [ -f "$FOLDER/repo.dfconfig" ] && FOLDER_REPO=true
-            [ -f "$FOLDER/config.dfconfig" ] && FOLDER_CONFIG=true
-            [ -f "$FOLDER/.dfconfig" ] && FOLDER_EMPTY=true
+          COUNT="$(count_candidates "$WORKSPACE")"
+          if [ "$FOLDER" != "$WORKSPACE" ]; then
+            COUNT=$((COUNT + $(count_candidates "$FOLDER")))
           fi
-          COUNT=0
-          for PRESENT in "$ROOT_REPO" "$ROOT_CONFIG" "$ROOT_EMPTY" "$FOLDER_REPO" "$FOLDER_CONFIG" "$FOLDER_EMPTY"; do
-            [ "$PRESENT" = true ] && COUNT=$((COUNT + 1))
-          done
+
           if [ "$COUNT" -gt 1 ]; then
             echo "Ambiguous DarkFactory configuration: keep only one repo.dfconfig, config.dfconfig, or .dfconfig candidate." >&2
             exit 1
