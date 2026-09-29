@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, test } from "bun:test";
 import { mkdtemp, rm } from "node:fs/promises";
+import { tmpdir } from "node:os";
 import { join } from "node:path";
 import {
 	createConfiguredOAuth,
@@ -12,7 +13,7 @@ import type { ProviderConfig } from "../src/providers/schema.ts";
 const roots: string[] = [];
 
 async function temporaryHome(): Promise<string> {
-	const path = await mkdtemp(join(process.cwd(), ".oauth-test-"));
+	const path = await mkdtemp(join(tmpdir(), "df-oauth-test-"));
 	roots.push(path);
 	return path;
 }

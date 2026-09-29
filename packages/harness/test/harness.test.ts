@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, test } from "bun:test";
 import { mkdtemp, readFile, rm } from "node:fs/promises";
+import { tmpdir } from "node:os";
 import { join } from "node:path";
 import {
 	fauxAssistantMessage,
@@ -17,7 +18,7 @@ import { OutcomeStore } from "../src/router/outcomes.ts";
 const temporary: string[] = [];
 
 async function tempWorkspace(): Promise<{ root: string; home: string; cwd: string }> {
-	const root = await mkdtemp(join(process.cwd(), ".harness-test-"));
+	const root = await mkdtemp(join(tmpdir(), "df-harness-test-"));
 	temporary.push(root);
 	const home = join(root, "home");
 	const cwd = join(root, "workspace");
@@ -27,7 +28,7 @@ async function tempWorkspace(): Promise<{ root: string; home: string; cwd: strin
 
 afterEach(async () => {
 	for (const path of temporary.splice(0)) {
-		if (!path.startsWith(process.cwd())) throw new Error(`Refusing cleanup outside workspace: ${path}`);
+		if (!path.startsWith(tmpdir())) throw new Error(`Refusing cleanup outside workspace: ${path}`);
 		await rm(path, { recursive: true, force: true });
 	}
 });

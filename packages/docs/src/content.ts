@@ -95,7 +95,7 @@ function titleFromMarkdown(markdown: string, fallback: string): string {
 }
 
 /** Source path of the single document holding every accepted architecture decision. */
-export function adrDocumentSource(repoRoot = process.cwd()): string {
+export function adrDocumentSource(): string {
 	return `${darkFactoryDirectory()}/ADRs.md`;
 }
 
@@ -170,7 +170,7 @@ function markdownPage(repoRoot: string, source: string, kind: DocsPageKind, id?:
  * into sections keeps both working while the decisions themselves are authored in a single file.
  */
 function adrPages(repoRoot: string): DocsPage[] {
-	const source = adrDocumentSource(repoRoot);
+	const source = adrDocumentSource();
 	if (!existsSync(join(repoRoot, source))) return [];
 	const markdown = readFileSync(join(repoRoot, source), "utf8").replaceAll("\r\n", "\n");
 	return adrSections(markdown).map((section) => {

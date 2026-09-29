@@ -18,7 +18,9 @@ describe("the suite's repository root is the repository root", () => {
 	test("the derived root contains the repository's own content", () => {
 		expect(existsSync(join(repoRoot, ".github", "workflows"))).toBe(true);
 		expect(existsSync(join(repoRoot, "repo.dfconfig"))).toBe(true);
-		expect(existsSync(join(repoRoot, ".agents", "rules"))).toBe(true);
+		// The rules are skills under the df-rules plugin, not a flat .agents/rules directory. The point
+		// of this assertion is that the root is the repository, so it names a surface that still exists.
+		expect(existsSync(join(repoRoot, ".darkfactory", "plugins", "df-rules", "skills"))).toBe(true);
 	});
 
 	test("the derived root is not a subdirectory that happens to hold some of it", () => {

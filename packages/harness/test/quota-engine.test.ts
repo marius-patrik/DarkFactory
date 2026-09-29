@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, test } from "bun:test";
 import { mkdtemp, readFile, rm } from "node:fs/promises";
+import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fauxAssistantMessage, fauxProvider } from "@earendil-works/pi-ai";
 import { createFailoverSupervisor } from "../src/harness/supervisor.ts";
@@ -10,7 +11,7 @@ import { BUILTIN_PROVIDER_CONFIG, type DeclaredLimitConfig, type ProviderConfig 
 
 const temporary: string[] = [];
 async function home(): Promise<string> {
-	const root = await mkdtemp(join(process.cwd(), ".harness-test-quota-"));
+	const root = await mkdtemp(join(tmpdir(), "df-harness-test-quota-"));
 	temporary.push(root);
 	return root;
 }

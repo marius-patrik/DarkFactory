@@ -2,7 +2,6 @@ import { describe, expect, it } from "bun:test";
 import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { CANONICAL_STATUSES } from "@darkfactory/protocol/workflow";
-import { CHECKPOINT_FILENAME } from "../../src/board/checkpoint.ts";
 import { CONFIG_MARKER } from "../../src/install/configuration-issue.ts";
 import { DF_ACCOUNT_LOAD_MAP, DF_ACCOUNT_SET_MAP } from "../../src/pipeline/df-events.ts";
 import { TYPE_LABELS } from "../../src/pipeline/labels.ts";

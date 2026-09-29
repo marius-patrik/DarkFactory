@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, test } from "bun:test";
 import { mkdir, mkdtemp, rm, symlink } from "node:fs/promises";
+import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { ToolPolicy } from "../src/harness/tools.ts";
 
@@ -33,7 +34,7 @@ describe("ToolPolicy regression triplet", () => {
 	});
 
 	test("blocks an existing symlink that resolves outside the workspace", async () => {
-		const root = await mkdtemp(join(process.cwd(), ".tool-policy-"));
+		const root = await mkdtemp(join(tmpdir(), "df-tool-policy-"));
 		temporary.push(root);
 		const cwd = join(root, "workspace");
 		const outside = join(root, "outside");

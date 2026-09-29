@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, setDefaultTimeout, test } from "bun:test";
 import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { FileCredentialStore } from "@darkfactory/keychain";
 import { redactToolInput } from "../src/cli.ts";
@@ -38,7 +39,7 @@ setDefaultTimeout(60_000);
 
 afterEach(async () => {
 	for (const path of temporary.splice(0)) {
-		if (!path.startsWith(process.cwd())) throw new Error(`Refusing cleanup outside workspace: ${path}`);
+		if (!path.startsWith(tmpdir())) throw new Error(`Refusing cleanup outside workspace: ${path}`);
 		await rm(path, { recursive: true, force: true });
 	}
 });
@@ -47,7 +48,7 @@ async function run(
 	prompt: string,
 	options: { args?: string[]; config?: Record<string, unknown>; setup?: (home: string) => Promise<void> } = {},
 ) {
-	const workspace = await mkdtemp(join(process.cwd(), ".cli-test-"));
+	const workspace = await mkdtemp(join(tmpdir(), "df-cli-test-"));
 	temporary.push(workspace);
 	const home = join(workspace, "home");
 	await mkdir(home);
@@ -80,7 +81,7 @@ async function run(
 
 describe("df run", () => {
 	test("df route explains a route and df run emits the route before the session", async () => {
-		const workspace = await mkdtemp(join(process.cwd(), ".cli-test-"));
+		const workspace = await mkdtemp(join(tmpdir(), "df-cli-test-"));
 		temporary.push(workspace);
 		const home = join(workspace, "home");
 		await mkdir(home);
@@ -168,7 +169,7 @@ describe("df run", () => {
 		}
 	});
 	test("accounts reports OAuth ownership/expiry/refresh and logout removes only the named account", async () => {
-		const home = await mkdtemp(join(process.cwd(), ".cli-test-"));
+		const home = await mkdtemp(join(tmpdir(), "df-cli-test-"));
 		temporary.push(home);
 		const store = new FileCredentialStore(home);
 		for (const label of ["acct-a", "acct-b"]) {
@@ -357,7 +358,7 @@ describe("df run", () => {
 	});
 
 	test("df providers shows data-collection column", async () => {
-		const home = await mkdtemp(join(process.cwd(), ".cli-test-"));
+		const home = await mkdtemp(join(tmpdir(), "df-cli-test-"));
 		temporary.push(home);
 		const providersConfig = {
 			version: 1,
