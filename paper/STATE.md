@@ -89,37 +89,34 @@ Czech wording that `paper-verify` greps for:
    `34-practical-implementation.typ` — „Testovací sady se přitom spouštějí pouze jednou a po opravě
    už ne… Opakovatelná kontrola tedy rozliší dobrý a špatný stav, ale není překážkou"
 
-Three methodology criteria, an operationalisation of this thesis and not a borrowed taxonomy.
-**Where they live is not settled.** They are currently stated in §3.1.1, and the author has
-since directed that they be *stated once in §1.2 and answered in §4.1*, with §3.1.1 removed
-(R13, Q-A). Until that is done, the text of §3.1.1 is the current state, and it is
-reproduced below so this file does not go stale when §3.1.1 changes.
+The three methodology criteria are **gone from the paper**. R15 supersedes R11, R12 and R13:
+the author dropped the sub-questions and the criteria, keeping only the main research question.
+The school was checked first — `rules.md` and `guide.md` require a methodological part and
+score methods, but never mention criteria — so §3.1 Metodika stays as the reproducibility
+record and §3.1.1 is deleted (`1615ddf0`). §4.1 now answers the main question in prose.
 
-The author has also directed that the conditional `musí` be dropped (R11) — which means
-sentence 1 below changes with it. Neither edit is applied yet.
+**What "proxy approval" means**, since the term is easy to misread, and it has been got wrong
+twice in this file. It is not an agent acting under the author's account, and it is not a machine
+issuing the decision. The facts, from `handle_pr_approval.py` and `pr-approval-automerge.yml` at
+`d576ec8f`:
 
-1. **Stav leží mimo model a je zjistitelný** — an artefact, where it lives, and a person who can
-   look at it without asking the model.
-2. **Brány jsou výslovné a druhy jejich rozhodnutí se nerozplývají** — deterministic check,
-   model-evaluated gate, or human gate; a run must not pass through one kind by the means of
-   another.
-3. **Člověk rozhoduje, co vstoupí do produkce** — a named moment, a named person, and **no other
-   path** to the same point.
+- The allowlist is `{repo_owner.lower(), "marius-patrik"}` and `REPO_OWNER` is `marius-patrik`, so
+  the set **deduplicates to one account** — the repository owner, acting from his own machine.
+  The paper said "two hardcoded accounts" in two places and STATE.md in four more; all corrected
+  in `b6ae110f`. It is one.
+- A GitHub App mints an installation token and does the issue and pull-request work, with its own
+  rate limit. A personal access token (`GH_PROJECT_TOKEN`) is used **only** for the Projects v2
+  board, because GitHub scopes project permissions to organisations and the boards are
+  user-owned. The App cannot reach it, so the board feature works only because of that split.
+- The proxy approval is carried by `github-actions[bot]` via `BOT_TOKEN`. It must be neither the
+  App nor the owner, because GitHub rejects an author approving their own pull request, and the
+  pull request is opened by the App or the owner.
 
-Applied in §4.1: the first two criteria hold, the third holds **conditionally** — proxy approval
-can fill the named moment with a machine, and the criterion's wording requires no other path.
-**The verdict on whether the configuration satisfies the third criterion is deliberately not
-pronounced and belongs to the author** (Part 4, item J12). That is a property of the thesis, not an
-unfinished sentence.
-
-**What "proxy approval" means**, since the term is easy to misread: it is not an agent acting
-under the author's account. The pipeline opens the pull request with the maintainer's token, so
-GitHub does not count that account's own approval; a **second bot account** submits the
-approving review programmatically with its own `BOT_TOKEN`. The single human in the
-allowlist — the repository owner — decides, and the bot only carries that decision into the
-review field, because GitHub
-will not register the human's approval of a pull request the human opened. Without that second credential the pipeline waits for a
-real human approval instead (Část 2, §2a).
+So: **a human decides, and the bot only carries that decision into the review field.** The honest
+concession is not that a machine stood in for a person. It is that the approval recorded in
+GitHub carries the bot's name, not the owner's. That now sits in §4.1's fourth finding, where the
+system is judged rather than described; the confessional paragraph in §3.5 was deleted
+(`b6ae110f`).
 
 The composition question — which harness layer's conventions dominate — was §3.1.2 and has been
 **cut**; it is now the third limitation in §4.2, beside the two that were always there. The nested
@@ -308,121 +305,20 @@ Odpověď na otázku, zda řezání odporuje školním pravidlům. `rules.md` (z
 
 ### Riziko pro body: ano, dvě položky
 
-1. **Cíl práce, 5 bodů** — „je ověřitelný, dosažitelný, dostatečně konkrétní?". Sloveso
-   `musí` ve výzkumné otázce je podmíněné, a bez měřítka je otázka nedoložitelná. **Trojice
-   kritérií je jediné měřítko, které práce má.** Proto zůstávají — na jednom místě.
+1. **Cíl práce, 5 bodů** — „je ověřitelný, dosažitelný, dostatečně konkrétní?". Bez měřítka je
+   otázka nedoložitelná. Kritéria byla jediné měřítko práce, ale autor je zrušil (R15); otázku
+   teď zodpovídá §4.1 v próze. Bod 5 tedy stojí na konkrétnosti zjištění, ne na seznamu.
 2. **Metody, bodově nejvýše** — „je popsána tak, že podle ní lze výzkum opakovat?". To
    nesou čtyři vrstvy, připnutá revize a zjednodušení s cenou, ne kritéria. Tady řez neškodí.
 
 ### Rámec otázky — co zlepšit
 
-Otázka je formulována správně, ale „principy" je slovo bez měřítka. Bod 5 dostane
-práce, která ukáže, **jak** otázku zodpověděla. Znění navržené v §2a tuto funkci plní —
-ale je to návrh, ne dohoda. **Starší návrh, který kritéria v §1.2 nevypisoval, je zrušen:
-autor řekl „state once in 1.2 answer in 4.1".**
+Otázka je formulovaná správně, ale „principy" je slovo bez měřítka. Bod 5 proto dostane práce,
+která ukáže, **jak** otázku zodpověděla. Tuto funkci teď plní §4.1, které na ni odpovídá
+prozou. Kritéria i podmíněné `musí` jsou pryč (R15) a §2a, která je plánovala, je smazána.
 
 ---
 
-## 2a. Cíl, kritéria a výzkumná otázka — návrh k potvrzení
-
-**Tato část není rozhodnuta. Autor má ji potvrdit nebo vyvrátit.**
-
-### Proč dosavadní znění nebylo ověřitelné
-
-Čtyři konkrétní slabiny, zjištěné čtením dnešního znění:
-
-1. **Dvě ze tří kritérií mají oporu, první nemá.** Druhé cituje `@claude-goal` pro tři druhy
-   bran; třetí je opřeno o vlastní selhání popsané konfigurace. První, *stav leží mimo model
-   a je zjistitelný*, nemá zdroj ani odvození — je prostě tvrzeno. Ten rozdíl komise zahlédne.
-2. **Nic trojici neodvozuje.** Text to přiznává — „operacionalizaci této práce, nikoli o
-   převzatou taxonomii" — a právě to činí otázku neodpověditelnou nikým jiným než autorem.
-3. **Podmíněné `musí` nebylo vymezitelné.** „jen ty principy, které samotný model bez zásady
-   okolí neposkytne" — práce nikdy neříká, které principy model dnes sám dodává. Podmínka,
-   která otázku propouští, se nedá posoudit.
-4. **Kritéria jsou definice, ne testy.** Komise může ověřit jen tím, že analýzu zopakuje.
-
-### Rozhodnutí autora
-
-- Kritéria se **neodvozují z chyb**. Autor: má smysl volit to, co lze prokázat, že je
-  dosaženo. Kritérium odvozené z porušení je pravidlo, o kterém víme, že je porušeno, a
-  odpověď je tak předem daná.
-- Podmínka `musí` se **vyhodí**.
-- Kritéria se **vyjmenují jednou, v §1.2**, a **zodpovědí se v §4.1**. §3.1.1 se ruší.
-
-### Návrh znění
-
-Otázka zůstává, hned za ní tři principy, jednou, a odraz na závěr:
-
-> Výzkumná otázka práce zní: *Které principy musí agentický systém splnit, aby spolehlivě
-> vykonával inženýrskou práci?* … Práce na ni odpovídá třemi principy, které staví jako
-> vlastní, nikoli jako převzatou taxonomii: **stav leží mimo model a je zjistitelný**;
-> **každá brána je výslovná a označuje druh svého rozhodnutí, a modelem hodnocená brána se
-> nepodává jako kontrola, jejíž výsledek lze přepočítat bez modelu**; a **o tom, co vstoupí
-> do produkce, rozhodne pojmenovaný člověk v pojmenovaném okamžiku**. Zda popsaná
-> konfigurace tyto principy splňuje, je předmětem zjištění v závěru.
-
-### Co se tím mění proti dnešku
-
-| | Dnes | Návrh |
-| :--- | :--- | :--- |
-| Třetí kritérium | „…a nesmí existovat žádná jiná cesta, která by ke stejnému bodu vedla" | vynecháno |
-| Druhé kritérium | „běh nesmí projít bránou jednoho druhu prostředky jiného" | reformulováno na to, co konfigurace doopravdy dodrží |
-| Kde kritéria | §3.1.1 | §1.2 |
-| Verdikt | „první dvě plní, třetí plní podmíněně" | tři principy splněny; slabiny se hlásí jinde |
-
-**Proč vynechat „žádná jiná cesta".** Tato klauzule je jediná, kterou popsaná konfigurace
-nesplňuje — zástupné schválení je právě druhá cesta. Kdyby zůstala v kritériu, odpovědí by
-bylo „nesplněno", což je méně užitečné než jiné kritérium, které splněno je. Zástupné
-schválení ale nezmizí: je v §3.5, je součástí záporného zjištění a je v omezeních. **Tím se
-slabost přesune z kritéria do zjištění, ne z textu pryč** — a přestane být jedinou věcí,
-která brání tomu, aby byl výsledek čitelný jako „tyto principy platí".
-
-Toto je věcný posun, ne úprava formulace, a proto potřebuje potvrzení.
-
-### Co zůstává v §3.1
-
-Po vypuštění 3.1.1 zůstává §3.1 jako záznam opakovatelnosti: **čtyři vrstvy** a **cena
-zjednodušení**. Věta o určení revize z ní byla odstraněna na autorův pokyn („remove, this
-doesnt belong in the paper", `d6eccfd6`) — revize se i nadále uvádí v popiscích obrázků a
-v citacích `@darkfactory-d576ec8f` v těle, ale §3.1 už ji neprohlašuje. To je přesně to,
-co průvodce posuzuje v položce *metody* — „je popsána tak, že podle ní lze výzkum
-opakovat?". Kritéria do toho nepatřila.
-
-### Co je „zástupné schválení" — autor se na to ptal, odpověď patří sem
-
-Autor: *„what do you mean by proxy approvals? like asking an agent to use my account to do
-the approval action? thats stupid it is me approving"*
-
-**Ne.** Není to agent jednající vaším jménem. Mechanismus je jiný a je popsán v §3.5:
-
-1. Ochrana větve vyžaduje schvalující review. GitHub **nepovažuje za schválení** review
-   od účtu, který pull request sám otevřel.
-2. Pull request otevřívá pipeline tokenem správce, tedy vaším účtem. Vaše kliknutí na
-   „Approve" je proto review od téhož účtu, který PR otevřel, a GitHub je nepočítá.
-3. Když ochrana větve stále schválení vyžaduje, **druhý účet** (bot) podá schválení
-   programově, vlastním tokenem `BOT_TOKEN`. Podmínkou je, že tento druhý účet a jeho
-   přihlašovací údaj v konfiguraci jsou; kde nejsou, pipeline čeká na skutečné schválení
-   člověka.
-4. Právě tenhle druhý krok je „zástupné schválení": schválení, které **platí**, poskytuje
-   stroj, ne člověk. Přesně to, co autor popsal slovy *„its stupid it is me approving"* —
-   autor kliká, ale GitHub uzná jen schválení bota.
-
-Který účet smí schválit, je jeden pevně zapsaný účet, vlastník repozitáře, porovnávaný s
-`GITHUB_ACTOR` (§3.5). Odtud formulace, kterou autor odmítl jako nepravdivou, že schválení
-„ověřuje autora issue nebo oprávněného člena".
-
-### Nezodpovězené
-
-- Zda ponechat formulaci „vlastní principy, nikoli převzatá taxonomii" — je to poctivé, ale
-  komise může číst jako přiznání, že výběr není odvozený.
-- Zda má být v §1.2 uvedeno, že jde o tři, i když je pak §3.1.1 zrušená a §4.1 je jediné,
-  kde se použijí.
-- **Zda vůbec zůstat u tří principů**, nebo je autor přesvědčen, že je třeba hledat jiný
-  rámec otázky. Dosud nikdo neodpověděl na autorovu otázku, co přesně průvodce vyžaduje.
-
----
-
-## 3. Rozhodnutí
 
 ### Přijato
 
@@ -459,10 +355,17 @@ Který účet smí schválit, je jeden pevně zapsaný účet, vlastník repozit
 Každá fáze: subagenti **navrhují**, hlavní agent **ověřuje v souboru**, teprve potom se
 mění. Změna se commituje po každé fázi. Bez schválení autora se do souborů nepíše.
 
+**Změněno 2026-09-29 (R15, `1615ddf0`, `b6ae110f`).** Trojice kritérií je z celé práce smazána,
+§3.1.1 je zrušen, §4.1 odpovídá hlavní otázce v próze a přiznání o botím zápisu schválení je ve
+čtvrtém zjištění. §2a (99 řádků plánování kritérií) je smazána. Fáze níže jsou pořád platné,
+kromě řádků, které odkazovaly na kritéria — ty jsou označeny ~~přeškrtnutím~~ nebo opraveny.
+Fáze 5 má nový úkol: autor chce, aby shrnutí shrnovalo celou práci, ne jen praktickou část.
+
 ### Fáze 1 — Čeština
 Cíl: B1, B2, B4 z Části 4. Jazyková úroveň nese 15 ze 200 bodů.
 Subagenti hlásí **pouze kandidáty**, s přesnou citací, pravidlem a důkadem. Nic, co nemá
 důkaz, se neopravuje. Minulý kontrolní průchod: 89 nálezů, z toho asi 20 skutečných.
+Hotovo: `10:38` `agentůje` (`1615ddf0`).
 Měření: průměrná věta pod 14 slov, žádná nad 30.
 Podch. 1a `10`,`12` · 1b `21`,`22`,`23` · 1c `30`–`35` · 1d `40`,`41`,`50`.
 
@@ -528,9 +431,7 @@ Cíl: jedna myšlenka na sekci, žádné mluvení o práci uvnitř práce.
 | `22-theory-agentic.typ:4` | „není samotný agent ani jeho model, ale systém" = `21:12`. Nahradit odkazem. |
 | `22-theory-agentic.typ:58` | „Spolehlivost tu nevzniká z modelu" = `21:15`. Vymazat první klauzuli. |
 | `23-theory-factory.typ:12` | **Přidat `1968`.** Rok je v obou abstraktech, v těle chybí — tělo podpírá tvrzení abstraktu. |
-| `23-theory-factory.typ:18` | „co smí do výroby vstoupit" obsah třetího kritéria ze stejného zdroje `@nato1969`. Viz Q-A: pokud kritéria zůstanou v §1.2, patří tato formulace tam. |
-| `31-practical-method.typ:32` | První dvě věty jsou skoro doslova `10:47–48`. Začít až na „Aby to nebylo tvrzení bez měřítka". |
-| §2.1.1 ↔ §3.1 | **Oba si nárokují model-versus-systém.** Přidat vzájemný symbolický odkaz — jediné místo, kde se přidává, ne ubrat. *(Odkazovat bude na to, kde kritéria nakonec budou.)* |
+| `23-theory-factory.typ:18` | „co smí do výroby vstoupit" — tvrzení bez opory, které drželo třetí kritérium, ale to je zrušené. Stále potřebuje `@nato1969` jako zdroj, jinak je to jen autorovo tvrzení. Viz Q-A: pokud kritéria zůstanou v §1.2, patří tato formulace tam. |
 
 ### Fáze 4 — Praktická část (přepis)
 Cíl: zkrátit. Dnes `§3.1`–`§3.5` dohromady opakují to, co figury a popisky už říkají.
@@ -556,7 +457,7 @@ se nerozhodne, Fáze 5 se nespouští** — níže jsou řezy, které platí př
 | `41:8` | „rozliší dobrý a špatný stav, ale není překážkou" doslova z `34:11`. Vymazat; nechat až od „Rozlišení mezi kontrolou, která brání…". |
 | `41:10` | Výhoda i nevýhoda už v `31:27` a `35:15`. Nechat rámec a poslední větu o odpovědnosti. |
 | `41:22` | „Hypotéza se potvrdila: strukturu… přebírá od smyčky" = `50:18`. Vymazat poslední větu; argument o nezávislosti je bez ní úplný. |
-| `50:10` | Tři kritéria vypsaná podruhé, podmíněnost `musí` potřetí, „model sám o sobě" = `21:29`, „agent vzniká propojením" = `21:12`. Z celého odstavce zůstane jedna věta. |
+| `50:10` | ✅ **HOTOVO `1615ddf0`** — tři principy i podmíněnost `musí` smazány. Zbývá v tomto řádku: „model sám o sobě" = `21:29`, „agent vzniká propojením" = `21:12`. Z celého odstavce zůstane jedna věta. |
 | `50:12` | Známost celé architektury i posloupnosti fází podruhé. Vymazat celý odstavec kromě první věty. |
 | `50:16` | Třetí výrok o třech iteracích, kvótě i testech. Vymazat vše kromě „Modelové review může být opakované, ale není deterministickou zárukou správnosti". |
 | `50:18` | Potvrzení hypotézy **ponechat** — to je jeho úkol. Druhá půlka vět = `41:22`. Vymazat, nechat hranici. |
@@ -572,8 +473,9 @@ Zbývá ověřit každou citaci proti zdroji — klíč, který se rozluší, ne
 Až po všem ostatním, protože musí odpovídat výsledku.
 - `metadata:25` a `:28` tvrdí **1968**; tělo to doplní ve Fázi 3.
 - Anotace má 159 slov (limit 150–250) — v pořádku.
-- Anotace i abstrakt vyjmenovávají kritéria a posloupnost fází; po Fázi 5 zkontrolovat,
-  že stále odpovídají a že neopisují něco, co už v těle není.
+- Anotace i abstrakt vyjmenovávají posloupnost fází; po Fázi 7 zkontrolovat, že stále odpovídají
+  a že neopisují něco, co už v těle není. Pokud vyjmenovávají kritéria, **musí jít pryč** —
+  v těle už nejsou.
 - Klíčová slova: pět, neobsahují slova z názvu. V pořádku.
 
 ### Fáze 8 — Konečné ověření
@@ -757,8 +659,8 @@ ale předmět zkoumání. Navazující práce má popsat konečnou architekturu 
 ## I. Materiály z čtení, které zatím nejsou v textu
 
 Nalezeno při čtení zdrojů, vyhovuje závěru práce, ale zatím nevsunuto. Kandidáti na
-§2.2.2 a na omezení výzkumu. **Jeden už v textu je** — tři druhy bran jsou citovány
-v §3.1.1, kde jsou rovnou použity k popisu druhů bran; ostatní čekají.
+§2.2.2 a na omezení výzkumu. **Jeden už v textu je** — tři druhy bran jsou citovány v §2.2.2,
+kde jsou rovnou použity k popisu druhů bran; ostatní čekají.
 
 - **Rozhodující model je jiný než pracující.** Claude Code: `/goal` „adds a separate
   evaluator that checks your condition after every turn, so completion is decided by a
@@ -770,7 +672,7 @@ v §3.1.1, kde jsou rovnou použity k popisu druhů bran; ostatní čekají.
   sám ukázal. Nejsilnější materiál pro omezení, protože přiznává sám dodavatel.
 - **Tři druhy bran v jedné větě.** „A Stop hook … can run a script for deterministic
   checks or a prompt for model-evaluated ones" @claude-goal. Přesně rozlišení, o které
-  šlo v korekci brán. ✅ **vsunuto v §3.1.1** jako podklad druhého kritéria.
+  šlo v korekci brán. ✅ **vsunuto v §2.2.2** při Fázi 3 (v §3.1.1 to bylo, ten je zrušen).
 - **Tři verdikty hodnotitele.** Not yet met / Met / Impossible @claude-goal. Model tedy
   může i běh ukončit záporným verdiktem, a existuje proto detekce zacyklení.
 - **Lidská brána jako architektura.** „Pausing, resuming, clearing, and
@@ -804,9 +706,9 @@ Kód byl ověřen přímo v revizi `d576ec8f`, ne v pracovním stromu, který se
 | J9 | **Malé písmeno na začátku věty v anotaci.** „navrhuje autor sám. úsudek o tom" — zdroj měl `úsudek` s malým `ú`. Vzniklo to z neúspěšného nahrazení, jehož shoda nebyla ověřena; od té doby je každé nahrazení v této práci kontrolováno na shodu. | ✅ |
 
 | J10 | **Titulní list části přetékal na číslo stránky.** Karta „PRAKTICKÁ ČÁST / DarkFactory" měla na začátku `#v(1fr)`, čímž se obsah posunul na konec stránky a „DarkFactory" tiskl přes číslo stránky. Vodorovné a svislé vycentrování je správně `#align(center + horizon)`; samotné `1fr` před obsahem obsah dolů zarovná. Oprava v `pages/30-practical.typ` stále platí; karta je dnes na str. 20. | ✅ |
-| J11 | **Ovdal na 3.4.** §3.4 přetékal na stranu 26 dvěma řádky. Zkrácení o 125 znaků, všechny byly v redundanciích („na níž se tato kapitola opírá", „kterou práce zaznamenává"), stránka tehdy zmizela. Práce má dnes 43 stran; čísla 37/38 z tohoto záznamu jsou historická a neplatí. Obě korekce v §3.4 zůstaly doslova. | ✅ |
+| J11 | **Ovdal na 3.4.** §3.4 přetékal na stranu 26 dvěma řádky. Zkrácení o 125 znaků, všechny byly v redundanciích („na níž se tato kapitola opírá", „kterou práce zaznamenává"), stránka tehdy zmizela. Práce má dnes 40 stran; čísla 37/38 i 43 z tohoto záznamu jsou historická a neplatí. Obě korekce v §3.4 zůstaly doslova. | ✅ |
 
-| J12 | **Trojice kritérií se v práci nikde neuplatnila.** §3.1 kritéria zavádí jako měřítko, kterým se má odpovědět na výzkumnou otázku, §3.5 hlásí, že třetí je oslabené zástupným schválením, ale ani Zjištění, ani Diskuse, ani Závěr kritéria nepoužily. Jde o logickou mezeru, kterou by na obhajobě chtěla každá komise. §4.1 nyní závěrečný odstavec kritéria na zjištění převádí a říká, že první dvě plní a třetí podmíněně, za podmínky, kterou sama zaznamenává. **Rozsoud o tom, zda konfigurace třetí kritérium splňuje, je záměrně nepronášen a patří autorovi.** | ✅ |
+| J12 | **Trojice kritérií se v práci nikde neuplatnila.** §3.1 kritéria zavádí jako měřítko, kterým se má odpovědět na výzkumnou otázku, §3.5 hlásí, že třetí je oslabené zástupným schválením, ale ani Zjištění, ani Diskuse, ani Závěr kritéria nepoužily. | ✅ **Vyřešeno odstraněním (R15, `1615ddf0`).** Autor kritéria zrušil celá; mezeru nebylo třeba zaplňovat, protože není čeho. §4.1 odpovídá hlavní otázce v próze a přiznání o botím zápisu schválení přesunula do čtvrtého zjištění (`b6ae110f`). |
 | J13 | **Opakování v prvním zjištění.** §4.1 znovu popisoval tok události přes GitHub Actions, kontejner a runner, který §3.2 vykládá podrobně. Zkráceno na odkaz, čímž se uvolnilo místo na J12 bez přidání stránky. Odkaz na §3.2 je symbolický (`@architektura`), aby v práci nezůstala tvrdá čísla sekcí. | ✅ |
 
 | J14 | **Páté nepravdivé tvrzení, navíc proti sobě.** Čtvrtá položka čtyřvrstvového výčtu v §3.1 tvrdila, že se review "opakuje do té doby, než se uzavře poslední nález". To odporovalo korekci J1, podle níž smyčka může skončit bez verdiktu. Autor tenhle výčet posléze zrušil celý, protože opakoval §§3.2–3.5, a tím se položka 4 z §3.1 přesunula. Tvrdění o neomezené smyčce tak z textu zmizelo; zůstala věta, že smyčka může skončit bez jakéhokoli verdiktu, a počet iterací se neuvádí. Ostatní tři vrstvy proti kódu odpovídaly; ověřeno mimo jiné, že plán je skutečně child issue přes `--parent`, že merge používá `--delete-branch` a že `agent.yml` má podmínku na úrovni jobu `vars.AGENT_ENABLED == 'true'`. | ✅ text bez neomezeného tvrzení |
@@ -860,5 +762,5 @@ se mohou dělat mezitím.
 
 ## Co dál
 
-Q-A. Tři principy formulované jako tři otázky, vyjmenované jednou v §1.2, zodpovězené
-v §4.1, podkapitola §3.1.1 zrušena.
+Q-A, Q-B, Q-C — **zrušeno autorem.** Trojice principů i podmíněné `musí` jsou pryč z celé práce,
+§3.1.1 je zrušen, §4.1 odpovídá hlavní otázce v próze (R15, `1615ddf0`).
