@@ -67,3 +67,6 @@ packages/harness/.*-test-*/
 /harness/
 .licence-test-*/
 .cli-test-*/
+# The reachability analyser is a working tool, not a deliverable: it is rewritten on every run, so
+# its generated JSON can never satisfy a format check.
+.ast-reachability.*
