@@ -83,6 +83,12 @@ Tím je měřítko vidět v místě, kde vzniká otázka, a přesto zůstává v
 | R5 | Fáze 3 musí přidat vzájemný symbolický odkaz mezi §2.1.1 a §3.1.1. | Jediné místo celého průchodu, kde se něco přidává, ne ubrat: obě sekce si totiž nárokují tutéž myšlenku a ani jedna neodkazuje na druhou. |
 | R3 | Věta, která obrázek popisuje, je z textu pryč. Odkazem je věta, se kterou obrázek souvisí. | Výraz autora. Zapsáno jako stálý constraint v `CONTEXT.md`, aby to pozdější průchod nezvrátil. |
 | R4 | Počet stran není míra kvality. | Dříve v `TODO.md` B15. |
+| R5 | Fáze 3 musí přidat vzájemný symbolický odkaz mezi §2.1.1 a §3.1.1. | Jediné místo celého průchodu, kde se něco přidává, ne ubrat: obě sekce si totiž nárokují tutéž myšlenku a ani jedna neodkazuje na druhou. |
+| R6 | **Kritéria se nevyhazují, ale sloučí a přerámují** — rozhodnuto na základě bodování, ne vkusu. | Viz §2. Vyřazení by nerozbilo žádné závazné pravidlo, ale vzalo by práci měřítko pro podmíněné `musí`; bod 5 za cíl i nejvýše bodovaná položka metody jsou přesně na tohle. |
+| R7 | Zjištění se **nesmazají, ale sloučí a přerámují**. Pět jich zůstane. | Autor neměl jasno, kolik jich chce; rozhodující je tedy stejná zásada jako u kritérií. Každé zjištění musí po sloučení přinášet něco, co §3 neříká. Páté — záporné — je to, co práci odlišuje, a zůstává. |
+| R8 | `§4.2.1 Omezení výzkumu` se **zruší jako podkapitola**; tři omezení zůstanou jako průběžný text uvnitř §4.2. | Výraz autora. Strom kapitol se zploští; kap. 2.5 průvodce tím není dotčena, protože limity jsou stále v diskusi. |
+| R9 | Anotace se **nekrátí**. Po Fázi 5 se jen ověří, že stále popisuje skutečný rozsah. | 159 slov je uvnitř předepsaných 150–250. |
+| R10 | `PLAN.md` je v repu, stejně jako `CONTEXT.md`, `TODO.md`, `rules.md`, `guide.md`. | Výraz autora. Je to pracovní dokument, ne část práce, ale patří k pracovním dokumentům. |
 
 ---
 
@@ -177,11 +183,15 @@ při pokračování; sazba 8 pt pod odstavcem.
 
 ## 5. Otevřené otázky pro autora
 
-1. **Kolik zjištění zůstává?** V plánu je „čtyři", v textu je jich pět, a páté — záporné,
-   o třech nepravdivých tvrzeních — je to, co práci odlišuje. Které jedno se vynechá?
-2. **`§4.2 Omezení výzkumu`** — nechat jako podkapitolu, nebo slít do zjištění?
-3. **Anotace** — má se po řezu zkrátit, nebo 159 slov vyhovuje?
-4. **PLAN.md** — má zůstat v repu, nebo do `.gitignore`? Je to pracovní dokument, ne část práce.
+Rozhodnutí R6–R10 vyřídil autor. Zbývá jediná otázka, která blokuje Fázi 6:
+
+1. **Deset necitovaných položek.** Fáze 6 je posoudí proti finálnímu textu. Většina z nich
+   (`guild2026`, `bcg2026`, `factory2026`, `anthropic-agents-2026`) je průmyslové měření,
+   kterého text už neuvádí; zbývající jsou buď rodinné příběhy softwarové továrny
+   (`bemer1977factory`, `randell1968`), nebo papers o harnessu, které se do argumentu
+   neprosadily (`gu2026harness`, `yao2026harnessbench`, `chen2026harnessx`, `ding2026scaffold`).
+   Mám je ve Fázi 6 navrhnout k odstranění s odůvodněním jednoho po druhém, nebo
+   předem rozhodnout, že se v bibliografii ponechají?
 
 ## 6. Co se nebude dělat
 

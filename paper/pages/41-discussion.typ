@@ -11,8 +11,6 @@ Jednoduchost návrhu má také ekonomickou a epistemickou cenu. Nevyžaduje žá
 
 Opakovatelná a pravděpodobnostní pozorování se proto doplňují, ale nenahrazují. Formátovací nástroje a testy poskytují pozorování, které se dá opakovat; review, kontrola souladu s plánem, plánování a opravy interpretují zadání a neočekávané nálezy. Z toho plyne, že obě brány před sloučením nejsou nezávislé: jsou to dva dotazy téhož druhu, a druhý z nich navíc vychází z plánu, jehož text sám napsal model. Tato kombinace odpovídá cíli agentického inženýrství zvýšit užitečnost delegované práce při zachování explicitních bran, ale její skutečná kvalita zůstává závislá na datech, promptu, modelu a konkrétním repozitáři @darkfactory-d576ec8f.
 
-#heading(level: 3)[Omezení výzkumu]
-
 Praktická část má omezení, která je třeba pojmenovat, protože se dotýkají platnosti závěrů. Spočívají ve třech vrstvách.
 
 První je vlastnictví. Agentní smyčku v popsané realizaci autor nenavrhuje: sestavuje ji cizí harness, která spravuje kontext, volá nástroje a vyřizuje oprávnění. Co autor navrhuje, je vrstva nad ní, tedy runner, který rozhoduje, kdy se smyčka spustí, co smí agent změnit a kde práce skončí. Odpověď na výzkumnou otázku je tím užší, než kdyby smyčka byla implementována od začátku, a je takto i formulována.
