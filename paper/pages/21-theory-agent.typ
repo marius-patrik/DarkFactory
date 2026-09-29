@@ -13,8 +13,8 @@
 dopředuje kontext, nástroje a pravidla, jejichž prostřednictvím se návrh mění v čin.
 Celý systém tvoří několik vrstev — rozhraní, smyčka agenta, oprávnění, nástroje, uložený stav
 a prostředí, v němž běží — a model je jen jedna z nich. Spolehlivost agenta proto neurčuje
-samotný model, ale skladba těch vrstev; a čím jsou modely schopnější, tím větší část práce
-přebírá tato skladba, ne model.
+samotný model, ale skladba těch vrstev. Čím jsou modely schopnější, tím menší část práce zbývá
+pro tuto skladbu a tím víc práce přebírá model.
 
 #heading(level: 3)[Jazykový model (LLM)]
 
@@ -22,9 +22,7 @@ Současný jazykový model stojí na architektuře #strong[Transformer], kterou 
 v roce 2017 v jejich nyní proslulé práci #strong[#emph[„Attention Is All You Need“]] @vaswani2017.
 Její základem je #strong[attention]: ke každému tokenu připočítá vážený součet hodnot všech
 ostatních, takže jeho reprezentace nese informaci z celého kontextu a vzdálenost mezi pozicemi
-není pevně daná jejich pořadím. Proto lze kontext zpracovat najednou, což je podmínkou
-dnešních nároků na délku a složitost konverzace; mechanismus je používaný i v pozdějších
-generacích modelů @brown2020.
+není pevně daná jejich pořadím.
 
 Jazykový model je sám o sobě jen funkce. Na základě toho, co dostane v kontextu, vypočítá
 rozložení pravděpodobností nad následujícím tokenem a jeden z nich vybere. Mezi voláními si
@@ -47,7 +45,7 @@ v prostoru vektorů. Známým příkladem je vztah mezi vektory slov král, krá
 ) <fig-embedding-queen>
 
 
-#heading(level: 3)[Smyčka agenta (Agent Loop)]
+#heading(level: 3)[Smyčka (Loop)]
 
 Základním mechanismem agentického systému je #strong[agentní smyčka]: konkrétní implementace
 vzoru #strong[ReAct] (#emph[Reasoning and Acting]) @yao2022 v daném harnessu. Jeden cyklus má
@@ -74,7 +72,7 @@ předchozí krok uspěl; průběh shrnuje @fig-react-loop.
 
 
 
-#heading(level: 3)[Nástroje, oprávnění a paměť (Tools, Permissions & Memory)]
+#heading(level: 3)[Nástroje (Tools)]
 
 Zadání určuje, co má agent udělat; co mu je dovoleno udělat, určuje harness. Jde o dvě
 roviny, které se dají měnit nezávisle, a odpovídají běžnému výčtu součástí harnessu

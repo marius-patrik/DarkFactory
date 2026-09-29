@@ -3,11 +3,11 @@
 
 Agentické inženýrství (#strong[Agentic Engineering]) označuje soubor postupů, jimiž se vývoj softwaru pomocí coding agentů stává účinným, kontrolovaným, opakovatelným a škálovatelným @willison-agentic-engineering. Jeho předmětem není samotný agent ani jeho model, ale systém, v němž agent pracuje: zadání, omezení, nástroje, pravidla integrace a odpovědnost člověka. Odtud také jeho popis jako archetypu #strong[agentického inženýra], jehož přidanou hodnotu už netvoří psaní kódu, ale formulace zadání, řízení agentních běhů a kritické posouzení strojem vytvořených výstupů @alenezi2026agentic. Mezi hlavní oblasti patří: #strong[Prompt engineering] @openai-prompt-engineering, #strong[Context engineering] @anthropic-context-engineering, #strong[Harness engineering] @anthropic-harness-design @openai-agents-sandbox, #strong[Loop Engineering] @openai-goals a #strong[Workflow/Graph Engineering] @openai-agent-orchestration. Cílem je, aby vývojář mohl efektivně a kontrolovaně delegovat dílčí úkoly agentovi, aniž by ztratil přehled o záměru, rozsahu a kvalitě výsledku.
 
-#heading(level: 3)[Zadání a plán (Prompt & Plan)]
+#heading(level: 3)[Specifikace (Specification)]
 
 Spolehlivé delegování práce začíná explicitním vymezením cíle, rozsahu, omezení a podmínek přijetí. Specifikace popisuje nejen požadovaný výsledek, ale také části systému, které se měnit nemají, a způsob, jakým bude výsledek ověřen. Tento přístup, označovaný jako #strong[spec-first] nebo #emph[spec-driven development], dává agentovi před implementací měřitelné hranice a člověku podklad pro posouzení výsledku. Přitom jde o postup používaný i v klasickém vývoji softwaru.
 
-V praxi to znamená, že se plán nevzniká až během práce agenta, ale před ní: jeho znění se nejprve dohodnou s člověkem, zapíše do souboru a teprve potom se agent pustí do změn.
+V praxi to znamená, že plán nevzniká až během práce agenta, ale před ní: jeho znění se nejprve dohodnou s člověkem, zapíše do souboru a teprve potom se agent pustí do změn.
 
 #figure(
   image("/components/img/claude-code-plan.png", width: 100%),
@@ -19,13 +19,13 @@ V praxi to znamená, že se plán nevzniká až během práce agenta, ale před 
 
 #strong[Prompt engineering] se soustředí na formulaci instrukcí, omezení, příkladů a očekávaného výstupu konkrétního inferenčního kroku @openai-prompt-engineering. #strong[Context engineering] řeší širší a průběžný výběr, uspořádání, obnovování a kompakci informací, které má model v daném kroku k dispozici @anthropic-context-engineering. 
 
-#heading(level: 3)[Orchestrace a lidská integrace (Orchestration & HITL)]
+#heading(level: 3)[Orchestrace (Orchestration)]
 
 Více agentů samo o sobě nezaručuje lepší výsledek. Paralelizace přináší užitek jen tehdy,
 když jsou omezeny vzájemné závislosti a koordinátor dokáže odhalit konflikty, ověřit dílčí
 výstupy a posoudit sloučený výsledek vůči společným podmínkám přijetí. Orchestrace proto
-zahrnuje nejen rozdělení práce, ale také správu kontextu, pořadí kroků, sdíleného stavu
-a integračních kontrol. Je nezbytná právě pro rozsáhlé úlohy, které se do jednoho kontextového
+zahrnuje nejen rozdělení práce, ale také správu kontextu, pořadí kroků, sdílený stav
+a integrační kontroly. Je nezbytná právě pro rozsáhlé úlohy, které se do jednoho kontextového
 okna nevejdou: spoléhat se tam na kompakci by znamenalo ztratit kontext, na kterém celé zadání
 stojí, a agent by navíc nebyl schopen pracovat na částech, které na sebe bezprostředně
 navazují. Čtyři vzorce na to odpovídají:
@@ -47,7 +47,7 @@ navazují. Čtyři vzorce na to odpovídají:
 #figure(
   image("/components/img/claude-code-dynamic-workflows.png", width: 100%),
   caption: [Postup práce dynamického workflow v Claude Code: vlevo fáze plánu se stavem,
-  vpravo rozvinutá fáze #emph[CodeReview] se šestnácti agenty, u každého model, spotřebované
+  vpravo rozvinutá fáze #emph[CodeReview] se 16 agenty, u každého model, spotřebované
   tokeny, počet nástrojů a doba běhu. Screenshot pochází z komunitního příspěvku; rozhraní
   i jeho chování popisuje dokumentace @anthropic-dynamic-workflows.],
 ) <fig-dynamic-workflows>
@@ -63,4 +63,4 @@ navazují. Čtyři vzorce na to odpovídají:
   z komunitního příspěvku; funkci popisuje dokumentace @openai-goals.],
 ) <fig-codex-goal>
 
-- #strong[human-in-the-loop] (#strong[HITL]) označuje bod, v němž se do automatizované smyčky doplní kontrolní brány vyžadující explicitní lidské rozhodnutí, například schválení specifikace, potvrzení implementačního plánu nebo přijetí výsledného diffu. Vývojář tak může ponechat agentovi ohraničenou implementační práci a současně si zachovat odpovědnost za záměr a integraci.
+- #strong[human-in-the-loop] (#strong[HITL]) označuje bod, v němž se automatizovaná smyčka doplní o kontrolní brány vyžadující explicitní lidské rozhodnutí, například schválení specifikace, potvrzení implementačního plánu nebo přijetí výsledného diffu. Vývojář tak může ponechat agentovi ohraničenou implementační práci a současně si zachovat odpovědnost za záměr a integraci.
