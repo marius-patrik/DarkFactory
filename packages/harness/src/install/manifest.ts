@@ -129,6 +129,90 @@ function withoutComments(value: Json): Record<string, Json> {
 }
 
 /**
+ * Fallbacks for a repository that declares nothing.
+ *
+ * A declaration is an override, not a requirement. A consumer that installs the pipeline without
+ * describing its own areas, palette or identities gets these, which is the behaviour the pipeline
+ * has always had; the configuration document exists to change it, not to switch it on.
+ */
+
+/** Area labels used when a repository declares none, chosen to be about the pipeline itself. */
+export const DEFAULT_AREAS: Readonly<Record<string, string>> = Object.freeze({
+	ci: "GitHub Actions workflows, containers, runner scripts, repository automation",
+	agents: "Agent runtime, routing, providers, planning/review orchestration and model execution",
+	docs: "Documentation compiler, API reference and shared web surfaces",
+});
+
+/** Colours cycled through when assigning one to an area label that has no explicit colour. */
+export const AREA_COLOURS: readonly string[] = Object.freeze([
+	"5319e7",
+	"1f883d",
+	"0052cc",
+	"a2eeef",
+	"f9d0c4",
+	"c2e0c6",
+	"e99695",
+	"006b75",
+	"0075ca",
+]);
+
+/**
+ * Default identities used when a repository declares none.
+ *
+ * A provider identity names the trailer a generated commit carries, so a default that named the
+ * wrong project would attribute this repository's commits to a stranger.
+ */
+export const DEFAULT_IDENTITIES: Readonly<Record<string, Record<string, unknown>>> = Object.freeze({
+	app: {
+		slug: "darkfactory-pipeline",
+		login: "darkfactory-pipeline[bot]",
+		user_id: 326069535,
+		commit_author_email: "326069535+darkfactory-pipeline[bot]@users.noreply.github.com",
+	},
+	claude: {
+		name: "Claude",
+		display_name: "Claude",
+		trailer: "Co-authored-by: Claude <noreply@anthropic.com>",
+		note: "Generated with {model}",
+		account_link: "https://github.com/claude",
+		verified: true,
+	},
+	codex: {
+		name: "Codex",
+		display_name: "Codex",
+		trailer: "Co-authored-by: Codex <noreply@openai.com>",
+		note: "Generated with {model}",
+		account_link: "https://github.com/codex",
+		verified: true,
+	},
+	"openai-codex": {
+		name: "Codex",
+		display_name: "Codex",
+		trailer: "Co-authored-by: Codex <noreply@openai.com>",
+		note: "Generated with {model}",
+		account_link: "https://github.com/codex",
+		verified: true,
+	},
+	google: {
+		name: "Gemini",
+		display_name: "Gemini",
+		trailer: "Co-authored-by: Gemini <200291788+gemini-code-assist@users.noreply.github.com>",
+		note: "Generated with {model}",
+		account_link: "https://github.com/gemini-code-assist",
+		verified: true,
+	},
+	antigravity: {
+		name: "Gemini",
+		display_name: "Gemini",
+		trailer: "Co-authored-by: Gemini <200291788+gemini-code-assist@users.noreply.github.com>",
+		note: "Generated with {model}",
+		account_link: "https://github.com/gemini-code-assist",
+		verified: true,
+	},
+});
+
+
+/**
  * The parsed `repo` block of a repository's combined configuration.
  *
  * Every property is a read with the default the pipeline has always applied, so a caller never has
@@ -254,9 +338,10 @@ export class RepositoryManifest {
 	 * wins, so a specific area declared after a general one never matches.
 	 */
 	private rawAreas(): Record<string, Json> {
-		// No fallback. A repository that declares no areas has none, which is a fact about it rather
-		// than a gap this code fills with a taxonomy chosen here.
-		return withoutComments(this.data.areas);
+		// Declared areas win; a repository that declares none gets the pipeline's own, which is what
+		// the routing and the Conventional Commit scopes were written against.
+		const declared = withoutComments(this.data.areas);
+		return Object.keys(declared).length > 0 ? declared : { ...DEFAULT_AREAS };
 	}
 
 	/**
@@ -344,7 +429,9 @@ export class RepositoryManifest {
 	areaColours(): string[] {
 		const declared = this.data.labels;
 		const list = isRecord(declared) ? declared.area_colours : undefined;
-		return Array.isArray(list) ? list.map((entry) => text(entry)) : [];
+		// Declared palette wins; otherwise cycle the pipeline's own, so areas stay visually distinct
+		// rather than all landing on the same neutral.
+		return Array.isArray(list) && list.length > 0 ? list.map((entry) => text(entry)) : [...AREA_COLOURS];
 	}
 
 	/** The permitted Conventional Commit scopes: bare area names, sorted. */
@@ -367,14 +454,13 @@ export class RepositoryManifest {
 	/**
 	 * The declared provider and pipeline identities.
 	 *
-	 * There was a default here, and it was this repository's own: `darkfactory-pipeline[bot]` with its
-	 * `user_id`, plus a `codex` entry where the document says `openai-codex`. A repository that
-	 * declares no identity has none — a default that named the wrong project would attribute its
-	 * commits to a stranger, and a default that named the right one would be this pipeline's identity
-	 * leaking into every consumer that forgot to declare its own.
+	 * A consumer that installs the pipeline has this pipeline's App — it is what opens the pull
+	 * requests and pushes the branches — so the `app` entry is the honest author for a repository that
+	 * declares no identity of its own. Declaring them overrides it.
 	 */
 	identities(): Record<string, Json> {
-		return withoutComments(this.data.identities);
+		const declared = withoutComments(this.data.identities);
+		return Object.keys(declared).length > 0 ? declared : structuredClone(DEFAULT_IDENTITIES);
 	}
 
 	/**

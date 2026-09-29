@@ -3,6 +3,9 @@ import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join, relative } from "node:path";
 import {
+	AREA_COLOURS,
+	DEFAULT_AREAS,
+	DEFAULT_IDENTITIES,
 	loadConfigBlock,
 	loadRepositoryManifest,
 	MANIFEST_PATH,
@@ -135,11 +138,12 @@ describe("areas", () => {
 		expect(labels[palette.length]?.colour).toBe(palette[0]);
 	});
 
-	test("with no declared palette every area takes one neutral colour", async () => {
-		// Not a taxonomy chosen here: the absence of configuration is shown, not filled in.
+	test("with no declared palette areas cycle the default colours", async () => {
+		// Distinct colours, so the areas stay tellable apart on the board. One neutral for all of them
+		// said only that nothing was configured.
 		const dir = await declare({ areas: { one: "One", two: "Two" } });
 		const labels = (await loadRepositoryManifest(dir)).areaLabels();
-		expect(new Set(labels.map((label) => label.colour)).size).toBe(1);
+		expect(labels.map((label) => label.colour)).toEqual(AREA_COLOURS.slice(0, 2));
 	});
 
 	test("scopes match the areas", async () => {
@@ -163,12 +167,12 @@ describe("areas", () => {
 		expect(Object.keys((await loadRepositoryManifest(dir)).areas())).toEqual(["app"]);
 	});
 
-	test("a repository declaring no areas has none", async () => {
-		// It used to receive a three-area taxonomy chosen in this file. A repository that has not
-		// declared its areas has not got any, and inventing them here is how a routing decision ends
-		// up made by a default rather than by the repository.
+	test("a repository declaring no areas gets the pipeline's own", async () => {
+		// A declaration is an override, not a requirement. A consumer that installs the pipeline has
+		// not described its areas, and the routing and Conventional Commit scopes it inherits were
+		// written against this taxonomy; declaring them replaces it.
 		const dir = await declare({});
-		expect((await loadRepositoryManifest(dir)).areas()).toEqual({});
+		expect((await loadRepositoryManifest(dir)).areas()).toEqual(DEFAULT_AREAS);
 	});
 });
 
@@ -327,14 +331,14 @@ describe("identities", () => {
 		expect(loaded.identityFor("claude")?.trailer).toBe("Co-authored-by: Claude <noreply@anthropic.com>");
 	});
 
-	test("a repository declaring no identities has none", async () => {
-		// The default was this repository's own pipeline app, with its `user_id`, and a stale `codex`
-		// key where this document says `openai-codex`. A commit attributed through it would be
-		// attributed to a stranger in every consumer that forgot to declare its own identity.
+	test("a repository declaring no identities gets the pipeline's own", async () => {
+		// A consumer that installs the pipeline has this pipeline's App — it is what opens the pull
+		// requests and pushes the branches — so the default author is the thing actually doing its
+		// work, not a stranger. Declaring identities replaces it.
 		const dir = await declare({});
 		const loaded = await loadRepositoryManifest(dir);
-		expect(loaded.identities()).toEqual({});
-		expect(loaded.identityFor("google")).toBeUndefined();
+		expect(loaded.identities()).toEqual(DEFAULT_IDENTITIES);
+		expect(loaded.identityFor("app")?.login).toBe("darkfactory-pipeline[bot]");
 	});
 
 	test("custom declared identities win", async () => {
@@ -356,8 +360,10 @@ describe("identities", () => {
 	});
 
 	test("a documentation key alone does not count as a declaration", async () => {
+		// The block is empty once comments are stripped, so this is the undeclared case: the default
+		// applies, and the comment is not mistaken for a declared identity.
 		const dir = await declare({ identities: { $comment: "none" } });
-		expect((await loadRepositoryManifest(dir)).identities()).toEqual({});
+		expect((await loadRepositoryManifest(dir)).identities()).toEqual(DEFAULT_IDENTITIES);
 	});
 
 	test("a providers sub-block wins over a top-level key of the same name", async () => {
@@ -459,7 +465,9 @@ describe("configuration document discovery", () => {
 		const dir = await scratch();
 		await writeFile(join(dir, filename), JSON.stringify({ repo: { areas: { legacy: "Legacy declaration" } } }));
 		expect(resolveManifestPath(dir, NO_ENV)).toBe(join(dir, ".darkfactory", MANIFEST_PATH));
-		expect((await loadRepositoryManifest(dir, NO_ENV)).areas()).toEqual({});
+		// The defaults, and emphatically not the legacy `areas` beside them: the undeclared case is
+		// now filled in, so "not the legacy declaration" is a sharper assertion than "not {}" was.
+		expect((await loadRepositoryManifest(dir, NO_ENV)).areas()).toEqual(DEFAULT_AREAS);
 	});
 
 	test.each([MANIFEST_PATH, "config.dfconfig", ".dfconfig"])(
