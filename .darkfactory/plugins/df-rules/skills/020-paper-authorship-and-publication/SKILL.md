@@ -14,7 +14,7 @@ license: MIT
 
 ## Requirement
 
-`paper/index.typ` is the sole authored thesis manuscript. `paper/bib/`, `paper/fonts/`, and `paper/img/` contain its supporting bibliography, font, and image resources.
+The manuscript is the entrypoint `paper/typst.toml` declares, and nothing else. Naming the file instead of the declaration was wrong on whichever branch it was not written on. `paper/components/` holds its supporting bibliography, fonts, images and styles, resolved by the paths the manuscript declares.
 
 The canonical publication command generates the repository-root `PAPER.pdf` artifact. The Paper does not generate or own repository Markdown; the repository README is the canonical product document at `README.md`, and the rules are skills rather than a generated projection. `PAPER.pdf` is included in the release assets.
 

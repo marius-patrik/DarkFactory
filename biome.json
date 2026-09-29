@@ -34,7 +34,7 @@
   },
   "overrides": [
     {
-      "includes": ["paper/img/**/*.svg"],
+      "includes": ["paper/components/img/**/*.svg"],
       "linter": {
         "rules": {
           "a11y": {

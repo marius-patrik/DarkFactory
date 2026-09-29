@@ -33,6 +33,8 @@ site/
 .properdocs-source/
 
 # Agent pipeline
+# opencode agent state (goal locks, session checkpoints) — local runtime, not source
+.opencode/
 .darkfactory/generated/
 
 # IDE / Editor / OS
