@@ -38,7 +38,7 @@ dostal přístup k souborům, příkazům a běhovému prostředí — a tím se
   caption: [Odhad rozdělení uživatelů generativní AI podle typu @gradually-ai-usage-2026.]
 ) <fig-gradually-usage>
 
-S rozvojem nástrojů roste i jejich adopce. Rozsah veřejného použití samotných agentůje přitom stále úzký. Jeden ze zveřejněných odhadů klade počet uživatelů chatbotů na 28~% populace a pravidelné užití #emph[agentů] na
+S rozvojem nástrojů roste i jejich adopce. Rozsah veřejného použití samotných agentů přitom stále úzký. Jeden ze zveřejněných odhadů klade počet uživatelů chatbotů na 28~% populace a pravidelné užití #emph[agentů] na
 0,36~% světové populace @gradually-ai-usage-2026 @fig-gradually-usage. Přesto je zřejmé, že se jedná o technologii, která se rychle šíří a mění způsob práce, proto v této práci chci ukázat čeho jsou plnohodnotné systémy schopné.
 
 #heading(level: 2)[Cíl, výzkumná otázka, hypotéza a vymezení] <intro-goal>
@@ -47,8 +47,7 @@ Výzkumná otázka práce zní: #emph[Které principy musí agentický systém s
 spolehlivě vykonával inženýrskou práci?] Inženýrskou prací se zde rozumí změna repozitáře, kterou
 může jiný člověk než její autor přezkoumat a sloučit, aniž by musel agenta na cokoli ptát;
 v tomto smyslu je měřena schopnost systému a v tomto smyslu je brána člověka
-nezaměnitelnou. Sloveso #emph[musí] je přitom míněno podmíněně: nutné jsou ty principy,
-které samotný model bez zásady okolí neposkytne.
+nezaměnitelnou.
 
 Práce předpokládá tuto hypotézu:
 

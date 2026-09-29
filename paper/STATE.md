@@ -4,7 +4,7 @@
 Single state file. It replaced `TODO.md`, `PLAN.md` and `CONTEXT.md`; those three are gone, and their content
 lives here unchanged. Git keeps their history.
 
-**Anchor: `docs/thesis` at `affe02b5`. 41 pages, build green, `bun run check` passes.**
+**Anchor: `docs/thesis` at `b689cf4c`. 41 pages, build green, `bun run check` passes.**
 
 **How this file is used.** Part 1 is what is *true* of the thesis. Part 2 is what has been
 *decided* and by whom, and what is still open. Part 3 is the cleanup pass, phase by phase,
@@ -52,7 +52,7 @@ Four chapters. Results live under the conclusion, not in a chapter of their own.
 1 Úvod              1.1 Motivace · 1.2 Cíl + výzkumná otázka + hypotéza · 1.3 Terminologie
 2 Teoretická část   2.1 Agent (+ .1 LLM, .2 smyčka, .3 nástroje/paměť, .4 kontext)
                     2.2 Agentické inženýrství · 2.3 Softwareová továrna
-3 Praktická část    3.1 Metodika (+ .1 Tři kritéria) · 3.2 Architektura
+3 Praktická část    3.1 Metodika · 3.2 Architektura
                     3.3 Interpretace a plánování · 3.4 Implementace a automatická revize
                     3.5 Zpětná vazba, schválení, úklid
 4 Závěr             4.1 Zjištění · 4.2 Diskuse (+ .1 Omezení výzkumu) · 4.3 Shrnutí
@@ -114,8 +114,9 @@ unfinished sentence.
 **What "proxy approval" means**, since the term is easy to misread: it is not an agent acting
 under the author's account. The pipeline opens the pull request with the maintainer's token, so
 GitHub does not count that account's own approval; a **second bot account** submits the
-approving review programmatically with its own `BOT_TOKEN`. The human clicks approve, and the
-approval GitHub honours is the bot's. Without that second credential the pipeline waits for a
+approving review programmatically with its own `BOT_TOKEN`. The human from the two-account
+allowlist decides, and the bot only carries that decision into the review field, because GitHub
+will not register the human's approval of a pull request the human opened. Without that second credential the pipeline waits for a
 real human approval instead (Část 2, §2a).
 
 The composition question — which harness layer's conventions dominate — was §3.1.2 and has been
@@ -432,17 +433,18 @@ Který účet smí schválit, je seznam dvou pevně zapsaných účtů porovnáv
 | R9 | Anotace se **nekrátí**; po Fázi 5 se jen ověří, že popisuje skutečný rozsah. | autor | „Leave the length, re-check the content". 159 slov je uvnitř 150–250. |
 | R10 | `STATE.md` je v repu, stejně jako `rules.md` a `guide.md`. | autor | „Track it like the other working docs". |
 | R11 | Podmínka `musí` ve výzkumné otázce se **vyhodí**. | autor | „Drop the conditional". |
-| R12 | Kritéria se **neodvozují z chyb**. | autor | „shouldnt we choose something we can prove we achieved?" |
-| R13 | Kritéria se **vyjmenují jednou v §1.2** a **zodpovědí se v §4.1**; §3.1.1 se ruší. | autor | „state once in 1.2 answer in 4.1". |
+| ~~R12~~ | ~~Kritéria se neodvozují z chyb.~~ **Zastaralé** | autor | „shouldnt we choose something we can prove we achieved?" Rozhodnutí zrušeno po R15: kritéria v práci nejsou, takže se neodvozují ani neuvádějí. |
+| ~~R13~~ | ~~Kritéria se vyjmenují jednou v §1.2 a zodpovědí se v §4.1; §3.1.1 se ruší.~~ **Zastaralé** | autor | „state once in 1.2 answer in 4.1". Překonáno R15: kritéria se mažou všude, ne jen v §3.1.1. |
+| **R15** | Kritéria se **mažou z celé práce**; hlavní výzkumná otázka zůstává. | autor | „keep the main question drop the three completely", pak „unless the aschool requires them delete everywhere". Ověřeno v `rules.md` a `guide.md`: škola vyžaduje metodickou část a hodnotí metody, ale kritéria neuvádí. Zrušuje R11, R12, R13. |
 | R14 | Necitované položky bibliografie se nechají do konce. | autor | „leave them until the end like the plan says". |
 
 ### Nerozhodnuto — patří autorovi
 
 | # | Otázka | Proč dosud nerozhodnuto |
 | :-- | :--- | :--- |
-| **Q-A** | Kolik principů, v jakém znění, a zda vůbec zůstat u trojice. | R13 určuje *kde* a *kolikrát*, ne *co*. Znění v §2a je agentův návrh, ne dohoda. |
-| **Q-B** | Zda v §1.2 uvést „vlastní principy, nikoli převzatou taxonomii". | Agentova pochybnost: komise může číst jako přiznání, že výběr není odvozený. |
-| **Q-C** | Tvar §4.1 — autor navrhl „just the three questions and answers". | Dosud nebylo provedeno, co přesně průvodce požaduje a co jsou „findings". Viz §5. |
+| ~~Q-A~~ | ~~Kolik principů, v jakém znění, a zda vůbec zůstat u trojice.~~ **VYŘEŠENO** | R15. Trojice nezaniká žádnou jinou cestou — maže se celá. Škola kritéria nevyžaduje. |
+| **Q-B** | Zda v §1.2 uvést „vlastní principy, nikoli převzatou taxonomii". | Agentova pochybnost: komise může číst jako přiznání, že výběr není odvozený. Nabízí se k zrušení spolu s kritérii. |
+| ~~Q-C~~ | ~~Tvar §4.1.~~ **VYŘEŠENO** | Autorova pochybnost, zda vůbec zachovat tři otázky: „40:23 doesnt make sense". Zrušeno spolu s kritérii; §4.1 musí hlavní otázce odpovědět bez nich. Viz R15 a editaci 40:23. |
 | **Q-D** | Zda test 38/18 platí. | Agentův vynález, autor ho nepotvrdil. Bez něj je rozdělení těch 38 neodůvodněné. |
 | **Q-E** | ~~Hranice tří iterací.~~ **VYŘEŠENO** | Autor: „cut it there too". Počet odstraněn ze všech osmi míst (§3.1, §3.4, popisek @fig-darkfactory-pipeline, popis i nápis v `darkfactory-pipeline.svg`, páté zjištění, závěr). V práci zůstává následek — smyčka může skončit bez verdiktu — počet nefiguruje nikde a je ověřen v Části 4, položce J1. Viz Fáze 8. |
 | **Q-F** | Pět popisků, které tvrdí víc, než obrázek ukazuje. | Autor: „the first is good so is the second and third and fourth not sure about the fifth". |

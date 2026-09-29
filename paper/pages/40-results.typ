@@ -20,4 +20,8 @@ Třetí zjištění se týká průběhu revize a jeho pořadí. Implementace je 
 
 Páté zjištění je záporné a práce ho ponechává. Tři předpoklady, na nichž popis průběhu stál, v této revizi neplatí. Revize se může zastavit bez zaznamenaného verdiktu, takže nerozliší průchod od zastavení; zablokovaný stav zde neznamená opakovaný nález, ale vyčerpanou kvótu; a testy se před sloučením nespouštějí znovou, takže změna, která neprošla, na pull request dorazí. Podmínka zastavení, která první z těchto mezer vyřešila, je v dokumentaci cílové smyčky popsána výslovně @openai-goals; její vyplnění je věcí následné práce, ale zjištění, že chybí, do výsledků patří @darkfactory-d576ec8f.
 
-Zjištění je zároveň možno převést na kritéria vymezená v metodické části. Prvnímu odpovídá stav, který práce popisuje výše: dvě artefakty mimo konverzaci, k nimž lze později vrátit. Druhému odpovídá to, že každá brána své rozhodnutí označuje za druhové, ačkoli diskuse upozorňuje, že obě brány před sloučením jsou dotazy téhož druhu. Třetímu odpovídá popsaná konfigurace jen podmíněně: pojmenovaný okamžik, v němž rozhodne určený člověk, existuje, ale ve variantě se zástupným schválením jej může vyplnit stroj, a znění kritéria právě nepřítomnost jiné cesty požaduje. První dvě kritéria tedy popsaná konfigurace plní a třetí plní podmíněně, za podmínky, kterou sama zaznamenává @darkfactory-d576ec8f.
+Na výzkumnou otázku odpovídají tři věci. První je stav, který leží mimo model, takže
+se k němu lze vrátit bez dotazu na model. Druhý je druh rozhodnutí. Brány před vznikem
+větve jsou lidské a brány před sloučením jsou obě dotazem na model. @diskuse upozorňuje,
+že proto nejsou navzájem nezávislé. Třetí je okamžik, v němž rozhodne účet ze seznamu
+dvou pevně zapsaných; jak se to zaznamená, popisuje čtvrté zjištění.

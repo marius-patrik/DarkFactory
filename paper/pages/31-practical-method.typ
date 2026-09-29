@@ -12,10 +12,10 @@
 // reproducibility record: the pinned revision, how the runner was built, and what the
 // simplification costs. The system itself is described once, in 3.2 to 3.5.
 //
-// Tři kritéria is the only level-3 subsection left. The author has directed that the
-// criteria be stated once in 1.2 and answered in 4.1, with 3.1.1 removed (../STATE.md, R13
-// and Q-A). That is not applied yet: what follows is the current state, and it changes when
-// the author settles Q-A.
+// Tři kritária was the only level-3 subsection here. It has been removed: R15 supersedes
+// R11, R12 and R13 and deletes the criteria from the whole paper, keeping only the main
+// research question. 3.1 Metodika stays because the school requires a methodological part
+// and scores methods; it just no longer carries criteria. See ../STATE.md, R15, Q-A, Q-C.
 //
 // The composition question used to be 3.1.2. It was cut and its one live idea became the
 // third limitation in the discussion (4.2), beside ownership and scope.
@@ -30,13 +30,3 @@ Pythonovský runner, o kterém tato část pojednává, byl napsán pomocí týc
 
 Systém bez vlastního stavového serveru, bez databáze a bez trvalého běžícího procesu je na první pohled méně schopný než plnohodnotná platforma. Oproti ní je však reprodukovatelný, dohledatelný a jehož každé rozhodnutí zůstává vidět v issue, commitu nebo průběhu kontroly. Každý nový prvek pipeline byl přidán až poté, co bylo na konkrétní úloze zřejmé, že současná podoba nestačí, takže složitost rostla postupně. Samotná pipeline se stala nástrojem, kterým byla psána i její další část.
 
-
-#heading(level: 3)[Tři kritéria]
-
-Sloveso výzkumné otázky je #emph[musí] a je míněno podmíněně: nutné jsou ty principy, které samotný model bez zásady okolí neposkytne. Aby to nebylo tvrzení bez měřítka, převádí práce tuto podmíněnou nutnost na trojici kritérií, podle níž lze konkrétní systém posoudit. Jde o #emph[operacionalizaci této práce], nikoli o převzatou taxonomii: pět oborů agentického inženýrství je slovník, který používají zdroje, ale kritéria nejsou jeho podmnožinou ani překladem.
-
-#emph[Stav leží mimo model a je zjistitelný.] Kritérium vyžaduje pojmenovat artefakt, úložiště, kde leží, a osobu, která do něj může nahlédnout, aniž by se musel ptát modelu. Stav uložený v konverzaci je také stav, ale jeho jediným čtenářem je model, který v něm pracuje.
-
-#emph[Brány jsou výslovné a druhy jejich rozhodnutí se nerozplývají.] Kritérium vyžaduje, aby brána existovala, věděla, jaké rozhodnutí činí, a označila své rozhodnutí za druhové. Druhů jsou tři: deterministická kontrola, jejíž výsledek lze přepočítat nebo znovu spustit bez modelu; modelem hodnocená brána, která je dotazem na jiný model, a je proto stejně pravděpodobnostní jako to, co posuzuje; a lidská brána. Běh nesmí projít bránou jednoho druhu prostředky jiného: modelem hodnocená brána nenahrazí deterministickou kontrolu, protože neporovnává výsledek s tím, co se dá přepočítat, a lidská brána bránu předchozí nenahrazuje, nýbrž ji schvaluje. Toto rozdělení není vynalézeno zde; dokumentace, která popisuje vládnutí běhu, uvádí bránu, která „can run a script for deterministic checks or a prompt for model-evaluated ones“ @claude-goal, a druhou z nich odhazuje právě proto, že je pravděpodobnostní.
-
-#emph[Člověk rozhoduje, co vstoupí do produkce.] Kritérium je formulováno jako nepodléhající vyjednávání: v popsaném systému musí existovat pojmenovaný okamžik, v němž rozhodne určený člověk o určené věci, a nesmí existovat žádná jiná cesta, která by ke stejnému bodu vedla. Podmínka „určený“ je ostrá: musí jít o osobu, kterou lze pojmenovat, nikoli o kohokoli, kdo v okamžiku klikne. Kritérium je jediné, které práce neváže na výsledek měření a neoslabuje, protože systém, který je nesplňuje, neprovádí podle ní inženýrskou práci, ale automatizovanou výrobu změn bez odpovědného člověka — a to je přesně ta věc, kterou konference v Garmischi odmítla bez důvodu @nato1969.
