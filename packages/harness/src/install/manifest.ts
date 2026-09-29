@@ -211,7 +211,6 @@ export const DEFAULT_IDENTITIES: Readonly<Record<string, Record<string, unknown>
 	},
 });
 
-
 /**
  * The parsed `repo` block of a repository's combined configuration.
  *
