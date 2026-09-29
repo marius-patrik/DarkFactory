@@ -40,11 +40,9 @@ navazují. Čtyři vzorce na to odpovídají:
 ) <fig-antigravity-subagents>
 
 - #strong[Workflow graph] předem určuje závislosti, pořadí a větvení fází @openai-agent-orchestration.
-  Kimi je jeden způsob, jak takový graf sestavit: místo pevného pořadí rozkládá úlohu na podproblémy
-  až za běhu a každému dá vlastního agenta @kimi-k25-swarm. Claude Code jde dál: u dynamických
-  workflow napíše skript, který runtime vykonává na pozadí, takže smyčku, větvení i mezivýsledky
-  drží skript místo kontextu modelu a plán je program, který lze přečíst a znovu spustit
-  @anthropic-dynamic-workflows.
+  Claude Code u dynamických workflow napíše skript, který runtime vykonává na pozadí, takže smyčku,
+  větvení i mezivýsledky drží skript místo kontextu modelu a plán je program, který lze přečíst
+  a znovu spustit @anthropic-dynamic-workflows.
 
 #figure(
   image("/components/img/claude-code-dynamic-workflows.png", width: 100%),
