@@ -21,17 +21,30 @@ V praxi to znamená, že se plán nevzniká až během práce agenta, ale před 
 
 #heading(level: 3)[Orchestrace a lidská integrace (Orchestration & HITL)]
 
-Pokud mají podúlohy jasné hranice a jejich výsledky lze znovu integrovat, rozsáhlou úlohu lze rozdělit do více agentních běhů. Ve vzoru #strong[coordinator/subagent] koordinátor deleguje dílčí úkol specializovanému subagentovi s vlastním kontextem a přebírá jeho výsledek. Nezávislé podúlohy mohou zpracovat paralelní pracovníci. Claude Code jde dál: u dynamických workflow Claude napíše skript, který runtime vykonává na pozadí. Smyčku, větvení i mezivýsledky pak drží skript místo kontextu modelu, takže plán je program, který lze přečíst a znovu spustit @anthropic-dynamic-workflows.
+Více agentů samo o sobě nezaručuje lepší výsledek. Paralelizace přináší užitek jen tehdy,
+když jsou omezeny vzájemné závislosti a koordinátor dokáže odhalit konflikty, ověřit dílčí
+výstupy a posoudit sloučený výsledek vůči společným podmínkám přijetí. Orchestrace proto
+zahrnuje nejen rozdělení práce, ale také správu kontextu, pořadí kroků, sdíleného stavu
+a integračních kontrol. Je nezbytná právě pro rozsáhlé úlohy, které se do jednoho kontextového
+okna nevejdou: spoléhat se tam na kompakci by znamenalo ztratit kontext, na kterém celé zadání
+stojí, a agent by navíc nebyl schopen pracovat na částech, které na sebe bezprostředně
+navazují. Čtyři vzorce na to odpovídají:
+
+- #strong[Coordinator/subagent] rozdělí rozsáhlou úlohu na dílčí běhy: koordinátor deleguje
+  podúkol specializovanému subagentovi s vlastním kontextem a přebírá jeho výsledek, nezávislé
+  podúlohy zpracují paralelní pracovníci.
 
 #figure(
   image("/components/img/antigravity-cli-subagents.jpg", width: 100%),
   caption: [Rozhraní Google Antigravity CLI, tedy harnessu agenta běžícího v terminálu: koordinátor definuje tři specializované subagenty a spouští je souběžně; každý běží vlastním kontextem @antigravity-cli.],
 ) <fig-antigravity-subagents>
 
-V praxi se to projevuje v několika ustálených vzorech:
 - #strong[Workflow graph] předem určuje závislosti, pořadí a větvení fází @openai-agent-orchestration.
   Kimi je jeden způsob, jak takový graf sestavit: místo pevného pořadí rozkládá úlohu na podproblémy
-  až za běhu a každému dá vlastního agenta @kimi-k25-swarm.
+  až za běhu a každému dá vlastního agenta @kimi-k25-swarm. Claude Code jde dál: u dynamických
+  workflow napíše skript, který runtime vykonává na pozadí, takže smyčku, větvení i mezivýsledky
+  drží skript místo kontextu modelu a plán je program, který lze přečíst a znovu spustit
+  @anthropic-dynamic-workflows.
 
 #figure(
   image("/components/img/claude-code-dynamic-workflows.png", width: 100%),
@@ -53,5 +66,3 @@ V praxi se to projevuje v několika ustálených vzorech:
 ) <fig-codex-goal>
 
 - #strong[human-in-the-loop] (#strong[HITL]) označuje bod, v němž se do automatizované smyčky doplní kontrolní brány vyžadující explicitní lidské rozhodnutí, například schválení specifikace, potvrzení implementačního plánu nebo přijetí výsledného diffu. Vývojář tak může ponechat agentovi ohraničenou implementační práci a současně si zachovat odpovědnost za záměr a integraci.
-
-Více agentů samo o sobě nezaručuje lepší výsledek. Paralelizace přináší užitek jen tehdy, když jsou omezeny vzájemné závislosti a koordinátor dokáže odhalit konflikty, ověřit dílčí výstupy a posoudit sloučený výsledek vůči společným podmínkám přijetí. Orchestrace proto zahrnuje nejen rozdělení práce, ale také správu kontextu, pořadí kroků, sdíleného stavu a integračních kontrol. Orchestrace je však nezbytná právě pro rozsáhlé úlohy, které se do jednoho kontextového okna nevejdou. Spoléhat se v takovém případě na kompakci by vedlo k tomu, že se ztrácí kontext, na kterém celé zadání stojí, a agent by navíc nebyl schopen pracovat na jednotlivých částech, které na sebe bezprostředně navazují.

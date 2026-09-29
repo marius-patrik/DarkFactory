@@ -99,26 +99,6 @@ Instrukce pro agenta leží v repozitáři, standardně v souboru #strong[`AGENT
 projektu, ve složce i v jednotlivých podadresářích — a harness si načte jen ten, který se týká
 právě otevřených souborů. Skilly, scripty a hooky leží pod složkou #strong[`.agents/`].
 
-Oprávnění a rozsah zadání se dají omezovat nezávisle: agentovi lze odebrat právo měnit cokoli
-mimo vyjmenované soubory, aniž by se změnil úkol, a úkol lze zúžit, aniž by mu přibyla
-schopnost. Kontrola, která by tyto dvě roviny zaměnila, by pak nevěděla, zda selhal úkol, nebo
-oprávnění.
-
-
-V konkrétní implementaci se tato trajektorie skládá do jednoho kontextového okna, a tam začínají
-náklady. Výsledky starších nástrojů se z přepisu vyčistí a při dosažení hranice okna se přepis
-nahradí souhrnem @anthropic-context-engineering; rozhodující je, co v něm zůstane. Živé
-zpracování jednoho běhu v Claude Code shrnuje @fig-claude-code-context.
-
-#figure(
-  image("/components/img/claude-code-context-lifecycle.svg", width: 100%),
-  caption: [Kontextové okno v Claude Code: systémový prompt, nástroje a zadání zůstávají, zatímco
-  myšlenky, volání nástrojů a jejich výsledky se vrší. Když okno dojde k hranici, kompakce nahradí
-  přepis souhrnem a běh pokračuje s ním a s pěti naposledy otevřenými soubory. Vedle toho běží tři
-  věci: výsledky starších nástrojů se čistí, poznámky se ukládají mimo okno a obsah souborů se
-  načítá až tehdy, když je agent potřebuje @anthropic-context-engineering.],
-) <fig-claude-code-context>
-
 #heading(level: 3)[Kontextové okno a kompakce]
 
 #strong[Kontextové okno] zahrnuje pracovní kontext jednoho volání modelu: instrukce, části
@@ -130,6 +110,20 @@ nahromaděným kontextem se označuje jako #strong[context rot] @anthropic-conte
 #strong[Kompakce] (#emph[compaction]) po překročení limitu nahradí starší průběh souhrnem
 rozhodnutí a výsledků, takže do dalšího volání není nutné vkládat celý přepis
 @anthropic-context-engineering.
+
+V konkrétní implementaci se ale celá trajektorie skládá do jednoho okna, a náklady začínají
+tam. Výsledky starších nástrojů se z přepisu vyčistí, protože v hluboké historii je už nikdo
+nepotřebuje číst znovu; rozhodující je, co zůstane v souhrnu. Živé zpracování jednoho běhu
+v Claude Code shrnuje @fig-claude-code-context.
+
+#figure(
+  image("/components/img/claude-code-context-lifecycle.svg", width: 100%),
+  caption: [Kontextové okno v Claude Code během jednoho běhu: systémový prompt, nástroje a zadání
+  zůstávají, zatímco myšlenky, volání nástrojů a jejich výsledky se vrší až k hranici okna. Po
+  kompakci zůstane souhrn rozhodnutí, poslední krok a pět naposledy otevřených souborů. Vedle toho
+  běží tři věci: starší výsledky nástrojů se čistí, poznámky žijí mimo okno a soubory se načítají
+  až tehdy, když je agent potřebuje @anthropic-context-engineering.],
+) <fig-claude-code-context>
 
 Opakující se část kontextu — systémové pokyny a popisy nástrojů — se mezi kroky neposílá
 znovu, ale vrací se z mezipaměti. Model tím vidí totéž; ušetří se jen peníze a čas.
