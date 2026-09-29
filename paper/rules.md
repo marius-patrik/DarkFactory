@@ -1,6 +1,6 @@
 # Školní pravidla — závazná část
 
-Vytvořeno pro práci *AI asistované softwarové inženýrství* (DarkFactory).
+Vytvořeno pro práci *Agentické inženýrství ve vývoji softwaru — Návrh a implementace DarkFactory*.
 Zdroj: `docs/Pruvodce-tvorbou-odborne-prace-2024.pdf`, školní *Průvodce tvorbou
 odborné práce* (Gymnázium J. K. Tyla). Obnoveno z archivovaného repozitáře
 `OdbornaPrace-mono` (viz `guide.md` pro odkaz na původ).
@@ -111,7 +111,7 @@ zbytek pravidel v tabulkách výše byl splněn už při vzniku práce.
 
 | # | Problém | Pravidlo | Stav |
 | :-- | :--- | :--- | :--- |
-| R1 | Čtyři ze šesti očíslovaných součástí neměly odkaz v textě | kap. 6 — odkaz povinný | ✅ opraveno, `1051e437` |
+| R1 | Čtyři ze šesti očíslovaných součástí neměly odkaz v textě | kap. 6 — odkaz povinný | ✅ opraveno, `1051e437`. **Dnes záměrně jinak:** šest obrázků odkaz v textu nemá, protože autor odstranil větu, která obrázek popisovala, a odkazem je věta, se kterou obrázek souvisí. Vyhovuje tomu zásada nezavádět meta-větu; je to rozhodnutí autora, ne nedostatek. |
 | R2 | Seznam součástí textu neobsahoval `Výpis 1` | kap. 4 — seznam kompletní | ✅ opraveno, `487e0b06` |
 | R3 | Anotace měla 128 slov, doporučeno 150–250 | kap. 2.1 | ✅ opraveno, `89109fc7` |
 | R4 | Šest klíčových slov, doporučeno přibližně pět | kap. 2.1 | ✅ opraveno, `1d0d4fe9` |

@@ -1,6 +1,6 @@
 # Školní průvodce — doporučující část
 
-Vytvořeno pro práci *AI asistované softwarové inženýrství* (DarkFactory).
+Vytvořeno pro práci *Agentické inženýrství ve vývoji softwaru — Návrh a implementace DarkFactory*.
 Zdroj: školní *Průvodce tvorbou odborné práce*, kapitoly 1–3 a 7
 (`docs/Pruvodce-tvorbou-odborne-prace-2024.pdf`). Závazná pravidla jsou oddělena do
 `rules.md`.
@@ -53,7 +53,7 @@ Průvodce popisuje deset postupů. Tato práce se opírá o čtyři z nich:
 | :--- | :--- | :--- |
 | Systematická rešerše | 3.7 | Teoretická část — ZPR, Harness design, kontextní inženýrství, ReAct |
 | Porovnání (komparace) | 3.8 | Volba harnessu; srovnání konverzačního režimu a delegovaného provádění |
-| Práce se statistikami | 3.9 | Obr. 1 — odhad podílu uživatelů podle typu |
+| Práce se statistikami | 3.9 | Obrázek 3 — odhad podílu uživatelů podle typu |
 | Experiment | 3.3 | Praktická část — pipeline jako provozovaný systém |
 
 Průvodce v kap. 3.3 zdůrazňuje, že experiment musí být **opakovatelný** a musí mít
@@ -80,11 +80,11 @@ položky, které jsou přímo kontrolovatelné:
 | Dodržení jednotného stylu | 5 | Jednotný font, velikost, řádkování, číslování, okraje | ✅ |
 | Členění práce do kapitol | 1 | Správné číslování, správné úrovně nadpisů | ✅ |
 | Správné odkazování v textu | 5 | Jednotný způsob, soulad s pravidly, odkazy za převzatými myšlenkami | ✅ číselné, středníky |
-| Seznam zdrojů | 3 | Úplný, správně řazený, jednotný styl | ✅ 49 zdrojů, všechny citované |
-| Anotace | 2 | Obsažena, přiměřený rozsah, správná struktura | ✅ 176 slov, doporučeno 150–250 (`rules.md` R3) |
+| Seznam zdrojů | 3 | Úplný, správně řazený, jednotný styl | ⚠️ 51 položek, z toho 10 necitovaných — viz `TODO.md` H, do konce práce neprořazeno |
+| Anotace | 2 | Obsažena, přiměřený rozsah, správná struktura | ✅ 159 slov, doporučeno 150–250 (`rules.md` R3) |
 | Klíčová slova | 1 | Obsažena, přiměřený počet, správně zvolená | ✅ pět, doporučeno přibližně pět (`rules.md` R4) |
 | Obsah | 1 | Kompletní, automaticky generovaný, čísla stran | ✅ |
-| **Seznam obrázků, tabulek, …** | 1 | **Je obsažen, je kompletní** | ✅ šest obrázků a jedna tabulka, generováno automaticky (`rules.md` R2) |
+| **Seznam obrázků, tabulek, …** | 1 | **Je obsažen, je kompletní** | ✅ dvanáct obrázků a jedna tabulka, generováno automaticky (`rules.md` R2) |
 | Grafické zpracování | 3 | Jednotný styl v celé práci, estetický dojem | ✅ jeden systém ve všech obrázcích |
 
 Pozor: v hodnoticím protokolu je samostatná položka **Správné odkazování v textu**
@@ -103,7 +103,12 @@ Průvodce považuje za plagiát i nepopsanou převzatou součást textu: „Poku
 součásti textu nebo prezentace převzaty z nějakého zdroje, vždy musí být tento
 zdroj uveden a správně citován, v opačném případě se jedná o plagiát."
 
-V této práci jsou převzaté: tabulka podílů uživatelů (Obr. 1, citováno
-@gradually-ai-usage-2026), schéma vektorových vztahů (Obr. 2, @mikolov2013linguistic)
-a popis ReAct smyčky (@yao2022). Vlastní kresby — Obr. 4 a 5, Výpis 1 — jsou
-odvozené z vlastního systému a citují revizi, ze které vycházejí.
+Čísla obrázků se od té doby posunula, proto se zde neuvádějí: seznam součástí textu je
+generovaný a je jediným místem, kde platí. Převzaté jsou tyto: snímek doplňování kódu
+v editoru (@github-copilot-completion), snímek konverzačního chatu
+(@khurana2023chatgpt), graf podílů uživatelů (@gradually-ai-usage-2026), snímek plánu
+v Claude Code (@gallardo2025beyond), snímek rozhraní Antigravity CLI (@antigravity-cli),
+snímek dynamického workflow (@anthropic-dynamic-workflows) a snímek splněného cíle
+(@openai-goals). Vlastní kresby jsou schémata vektorových vztahů (@mikolov2013linguistic),
+smyčka ReAct (@yao2022) a obě architektonická schémata, která citují revizi, ze které
+vycházejí.

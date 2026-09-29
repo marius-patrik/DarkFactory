@@ -133,7 +133,9 @@ pipe's, not the build's. This happened, and a failed build was reported green.
 - **Symbolic cross-references only.** No hardcoded page, section, figure or table numbers in the
   prose. Removing a page has never broken anything because of this.
 - **Every bibliography entry must be cited.** Uncited entries are *deferred, not deleted* — the
-  author asked to leave them and prune leftovers at the end. Ten are currently parked.
+  author asked to leave them and prune leftovers at the end. Ten are currently parked. **The end
+  has not come:** the practical part is being rewritten, so nothing is pruned until the text is
+  final and the parked entries are re-triaged against it.
 - **Numeric ISO 690, one citation style, ordered by first citation**, one stable number per
   document (`gjkt-iso690-numeric-cs.csl`).
 - **The CSL template silently drops `note`**, so provenance has to live in prose and captions, not
@@ -146,6 +148,10 @@ pipe's, not the build's. This happened, and a failed build was reported green.
 - All figures full text width, legend on one line under the graph, and a caption that states its true
   provenance: vendor documentation is not a community post, and an interface illustration is not a
   record of the pipeline.
+- **No sentence describes a figure.** Where a figure has no `@label` reference in the text, that is a
+  decision, not a gap: the author removed the trailing sentence that named the figure, and the
+  sentence the figure belongs to is the reference. Do not add descriptive sentences to satisfy the
+  letter of a linking rule.
 
 ## The bar
 
