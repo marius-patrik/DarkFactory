@@ -27,7 +27,14 @@ if [ "$#" -eq 0 ] && [ -t 0 ] && [ -t 1 ]; then
 fi
 
 case ${1-} in
-	chat|run|providers|models|accounts|account|login|logout|ask|help)
+	chat | run | route | ask | help)
+		run_df "$@"
+		;;
+	# The dispatch list has to name every subcommand the binary advertises. A subcommand
+	# missing from it falls through to the PATH walk below and then to /bin/df, which on
+	# macOS is the disk-usage tool: `df plugin` printed a filesystem table instead of the
+	# plugin list. The list below is every `df <subcommand>` in the binary's usage text.
+	account | accounts | ci | doctor | graph | license | limits | login | logout | models | plugin | providers | quota | report-failure | resume | secrets | submodules | workspace)
 		run_df "$@"
 		;;
 esac
