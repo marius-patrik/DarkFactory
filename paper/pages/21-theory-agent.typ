@@ -19,10 +19,12 @@ pro tuto skladbu a tím víc práce přebírá model.
 #heading(level: 3)[Jazykový model (LLM)]
 
 Současný jazykový model stojí na architektuře #strong[Transformer], kterou představil Google
-v roce 2017 v jejich nyní proslulé práci #strong[#emph[„Attention Is All You Need“]] @vaswani2017.
-Její základem je #strong[attention]: ke každému tokenu připočítá vážený součet hodnot všech
+v roce 2017 v práci #strong[#emph[„Attention Is All You Need“]] @vaswani2017.
+
+Její základem je #strong[attention]: ke každému tokenu se připočítá vážený součet hodnot všech
 ostatních, takže jeho reprezentace nese informaci z celého kontextu a vzdálenost mezi pozicemi
-není pevně daná jejich pořadím.
+není pevně daná jejich pořadím. Všechny tokeny se vyhodnocují proti sobě najednou, ale náklady
+rostou s druhou mocninou délky kontextu.
 
 Jazykový model je sám o sobě jen funkce. Na základě toho, co dostane v kontextu, vypočítá
 rozložení pravděpodobností nad následujícím tokenem a jeden z nich vybere. Mezi voláními si

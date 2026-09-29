@@ -43,8 +43,8 @@ S rozvojem nástrojů roste i jejich adopce. Rozsah veřejného použití samotn
 
 #heading(level: 2)[Cíl, výzkumná otázka, hypotéza a vymezení] <intro-goal>
 
-Výzkumná otázka práce zní: #emph[Které principy musí agentický systém splnit, aby
-spolehlivě vykonával inženýrskou práci?] Inženýrskou prací se zde rozumí změna repozitáře, kterou
+Výzkumná otázka práce zní: #emph[Za jakých podmínek agentický systém spolehlivě
+vykonává inženýrskou práci?] Inženýrskou prací se zde rozumí změna repozitáře, kterou
 může jiný člověk než její autor přezkoumat a sloučit, aniž by musel agenta na cokoli ptát;
 v tomto smyslu je měřena schopnost systému a v tomto smyslu je brána člověka
 nezaměnitelnou.
