@@ -99,36 +99,18 @@ Instrukce pro agenta leží v repozitáři, standardně v souboru #strong[`AGENT
 projektu, ve složce i v jednotlivých podadresářích — a harness si načte jen ten, který se týká
 právě otevřených souborů. Skilly, scripty a hooky leží pod složkou #strong[`.agents/`].
 
-#heading(level: 3)[Kontextové okno a kompakce]
+#heading(level: 3)[Kontext (Context)]
 
 #strong[Kontextové okno] zahrnuje pracovní kontext jednoho volání modelu: instrukce, části
 repozitáře, historii volání nástrojů i výsledky předchozích kroků. Jeho kapacita sama o sobě
-nezaručuje, že model všechny podstatné informace správně využije — úspěšnost jejich vybavení
-závisí také na umístění a s rostoucí délkou vstupu klesá @liu2024. Toto zhoršování práce s
-nahromaděným kontextem se označuje jako #strong[context rot] @anthropic-context-engineering.
+nezaručuje, že model všechny podstatné informace správně využije.
 
 #strong[Kompakce] (#emph[compaction]) po překročení limitu nahradí starší průběh souhrnem
-rozhodnutí a výsledků, takže do dalšího volání není nutné vkládat celý přepis
-@anthropic-context-engineering.
+rozhodnutí a výsledků @anthropic-context-engineering.
 
-V konkrétní implementaci se ale celá trajektorie skládá do jednoho okna, a náklady začínají
-tam. Výsledky starších nástrojů se z přepisu vyčistí, protože v hluboké historii je už nikdo
-nepotřebuje číst znovu; rozhodující je, co zůstane v souhrnu. Živé zpracování jednoho běhu
-v Claude Code shrnuje @fig-claude-code-context.
-
-#figure(
-  image("/components/img/claude-code-context-lifecycle.svg", width: 100%),
-  caption: [Kontextové okno v Claude Code během jednoho běhu: systémový prompt, nástroje a zadání
-  zůstávají, zatímco myšlenky, volání nástrojů a jejich výsledky se vrší až k hranici okna. Po
-  kompakci zůstane souhrn rozhodnutí, poslední krok a pět naposledy otevřených souborů. Vedle toho
-  běží tři věci: starší výsledky nástrojů se čistí, poznámky žijí mimo okno a soubory se načítají
-  až tehdy, když je agent potřebuje @anthropic-context-engineering.],
-) <fig-claude-code-context>
-
-Opakující se část kontextu — systémové pokyny a popisy nástrojů — se mezi kroky neposílá
-znovu, ale vrací se z mezipaměti. Model tím vidí totéž; ušetří se jen peníze a čas.
-
-Paměť má zpravidla vlastní způsoby, jak se zkazit: zastaralé instrukce, které nikdo neupraví,
-spory mezi soubory na různých úrovních, příliš mnoho nepodstatného a pravidla, která se postupně
-posouvají, aniž by je někdo schválil. Kompakce musí přežít sama sebe — když v souhrnu zůstane
-jen to, co bylo napsáno naposledy, agent ztratí to, na čem stála celá práce.
+S rostoucí délkou vstupu ale klesá úspěšnost, s jakou model podstatné informace využije
+@liu2024. Toto zhoršování práce s nahromaděným kontextem se označuje jako #strong[context rot]
+@anthropic-context-engineering. Paměť agenta se zkazí takto: zastaralé instrukce, které nikdo
+neupraví, spory mezi soubory na různých úrovních a pravidla, která se posouvají, aniž by je
+někdo schválil. Kompakce musí přežít sama sebe — když v souhrnu zůstane jen to, co bylo napsáno
+naposledy, agent ztratí to, na čem stála celá práce.

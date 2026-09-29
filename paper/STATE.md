@@ -4,8 +4,7 @@
 Single state file. It replaced `TODO.md`, `PLAN.md` and `CONTEXT.md`; those three are gone, and their content
 lives here unchanged. Git keeps their history.
 
-**Anchor: `docs/thesis` at `b6ae110f`. 40 pages. Paper builds green. `bun run check` has one
-error, in `src/cli.ts` — an import sort that predates this work and is unrelated to the paper.**
+**Anchor: `docs/thesis` at `b6ae110f`. 40 pages. Paper builds green.**
 
 **How this file is used.** Part 1 is what is *true* of the thesis. Part 2 is what has been
 *decided* and by whom, and what is still open. Part 3 is the cleanup pass, phase by phase,
@@ -533,8 +532,7 @@ Práce *Agentické inženýrství ve vývoji softwaru*, s podtitulkem *Návrh a 
 vyřešené. Nové položky přidat na konec příslušné sekce.
 
 Stav zkontrolován na `docs/thesis` ve větvi `b6ae110f`: **40 stran**, sazba bez varování.
-`bun run check` má jednu chybu, v `src/cli.ts` — pořadí importů, které tu bylo už před
-začátkem práce s papírem a s papírem nesouvisí. Skript na rozestup odstavců měří závazných 8 pt.
+Skript na rozestup odstavců měří závazných 8 pt.
 Čísla stránek a odkazy na soubory níže byly přepsány na stav tohoto commitu; kde záznam
 uvádí stav starší, je to výslovně uvedeno.
 
@@ -756,9 +754,6 @@ se mohou dělat mezitím.
 
 - `bun scripts/paper/watch.ts` (pid 88140) — přestavuje `PAPER.pdf` při každé změně zdroje,
   log v `/tmp/opencode/watch.log`.
-- `df plugin list|describe|validate` — 9 pluginů, 37 dovedností, 0 chyb. Funkční po
-  `1d320be7`; binary byl přestavěn a nainstalován, záloha v
-  `/tmp/opencode/dfbin-backup/`.
 
 ## Co dál
 
