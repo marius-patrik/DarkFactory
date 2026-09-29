@@ -191,7 +191,7 @@ Který účet smí schválit, je seznam dvou pevně zapsaných účtů porovnáv
 | **Q-B** | Zda v §1.2 uvést „vlastní principy, nikoli převzatou taxonomii". | Agentova pochybnost: komise může číst jako přiznání, že výběr není odvozený. |
 | **Q-C** | Tvar §4.1 — autor navrhl „just the three questions and answers". | Dosud nebylo provedeno, co přesně průvodce požaduje a co jsou „findings". Viz §5. |
 | **Q-D** | Zda test 38/18 platí. | Agentův vynález, autor ho nepotvrdil. Bez něj je rozdělení těch 38 neodůvodněné. |
-| **Q-E** | Hranice tří iterací — autor nařídil odstranit z **obou** míst (§3.1 i §3.4) a „not tell the full truth". | **Provedeno jen v §3.1** (`d6eccfd6`). §3.4 dosud hranici má; plán ji naopak prohlásil za trvalé sídlo a přidal grep, který selhání při jejím zmizení vyvolá. To je opak autorova rozhodnutí a musí se napravit. |
+| **Q-E** | ~~Hranice tří iterací.~~ **VYŘEŠENO** | Autor: „cut it there too". Počet odstraněn ze všech osmi míst (§3.1, §3.4, popisek @fig-darkfactory-pipeline, popis i nápis v `darkfactory-pipeline.svg`, páté zjištění, závěr). V práci zůstává následek — smyčka může skončit bez verdiktu — počet nefiguruje nikde a je ověřen v `TODO.md` J1. Viz Fáze 8. |
 | **Q-F** | Pět popisků, které tvrdí víc, než obrázek ukazuje. | Autor: „the first is good so is the second and third and fourth not sure about the fifth". |
 | **Q-G** | Proč odkaz na obrázek nesmí být v úvodní větě. | Plán říká „upravit existující úvodní větu"; autor řekl „the **related** sentences". Úvodní věta je přesně ta, kterou autor nechá smazat. Viz §5. |
 
@@ -256,7 +256,8 @@ obrázek souvisí**. Viz Q-G; průzkum pro každý obrázek určil tuto větu:
 | `fig-dynamic-workflows` | „…plán je program, který lze přečíst a znovu spustit @anthropic-dynamic-workflows." | na konec. **Ne** do věty o Kimi nad ní — snímek Claude Code by pak důkazil tvrzení o Kimi |
 | `fig-codex-goal` | „Dnes je to běžná funkce Claude Code i Codexu @claude-goal @openai-goals." | na konec. První věta prázdu popisuje dvouramenné větvení, snímek jen jeho konec |
 
-Současně: popisky `32:8` a `32:13` přestat opakovat vrstvy a hranici smyčky (viz Fáze 4).
+Současně: popisek `32:8` přestat opakovat vrstvy (viz Fáze 4). Popisek `32:13` i SVG
+tohoto obrázku jsou hotové — hranice smyčky z nich je pryč.
 
 **Koliduje s `CONTEXT.md`.** Zapsané stálé omezení dnes říká, že obrázek *bez* odkazu je
 rozhodnutí, ne nedostatek, a že se nemá přidávat popisná věta. Autor přesto nařídil
@@ -279,10 +280,9 @@ Cíl: zkrátit. Dnes `§3.1`–`§3.5` dohromady opakují to, co figury a popisk
 | Kde | Co |
 | :--- | :--- |
 | `32:8` (popisek) | Vrstvy už jsou v `32:4` těsně nad ním. V popisku nechat jen provenienci a „osm / čtyři". |
-| `32:13` (popisek) | „v této revizi nejvýše třikrát" dvě kapitoly před tím, než je číslo vysvětleno. Vymazat; vlastní je `34`. |
 | `35:15` | Třetí prosový výrok o vrstvách. Vymazat první větu; zůstane cena a závislost. |
 | `35:15` | „snadná reprodukovatelnost a viditelnost" = `31:27`. Vymazat výhodu, nechat nevýhodu. |
-| `§3.4` | Mechanika patří do `34`; to je její jediné místo. Kvóta, jednonásobné testy, druhý dotaz modelu — každé jen jednou, tady. **Hranice tří iterací je výjimka — viz Q-E, tam je autor nařídil opak.** |
+| `§3.4` | Mechanika patří do `34`; to je její jediné místo. Kvóta, jednonásobné testy, druhý dotaz modelu — každé jen jednou, tady. |
 | `§3.3` | Ověřit, že Tabulka 1 je stále jen jedno místo, kde se předloha ukazuje. |
 | `§3.5` | Scope boundary už je dvakrát (`1.2` a `3.5`) — to je podle `CONTEXT.md` správně, obě místa jsou legitimní. Neměnit. |
 
@@ -329,13 +329,18 @@ bun ../.darkfactory/plugins/thesis/scripts/measure-paragraph-gap.ts ../PAPER.pdf
 Navíc ručně do PDF: součást včetně popisku na jedné straně; žádná tabulka bez záhlaví
 při pokračování; sazba 8 pt pod odstavcem.
 
-**O čtyřech korekcích J1–J4 (viz Q-E).** Dnes je grep na čtyři věty součástí
-`paper-verify` i `CONTEXT.md`, a první z nich (`nejvýše třemi iteracemi`) je jediná, kterou
-autor nařídil odstranit. **Dokud se nerozhodne, tento grep zůstává beze změny a Fáze 8
-selhává, pokud věta zmizí** — protože smazat ji je autorovo právo, ne agentova, a ticho
-přehlédnut to je ta chyba, která už se stala jednou. Ostatní tři (`Po čisté review ještě`,
-`seznamem dvou pevně zapsaných účtů`, `pouze jednou a po opravě už ne`) autor nechal být a
-Fáze 8 je kontroluje.
+**Čtyři korekce, čtyři grep.** Tři zůstávají, jak byly:
+
+```sh
+grep -rn 'Po čisté review ještě' pages/
+grep -rn 'seznamem dvou pevně zapsaných účtů' pages/
+grep -rn 'pouze jednou a po opravě už ne' pages/
+```
+
+První se **změnil** a to záměrně: kontroloval `nejvýše třemi iteracemi`, tedy počet iterací.
+Počet autor odstranil ze všech míst v práci, takže grep teď kontroluje to, co práce skutečně
+tvrdí — `může skončit bez jakéhokoli verdiktu`. Počet se ověřuje proti `d576ec8f` v
+`TODO.md` J1, kde patří. **Provedeno** (`1730c41d` a následující commit).
 
 ---
 

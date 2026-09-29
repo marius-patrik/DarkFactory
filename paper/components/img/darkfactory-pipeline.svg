@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 430" role="img" aria-labelledby="t d">
   <title id="t">Jednoduchý průchod požadavku DarkFactory</title>
-  <desc id="d">Požadavek v issue prochází interpretací, plánováním a dvěma lidskými bránami, poté implementací na pracovní větvi, ověřením, draft pull requestem a review smyčkou s nejvýše třemi iteracemi. Po schválení následuje merge a odstranění větve.</desc>
+  <desc id="d">Požadavek v issue prochází interpretací, plánováním a dvěma lidskými bránami, poté implementací na pracovní větvi, ověřením, draft pull requestem a review smyčkou a může skončit bez verdiktu. Po schválení následuje merge a odstranění větve.</desc>
   <defs>
     <marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
       <path d="M0 1L10 5L0 9Z" fill="#1a1a1a"/>
@@ -89,7 +89,7 @@
 
   <rect x="740" y="250" width="214" height="70" rx="5" class="gate"/>
   <text x="847" y="274" text-anchor="middle" class="gatetxt">REVIEW ↔ FIX</text>
-  <text x="847" y="300" text-anchor="middle" class="head">Nejvýše 3 iterace</text>
+  <text x="847" y="300" text-anchor="middle" class="head">Bez verdiktu</text>
 
   <path d="M847 320V336H639V326" class="edge"/>
 

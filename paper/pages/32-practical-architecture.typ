@@ -10,7 +10,7 @@ Pro základní průchod nepotřebuje DarkFactory nic, co by muselo běžet trval
 
 #figure(
   image("/components/img/darkfactory-pipeline.svg", width: 100%),
-  caption: [Průchod požadavku: implementace a plánování jsou odděleny lidskými bránami, implementace probíhá na větvi a review smyčka se opakuje, dokud nález nezmizí, v této revizi nejvýše třikrát @darkfactory-d576ec8f.],
+  caption: [Průchod požadavku: implementace a plánování jsou odděleny lidskými bránami, implementace probíhá na větvi a review smyčka se opakuje, dokud nález nezmizí @darkfactory-d576ec8f.],
 ) <fig-darkfactory-pipeline>
 
 Workflow `agent.yml` reaguje na otevření issue, nový komentář, review komentář, `repository_dispatch` nebo ruční spuštění. Podmínka na úrovni jobu ověřuje, zda je agent pro repozitář povolen, a filtruje automatické komentáře, aby vlastní výstup pipeline nevytvářel nové události. Workflow pak provede checkout cílového repozitáře, sestaví obraz podle `docker/Dockerfile.agent` a spustí příkaz `dispatch` v kontejneru. Obraz je sestaven z jedné definice, takže každý spotřebitel běží stejný runner, zatímco repozitář, na němž se pracuje, zůstává checkoutem volajícího.

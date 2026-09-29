@@ -44,10 +44,17 @@ different.
 Method for respecting these is the `thesis-invariants` skill. The four corrections, in the exact
 Czech wording that `paper-verify` greps for:
 
-1. `Blocked` means exhausted quota, not a repeated finding.
-   `34-practical-implementation.typ` — „Smyčka je ohraničena nejvýše třemi iteracemi… Po
-   vyčerpání tří iterací však smyčka skončí bez jakéhokoli verdiktu a bez komentáře… Jediným
-   stavem, který v této revizi znamená zablokování, je vyčerpaná kvóta…"
+1. `Blocked` means exhausted quota, not a repeated finding, and the review loop can end with no
+   verdict recorded at all.
+   `34-practical-implementation.typ` — „Smyčka však může skončit bez jakéhokoli verdiktu a bez
+   komentáře… Jediným stavem, který v této revizi znamená zablokování, je vyčerpaná kvóta…"
+
+   **The iteration count is deliberately not stated anywhere.** It was removed from every site at
+   the author's instruction — §3.1, §3.4, the `@fig-darkfactory-pipeline` caption, the SVG's own
+   description and label, the fifth finding, and the conclusion. The consequence the author kept
+   is the interesting one: the loop can stop without recording why, so a later reader cannot
+   tell a clean review from a stopped one. The count itself lives in `TODO.md` J1 and is verified
+   there against `d576ec8f`, not asserted in the paper.
 2. Clean review runs **before** the plan-alignment check.
    `34-practical-implementation.typ` — „Po čisté review ještě proběhne kontrola souladu výsledného
    diffu se schváleným plánem. Ani ta není porovnáním sad souborů: je to druhý dotaz modelu…"
@@ -134,11 +141,18 @@ bun ../.darkfactory/plugins/thesis/scripts/measure-paragraph-gap.ts ../PAPER.pdf
 claims about the code passed it. Content checks are greps on the rendered Czech:
 
 ```sh
-grep -rn 'nejvýše třemi iteracemi' pages/
+grep -rn 'může skončit bez jakéhokoli verdiktu' pages/   # loop can end with no verdict
 grep -rn 'Po čisté review ještě' pages/
 grep -rn 'seznamem dvou pevně zapsaných účtů' pages/
 grep -rn 'pouze jednou a po opravě už ne' pages/
 ```
+
+**The first grep changed, and that is deliberate.** It used to look for
+`nejvýše třemi iteracemi`, which asserted the iteration count. The count is no longer stated
+anywhere in the paper, at the author's instruction; what the paper now commits to is the
+consequence — the loop can end without recording why. The grep follows the claim, not the other
+way round. The count is verified against `d576ec8f` in `TODO.md` J1 instead, which is where it
+belongs: it is a fact about the code, and the paper does not rest on it.
 
 Never report a build as passing from a command whose output went through a pipe: `$?` is then the
 pipe's, not the build's. This happened, and a failed build was reported green.

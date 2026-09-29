@@ -13,7 +13,7 @@ Implementace pipeline DarkFactory ukázala jednoduchou produkční realizaci tě
 
 Úloha vývojáře se v tomto uspořádání posouvá od rutinního provádění kódu k formulaci zadání, schvalování plánu, definování akceptačních podmínek a rozhodování, zda je výsledek připraven k integraci. Práce tedy nepopisuje plnou autonomii agenta, ale kontrolované předání vybrané části softwarového inženýrství.
 
-Zjištění zároveň ukazují meze této realizace. Modelové review může být opakované, ale není deterministickou zárukou správnosti. Review smyčka se po vyčerpání tří iterací zastaví bez zaznamenaného verdiktu, takže průchod od zastavení rozlišit není; zablokovaný stav zde znamená vyčerpanou kvótu, nikoli opakovaný nález; a opakovatelná kontrola před sloučením běží, ale změně s neprocházejícími testy zabrání jen tehdy, když ji zopakuje, což popsaná revize nečiní.
+Zjištění zároveň ukazují meze této realizace. Modelové review může být opakované, ale není deterministickou zárukou správnosti. Review smyčka se může zastavit bez zaznamenaného verdiktu, takže průchod od zastavení rozlišit není; zablokovaný stav zde znamená vyčerpanou kvótu, nikoli opakovaný nález; a opakovatelná kontrola před sloučením běží, ale změně s neprocházejícími testy zabrání jen tehdy, když ji zopakuje, což popsaná revize nečiní.
 
 Cíle práce se podařilo naplnit v rozsahu, který si sama vymezila. Hypotéza se potvrdila: praktická autonomie je vlastností návrhu systému, který práci řídí, a nikoli vlastností modelu, který v něm pracuje. Strukturu, která práce popisuje, autor navrhuje sám; úsudek o tom, co je v jednotlivém kroku správné, však přebírá od smyčky, kterou nevlastní, a právě v tomto rozdílu leží hranice, za kterou by pomohlo vlastnit i tuto smyčku.
 
