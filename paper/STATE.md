@@ -4,7 +4,8 @@
 Single state file. It replaced `TODO.md`, `PLAN.md` and `CONTEXT.md`; those three are gone, and their content
 lives here unchanged. Git keeps their history.
 
-**Anchor: `docs/thesis` at `b689cf4c`. 41 pages, build green, `bun run check` passes.**
+**Anchor: `docs/thesis` at `b6ae110f`. 40 pages. Paper builds green. `bun run check` has one
+error, in `src/cli.ts` — an import sort that predates this work and is unrelated to the paper.**
 
 **How this file is used.** Part 1 is what is *true* of the thesis. Part 2 is what has been
 *decided* and by whom, and what is still open. Part 3 is the cleanup pass, phase by phase,
@@ -629,8 +630,9 @@ zádné z nich, a Fáze 5 je zablokována, dokud se nerozhodne Q-C.
 Práce *Agentické inženýrství ve vývoji softwaru*, s podtitulkem *Návrh a implementace DarkFactory* (DarkFactory). Zbývající body, o kterých je známo, že nejsou
 vyřešené. Nové položky přidat na konec příslušné sekce.
 
-Stav zkontrolován na `docs/thesis` ve větvi `affe02b5`: **41 stran**, sazba bez varování,
-`bun run check` projde, skript na rozestup odstavců měří závazných 8 pt.
+Stav zkontrolován na `docs/thesis` ve větvi `b6ae110f`: **40 stran**, sazba bez varování.
+`bun run check` má jednu chybu, v `src/cli.ts` — pořadí importů, které tu bylo už před
+začátkem práce s papírem a s papírem nesouvisí. Skript na rozestup odstavců měří závazných 8 pt.
 Čísla stránek a odkazy na soubory níže byly přepsány na stav tohoto commitu; kde záznam
 uvádí stav starší, je to výslovně uvedeno.
 
