@@ -5,10 +5,17 @@
 // sentence about source types, were both removed at the author's instruction — they
 // described the paper rather than the system.
 //
-// Tři kritéria was a third level-3 subsection and is the only one left. The author has since
-// directed that the criteria be stated once in 1.2 and answered in 4.1, with 3.1.1 removed
-// (see ../PLAN.md, R13 and Q-A). That is not applied yet: what follows is the current
-// state, and it changes when the author settles Q-A.
+// The four-layer list that opened this section is gone. It named GitHub, GitHub Actions,
+// the Python/Docker runner and the review loop, and then 3.2 to 3.5 described all four
+// again - the list was a second, compressed edition of the chapter it introduces, which is
+// how its fourth item came to contradict 3.4 (../PLAN.md, Q-E). What remains is the
+// reproducibility record: the pinned revision, how the runner was built, and what the
+// simplification costs. The system itself is described once, in 3.2 to 3.5.
+//
+// Tři kritéria is the only level-3 subsection left. The author has directed that the
+// criteria be stated once in 1.2 and answered in 4.1, with 3.1.1 removed (../PLAN.md, R13
+// and Q-A). That is not applied yet: what follows is the current state, and it changes when
+// the author settles Q-A.
 //
 // The composition question used to be 3.1.2. It was cut and its one live idea became the
 // third limitation in the discussion (4.2), beside ownership and scope.
@@ -18,12 +25,6 @@
 #heading(level: 2)[Metodika] <practical-first>
 
 Praktická část implementuje záměrně jednoduchou produkční pipeline, v níž je vývojovým prostředím přímo GitHub a harness produkční coding agent. Cílem je ukázat, jak lze spojit události GitHubu, automatizované plánování, izolovanou práci v kontejneru a lidskou integraci do jednoho opakovatelného procesu.
-
-Předmětem analýzy jsou čtyři navazující vrstvy:
-1. #emph[GitHub jako zdroj pravdy:] issue a jeho komentáře uchovávají požadavek, schválení, plán a zpětnou vazbu; větev, commit a pull request uchovávají změnu a její průběžnou revizi @github-branches @github-pull-requests.
-2. #emph[GitHub Actions jako výpočetní prostředí:] jednotlivé události spouštějí krátké workflow, které provede checkout pracovní kopie repozitáře, sestaví obraz, spustí agenta a následnou integraci provede.
-3. #emph[Python a Docker jako izolační vrstva:] workflow předá událost a pracovní strom pythonovskému runneru v kontejneru; runner volá harness a předává mu nástroje, přihlašovací údaje a stav úlohy.
-4. #emph[Review smyčka jako podmínka integrace:] automatická revize diffu, opravy a další revize se opakují, dokud poslední nález nezmizí; teprve poté je pull request předán člověku.
 
 Pythonovský runner, o kterém tato část pojednává, byl napsán pomocí týchž produkčních coding agentů, které následně popisuje. Cílem nebyla stavba co nejucelenějšího systému, ale co nejmenší uzavřená smyčka, na níž lze ukázat, jak se navzájem ovlivňují agent, harness a lidský recenzent. Pozornost je proto soustředěna na tuto interakci a na její členění, nikoli na šíři nabízených funkcí.
 
