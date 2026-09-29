@@ -13,7 +13,7 @@ import type { CanonicalStatus } from "../../../protocol/src/workflow.ts";
 import { STATUS_OPTIONS, statusPresentation } from "./taxonomy.ts";
 
 /** One option of a Projects v2 single-select field. */
-export interface BoardStatusOption {
+interface BoardStatusOption {
 	name: string;
 	color: string;
 	description: string;
@@ -30,7 +30,7 @@ export interface BoardStatusOption {
 export const LEGACY_TODO_OPTION = "Todo";
 
 /** The mutation that rewrites a Status field's options, matching survivors by name. */
-export const STATUS_OPTION_MUTATION =
+const STATUS_OPTION_MUTATION =
 	"mutation($fieldId:ID!,$options:[ProjectV2SingleSelectFieldInput!])" +
 	"{updateProjectV2Field(input:{fieldId:$fieldId,singleSelectOptions:$options})" +
 	"{projectV2Field{... on ProjectV2SingleSelectField{options{name}}}}}";
@@ -107,6 +107,6 @@ export function appliedStatusOptions(response: unknown): string[] {
 }
 
 /** The names this taxonomy will write, typed as statuses rather than as loose strings. */
-export function canonicalStatusNames(): CanonicalStatus[] {
+function canonicalStatusNames(): CanonicalStatus[] {
 	return [...STATUS_OPTIONS];
 }

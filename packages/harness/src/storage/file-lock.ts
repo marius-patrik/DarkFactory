@@ -2,8 +2,7 @@ import { mkdir, open, readFile, stat, unlink } from "node:fs/promises";
 import { dirname } from "node:path";
 
 const localQueues = new Map<string, Promise<unknown>>();
-
-export interface FileLockOptions {
+interface FileLockOptions {
 	staleMs?: number;
 	timeoutMs?: number;
 	retryMs?: number;

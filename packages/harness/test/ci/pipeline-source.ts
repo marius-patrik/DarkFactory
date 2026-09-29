@@ -16,14 +16,14 @@ import { join } from "node:path";
 /** Repository root. */
 export const repoRoot = join(import.meta.dir, "..", "..", "..", "..");
 /** The workflows this repository ships. */
-export const workflowDir = join(repoRoot, ".github", "workflows");
+const workflowDir = join(repoRoot, ".github", "workflows");
 /** The pipeline's shared automation scripts. */
-export const scriptDir = join(repoRoot, ".github", "scripts");
+const scriptDir = join(repoRoot, ".github", "scripts");
 /** The issue chooser and its templates. */
 export const issueTemplateDir = join(repoRoot, ".github", "ISSUE_TEMPLATE");
 
 /** One step of a job. */
-export interface Step {
+interface Step {
 	name?: string;
 	uses?: string;
 	run?: string;
@@ -34,7 +34,7 @@ export interface Step {
 }
 
 /** One job of a workflow. */
-export interface Job {
+interface Job {
 	name?: string;
 	if?: string;
 	needs?: string | string[];
@@ -53,7 +53,7 @@ export interface Workflow {
 }
 
 /** The `repo` block of `repo.dfconfig`. */
-export interface RepoConfig {
+interface RepoConfig {
 	identity: {
 		owner: string;
 		repo: string;
@@ -107,7 +107,7 @@ export function steps(workflow: Workflow, jobId: string): Step[] {
 }
 
 /** The position of the named step, so an ordering claim can be made about parsed structure. */
-export function stepIndex(workflow: Workflow, jobId: string, stepName: string): number {
+function stepIndex(workflow: Workflow, jobId: string, stepName: string): number {
 	const index = steps(workflow, jobId).findIndex((step) => step.name === stepName);
 	if (index === -1) throw new Error(`no step ${stepName} in job ${jobId}`);
 	return index;
@@ -140,14 +140,14 @@ export function stepsUsing(workflow: Workflow, action: string): Array<{ job: str
 }
 
 /** Every automation script file name, sorted. */
-export function scriptNames(): string[] {
+function scriptNames(): string[] {
 	return readdirSync(scriptDir)
 		.filter((name) => name.endsWith(".py"))
 		.sort();
 }
 
 /** The raw text of one automation script. */
-export function scriptSource(name: string): string {
+function scriptSource(name: string): string {
 	return readFileSync(join(scriptDir, name), "utf8");
 }
 

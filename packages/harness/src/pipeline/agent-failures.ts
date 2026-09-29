@@ -113,7 +113,7 @@ export interface NoticeTarget {
 }
 
 /** The surfaces a failure notice touches, and where a failure to touch one goes. */
-export interface AgentFailurePort {
+interface AgentFailurePort {
 	/** The GitHub port, for the notice comment and the `Blocked` label. */
 	io: Pick<PipelineIo, "addComment" | "changeLabels">;
 	/** The project board, for the `Blocked` column. */
@@ -214,7 +214,7 @@ function parseProviderMap(value: string | undefined): Record<string, number> {
  * @param input - The item, the providers, when it may resume, and when the block was recorded.
  * @param report - Where a failed write goes; recording a block must never fail the notice.
  */
-export async function recordQuotaBlock(
+async function recordQuotaBlock(
 	store: QuotaBlockStore,
 	input: {
 		repo: string;
@@ -257,7 +257,7 @@ export async function recordQuotaBlock(
 }
 
 /** What the caller knows about the run that stopped, so the checkpoint describes it. */
-export interface ExhaustionContext {
+interface ExhaustionContext {
 	/** The issue or pull request the run was working on. */
 	issueNumber: number;
 	/** The repository slug. */

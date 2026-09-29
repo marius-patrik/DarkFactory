@@ -2,20 +2,19 @@ import type { Candidate } from "../failover.ts";
 import type { ModelTier } from "../providers/schema.ts";
 import type { LimitEntry } from "./types.ts";
 
-export type TaskSize = "small" | "medium" | "large";
+type TaskSize = "small" | "medium" | "large";
 export interface TaskEstimate {
 	size: TaskSize;
 	contextTokens: number;
 	expectedOutputTokens: number;
 	expectedSteps: number;
 }
-export interface CapacityProfile {
+interface CapacityProfile {
 	contextWindow?: number;
 	tier?: ModelTier;
 	reserve?: { requests?: number; tokens?: number };
 }
-
-export function inferTaskSize(prompt: string, contextTokens = Math.ceil(prompt.length / 4)): TaskSize {
+function inferTaskSize(prompt: string, contextTokens = Math.ceil(prompt.length / 4)): TaskSize {
 	if (contextTokens >= 64_000 || prompt.length >= 20_000) return "large";
 	if (contextTokens >= 8_000 || prompt.length >= 4_000) return "medium";
 	return "small";

@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 /** Token usage metadata for an extraction turn. */
-export interface ExtractionUsage {
+interface ExtractionUsage {
 	/** Input prompt tokens. */
 	input?: number;
 	/** Output completion tokens. */

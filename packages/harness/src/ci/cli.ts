@@ -7,7 +7,7 @@ import { installWorkflows, updateWorkflows } from "./installer.ts";
 import { applyBranchProtection, computeRequiredChecks, verifyBranchProtection } from "./protection.ts";
 import { getCheckStatus, getRunLogs, getWorkflowRuns, rerunWorkflowRun } from "./status.ts";
 
-export interface CiCliContext {
+interface CiCliContext {
 	repo?: GitHubRepository;
 	log?: (msg: string) => void;
 	error?: (msg: string) => void;

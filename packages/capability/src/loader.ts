@@ -7,7 +7,7 @@ import { definitionFromModule } from "./compatibility.ts";
 const ENTRYPOINTS = ["capability.ts", "capability.js", "capability.mjs"] as const;
 
 /** Loads and validates one capability module from disk. */
-export async function loadCapability(path: string): Promise<CapabilityDefinition> {
+async function loadCapability(path: string): Promise<CapabilityDefinition> {
 	const module = (await import(pathToFileURL(resolve(path)).href)) as CapabilityModule;
 	return definitionFromModule(module);
 }
@@ -44,7 +44,7 @@ export async function discoverCapabilities(root: string): Promise<CapabilityDefi
 }
 
 /** Resolved domains and the capabilities applicable to them. */
-export interface CapabilityResolution {
+interface CapabilityResolution {
 	domains: readonly string[];
 	capabilities: readonly CapabilityDefinition[];
 }

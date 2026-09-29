@@ -29,7 +29,7 @@
 export type PipelineCommand = "approve" | "reject" | "resume";
 
 /** Which comment surface a command was written on. */
-export type CommandSurface = "issue" | "pr";
+type CommandSurface = "issue" | "pr";
 
 /** Strict `/df <verb>` or `/<verb>` command standing alone as the whole comment. */
 const STRICT_COMMAND = /^\s*(?:\/df\s+|\/)(approve|reject|revise|resume)\s*$/iu;
@@ -43,7 +43,7 @@ const STRICT_COMMAND = /^\s*(?:\/df\s+|\/)(approve|reject|revise|resume)\s*$/iu;
 const STRICT_REJECT_WITH_FEEDBACK = /^\s*(?:\/df\s+|\/)(?:reject|revise)\b\s*(.*?)\s*$/iu;
 
 /** Legacy whole-comment approvals that predate the strict grammar, per surface. */
-export const LEGACY_ISSUE_COMMANDS: Readonly<Record<string, PipelineCommand | undefined>> = {
+const LEGACY_ISSUE_COMMANDS: Readonly<Record<string, PipelineCommand | undefined>> = {
 	approve: "approve",
 	"/approve": "approve",
 	lgtm: "approve",
@@ -53,7 +53,7 @@ export const LEGACY_ISSUE_COMMANDS: Readonly<Record<string, PipelineCommand | un
 };
 
 /** Legacy whole-comment approvals that predate the strict grammar, per surface. */
-export const LEGACY_PR_COMMANDS: Readonly<Record<string, PipelineCommand | undefined>> = {
+const LEGACY_PR_COMMANDS: Readonly<Record<string, PipelineCommand | undefined>> = {
 	approve: "approve",
 	"/approve": "approve",
 	merge: "approve",
@@ -75,11 +75,10 @@ const VERB_ALIASES: Readonly<Record<string, PipelineCommand | undefined>> = {
  * Exported because a caller may want to test a comment against the issue gate without also
  * decoding which command it was.
  */
-export const ISSUE_COMMAND_RE =
-	/^\s*(?:\/df\s+approve|\/approve|approve|lgtm|good|\/df\s+resume|\/resume|resume)\s*$/iu;
+const ISSUE_COMMAND_RE = /^\s*(?:\/df\s+approve|\/approve|approve|lgtm|good|\/df\s+resume|\/resume|resume)\s*$/iu;
 
 /** Whole-comment approval matcher for pull requests (strict grammar plus legacy words). */
-export const PR_COMMAND_RE = /^\s*(?:\/df\s+approve|\/approve|approve|merge|\/merge|lgtm)\s*$/iu;
+const PR_COMMAND_RE = /^\s*(?:\/df\s+approve|\/approve|approve|merge|\/merge|lgtm)\s*$/iu;
 
 /** Words whose mere mention (outside a command) earns at most a one-time hint. */
 const HINT_WORDS = /\b(approve(?:d)?|lgtm|merge|resume|revise|reject)\b/iu;
@@ -142,7 +141,7 @@ export function commandFeedback(body: string): string {
  * @returns `"approve"`, `"reject"`, `"resume"`, or `null` when the body is not a command —
  * including free text that merely mentions a command word.
  */
-export function parseCommand(body: string, surface: CommandSurface = "issue"): PipelineCommand | null {
+function parseCommand(body: string, surface: CommandSurface = "issue"): PipelineCommand | null {
 	const text = (body ?? "").trim();
 	if (!text) return null;
 	return strictVerb(text) ?? legacyCommands(surface)[text.toLowerCase()] ?? null;
@@ -191,7 +190,7 @@ export function isBotLogin(login: string): boolean {
 }
 
 /** Everything the workflow knows about the commenter, beyond their login. */
-export interface ApproverContext {
+interface ApproverContext {
 	/** Their `author_association` on the commented item. */
 	authorAssociation?: string;
 	/** Login of the Request author (issue/PR author for the gate). */

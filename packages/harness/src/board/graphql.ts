@@ -15,14 +15,14 @@ import { statusOptionsFor } from "./taxonomy.ts";
 const GRAPHQL_ENDPOINT = "https://api.github.com/graphql";
 
 /** One project as the discovery query returns it. */
-export interface ProjectNode {
+interface ProjectNode {
 	readonly id: string;
 	readonly number: number;
 	readonly title: string;
 }
 
 /** One single-select option on a project's field. */
-export interface StatusOptionNode {
+interface StatusOptionNode {
 	readonly id: string;
 	readonly name: string;
 	readonly color?: string;
@@ -56,7 +56,7 @@ export interface BoardItemNode {
 }
 
 /** How a GraphQL client authenticates and reaches the API. */
-export interface BoardGraphqlOptions {
+interface BoardGraphqlOptions {
 	/** Explicit token. Defaults to the project token, then the App token, then `GITHUB_TOKEN`. */
 	readonly token?: string | undefined;
 	/** The environment the token fallback chain is read from. */

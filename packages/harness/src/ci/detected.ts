@@ -28,7 +28,7 @@ export async function resolveDetectedQuality(
 }
 
 /** Result of one detected executable quality action. */
-export interface DetectedQualityExecution {
+interface DetectedQualityExecution {
 	packageId: string;
 	kind: "test" | "lint" | "format_check" | "typecheck";
 	supported: boolean;

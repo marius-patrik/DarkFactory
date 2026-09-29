@@ -9,26 +9,23 @@ import {
 	verifyWorkflowHash,
 } from "./templates.ts";
 
-export interface InstallOptions {
+interface InstallOptions {
 	dryRun?: boolean;
 	force?: boolean;
 	templates?: readonly string[];
 }
-
-export interface InstallReport {
+interface InstallReport {
 	installed: string[];
 	skippedModified: string[];
 	skippedUnmanaged: string[];
 	dryRun: boolean;
 }
-
-export interface UpdateOptions {
+interface UpdateOptions {
 	dryRun?: boolean;
 	force?: boolean;
 	templates?: readonly string[];
 }
-
-export interface UpdateReport {
+interface UpdateReport {
 	updated: string[];
 	upToDate: string[];
 	skippedModified: string[];
@@ -36,14 +33,12 @@ export interface UpdateReport {
 	missing: string[];
 	dryRun: boolean;
 }
-
-export interface WorkflowDriftItem {
+interface WorkflowDriftItem {
 	file: string;
 	status: "in_sync" | "outdated" | "modified" | "unmanaged" | "missing";
 	details?: string;
 }
-
-export interface SkillDriftItem {
+interface SkillDriftItem {
 	file: string;
 	status: "in_sync" | "outdated" | "modified" | "unmanaged" | "missing";
 	details?: string;

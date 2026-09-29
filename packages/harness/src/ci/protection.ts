@@ -1,7 +1,7 @@
 import type { GitHubRepository } from "../github/repository.ts";
 import type { ResolvedCheck } from "./schema.ts";
 
-export interface ProtectionVerificationReport {
+interface ProtectionVerificationReport {
 	valid: boolean;
 	matched: string[];
 	missing: string[];
@@ -9,8 +9,7 @@ export interface ProtectionVerificationReport {
 	strict: boolean;
 	source: "ruleset" | "branch_protection" | "none";
 }
-
-export interface ApplyProtectionOptions {
+interface ApplyProtectionOptions {
 	/** The branch to protect. Required: the policy is declared, not guessed. */
 	branch: string;
 	/** Whether branches must be up to date before merging. */

@@ -75,7 +75,7 @@ export type PlanAlignmentOutcome =
 	| { kind: "failed"; notice: string; comment: string };
 
 /** What to check for alignment. */
-export interface PlanAlignmentRequest {
+interface PlanAlignmentRequest {
 	/** The pull request number. */
 	prNumber: number;
 	/** The Plan issue number, which is the Request itself once both gates share one issue. */

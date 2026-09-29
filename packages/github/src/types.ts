@@ -82,7 +82,7 @@ export interface RateLimitSnapshot {
 	cost?: number;
 }
 /** GraphQL pagination metadata. */
-export interface PageInfo {
+interface PageInfo {
 	hasNextPage: boolean;
 	endCursor: string | null;
 }

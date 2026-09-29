@@ -36,7 +36,7 @@ export interface ReconcileSummary {
 }
 
 /** One counter per kind of fault a pass repairs. */
-export interface ReconcileCorrections {
+interface ReconcileCorrections {
 	missing_from_board: number;
 	status_updated: number;
 	closed_not_terminal: number;
@@ -97,7 +97,7 @@ export interface ReconcileDeps {
 }
 
 /** What one pass repairs, and where it should look. */
-export interface ReconcileOptions {
+interface ReconcileOptions {
 	/** The boards to reconcile, or the single board or group a caller already resolved. */
 	readonly target?: ReconcilableBoard;
 	/** Detect and report corrections without writing. */

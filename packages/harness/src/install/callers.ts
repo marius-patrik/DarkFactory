@@ -29,13 +29,13 @@ function expression(body: string): string {
  * check the runtime out directly. A template is substituted verbatim: no managed header, and no
  * default for the ref, because a caller that falls back to a branch name is not a pin at all.
  */
-export const DIRECT_WORKFLOW_TEMPLATES: Readonly<Record<string, string>> = Object.freeze({
+const DIRECT_WORKFLOW_TEMPLATES: Readonly<Record<string, string>> = Object.freeze({
 	ci: "ci.yml",
 	"verify-pr-issue": "verify-bound-issue.yml",
 });
 
 /** One `workflow_dispatch` input a caller has to declare and forward by name. */
-export interface DispatchInput {
+interface DispatchInput {
 	/** Human-readable description, rendered as a YAML single-quoted scalar. */
 	description: string;
 	/** Input type. */
@@ -52,7 +52,7 @@ export interface DispatchInput {
 }
 
 /** One workflow an installation can write a caller for. */
-export interface WorkflowSpec {
+interface WorkflowSpec {
 	/**
 	 * Display name.
 	 *

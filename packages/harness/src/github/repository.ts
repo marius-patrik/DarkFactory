@@ -26,21 +26,21 @@ export function isBotLogin(login: string): boolean {
 }
 
 /** Options for creating a new GitHub issue. */
-export interface CreateIssueInput {
+interface CreateIssueInput {
 	title: string;
 	body?: string;
 	labels?: string[];
 	assignees?: string[];
 }
 /** Options for updating an existing GitHub issue. */
-export interface UpdateIssueInput {
+interface UpdateIssueInput {
 	title?: string;
 	body?: string;
 	state?: "open" | "closed";
 	state_reason?: "completed" | "not_planned" | "reopened";
 }
 /** Options for creating a new GitHub pull request. */
-export interface CreatePullRequestInput {
+interface CreatePullRequestInput {
 	title: string;
 	head: string;
 	base: string;
@@ -48,14 +48,14 @@ export interface CreatePullRequestInput {
 	draft?: boolean;
 }
 /** Options for updating an existing GitHub pull request. */
-export interface UpdatePullRequestInput {
+interface UpdatePullRequestInput {
 	title?: string;
 	body?: string;
 	state?: "open" | "closed";
 	base?: string;
 	draft?: boolean;
 }
-export interface CreateCheckRunInput {
+interface CreateCheckRunInput {
 	name: string;
 	head_sha: string;
 	status: "queued" | "in_progress" | "completed";

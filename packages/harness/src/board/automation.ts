@@ -47,7 +47,7 @@ export interface BoardAutomationOptions {
 }
 
 /** Which boards a resolution should include. */
-export interface ResolveBoardsOptions {
+interface ResolveBoardsOptions {
 	/** Include this repository's own scoped board. */
 	readonly includeScoped?: boolean;
 	/** Include the board aggregating every repository. */

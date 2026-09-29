@@ -16,16 +16,14 @@ export const BINARY_NAME = "df-bin";
  * staged install that omits either tree yields a `df` that loads and lists providers and then fails
  * at the first operation needing a bundled resource, so both travel with the binary.
  */
-export const RESOURCE_DIRS = ["assets", "native"] as const;
-
-export interface StageOptions {
+const RESOURCE_DIRS = ["assets", "native"] as const;
+interface StageOptions {
 	/** Harness root holding `dist/` and `scripts/`. */
 	root: string;
 	/** Destination prefix; the staged runtime lands in `<prefix>/bin`. */
 	prefix: string;
 }
-
-export interface StageResult {
+interface StageResult {
 	/** Installed prefix. */
 	prefix: string;
 	/** Directory added to `PATH`. */

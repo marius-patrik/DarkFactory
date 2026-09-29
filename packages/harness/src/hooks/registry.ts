@@ -4,7 +4,7 @@ import { testsTouched } from "./tests-touched.ts";
 import type { Hook } from "./types.ts";
 
 /** Built-in hooks, in the order they run for an event. */
-export const BUILTIN_HOOKS: readonly Hook[] = [testsTouched, conventionalCommit, branchName];
+const BUILTIN_HOOKS: readonly Hook[] = [testsTouched, conventionalCommit, branchName];
 
 /**
  * Finds a built-in hook by its identifier.

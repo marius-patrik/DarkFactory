@@ -1,14 +1,13 @@
 import type { PushMap, Vault } from "../../../keychain/src/index.ts";
 import type { GitHubRepository } from "../github/repository.ts";
 
-export interface PushResult {
+interface PushResult {
 	name: string;
 	ghName: string;
 	repo: string;
 	status: "pushed" | "skipped" | "dry-run";
 }
-
-export interface PushOptions {
+interface PushOptions {
 	vault: Vault;
 	pushMap: PushMap;
 	repoSlug: string;

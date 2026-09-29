@@ -8,7 +8,7 @@
  *
  * All paths use forward slashes and are sorted lexicographically.
  */
-export interface ScopeCheckResult {
+interface ScopeCheckResult {
 	/** Every changed path, repository‑relative with forward slashes, sorted. */
 	changed: string[];
 	/** Changed paths matching none of the allowed patterns, sorted. */

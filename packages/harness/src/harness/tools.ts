@@ -8,8 +8,7 @@ export interface ToolPolicyOptions {
 	deny?: readonly string[];
 	headless?: boolean;
 }
-
-export interface PolicyDecision {
+interface PolicyDecision {
 	allowed: boolean;
 	reason?: string;
 }

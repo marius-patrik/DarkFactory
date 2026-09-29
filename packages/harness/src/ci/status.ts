@@ -2,7 +2,7 @@ import type { GitHubRepository } from "../github/repository.ts";
 import { requiredChecksState } from "./guard.ts";
 import type { CheckRunItem, CheckState, RequiredChecksResult, ResolvedCheck } from "./schema.ts";
 
-export interface StatusCheckItem {
+interface StatusCheckItem {
 	name: string;
 	required: boolean;
 	status: string;
@@ -11,8 +11,7 @@ export interface StatusCheckItem {
 	completed_at?: string;
 	html_url?: string;
 }
-
-export interface CiStatusReport {
+interface CiStatusReport {
 	ref: string;
 	state: CheckState;
 	checks: StatusCheckItem[];
@@ -109,8 +108,7 @@ export async function getCheckStatus(
 		summary,
 	};
 }
-
-export interface WorkflowRunSummary {
+interface WorkflowRunSummary {
 	id: number;
 	name: string;
 	head_branch: string;
@@ -166,21 +164,18 @@ export async function getWorkflowRuns(
 		html_url: run.html_url,
 	}));
 }
-
-export interface JobLogResult {
+interface JobLogResult {
 	id: number;
 	name: string;
 	status: string;
 	conclusion: string | null;
 	excerpt: string;
 }
-
-export interface RunLogsReport {
+interface RunLogsReport {
 	runId: number;
 	jobs: JobLogResult[];
 }
-
-export function stripAnsi(text: string): string {
+function stripAnsi(text: string): string {
 	// biome-ignore lint/suspicious/noControlCharactersInRegex: matches ANSI escape sequences on purpose
 	return text.replace(/\x1b\[[0-9;]*[a-zA-Z]/g, "");
 }

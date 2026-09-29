@@ -6,16 +6,16 @@ import { configBlock, parseConfigDocument, resolveConfigDocumentPath } from "../
 import { runGit } from "../workspace/git.ts";
 
 /** Versioning modes, read from the manifest rather than hardcoded. */
-export const MODES = ["semver", "zerover", "pridever", "calver", "manual"] as const;
+const MODES = ["semver", "zerover", "pridever", "calver", "manual"] as const;
 
 /** A versioning mode. */
 export type VersioningMode = (typeof MODES)[number];
 
 /** Bump sizes. `proud` is PrideVer's own. */
-export const BUMPS = ["major", "minor", "patch", "proud"] as const;
+const BUMPS = ["major", "minor", "patch", "proud"] as const;
 
 /** A bump size, or `null` when nothing release-worthy landed. */
-export type Bump = (typeof BUMPS)[number] | null;
+type Bump = (typeof BUMPS)[number] | null;
 
 /** Conventional Commit types that mean a user-visible fix: the smallest bump. */
 const PATCH_TYPES: ReadonlySet<string> = new Set(["fix", "perf", "revert"]);
@@ -47,7 +47,7 @@ export class VersioningError extends Error {
 }
 
 /** The `versioning` block as the manifest declares it. */
-export interface VersioningConfig {
+interface VersioningConfig {
 	/** How versions are numbered. */
 	mode: VersioningMode;
 	/** Prefix a release tag carries. */
@@ -127,7 +127,7 @@ export function parseVersion(tag: string): ParsedVersion | null {
 }
 
 /** Rebuilds a version from its scheme letter and numbers, e.g. `3a.2.0`. */
-export function renderVersion(scheme: string, major: number, minor: number, patch: number): string {
+function renderVersion(scheme: string, major: number, minor: number, patch: number): string {
 	return `${major}${scheme}.${minor}.${patch}`;
 }
 
@@ -278,7 +278,7 @@ export function readManualVersion(repoRoot: string): string | null {
 }
 
 /** Lists the repository's tags, or an empty list when git cannot answer. */
-export function gitTags(repoRoot: string): string[] {
+function gitTags(repoRoot: string): string[] {
 	try {
 		return runGit(repoRoot, ["tag", "--list"])
 			.split("\n")

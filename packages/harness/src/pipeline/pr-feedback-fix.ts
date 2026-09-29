@@ -47,7 +47,7 @@ const MAX_SUMMARY = 3000;
 const MAX_GIT_OUTPUT = 1500;
 
 /** What applying owner feedback did. */
-export type PrFeedbackFixOutcome =
+type PrFeedbackFixOutcome =
 	/**
 	 * A revision is on the branch, the agent's answer is posted, and self-review starts again at
 	 * iteration 1.
@@ -78,7 +78,7 @@ export type PrFeedbackFixOutcome =
 	| { kind: "not-applied"; pr: number; reason: "no-changes" | "git-failed"; comment: string };
 
 /** What to apply, and whose feedback it is. */
-export interface PrFeedbackFixRequest {
+interface PrFeedbackFixRequest {
 	/** The pull request the feedback is on. */
 	prNumber: number;
 	/** The approved Plan issue the revision is judged against. */
@@ -97,7 +97,7 @@ export interface PrFeedbackFixRequest {
 }
 
 /** What `run_pr_feedback_fix` needs in addition to what every ported handler is given. */
-export interface PrFeedbackFixContext extends PrBranchContext {
+interface PrFeedbackFixContext extends PrBranchContext {
 	/** The project board, for the entities a failed feedback fix blocks. */
 	board: BoardStatus;
 }

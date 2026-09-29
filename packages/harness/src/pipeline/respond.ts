@@ -15,7 +15,7 @@ import { AGENT_ERROR_PREFIX, isQuotaExhaustionNotice, rewriteFileLinks } from ".
 const AGENT_MARKER = "<!-- darkfactory-agent -->";
 
 /** What responding did. */
-export type RespondOutcome =
+type RespondOutcome =
 	/** A response was posted. */
 	| { kind: "posted"; comment: string; isPr: boolean }
 	/** The agent ran out of quota, so nothing was posted. */
@@ -24,7 +24,7 @@ export type RespondOutcome =
 	| { kind: "failed"; notice: string; comment: string };
 
 /** The feedback to answer. */
-export interface RespondRequest {
+interface RespondRequest {
 	/** The issue or pull request number. */
 	number: number;
 	/** The comment body, as a human wrote it. */

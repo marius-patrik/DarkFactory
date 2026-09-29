@@ -16,7 +16,7 @@
 export const DF_BINARY = "df";
 
 /** One invocation of the agent. */
-export interface DfInvocation {
+interface DfInvocation {
 	/** Absolute path of the file the prompt is written to. */
 	promptFile: string;
 	/** The kind of run, which selects the agent's own workflow. */

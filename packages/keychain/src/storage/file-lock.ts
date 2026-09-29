@@ -4,7 +4,7 @@ import { dirname } from "node:path";
 const localQueues = new Map<string, Promise<unknown>>();
 
 /** Timing and stale-lock behavior for cross-process file locking. */
-export interface FileLockOptions {
+interface FileLockOptions {
 	staleMs?: number;
 	timeoutMs?: number;
 	retryMs?: number;

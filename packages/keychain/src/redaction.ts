@@ -1,7 +1,7 @@
 import type { AccountRecord, CredentialSlot, FileCredentialStore } from "./credentials.ts";
 
 /** Metadata-only description of a credential value found in text. */
-export interface CredentialLeakFinding {
+interface CredentialLeakFinding {
 	/** Account whose credential matched. */
 	accountId: string;
 	/** Credential slot that matched. */

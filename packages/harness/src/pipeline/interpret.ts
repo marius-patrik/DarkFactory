@@ -18,7 +18,7 @@ import { AGENT_ERROR_PREFIX, isQuotaExhaustionNotice, rewriteFileLinks } from ".
 const AGENT_MARKER = "<!-- darkfactory-agent -->";
 
 /** What interpreting a Request did. */
-export type InterpretOutcome =
+type InterpretOutcome =
 	/** An interpretation was posted on the issue. */
 	| { kind: "posted"; comment: string; labels: { type: string; area: string } }
 	/**
@@ -32,7 +32,7 @@ export type InterpretOutcome =
 	| { kind: "failed"; notice: string; comment: string };
 
 /** What to interpret. */
-export interface InterpretRequest {
+interface InterpretRequest {
 	/** The Request issue number. */
 	issueNumber: number;
 	/** The repository slug, `owner/name`. */

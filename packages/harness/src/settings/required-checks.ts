@@ -17,7 +17,7 @@
  */
 
 /** What reconciling one branch's required checks concluded. */
-export type RequiredChecksOutcome =
+type RequiredChecksOutcome =
 	/** The branch carries no protection. Installing must not create it. */
 	| "unprotected"
 	/** The branch is protected but declares no required checks. Nothing to reconcile. */
@@ -28,7 +28,7 @@ export type RequiredChecksOutcome =
 	| "drifted";
 
 /** The conclusion drawn about one branch's required status checks. */
-export interface RequiredChecksAssessment {
+interface RequiredChecksAssessment {
 	outcome: RequiredChecksOutcome;
 	/** Contexts currently required, sorted; empty unless the branch declares some. */
 	current: string[];

@@ -46,7 +46,7 @@ const MAX_FIX_STDOUT = 2000;
 const MAX_FIX_STDERR = 1000;
 
 /** What implementing a plan did. */
-export type ImplementOutcome =
+type ImplementOutcome =
 	/**
 	 * A pull request already existed for the branch, so implementation was skipped and the run
 	 * resumed at self-review. The probe is what makes an interrupted run finish rather than redo.
@@ -72,7 +72,7 @@ export type ImplementOutcome =
 	| { kind: "failed"; notice: string; comment: string };
 
 /** What to implement. */
-export interface ImplementRequest {
+interface ImplementRequest {
 	/** The Plan issue number, which is the Request itself once both gates share one issue. */
 	planNumber: number;
 	/** The parent Request issue number. */

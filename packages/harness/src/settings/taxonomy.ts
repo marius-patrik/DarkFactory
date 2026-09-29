@@ -36,7 +36,7 @@ export interface LabelDefinition {
 }
 
 /** How one canonical status is presented on each of the two surfaces it appears on. */
-export interface StatusPresentation {
+interface StatusPresentation {
 	/** Hex colour for the issue label, without the leading `#`. */
 	labelColour: string;
 	/** Projects v2 single-select option colour. */
@@ -129,7 +129,7 @@ export const TRIAGE_LABELS: readonly LabelDefinition[] = [
 ];
 
 /** One repository secret the pipeline cannot run without, and why. */
-export interface RequiredSecret {
+interface RequiredSecret {
 	name: string;
 	why: string;
 }

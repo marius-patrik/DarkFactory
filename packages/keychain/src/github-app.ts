@@ -5,7 +5,7 @@ export type GitHubFetch = (input: string | URL, init?: RequestInit) => Promise<R
 import { z } from "zod";
 
 /** Machine GitHub App identity and installation metadata. */
-export interface GitHubAppIdentity {
+interface GitHubAppIdentity {
 	appId: string;
 	privateKey: string;
 	owner: string;

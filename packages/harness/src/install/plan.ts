@@ -54,7 +54,7 @@ export function refuseSelfInstall(owner: string, repo: string, pipelineRepo: str
 }
 
 /** How to build an installation. */
-export interface PlanOptions {
+interface PlanOptions {
 	/** Repository owner login. */
 	owner: string;
 	/** Repository name. */

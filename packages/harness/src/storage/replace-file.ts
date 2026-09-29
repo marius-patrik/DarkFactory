@@ -2,8 +2,7 @@ import { rename } from "node:fs/promises";
 
 /** Error codes Windows reports while another process holds the target open (a reader or antivirus scan). */
 const TRANSIENT_CODES = new Set(["EPERM", "EACCES", "EBUSY"]);
-
-export interface ReplaceFileOptions {
+interface ReplaceFileOptions {
 	/** Rename implementation; injectable for tests. */
 	rename?: (from: string, to: string) => Promise<void>;
 	/** Wait before each retry, in milliseconds. The default totals a little over 3 seconds. */

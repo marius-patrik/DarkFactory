@@ -27,7 +27,7 @@ import { resolveConfigDocumentPath } from "../../../protocol/src/config-document
 import type { PipelineEnv } from "./handler-context.ts";
 
 /** One df account record, and the secret it was loaded from. */
-export interface DfAccountState {
+interface DfAccountState {
 	/** The df account id, e.g. `openai-codex:pipeline`. */
 	account: string;
 	/** Environment variable the record was loaded from. */
@@ -282,7 +282,7 @@ export type DfAccountRunner = (
 const DF_BINARY_ABSENT = 127;
 
 /** The {@link DfAccountRunner} over a real process, with no shell and no argument-length limit. */
-export const spawnDfAccount: DfAccountRunner = (argv, env, stdin) => {
+const spawnDfAccount: DfAccountRunner = (argv, env, stdin) => {
 	const result = spawnSync(argv[0] as string, argv.slice(1), {
 		env,
 		input: stdin,
@@ -299,7 +299,7 @@ export const spawnDfAccount: DfAccountRunner = (argv, env, stdin) => {
 };
 
 /** What the account setup needs from the outside world. */
-export interface DfAccountSetupOptions {
+interface DfAccountSetupOptions {
 	/**
 	 * The live process environment: read for the secrets, and written with the run's `DF_HOME` and
 	 * `DF_CONFIG_DIR` so that every `df` process the ladder later spawns inherits them.

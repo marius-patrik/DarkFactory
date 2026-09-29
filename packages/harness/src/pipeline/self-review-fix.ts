@@ -45,7 +45,7 @@ const FIX_TIMEOUT = "10m0s";
 const MAX_GIT_OUTPUT = 1500;
 
 /** What a self-review fix stage did. */
-export type SelfReviewFixOutcome =
+type SelfReviewFixOutcome =
 	/**
 	 * The findings were applied, the summary went out, and the next review was dispatched at
 	 * iteration N+1.
@@ -69,7 +69,7 @@ export type SelfReviewFixOutcome =
 	| { kind: "blocked"; iteration: number; reason: "commit-failed"; comment: string };
 
 /** What to fix. */
-export interface SelfReviewFixRequest {
+interface SelfReviewFixRequest {
 	/** The pull request number. */
 	prNumber: number;
 	/** The child Plan issue number. */
@@ -87,7 +87,7 @@ export interface SelfReviewFixRequest {
 }
 
 /** What `run_self_review_fix` needs in addition to what every ported handler is given. */
-export interface SelfReviewFixContext extends PrBranchContext {
+interface SelfReviewFixContext extends PrBranchContext {
 	/** The project board, for the entities a stopped fix blocks. */
 	board: BoardStatus;
 }

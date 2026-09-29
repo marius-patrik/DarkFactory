@@ -1,7 +1,7 @@
 /** Artifact subject handled by the shared review/fix engine. */
 export type ReviewSubject = "planning" | "implementation";
 /** Normalized severity of a review finding. */
-export type ReviewSeverity = "info" | "warning" | "error";
+type ReviewSeverity = "info" | "warning" | "error";
 
 /** Structured finding emitted by the shared review engine. */
 export interface ReviewFinding {

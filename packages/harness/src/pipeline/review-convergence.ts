@@ -18,13 +18,13 @@ import { createHash } from "node:crypto";
 import { parseReviewFindings } from "./review-findings.ts";
 
 /** Marker naming the stage a dispatch asks for. */
-export const SELF_REVIEW_STAGE = "self-review";
+const SELF_REVIEW_STAGE = "self-review";
 
 /** Marker naming the stage that applies a review's findings. */
-export const SELF_REVIEW_FIX_STAGE = "self-review-fix";
+const SELF_REVIEW_FIX_STAGE = "self-review-fix";
 
 /** Hidden marker every review comment carries, and the only thing the next iteration reads back. */
-export const SELF_REVIEW_MARKER_RE =
+const SELF_REVIEW_MARKER_RE =
 	/<!--\s*darkfactory-self-review\s+iteration=(\d+)\s+findings=(\d+)\s+digest=([a-f0-9]+)\s*-->/u;
 
 /** The digest character set a marker is read with when the fix stage parses it. */
@@ -38,10 +38,10 @@ const LENIENT_MARKER_RE =
  * `blocked` means the pass cannot make progress, and both the pull request and the request are
  * marked Blocked. `fix-dispatched` means a fix run is dispatched at the next iteration.
  */
-export type ReviewDecision = "clean" | "blocked" | "fix-dispatched";
+type ReviewDecision = "clean" | "blocked" | "fix-dispatched";
 
 /** The marker's per-iteration fields, parsed back out of a posted review comment. */
-export interface ReviewMarker {
+interface ReviewMarker {
 	/** The 1-based iteration the comment was posted for. */
 	iteration: number;
 	/** How many findings that iteration reported. */
@@ -51,7 +51,7 @@ export interface ReviewMarker {
 }
 
 /** The inputs the machine decides from. */
-export interface ConvergenceInput {
+interface ConvergenceInput {
 	/** Out-of-scope paths the deterministic scope gate rejected. */
 	outOfScopeFiles: readonly string[];
 	/** The agent's review answer for this iteration. */
@@ -63,7 +63,7 @@ export interface ConvergenceInput {
 }
 
 /** The machine's decision, with everything a caller needs to post about it. */
-export interface ConvergenceOutcome {
+interface ConvergenceOutcome {
 	/** Which of the three cases this is. */
 	decision: ReviewDecision;
 	/** Out-of-scope findings followed by the agent's, in that order. */
@@ -196,7 +196,7 @@ export function decideSelfReview(input: ConvergenceInput): ConvergenceOutcome {
 }
 
 /** The payload a stage dispatch carries. */
-export interface StagePayload {
+interface StagePayload {
 	stage: string;
 	pr: number;
 	plan: number;

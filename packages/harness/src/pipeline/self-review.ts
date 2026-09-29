@@ -69,7 +69,7 @@ export interface SelfReviewContext extends PrBranchContext {
 }
 
 /** Why an iteration stopped without reaching a decision of its own. */
-export type SelfReviewBlockReason =
+type SelfReviewBlockReason =
 	/** The pull request's branch could not be checked out, so nothing could be read. */
 	| "checkout-failed"
 	/** The diff could not be read, so there was nothing to review. */
@@ -86,7 +86,7 @@ export type SelfReviewBlockReason =
 	| "dispatch-failed";
 
 /** What one self-review iteration did. */
-export type SelfReviewOutcome =
+type SelfReviewOutcome =
 	/**
 	 * The pass found nothing, so the findings comment, a clean comment, and the plan-alignment gate
 	 * all ran.
@@ -112,7 +112,7 @@ export type SelfReviewOutcome =
 	| { kind: "blocked"; iteration: number; reason: SelfReviewBlockReason };
 
 /** What to review. */
-export interface SelfReviewRequest {
+interface SelfReviewRequest {
 	/** The pull request number. */
 	prNumber: number;
 	/** The child Plan issue number. */

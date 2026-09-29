@@ -24,8 +24,7 @@ export interface AttributionResult {
 	trailers: string[];
 	footer: string;
 }
-
-export interface CandidateRef {
+interface CandidateRef {
 	provider: string;
 	model: string;
 	account?: string;

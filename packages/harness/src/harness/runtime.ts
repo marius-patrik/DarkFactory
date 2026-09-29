@@ -128,8 +128,7 @@ async function sessionFileForId(sessionDir: string, id: string): Promise<string>
 		throw new Error(matches.length === 0 ? `Session not found: ${id}` : `Ambiguous session id: ${id}`);
 	return join(sessionDir, matches[0]!);
 }
-
-export interface ResponseSnapshot {
+interface ResponseSnapshot {
 	status: number;
 	headers: Record<string, string>;
 }

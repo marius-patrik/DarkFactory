@@ -28,10 +28,10 @@ function labelNames(labels: readonly LabelLike[] | undefined): string[] {
 export const INTAKE_ACTIONS: readonly string[] = ["opened", "labeled"];
 
 /** The label an existing issue must be given to enter the pipeline. */
-export const INTAKE_LABEL = "request";
+const INTAKE_LABEL = "request";
 
 /** Why an event reached no handler. */
-export type IgnoreReason =
+type IgnoreReason =
 	| "unsupported-event"
 	| "not-an-intake-action"
 	| "no-issue-number"
@@ -44,9 +44,7 @@ export type IgnoreReason =
 	| "unknown-stage";
 
 /** A routed event: either a stage to run, or the reason nothing was. */
-export type Route =
-	| { kind: "run"; stage: PipelineStage; iteration?: number }
-	| { kind: "ignore"; reason: IgnoreReason };
+type Route = { kind: "run"; stage: PipelineStage; iteration?: number } | { kind: "ignore"; reason: IgnoreReason };
 
 /** The stages the pipeline dispatches to each other. */
 export type PipelineStage = "self-review" | "self-review-fix" | "pr-feedback-fix" | "resume";
@@ -65,7 +63,7 @@ export interface IssuesPayload {
  * the one trigger that can repair a failure, and the claim is what bounds that to one repair in
  * flight per failing run.
  */
-export type IssuesRoute =
+type IssuesRoute =
 	| { kind: "interpret"; issue: number; ensureRequestLabel: boolean; claim?: string }
 	| { kind: "ignore"; reason: IgnoreReason };
 
@@ -110,7 +108,7 @@ export function routeIssuesEvent(payload: IssuesPayload): IssuesRoute {
 }
 
 /** A comment author's identity as a webhook payload carries it. */
-export interface CommentActor {
+interface CommentActor {
 	login: string;
 	authorAssociation: string;
 	userType: string;
@@ -142,7 +140,7 @@ export interface IssueCommentPayload {
 }
 
 /** Which stage an `issue_comment` event reaches, and with what. */
-export type IssueCommentRoute =
+type IssueCommentRoute =
 	| { kind: "interpret"; issue: number; claim: string }
 	| { kind: "resume"; issue: number; isPr: boolean }
 	| {
@@ -275,7 +273,7 @@ export interface ReviewCommentPayload {
 }
 
 /** Which stage a pull-request review comment reaches. */
-export type ReviewCommentRoute =
+type ReviewCommentRoute =
 	| { kind: "resume"; pr: number }
 	| { kind: "rerun"; stage: "pr-feedback-fix"; pr: number; feedback: string; plan: number; request?: number }
 	| { kind: "respond"; pr: number; body: string }

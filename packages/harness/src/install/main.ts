@@ -23,7 +23,7 @@ function splitRepository(value: string): { owner: string; repo: string } {
 }
 
 /** Everything the entry point reads, so a test can supply it without a process environment. */
-export interface InstallEnvironment {
+interface InstallEnvironment {
 	/** `ProcessEnv` is assignable to this, which a weak all-optional interface would not allow. */
 	[key: string]: string | undefined;
 	TARGET_ROOT?: string;
@@ -44,7 +44,7 @@ export interface InstallEnvironment {
  * @param env The workflow's environment, or a stand-in for it.
  * @returns Repository-relative paths actually written, in the order they were written.
  */
-export async function runInstall(env: InstallEnvironment): Promise<string[]> {
+async function runInstall(env: InstallEnvironment): Promise<string[]> {
 	const root = env.TARGET_ROOT ?? ".";
 	const { owner, repo } = splitRepository(env.TARGET_REPOSITORY ?? "/");
 	const ref = env.PIPELINE_REF ?? "";

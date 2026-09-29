@@ -122,7 +122,7 @@ export function extractTestResultLine(stdout = "", stderr = ""): string {
 }
 
 /** Everything a pull request body is assembled from. */
-export interface PrBodyInput {
+interface PrBodyInput {
 	planTitle: string;
 	planText: string;
 	requestNumber: number;

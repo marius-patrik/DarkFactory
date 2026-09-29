@@ -9,7 +9,7 @@
  */
 
 /** Tuning for {@link calculateBackoff}. */
-export interface BackoffOptions {
+interface BackoffOptions {
 	/** Initial delay in seconds. */
 	baseDelay?: number;
 	/** Multiplier for the exponential growth. */

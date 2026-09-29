@@ -228,7 +228,7 @@ export function isTestFile(filePath: string): boolean {
 }
 
 /** How a change sorted against the approved plan. */
-export interface ScopeSplit {
+interface ScopeSplit {
 	/** Changed files the plan covers, or that are tests. */
 	inScope: string[];
 	/** Changed files the plan neither covers nor excuses. */

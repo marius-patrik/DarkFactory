@@ -22,7 +22,7 @@ import {
 } from "./versioning.ts";
 
 /** Conventional Commit type -> the heading it appears under in the release notes, in order. */
-export const NOTE_SECTIONS: readonly (readonly [string, string])[] = [
+const NOTE_SECTIONS: readonly (readonly [string, string])[] = [
 	["feat", "Features"],
 	["fix", "Fixes"],
 	["perf", "Performance"],
@@ -40,19 +40,18 @@ const COMMIT_HEADER = /^(?<type>[a-z]+)(?:\((?<scope>[^)]*)\))?(?<bang>!)?:\s*(?
 const BREAKING_TRAILER = /^BREAKING[ -]CHANGE:/mu;
 
 /** The identity automation-authored commits carry, so a record commit is attributable. */
-export const BOT_NAME = "github-actions[bot]";
-export const BOT_EMAIL = "41898282+github-actions[bot]@users.noreply.github.com";
-
-export class ReleaseError extends Error {}
+const BOT_NAME = "github-actions[bot]";
+const BOT_EMAIL = "41898282+github-actions[bot]@users.noreply.github.com";
+class ReleaseError extends Error {}
 
 /** One bespoke asset the manifest declares, beyond whatever the ecosystems produce. */
-export interface DeclaredAsset {
+interface DeclaredAsset {
 	path: string;
 	command?: string;
 }
 
 /** One build step and the artifacts it is expected to leave. */
-export interface ReleaseAssetStep {
+interface ReleaseAssetStep {
 	command: string | null;
 	cwd: string;
 	globs: string[];
@@ -60,7 +59,7 @@ export interface ReleaseAssetStep {
 }
 
 /** The whole answer: what is released, what goes in it, and whether the repository agrees. */
-export interface ResolvedRelease {
+interface ResolvedRelease {
 	/** The version being released, or `null` when no release is warranted. */
 	version: string | null;
 	tag: string | null;

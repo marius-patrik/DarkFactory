@@ -115,7 +115,7 @@ export interface CommandResult {
  * invocation is moved past, while a harness that ran and failed is classified. Collapsing the two
  * would either retry a missing binary or give up on a real failure.
  */
-export class HarnessBinaryMissing extends Error {
+class HarnessBinaryMissing extends Error {
 	/** The binary that could not be started. */
 	readonly binary: string;
 
@@ -179,7 +179,7 @@ export const spawnProcess: ProcessRunner = (argv, env) =>
 	});
 
 /** What the ladder needs from the outside world, beyond the environment it is given. */
-export interface AgentPromptRunnerOptions {
+interface AgentPromptRunnerOptions {
 	/** The GitHub port, for the exhaustion notice and the `Blocked` label. */
 	io: PipelineIo;
 	/** The working copy, for the checkpoint commit and push. */

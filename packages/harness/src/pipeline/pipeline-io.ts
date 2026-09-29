@@ -83,7 +83,7 @@ export interface PrView {
 }
 
 /** A label to add to, or remove from, an issue or pull request. */
-export interface LabelChange {
+interface LabelChange {
 	/** The labels, in the order the Python passed them to one `--add-label`/`--remove-label`. */
 	labels: readonly string[];
 }

@@ -5,7 +5,7 @@ import { jwtClaims } from "./parseJwt.ts";
 import type { HomeReader } from "./reader.ts";
 import { record, stringField } from "./record.ts";
 
-export interface ImportedGrokEntry {
+interface ImportedGrokEntry {
 	sourceEntry: string;
 	issuer: string;
 	accessToken: string;
@@ -16,7 +16,7 @@ export interface ImportedGrokEntry {
 }
 
 /** Parse one `<issuer>::<client id>` entry (dsh-stack `grok-auth-json.ts:27-61`). */
-export function parseGrokEntry(key: string, value: unknown): ImportedGrokEntry | null {
+function parseGrokEntry(key: string, value: unknown): ImportedGrokEntry | null {
 	const entry = record(value);
 	const accessToken = entry ? stringField(entry, "key") : null;
 	if (!entry || !accessToken) return null;
@@ -36,12 +36,10 @@ export function parseGrokEntry(key: string, value: unknown): ImportedGrokEntry |
 		scopes: typeof accessClaims?.scope === "string" ? String(accessClaims.scope).split(/\s+/) : [],
 	};
 }
-
-export interface GrokFindOptions {
+interface GrokFindOptions {
 	homeReader: HomeReader;
 }
-
-export async function findGrokEntries(options: GrokFindOptions): Promise<ImportedGrokEntry[]> {
+async function findGrokEntries(options: GrokFindOptions): Promise<ImportedGrokEntry[]> {
 	const file = await options.homeReader.read(".grok/auth.json");
 	const document = parseJson(file ?? null, "~/.grok/auth.json");
 	if (!document) return [];

@@ -5,7 +5,7 @@ import { isValidVaultKey } from "./vault-crypto.ts";
 const ALGORITHM = "aes-256-gcm";
 
 /** Encrypted authenticated credential-account transfer envelope. */
-export interface EncryptedCredentialExport {
+interface EncryptedCredentialExport {
 	version: 1;
 	algorithm: typeof ALGORITHM;
 	iv: string;

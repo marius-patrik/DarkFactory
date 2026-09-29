@@ -99,7 +99,7 @@ const PRINT_TIMEOUT_PATTERNS: readonly RegExp[] = [
  * trying, and they are kept as one verdict because the ladder's response is identical and splitting
  * them is how the two paths came to drift.
  */
-export type AttemptVerdict = "answer" | "rotate" | "no-output" | "error";
+type AttemptVerdict = "answer" | "rotate" | "no-output" | "error";
 
 /**
  * Report whether text indicates quota or rate-limit exhaustion.

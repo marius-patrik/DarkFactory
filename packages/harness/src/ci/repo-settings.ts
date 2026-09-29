@@ -41,8 +41,7 @@ import { type ApplyProtectionResult, applyBranchProtection } from "./protection.
 
 /** The four flags `repo_settings.py` declares. All are `store_true`; none take a value. */
 export const REPO_SETTINGS_FLAGS = ["--apply", "--plan", "--skip-protection", "--branches-only"] as const;
-
-export interface RepoSettingsArgs {
+interface RepoSettingsArgs {
 	/** Execute the changes. Without it, print them and change nothing. */
 	apply: boolean;
 	/** Reconcile only the default branch and branch protection. */
@@ -58,10 +57,10 @@ export interface RepoSettingsArgs {
 }
 
 /** A flag this command understands, whether or not it acts on it. */
-export type RepoSettingsFlag = (typeof REPO_SETTINGS_FLAGS)[number];
+type RepoSettingsFlag = (typeof REPO_SETTINGS_FLAGS)[number];
 
 /** The outcome of one run, and the exit code the Python produced for it. */
-export interface RepoSettingsOutcome {
+interface RepoSettingsOutcome {
 	exitCode: number;
 	/** The default branch the manifest declares, which is what the repository is reconciled to. */
 	defaultBranch: string;
@@ -96,7 +95,7 @@ export function parseRepoSettingsArgs(argv: readonly string[]): RepoSettingsArgs
 }
 
 /** The environment the run reads, injectable so a test need not mutate `process.env`. */
-export type RepoSettingsEnv = Readonly<Record<string, string | undefined>>;
+type RepoSettingsEnv = Readonly<Record<string, string | undefined>>;
 
 /** The slug the run targets, the way the Python resolved it. */
 function targetSlug(env: RepoSettingsEnv): string {
@@ -153,7 +152,7 @@ export interface ProjectRef {
  * docstring recorded what happens without it — one timeout during a reconcile created a second board
  * with the same title, which then appeared twice in two repositories' Projects tabs.
  */
-export type ProjectListing =
+type ProjectListing =
 	| { readonly read: true; readonly byTitle: ReadonlyMap<string, ProjectRef> }
 	| { readonly read: false; readonly reason: string };
 
@@ -517,11 +516,7 @@ export async function runRepoSettings(
  * @param env The environment the token fallback chain is read from.
  * @param run The run whose budget and failure list the client reports against.
  */
-export function createBoardPort(
-	env: RepoSettingsEnv,
-	run: BoardRun,
-	statusNames?: readonly string[],
-): RepoSettingsBoardPort {
+function createBoardPort(env: RepoSettingsEnv, run: BoardRun, statusNames?: readonly string[]): RepoSettingsBoardPort {
 	const client = new BoardGraphqlClient({ run, env, statusNames });
 	return {
 		async readProjects(owner: string): Promise<ProjectListing> {

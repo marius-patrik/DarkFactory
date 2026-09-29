@@ -7,7 +7,7 @@ import { GitError, runGit } from "./git.ts";
 /**
  * Structured Git Conflict State.
  */
-export interface GitConflictState {
+interface GitConflictState {
 	/** The current conflict-bearing operation. */
 	operation: "rebase" | "merge" | "cherry-pick" | "none";
 	/** The base ref or SHA of the operation. */
@@ -26,7 +26,7 @@ export interface GitConflictState {
 /**
  * Structured Git Status.
  */
-export interface GitStatusResult {
+interface GitStatusResult {
 	/** Current branch name. */
 	branch: string;
 	/** Whether there are uncommitted changes. */
@@ -136,7 +136,7 @@ export function isWorktreeDirty(worktree: string): boolean {
  * @param worktree - Path to the git worktree.
  * @throws {Error} If the worktree is dirty.
  */
-export function assertCleanWorktree(worktree: string): void {
+function assertCleanWorktree(worktree: string): void {
 	if (isWorktreeDirty(worktree)) {
 		throw new Error(`Operation refused: worktree at ${worktree} has uncommitted dirty changes.`);
 	}

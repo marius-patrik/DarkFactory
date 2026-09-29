@@ -54,8 +54,7 @@ function untilIso(until: number | undefined, state: string): string {
 	if (until === undefined) throw new Error(`Quota status ${state} is missing its until timestamp`);
 	return new Date(until).toISOString();
 }
-
-export interface RouteDependencies {
+interface RouteDependencies {
 	quota?: QuotaEngine;
 	config: RouterConfig;
 	models: readonly ModelCapability[];

@@ -34,8 +34,7 @@ import type { BoardTarget } from "./client.ts";
 
 /** The flags the Python accepted: none. */
 export const PR_APPROVAL_FLAGS: readonly string[] = [];
-
-export interface PrApprovalMainDeps {
+interface PrApprovalMainDeps {
 	env?: PrApprovalEnvironment;
 	logger?: PrApprovalLogger;
 	/** Injected so a test can exercise the entry without a board, a token or a network. */

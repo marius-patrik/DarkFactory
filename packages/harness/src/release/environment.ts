@@ -112,7 +112,7 @@ const ARTIFACT_GLOBS: Readonly<Record<string, readonly string[]>> = {
 };
 
 /** One buildable unit inside a repository. */
-export interface ReleasePackage {
+interface ReleasePackage {
 	/** Directory holding the package, relative to the repository root (`"."` for the root). */
 	path: string;
 	/** One of the values in the manifest table above. */
@@ -130,7 +130,7 @@ export interface ReleasePackage {
 }
 
 /** How one ecosystem's release artifacts are produced. */
-export interface ReleaseBuildPlanEntry {
+interface ReleaseBuildPlanEntry {
 	/** The build command, or `null` when neither detection nor declaration names one. */
 	command: string | null;
 	/** The package manager the command was chosen for. */
@@ -390,7 +390,7 @@ function declaredEnvironment(root: string): DeclaredEnvironment {
 }
 
 /** Everything a release needs to know about a repository's shape. */
-export interface ReleaseEnvironment {
+interface ReleaseEnvironment {
 	readonly root: string;
 	readonly packages: readonly ReleasePackage[];
 	readonly ecosystems: readonly string[];

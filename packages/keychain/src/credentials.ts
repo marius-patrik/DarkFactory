@@ -77,7 +77,7 @@ export type CredentialSlot =
 	| { type: "other"; value: string };
 
 /** Credential slot types that can be written directly. */
-export type WritableSlotType = Exclude<CredentialSlot["type"], "oauth">;
+type WritableSlotType = Exclude<CredentialSlot["type"], "oauth">;
 
 /** Typed non-secret OAuth/account metadata retained alongside credential slots. */
 export interface AccountAuthMetadata {
@@ -107,7 +107,7 @@ interface CredentialFile {
 }
 
 /** Redacted account metadata safe for diagnostics/UI surfaces. */
-export interface AccountSummary {
+interface AccountSummary {
 	id: string;
 	provider: string;
 	label: string;
@@ -120,7 +120,7 @@ export interface AccountSummary {
 export type CredentialFallback = (provider: string, label: string) => Promise<Credential | undefined>;
 
 /** Refresh policy for credentials whose authoritative owner is an external CLI. */
-export type BorrowedRefreshMode = "reimport-only" | "never";
+type BorrowedRefreshMode = "reimport-only" | "never";
 
 /** Current credential material read from an authoritative borrowed source. */
 export interface BorrowedCredentialPlan {
@@ -151,7 +151,7 @@ function isNonEmptyString(value: unknown): value is string {
 }
 
 /** Checks whether an unknown value is a valid credential slot. */
-export function isSlot(value: unknown): value is CredentialSlot {
+function isSlot(value: unknown): value is CredentialSlot {
 	if (!value || typeof value !== "object") return false;
 	const slot = value as Record<string, unknown>;
 	if (slot.type === "oauth")
@@ -168,7 +168,7 @@ export function isSlot(value: unknown): value is CredentialSlot {
 }
 
 /** Checks whether an unknown value is valid credential metadata. */
-export function isMetadata(value: unknown): value is Record<string, string> | undefined {
+function isMetadata(value: unknown): value is Record<string, string> | undefined {
 	return (
 		value === undefined ||
 		(typeof value === "object" && value !== null && Object.values(value).every((entry) => typeof entry === "string"))
@@ -176,7 +176,7 @@ export function isMetadata(value: unknown): value is Record<string, string> | un
 }
 
 /** Checks whether an unknown value is valid non-secret account auth metadata. */
-export function isAccountAuthMetadata(value: unknown): value is AccountAuthMetadata | undefined {
+function isAccountAuthMetadata(value: unknown): value is AccountAuthMetadata | undefined {
 	if (value === undefined) return true;
 	if (!value || typeof value !== "object" || Array.isArray(value)) return false;
 	const auth = value as Record<string, unknown>;
@@ -203,7 +203,7 @@ export function isAccountAuthMetadata(value: unknown): value is AccountAuthMetad
 }
 
 /** Checks whether an unknown value is a credential account record. */
-export function isAccount(value: unknown, id: string): value is AccountRecord {
+function isAccount(value: unknown, id: string): value is AccountRecord {
 	if (!value || typeof value !== "object") return false;
 	const account = value as Record<string, unknown>;
 	return (
@@ -526,7 +526,7 @@ export class FileCredentialStore {
 }
 
 /** pi's one-provider CredentialStore view of exactly one df account. */
-export class AccountCredentialStore implements CredentialStore {
+class AccountCredentialStore implements CredentialStore {
 	constructor(
 		private readonly store: FileCredentialStore,
 		readonly id: string,

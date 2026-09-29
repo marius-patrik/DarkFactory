@@ -15,7 +15,7 @@ import {
 import type { AgentNode, AutomationNode, GraphEvent, GraphNode, PlanAction, RunState, WorkflowGraph } from "./types.ts";
 
 /** Outcome of one node run, as the planner's `node_outcome` edges expect. */
-export type NodeOutcome = "success" | "failure" | "quota_exhausted";
+type NodeOutcome = "success" | "failure" | "quota_exhausted";
 
 /** What a node handler reports back to the executor. */
 export interface NodeResult {
@@ -52,7 +52,7 @@ export interface NodeHandlers {
 }
 
 /** Options for {@link runGraph}. */
-export interface RunGraphOptions {
+interface RunGraphOptions {
 	/**
 	 * Receives gate, hint and comment actions (post the comment, move the board card). The run then stops and waits
 	 * for the next external event; a gate is never passed without one.

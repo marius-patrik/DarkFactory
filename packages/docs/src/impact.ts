@@ -1,10 +1,10 @@
 import type { RepositoryEvidence } from "../../core/src/repository-evidence.ts";
 
 /** High-level kinds of change that can require canonical documentation updates. */
-export type DocumentationImpactKind = "public-api" | "product" | "governance";
+type DocumentationImpactKind = "public-api" | "product" | "governance";
 
 /** Deterministic documentation-impact classification for one computed change set. */
-export interface DocumentationImpactClassification {
+interface DocumentationImpactClassification {
 	changedFiles: readonly string[];
 	documentationFiles: readonly string[];
 	impactKinds: readonly DocumentationImpactKind[];
@@ -13,20 +13,20 @@ export interface DocumentationImpactClassification {
 }
 
 /** Parsed form of an explicit `Docs: none (<reason>)` PR annotation. */
-export interface DocsNoneAnnotation {
+interface DocsNoneAnnotation {
 	present: boolean;
 	valid: boolean;
 	reason?: string;
 }
 
 /** One deterministic docs-impact policy violation. */
-export interface DocumentationImpactFinding {
+interface DocumentationImpactFinding {
 	code: "docs-required" | "docs-none-missing" | "docs-none-invalid" | "docs-none-not-permitted";
 	message: string;
 }
 
 /** Complete deterministic result of evaluating documentation impact for one proposed change. */
-export interface DocumentationImpactEvaluation {
+interface DocumentationImpactEvaluation {
 	classification: DocumentationImpactClassification;
 	docsNone: DocsNoneAnnotation;
 	findings: readonly DocumentationImpactFinding[];

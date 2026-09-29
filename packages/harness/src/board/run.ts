@@ -18,7 +18,7 @@ const RATE_LIMIT_INDICATORS = [
 ];
 
 /** Why a run stops writing, and what it records. */
-export interface BoardRunOptions {
+interface BoardRunOptions {
 	/** The environment the thresholds are read from. */
 	readonly env?: Readonly<Record<string, string | undefined>>;
 	/** Live GraphQL points below which every mutation pauses. */

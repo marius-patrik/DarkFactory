@@ -53,7 +53,7 @@ export function extractBoundIssues(body: string | null | undefined): number[] {
 }
 
 /** A repository slug and issue number read out of a board item's content. */
-export interface ContentTarget {
+interface ContentTarget {
 	readonly repo: string | null;
 	readonly number: number | null;
 }

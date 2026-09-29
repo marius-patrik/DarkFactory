@@ -129,7 +129,7 @@ export interface PipelineContext {
 }
 
 /** The pieces of a context a caller supplies, with the rest defaulted to the Python's behaviour. */
-export interface PipelineContextOptions {
+interface PipelineContextOptions {
 	/** The GitHub I/O the handler performs through. */
 	io: PipelineIo;
 	/** Runs one agent prompt. */

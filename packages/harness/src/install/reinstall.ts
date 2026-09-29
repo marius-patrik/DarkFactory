@@ -228,7 +228,7 @@ export async function reconcileManifest(root: string, ref: string, planned: stri
 }
 
 /** The path the combined configuration was reconciled at, relative to the repository root. */
-export function reconciledManifestPath(root: string): string {
+function reconciledManifestPath(root: string): string {
 	return relative(root, resolveManifestPath(root));
 }
 

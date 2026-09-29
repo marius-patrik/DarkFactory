@@ -81,7 +81,7 @@ export type RunnerCommand = (typeof RUNNER_COMMANDS)[number];
  * The positional is optional and defaults to `dispatch`, because that is the invocation the event
  * workflows make: they name no command and hand over `GITHUB_EVENT_PATH` instead.
  */
-export const DEFAULT_RUNNER_COMMAND: RunnerCommand = "dispatch";
+const DEFAULT_RUNNER_COMMAND: RunnerCommand = "dispatch";
 
 /**
  * The parsed command surface.
@@ -116,7 +116,7 @@ export interface RunnerArgs {
 }
 
 /** An invocation the argument surface rejected, which exits 2 as `argparse` did. */
-export class RunnerArgsError extends Error {
+class RunnerArgsError extends Error {
 	constructor(message: string) {
 		super(message);
 		this.name = "RunnerArgsError";
@@ -168,7 +168,7 @@ async function manifestSlug(workspaceDir: string, env: PipelineEnv): Promise<str
 }
 
 /** What the argument surface reads its defaults from. */
-export interface ParseRunnerArgsOptions {
+interface ParseRunnerArgsOptions {
 	/** The environment `--repo` defaults to; defaults to the live process environment. */
 	env?: PipelineEnv;
 	/** The workspace the manifest is read from, for a repository `GITHUB_REPOSITORY` does not name. */
@@ -292,7 +292,7 @@ export async function parseRunnerArgs(
 }
 
 /** Where a run narrates and complains, as the Python's two `print`s did. */
-export interface RunnerReporting {
+interface RunnerReporting {
 	/** Writes a progress line, as the Python's `print` did. */
 	say: (message: string) => void;
 	/** Writes a warning or an error, as the Python's `print(..., file=sys.stderr)` did. */
@@ -340,7 +340,7 @@ export interface RunnerPorts {
 }
 
 /** What {@link buildRunnerPorts} is given beyond the parsed surface. */
-export interface BuildRunnerPortsOptions extends RunnerReporting {
+interface BuildRunnerPortsOptions extends RunnerReporting {
 	/** The live environment; the account setup writes `DF_HOME` and `DF_CONFIG_DIR` into it. */
 	env: Record<string, string | undefined>;
 	/** The parsed command surface. */
@@ -363,7 +363,7 @@ export interface BuildRunnerPortsOptions extends RunnerReporting {
  * @param options - The parsed surface, the live environment, and where the run reports.
  * @returns The ports.
  */
-export async function buildRunnerPorts(options: BuildRunnerPortsOptions): Promise<RunnerPorts> {
+async function buildRunnerPorts(options: BuildRunnerPortsOptions): Promise<RunnerPorts> {
 	const { env, args, say, warn } = options;
 	const environment = pipelineEnvironment(env);
 	const manifest = await loadRepositoryManifest(environment.workspaceDir, env);
@@ -479,7 +479,7 @@ function readEvent(eventPath: string): unknown {
 }
 
 /** What a command did, as far as the entry point reports it. */
-export type RunnerOutcome =
+type RunnerOutcome =
 	/** A command's body ran. */
 	| { kind: "ran"; command: RunnerCommand }
 	/**
@@ -604,7 +604,7 @@ const RUN_FAILED = 1;
 const ARGS_REJECTED = 2;
 
 /** What {@link runnerMain} is given beyond the argument vector. */
-export interface RunnerMainOptions {
+interface RunnerMainOptions {
 	/** The environment; defaults to the live process environment. */
 	env?: Record<string, string | undefined>;
 	/**

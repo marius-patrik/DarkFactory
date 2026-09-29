@@ -19,12 +19,12 @@ export function fetchOrigin(worktree: string): void {
 }
 
 /** Returns the status porcelain output. */
-export function getStatus(worktree: string): string {
+function getStatus(worktree: string): string {
 	return runGit(worktree, ["status", "--porcelain=v1"]);
 }
 
 /** Lists branch names. */
-export function listBranches(worktree: string): string[] {
+function listBranches(worktree: string): string[] {
 	return runGit(worktree, ["branch", "--format=%(refname:short)"]).split("\n").filter(Boolean);
 }
 

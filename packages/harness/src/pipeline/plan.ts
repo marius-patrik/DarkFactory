@@ -17,7 +17,7 @@ import { AGENT_ERROR_PREFIX, isQuotaExhaustionNotice, rewriteFileLinks } from ".
 const AGENT_MARKER = "<!-- darkfactory-agent -->";
 
 /** What planning did. */
-export type PlanOutcome =
+type PlanOutcome =
 	/** A plan was posted on the plan issue. */
 	| { kind: "posted"; comment: string }
 	/**
@@ -31,7 +31,7 @@ export type PlanOutcome =
 	| { kind: "failed"; notice: string; comment: string };
 
 /** What to plan. */
-export interface PlanRequest {
+interface PlanRequest {
 	/** The parent Request issue number. */
 	requestNumber: number;
 	/**

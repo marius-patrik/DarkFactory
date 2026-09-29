@@ -4,7 +4,7 @@ import { slugify } from "../../../keychain/src/import/slugify.ts";
 import { GitError, runGit } from "./git.ts";
 
 /** Options for {@link createWorktree}. */
-export interface CreateWorktreeOptions {
+interface CreateWorktreeOptions {
 	/** Local clone whose `origin` holds the base (and possibly the branch). */
 	repo: string;
 	/** Branch to check out in the worktree. */

@@ -5,9 +5,8 @@ import { parseJson } from "./parseJson.ts";
 import type { HomeReader } from "./reader.ts";
 import { record, stringField } from "./record.ts";
 
-export const ANTHROPIC_TOKEN_ENDPOINT = "https://console.anthropic.com/v1/oauth/token";
-
-export interface ImportedClaudeLogin {
+const ANTHROPIC_TOKEN_ENDPOINT = "https://console.anthropic.com/v1/oauth/token";
+interface ImportedClaudeLogin {
 	accessToken: string;
 	refreshToken?: string;
 	refreshTokenExpiresAt?: number;
@@ -16,8 +15,7 @@ export interface ImportedClaudeLogin {
 	expiresAt?: number;
 	organizationUuid?: string;
 }
-
-export type ClaudeLoginWithSource = ImportedClaudeLogin & { source: string };
+type ClaudeLoginWithSource = ImportedClaudeLogin & { source: string };
 
 function claudeOauthEntry(document: Record<string, unknown>): ImportedClaudeLogin | null {
 	const oauth = record(document.claudeAiOauth);
@@ -42,8 +40,7 @@ function claudeOauthEntry(document: Record<string, unknown>): ImportedClaudeLogi
 			: {}),
 	};
 }
-
-export interface ClaudeFindOptions {
+interface ClaudeFindOptions {
 	home: string;
 	homeReader: HomeReader;
 	keyring: ClaudeKeyring;
@@ -56,7 +53,7 @@ export interface ClaudeFindOptions {
  * macOS; the keychain carries one item per profile and every suffixed item is
  * walked because they are previous logins the owner may still want.
  */
-export async function findClaudeLogins(options: ClaudeFindOptions): Promise<ClaudeLoginWithSource[]> {
+async function findClaudeLogins(options: ClaudeFindOptions): Promise<ClaudeLoginWithSource[]> {
 	const logins: ClaudeLoginWithSource[] = [];
 	const file = await options.homeReader.read(".claude/.credentials.json");
 	const document = parseJson(file ?? null, "~/.claude/.credentials.json");

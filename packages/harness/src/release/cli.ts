@@ -24,7 +24,7 @@ import {
 } from "./release.ts";
 
 /** What the caller asked for on the command line. */
-export interface ReleaseCliOptions {
+interface ReleaseCliOptions {
 	repoRoot: string;
 	bump: string | null;
 	syncMetadata: boolean;
@@ -34,7 +34,7 @@ export interface ReleaseCliOptions {
 }
 
 /** Reads the flags the release workflow passes, in the Python wrapper's own spelling. */
-export function parseArgs(argv: readonly string[], env: NodeJS.ProcessEnv = process.env): ReleaseCliOptions {
+function parseArgs(argv: readonly string[], env: NodeJS.ProcessEnv = process.env): ReleaseCliOptions {
 	const value = (name: string): string | undefined => {
 		const index = argv.indexOf(name);
 		return index >= 0 ? argv[index + 1] : undefined;
@@ -78,7 +78,7 @@ function recordToWire(result: RecordVersionResult): Record<string, unknown> {
 }
 
 /** Runs one invocation and returns the JSON the workflow consumes. */
-export function run(options: ReleaseCliOptions, ghCommand?: GhCommand): Record<string, unknown> {
+function run(options: ReleaseCliOptions, ghCommand?: GhCommand): Record<string, unknown> {
 	if (options.recordVersion) {
 		return recordToWire(recordVersion(options.repoRoot, options.recordVersion, options.releasedTag, ghCommand));
 	}

@@ -2,7 +2,7 @@ import type { FC, ReactNode } from "react";
 import { type BaseLocationHook, Link, Switch, useLocation, Route as WouterRoute, Router as WouterRouter } from "wouter";
 import { type QuotaDashboardState, QuotaDashboardView } from "./quota";
 
-export interface RouterProps {
+interface RouterProps {
 	basename?: string;
 	/**
 	 * Location source, forwarded to wouter. Wouter defaults to the browser location, which does not
@@ -30,8 +30,7 @@ export const useRouter = () => {
 		navigate: (to: string) => setLocation(to),
 	};
 };
-
-export interface RouteProps {
+interface RouteProps {
 	path?: string;
 	component?: FC<{ params: Record<string, string | undefined> }>;
 	children?: ReactNode;
@@ -95,8 +94,7 @@ const RouteAnnouncer: FC = () => {
 		</div>
 	);
 };
-
-export interface DarkFactoryShellProps {
+interface DarkFactoryShellProps {
 	basename?: string;
 	routes?: RouteConfig[];
 	/** Browser-safe quota data state. Defaults to disconnected for public/static builds. */

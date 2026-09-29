@@ -18,7 +18,7 @@ export const BOUND_ISSUE_PATTERN = String.raw`\b(?:advance|advances|advanced|clo
 const PULL_REQUEST_EVENT = "pull_request";
 
 /** What one run of the gate concluded. */
-export interface BoundIssueResult {
+interface BoundIssueResult {
 	/** Whether the event carries a description at all. A false here is a clean no-op. */
 	applicable: boolean;
 	/** Every binding found, in the order the body states them. */

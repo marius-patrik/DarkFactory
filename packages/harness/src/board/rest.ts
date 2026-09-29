@@ -29,7 +29,7 @@ export interface RestIssue extends Record<string, unknown> {
 }
 
 /** How a REST client authenticates and reaches the API. */
-export interface BoardRestOptions {
+interface BoardRestOptions {
 	/** Explicit token. Defaults to the App token, then the project token, then `GITHUB_TOKEN`. */
 	readonly token?: string | undefined;
 	/** The environment the token fallback chain is read from. */

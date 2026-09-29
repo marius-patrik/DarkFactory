@@ -16,7 +16,7 @@ export interface LoginHydrationConfig {
 }
 
 /** Minimal auth-bearing provider shape needed by machine login custody. */
-export interface LoginProviderConfig {
+interface LoginProviderConfig {
 	id: string;
 	baseUrl: string;
 	auth: Array<{ kind: string }>;
@@ -24,7 +24,7 @@ export interface LoginProviderConfig {
 }
 
 /** Inputs and injected dependencies for one provider login. */
-export interface LoginOptions {
+interface LoginOptions {
 	prompt(prompt: AuthPrompt): Promise<string>;
 	notify(event: AuthEvent): void;
 	signal?: AbortSignal;

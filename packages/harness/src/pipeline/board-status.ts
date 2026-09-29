@@ -15,7 +15,7 @@ import type { PipelineIo } from "./pipeline-io.ts";
 import { errorMessage } from "./pipeline-io.ts";
 
 /** The label that marks an item the pipeline has stopped on. */
-export const BLOCKED_LABEL = "Blocked";
+const BLOCKED_LABEL = "Blocked";
 
 /** The status an unblocked item returns to. Alignment is not completion, so this is not `Done`. */
 export const IN_PROGRESS_STATUS = "In Progress";

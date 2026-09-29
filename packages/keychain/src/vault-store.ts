@@ -58,8 +58,7 @@ async function readJsonFile<T>(path: string): Promise<T | undefined> {
 		throw error;
 	}
 }
-
-export async function loadEncryptedEnvelope(dataRepoPath: string): Promise<EncryptedVaultEnvelope | undefined> {
+async function loadEncryptedEnvelope(dataRepoPath: string): Promise<EncryptedVaultEnvelope | undefined> {
 	return readJsonFile<EncryptedVaultEnvelope>(vaultEncPath(dataRepoPath));
 }
 
@@ -75,8 +74,7 @@ export async function saveVault(dataRepoPath: string, vault: Vault, keyBase64: s
 	await atomicWrite(vaultEncPath(dataRepoPath), `${JSON.stringify(envelope, null, 2)}\n`);
 	await atomicWrite(vaultMetaPath(dataRepoPath), `${JSON.stringify(meta, null, 2)}\n`);
 }
-
-export async function loadVaultMeta(dataRepoPath: string): Promise<VaultMeta | undefined> {
+async function loadVaultMeta(dataRepoPath: string): Promise<VaultMeta | undefined> {
 	return readJsonFile<VaultMeta>(vaultMetaPath(dataRepoPath));
 }
 
@@ -91,8 +89,7 @@ export async function savePushMap(dataRepoPath: string, pushMap: PushMap): Promi
 function stamp(): { by: string; at: string } {
 	return { by: hostname(), at: new Date().toISOString() };
 }
-
-export function withVaultLock<T>(dfHome: string, fn: () => Promise<T>): Promise<T> {
+function withVaultLock<T>(dfHome: string, fn: () => Promise<T>): Promise<T> {
 	return withFileLock(lockPath(dfHome), fn);
 }
 

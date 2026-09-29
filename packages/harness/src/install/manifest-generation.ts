@@ -21,7 +21,7 @@ export const DEFAULT_PIPELINE_REPO = "marius-patrik/DarkFactory";
  * The `$comment` and `$default` keys are documentation and routing rather than areas, and every
  * reader here strips a leading `$` before treating a key as one.
  */
-export const STARTER_AREAS: Readonly<Record<string, unknown>> = Object.freeze({
+const STARTER_AREAS: Readonly<Record<string, unknown>> = Object.freeze({
 	$comment:
 		"Replace these with this repository's own domains; they drive labels, commit scopes and agent routing, so they are worth getting right.",
 	$default: "ci",
@@ -36,7 +36,7 @@ export const STARTER_AREAS: Readonly<Record<string, unknown>> = Object.freeze({
 });
 
 /** How to scaffold one repository's combined configuration. */
-export interface RenderManifestOptions {
+interface RenderManifestOptions {
 	/** Repository owner login. */
 	owner: string;
 	/** Repository name. */
@@ -106,7 +106,7 @@ export function declaredPythonPackageName(source: string): string | undefined {
  * @param root Repository root.
  * @returns True when a Python manifest is present and none of them declares a package name.
  */
-export async function declaresNothingToRelease(root: string): Promise<boolean> {
+async function declaresNothingToRelease(root: string): Promise<boolean> {
 	const evidence = await detectRepositoryEvidence(root);
 	const python = evidence.packages.filter((pkg) => pkg.ecosystem === "python");
 	if (python.length === 0) return false;

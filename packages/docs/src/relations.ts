@@ -2,14 +2,14 @@ import { basename } from "node:path";
 import type { DocsContentGraph, DocsPage } from "./content.ts";
 
 /** Parsed metadata for one canonical repository rule. */
-export interface DocsRuleRelationEntry {
+interface DocsRuleRelationEntry {
 	id: string;
 	title: string;
 	page: DocsPage;
 }
 
 /** Parsed metadata for one current long-term repository note. */
-export interface DocsNoteRelationEntry {
+interface DocsNoteRelationEntry {
 	id: string;
 	title: string;
 	page: DocsPage;
@@ -17,7 +17,7 @@ export interface DocsNoteRelationEntry {
 }
 
 /** Bidirectional rule/note relationship analysis plus semantic findings. */
-export interface RuleNoteRelationAnalysis {
+interface RuleNoteRelationAnalysis {
 	rules: readonly DocsRuleRelationEntry[];
 	notes: readonly DocsNoteRelationEntry[];
 	ruleNotes: ReadonlyMap<string, readonly string[]>;
@@ -25,14 +25,14 @@ export interface RuleNoteRelationAnalysis {
 }
 
 /** Reads one required scalar field from rule YAML front matter. */
-export function ruleFrontMatterField(markdown: string, name: string): string {
+function ruleFrontMatterField(markdown: string, name: string): string {
 	const match = markdown.match(new RegExp(`^${name}:\\s*(.+)$`, "mu"));
 	if (!match?.[1]) throw new Error(`Rule is missing front-matter field ${name}`);
 	return match[1].trim();
 }
 
 /** Returns the stable id/title encoded in an ADR heading. */
-export function noteIdentity(page: DocsPage): { id: string; title: string } {
+function noteIdentity(page: DocsPage): { id: string; title: string } {
 	const match = page.title.match(/^(ADR-\d{4})\s+—\s+(.+)$/u);
 	if (match?.[1] && match[2]) return { id: match[1], title: match[2] };
 	return { id: page.id, title: page.title };

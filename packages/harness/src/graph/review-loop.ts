@@ -52,8 +52,7 @@ function normalizeFinding(subject: ReviewSubject, value: unknown): ReviewFinding
 		...base,
 	};
 }
-
-export function normalizeReviewFindings(subject: ReviewSubject, value: unknown): ReviewFinding[] {
+function normalizeReviewFindings(subject: ReviewSubject, value: unknown): ReviewFinding[] {
 	const raw = Array.isArray(value)
 		? value
 		: value && typeof value === "object" && Array.isArray((value as { findings?: unknown }).findings)

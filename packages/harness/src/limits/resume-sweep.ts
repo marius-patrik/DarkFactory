@@ -10,8 +10,7 @@ const quotaRecordSchema = z.object({
 	is_pr: z.boolean().optional(),
 	reset_at: z.string().min(1),
 });
-
-export interface QuotaRecord {
+interface QuotaRecord {
 	/** Issue or pull request number that is blocked. */
 	item: number;
 	/** Whether the blocked item is a pull request. */
@@ -19,8 +18,7 @@ export interface QuotaRecord {
 	/** When the model's quota resets, ISO-8601. */
 	resetAt: string;
 }
-
-export interface SweepResult {
+interface SweepResult {
 	/** Items whose reset time had passed and which were resumed. */
 	resumed: number[];
 	/** Records that could not be read and were deleted. */
@@ -28,8 +26,7 @@ export interface SweepResult {
 	/** Records whose dispatch failed and were kept for the next sweep. */
 	keptAfterFailure: string[];
 }
-
-export interface SweepOptions {
+interface SweepOptions {
 	/** Repository whose variables and dispatches are used. */
 	repo: GitHubRepository;
 	/** Current time; records resetting after it are left alone. */

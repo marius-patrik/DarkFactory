@@ -20,12 +20,12 @@ import { STATUS_FIELD_NAME } from "./taxonomy.ts";
 export type LabelSource = string | { readonly name?: string | null };
 
 /** The GraphQL `labels(first: n) { nodes: [...] }` wrapper. */
-export interface LabelConnection {
+interface LabelConnection {
 	readonly nodes?: readonly LabelSource[] | null;
 }
 
 /** A label container: a bare list, or the GraphQL connection wrapper. */
-export type LabelListSource = readonly LabelSource[] | LabelConnection | null;
+type LabelListSource = readonly LabelSource[] | LabelConnection | null;
 
 /** Whether a label container is the connection wrapper rather than a bare list. */
 function isLabelConnection(labels: readonly LabelSource[] | LabelConnection): labels is LabelConnection {
@@ -33,7 +33,7 @@ function isLabelConnection(labels: readonly LabelSource[] | LabelConnection): la
 }
 
 /** A bound pull request, in the subset the projection reads. */
-export interface BoundPullRequest {
+interface BoundPullRequest {
 	readonly state?: string | null;
 	readonly merged?: boolean | null;
 	readonly merged_at?: string | null;
@@ -79,7 +79,7 @@ export interface BoardItem {
 }
 
 /** Facts a caller already holds, so the projection does not have to go looking for them. */
-export interface ExpectedStatusOptions {
+interface ExpectedStatusOptions {
 	/** Bound pull requests, when the caller holds them outside the item. */
 	readonly boundPrs?: readonly BoundPullRequest[] | null;
 	/** An explicit answer to "does a quota checkpoint cover this item", overriding the filesystem. */
@@ -90,7 +90,7 @@ export interface ExpectedStatusOptions {
 }
 
 /** One projected single-select field value on a board item. */
-export interface FieldValueProjection {
+interface FieldValueProjection {
 	readonly name?: string | null;
 	readonly optionId?: string | null;
 	readonly field?: { readonly name?: string | null } | null;

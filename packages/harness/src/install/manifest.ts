@@ -72,7 +72,7 @@ export function resolveManifestPath(
 const DEFAULT_LABEL_COLOUR = "ededed";
 
 /** One branch protection lane, as the configuration document declares it. */
-export interface ProtectedBranch {
+interface ProtectedBranch {
 	/** The branch this lane protects. */
 	branch: string;
 	/** Status checks that must pass before a merge. */
@@ -86,8 +86,7 @@ export interface ProtectedBranch {
 	/** Whether conversations must be resolved before merging. */
 	resolveConversations: boolean;
 }
-
-export interface AreaLabel {
+interface AreaLabel {
 	/** Label name, always prefixed with `area:`. */
 	name: string;
 	/** Bare six-digit hex colour. */
@@ -97,7 +96,7 @@ export interface AreaLabel {
 }
 
 /** The declared licence, defaulted where the declaration is silent. */
-export interface DeclaredLicense {
+interface DeclaredLicense {
 	/** SPDX identifier, or `"NONE"`. */
 	spdx: string;
 	/** Copyright holder. */
@@ -107,7 +106,7 @@ export interface DeclaredLicense {
 }
 
 /** The environment mapping a manifest read consults for `GITHUB_REPOSITORY`. */
-export type ManifestEnv = Readonly<Record<string, string | undefined>>;
+type ManifestEnv = Readonly<Record<string, string | undefined>>;
 
 /** A JSON value read out of an untrusted configuration document. */
 type Json = unknown;

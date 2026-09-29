@@ -9,7 +9,7 @@
  */
 
 /** One published `df` platform/architecture pair and the runner that can build and run it. */
-export interface ReleaseTarget {
+interface ReleaseTarget {
 	/** `<platform>-<arch>`, spelled as `process.platform` and `process.arch` report them. */
 	readonly name: string;
 	readonly platform: NodeJS.Platform;

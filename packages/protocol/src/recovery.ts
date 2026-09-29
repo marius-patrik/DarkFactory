@@ -4,10 +4,10 @@ const gitShaSchema = z.string().regex(/^[0-9a-f]{40}(?:[0-9a-f]{24})?$/iu, "Expe
 const sha256Schema = z.string().regex(/^[0-9a-f]{64}$/iu, "Expected a SHA-256 digest");
 
 /** Local/recovered source categories accepted by the governed recovery intake contract. */
-export const recoverySourceKindSchema = z.enum(["worktree", "branch", "ref", "stash", "snapshot"]);
+const recoverySourceKindSchema = z.enum(["worktree", "branch", "ref", "stash", "snapshot"]);
 
 /** Exact dirty/untracked snapshot identity captured without embedding recovered bytes. */
-export const recoverySnapshotIdentitySchema = z.object({
+const recoverySnapshotIdentitySchema = z.object({
 	id: z.string().min(1),
 	contentSha256: sha256Schema,
 	trackedTreeSha: gitShaSchema.optional(),
@@ -15,7 +15,7 @@ export const recoverySnapshotIdentitySchema = z.object({
 });
 
 /** Exact provenance for one local or recovered implementation source. */
-export const recoverySourceIdentitySchema = z
+const recoverySourceIdentitySchema = z
 	.object({
 		id: z.string().min(1),
 		kind: recoverySourceKindSchema,
@@ -51,13 +51,13 @@ export const recoverySourceIdentitySchema = z
 	});
 
 /** Request binding preserved independently from implementation/review completion state. */
-export const recoveryRequestBindingSchema = z.object({
+const recoveryRequestBindingSchema = z.object({
 	request: z.number().int().positive(),
 	requestVersion: z.string().min(1),
 });
 
 /** Metadata-only sensitive-data finding. Secret values are intentionally absent from this contract. */
-export const recoverySensitiveFindingSchema = z.object({
+const recoverySensitiveFindingSchema = z.object({
 	id: z.string().min(1),
 	kind: z.string().min(1),
 	path: z.string().min(1).optional(),
@@ -65,7 +65,7 @@ export const recoverySensitiveFindingSchema = z.object({
 });
 
 /** Secret/publication safety state for one imported source. */
-export const recoverySafetySchema = z
+const recoverySafetySchema = z
 	.object({
 		status: z.enum(["safe", "blocked"]),
 		publicationAllowed: z.boolean(),
@@ -86,7 +86,7 @@ export const recoverySafetySchema = z
 	});
 
 /** Approved-Planning identity used to prove whether approval remains reusable after intake. */
-export const recoveryPlanningStateSchema = z.object({
+const recoveryPlanningStateSchema = z.object({
 	status: z.enum(["unreviewed", "approved", "stale"]),
 	contextFingerprint: z.string().min(1).optional(),
 	approvedRequestVersion: z.string().min(1).optional(),
@@ -95,7 +95,7 @@ export const recoveryPlanningStateSchema = z.object({
 });
 
 /** Terminal disposition represented in provenance/audit state. */
-export const recoveryDispositionSchema = z.object({
+const recoveryDispositionSchema = z.object({
 	kind: z.enum(["integrated", "rejected", "superseded"]),
 	reason: z.string().min(1),
 	pr: z.number().int().positive().optional(),
@@ -103,7 +103,7 @@ export const recoveryDispositionSchema = z.object({
 });
 
 /** Cleanup state for a temporary recovery ref/worktree/stash. */
-export const recoveryCleanupStateSchema = z.object({
+const recoveryCleanupStateSchema = z.object({
 	uniqueStateRemaining: z.boolean(),
 	eligible: z.boolean(),
 });
@@ -124,21 +124,21 @@ export const recoveryIntakeRecordSchema = z.object({
 });
 
 /** Local/recovered source category. */
-export type RecoverySourceKind = z.infer<typeof recoverySourceKindSchema>;
+type RecoverySourceKind = z.infer<typeof recoverySourceKindSchema>;
 /** Exact dirty/untracked snapshot identity. */
-export type RecoverySnapshotIdentity = z.infer<typeof recoverySnapshotIdentitySchema>;
+type RecoverySnapshotIdentity = z.infer<typeof recoverySnapshotIdentitySchema>;
 /** Exact local/recovered implementation source identity. */
 export type RecoverySourceIdentity = z.infer<typeof recoverySourceIdentitySchema>;
 /** Request/version binding for one recovery intake. */
-export type RecoveryRequestBinding = z.infer<typeof recoveryRequestBindingSchema>;
+type RecoveryRequestBinding = z.infer<typeof recoveryRequestBindingSchema>;
 /** Metadata-only sensitive-data finding. */
-export type RecoverySensitiveFinding = z.infer<typeof recoverySensitiveFindingSchema>;
+type RecoverySensitiveFinding = z.infer<typeof recoverySensitiveFindingSchema>;
 /** Secret/publication safety state. */
-export type RecoverySafety = z.infer<typeof recoverySafetySchema>;
+type RecoverySafety = z.infer<typeof recoverySafetySchema>;
 /** Planning reuse/freshness state. */
-export type RecoveryPlanningState = z.infer<typeof recoveryPlanningStateSchema>;
+type RecoveryPlanningState = z.infer<typeof recoveryPlanningStateSchema>;
 /** Terminal recovery disposition. */
-export type RecoveryDisposition = z.infer<typeof recoveryDispositionSchema>;
+type RecoveryDisposition = z.infer<typeof recoveryDispositionSchema>;
 /** Cleanup eligibility state. */
 export type RecoveryCleanupState = z.infer<typeof recoveryCleanupStateSchema>;
 /** Durable governed recovery provenance/audit record. */

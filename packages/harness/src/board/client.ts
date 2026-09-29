@@ -45,7 +45,7 @@ export interface BoardTarget {
 }
 
 /** A board item as the board holds it: its id, and the status currently projected onto it. */
-export interface BoardItemRecord {
+interface BoardItemRecord {
 	readonly itemId: string;
 	readonly status: string | null;
 }
@@ -62,7 +62,7 @@ export interface ReconcilableBoard extends BoardTarget {
 }
 
 /** How a project client discovers what it cannot be told. */
-export interface ProjectClientOptions {
+interface ProjectClientOptions {
 	/** The login that owns the project. */
 	readonly owner: string;
 	/** The project number within that owner. */

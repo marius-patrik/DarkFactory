@@ -23,7 +23,7 @@ interface CacheEntry {
  * @property userAgent - User‑Agent string sent with requests.
  * @property onAuthenticationFailure - Callback invoked when authentication errors are encountered.
  */
-export interface GitHubClientOptions {
+interface GitHubClientOptions {
 	token: TokenSource;
 	fetch?: GitHubFetch;
 	apiBase?: string;

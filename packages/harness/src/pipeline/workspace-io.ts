@@ -20,10 +20,10 @@ import { runGit } from "../workspace/git.ts";
 import { errorMessage } from "./pipeline-io.ts";
 
 /** The committer identity the pipeline commits under; the Python's `GIT_BOT_NAME`/`GIT_BOT_EMAIL`. */
-export const GIT_BOT_NAME = "github-actions[bot]";
+const GIT_BOT_NAME = "github-actions[bot]";
 
 /** The committer email the pipeline commits under. */
-export const GIT_BOT_EMAIL = "41898282+github-actions[bot]@users.noreply.github.com";
+const GIT_BOT_EMAIL = "41898282+github-actions[bot]@users.noreply.github.com";
 
 /**
  * One test suite's result, as `subprocess.CompletedProcess` carried it.
@@ -43,7 +43,7 @@ export interface VerificationResult {
 }
 
 /** What one `formatRepository` pass did. */
-export interface FormatterRun {
+interface FormatterRun {
 	/** The human-readable names of the formatters that ran. */
 	ran: string[];
 	/** One notice per formatter that was present and failed. */
@@ -58,7 +58,7 @@ interface CompletedCommand {
 }
 
 /** What {@link WorkspaceIo.removePath} found at a path. */
-export type RemovedPath = "file" | "directory" | undefined;
+type RemovedPath = "file" | "directory" | undefined;
 
 /**
  * Everything the pipeline's implementation and verification stages do to the working copy.

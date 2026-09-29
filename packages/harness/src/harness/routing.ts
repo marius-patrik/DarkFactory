@@ -1,22 +1,19 @@
 import type { DfConfig } from "../config.ts";
 import type { Candidate } from "../failover.ts";
 
-export interface SensitiveDataInput {
+interface SensitiveDataInput {
 	prompt: string;
 	toolResults: readonly unknown[];
 }
-
-export interface SensitiveDataHook {
+interface SensitiveDataHook {
 	detect(input: SensitiveDataInput): boolean | Promise<boolean>;
 }
-
-export interface GraphNodeRouting {
+interface GraphNodeRouting {
 	chain?: string;
 	model?: string;
 	reasoning?: "hard";
 }
-
-export interface RoutingInput {
+interface RoutingInput {
 	prompt: string;
 	toolResults?: readonly unknown[];
 	explicitChain?: string;
@@ -25,8 +22,7 @@ export interface RoutingInput {
 	node?: GraphNodeRouting;
 	sensitiveHook?: SensitiveDataHook;
 }
-
-export interface RoutingDecision {
+interface RoutingDecision {
 	chain: Candidate[];
 	source: "explicit" | "graph" | "sensitive" | "hard" | "default";
 }

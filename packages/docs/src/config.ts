@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 import { configBlock, parseConfigDocument, resolveConfigDocumentPath } from "../../protocol/src/config-document.ts";
 
 /** Site metadata carried by the documentation content graph. */
-export interface DocsSiteConfig {
+interface DocsSiteConfig {
 	name: string;
 	description?: string;
 }
@@ -15,7 +15,7 @@ export interface DocsTypeScriptApiConfig {
 }
 
 /** API extraction configuration owned by the combined configuration's docs block. */
-export interface DocsApiConfig {
+interface DocsApiConfig {
 	typescript?: DocsTypeScriptApiConfig;
 }
 

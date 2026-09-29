@@ -29,7 +29,7 @@ import type {
 import type { VerificationResult, WorkspaceIo } from "../../src/pipeline/workspace-io.ts";
 
 /** One recorded operation, in the order the handler performed it. */
-export interface RecordedCall {
+interface RecordedCall {
 	/** The `PipelineIo` method, or `agent` for the agent prompt runner. */
 	op: string;
 	/** The arguments it was called with. */
@@ -45,7 +45,7 @@ export interface RecordingIo extends PipelineIo {
 }
 
 /** Per-operation behaviour: a value to return, or an `Error` to throw. */
-export interface IoBehaviour extends Partial<Record<keyof PipelineIo, unknown | Error>> {
+interface IoBehaviour extends Partial<Record<keyof PipelineIo, unknown | Error>> {
 	/**
 	 * What `prNumbersForBranch` answers, one entry per call.
 	 *
@@ -57,7 +57,7 @@ export interface IoBehaviour extends Partial<Record<keyof PipelineIo, unknown | 
 }
 
 /** The issue a {@link RecordingIo} serves when a handler reads one. */
-export interface IssueFixture {
+interface IssueFixture {
 	/** The issue title. */
 	title?: string;
 	/** The issue body. */
@@ -82,7 +82,7 @@ const EMPTY_ISSUE: Required<IssueFixture> = {
 };
 
 /** The pull request a {@link RecordingIo} serves when a handler reads one. */
-export interface PullFixture {
+interface PullFixture {
 	/** The pull request body. */
 	body?: string;
 	/** The pull request's comment bodies, oldest first. */
@@ -212,7 +212,7 @@ export function recordingIo(
  * The taxonomy this repository declares in `repo.dfconfig`, in declaration order: the first area
  * whose keywords hit wins, so the specific areas come before the general ones.
  */
-export const DARKFACTORY_TAXONOMY: AreaTaxonomy = {
+const DARKFACTORY_TAXONOMY: AreaTaxonomy = {
 	defaultArea: "ci",
 	areaKeywords: {
 		agents: ["agent", "harness", "persona", "provider", "llm", "prompt", "approval", "model", "quota"],
@@ -224,7 +224,7 @@ export const DARKFACTORY_TAXONOMY: AreaTaxonomy = {
 };
 
 /** The agent answers, and the prompts it was asked, from a {@link handlerContext}. */
-export interface AgentDouble {
+interface AgentDouble {
 	/** Every prompt request the handler made, in order. */
 	readonly requests: AgentPromptRequest[];
 	/** The text handed back for the nth call, or the last one once the list runs out. */
@@ -248,7 +248,7 @@ export interface HandlerContextOptions {
 }
 
 /** A handler context plus the doubles behind it. */
-export interface HandlerContextHandle {
+interface HandlerContextHandle {
 	/** The context to hand a handler. */
 	context: PipelineContext;
 	/** The agent double, for asserting on prompts. */
@@ -413,7 +413,7 @@ export function recordingWorkspace(behaviour: WorkspaceBehaviour = {}): Recordin
 }
 
 /** What an {@link implementContext} is built from. */
-export interface ImplementContextOptions extends HandlerContextOptions {
+interface ImplementContextOptions extends HandlerContextOptions {
 	/** The working copy double. */
 	workspace: RecordingWorkspace;
 	/** Board moves the handler made, as `{ number, isPr, status }`. */
@@ -430,7 +430,7 @@ export interface ImplementContextOptions extends HandlerContextOptions {
 }
 
 /** An {@link ImplementContext} plus the doubles behind it. */
-export interface ImplementContextHandle extends HandlerContextHandle {
+interface ImplementContextHandle extends HandlerContextHandle {
 	/** The context to hand `handleImplement`. */
 	implementContext: ImplementContext;
 	/** Board moves, recorded through the injected board port. */

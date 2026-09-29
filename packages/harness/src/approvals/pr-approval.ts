@@ -14,7 +14,7 @@ import type { BoardTarget } from "../board/client.ts";
 import { ALLOWED_ASSOCIATIONS, isAllowedApprover, parsePrCommand } from "./commands.ts";
 
 /** Seconds between merge-completion polls, and how many polls to attempt. */
-export const MERGE_POLL_INTERVAL_SECONDS = 5;
+const MERGE_POLL_INTERVAL_SECONDS = 5;
 export const MERGE_POLL_ATTEMPTS = 12;
 
 /**
@@ -24,7 +24,7 @@ export const MERGE_POLL_ATTEMPTS = 12;
  * here rather than imported because that module is not yet ported; when it is, both must read one
  * copy, or a pull request can bind an issue one way for merging and another way for the board.
  */
-export const CLOSING_REFERENCE_PATTERN =
+const CLOSING_REFERENCE_PATTERN =
 	/\b(?:close|closes|closed|fix|fixes|fixed|resolve|resolves|resolved)\s+(?:#(\d+)|https:\/\/github\.com\/[^/\s]+\/[^/\s]+\/issues\/(\d+))\b/giu;
 
 /** The outcome of one `gh` invocation. */
@@ -35,7 +35,7 @@ export interface GhResult {
 }
 
 /** How one `gh` invocation should be run. */
-export interface GhOptions {
+interface GhOptions {
 	/** Throw when the command exits non-zero, rather than returning the failure. */
 	check?: boolean;
 	/**
@@ -101,14 +101,14 @@ export interface PrApprovalOutcome {
 }
 
 /** The side channels {@link submitProxyReview} reads rather than the pull request itself. */
-export interface ProxyReviewDeps {
+interface ProxyReviewDeps {
 	run?: GhRunner;
 	env?: PrApprovalEnvironment;
 	logger?: PrApprovalLogger;
 }
 
 /** Injection points for {@link handlePrApproval}. */
-export interface HandlePrApprovalDeps {
+interface HandlePrApprovalDeps {
 	run: GhRunner;
 	/** The board client post-merge reconciliation writes through. */
 	client: ProjectBoardClient;
@@ -142,7 +142,7 @@ export const runGh: GhRunner = (args, repo, options = {}) => {
 };
 
 /** The pull request fields post-merge reconciliation reads. */
-export interface PullRequestView {
+interface PullRequestView {
 	state?: string;
 	closingIssuesReferences?: readonly { number?: number | string }[] | null;
 	body?: string | null;
@@ -225,7 +225,7 @@ export function collectBoundIssues(prData: PullRequestView): number[] {
 }
 
 /** The decision one event carries about one pull request. */
-export interface ApprovalDetection {
+interface ApprovalDetection {
 	prNumber: string | null;
 	approved: boolean;
 }
@@ -261,7 +261,7 @@ export function detectApproval(env: PrApprovalEnvironment = process.env): Approv
  * @param run - The `gh` runner the issue-closing commands are issued through.
  * @param client - The board client that resolves field and option ids at runtime.
  */
-export async function reconcilePostMerge(
+async function reconcilePostMerge(
 	prNumber: number,
 	repo: string,
 	run: GhRunner,

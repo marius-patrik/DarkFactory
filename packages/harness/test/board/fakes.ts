@@ -28,7 +28,7 @@ export interface FakeAnswer {
 }
 
 /** A transport that records every request and answers from a table. */
-export interface FakeTransport {
+interface FakeTransport {
 	readonly fetch: GitHubFetch;
 	readonly requests: RecordedRequest[];
 }
@@ -69,7 +69,7 @@ export function routedTransport(routes: Record<string, FakeAnswer>): FakeTranspo
 }
 
 /** One thing a recording target was asked to do. */
-export type RecordedAction =
+type RecordedAction =
 	| { readonly kind: "track"; readonly url: string; readonly status: CanonicalStatus; readonly options: TrackOptions }
 	| {
 			readonly kind: "status-label";

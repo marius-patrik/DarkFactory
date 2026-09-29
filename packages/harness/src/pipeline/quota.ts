@@ -18,7 +18,7 @@ const ISO_TIMESTAMP_RE = /\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z?/u;
  * A key rather than a provider: `df` chooses the model and the provider behind it, so nothing here
  * names a provider, and a map keyed by a name only the agent knows cannot be maintained.
  */
-export const DF_PROVIDER = "df";
+const DF_PROVIDER = "df";
 
 /** A `resetAt` epoch in milliseconds, as several providers report it. */
 const RESET_AT_RE = /"resetAt"\s*:\s*(\d{10,})/u;
@@ -124,7 +124,7 @@ export function exhaustedProviders(errorDetail: string): string[] {
 }
 
 /** What a run variable records about one blocked item. */
-export interface QuotaBlockRecord {
+interface QuotaBlockRecord {
 	/** The issue or pull request that was blocked. */
 	item: number;
 	/** Whether that item is a pull request. */

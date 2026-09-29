@@ -9,10 +9,10 @@ import type {
 import { decodeExternalKeyringPayload, type ExternalKeyring } from "./external-keyring.ts";
 
 /** Supported expiry representations in external CLI credential documents. */
-export type ExternalExpiryFormat = "epoch_ms" | "epoch_seconds" | "iso";
+type ExternalExpiryFormat = "epoch_ms" | "epoch_seconds" | "iso";
 
 /** Declarative mapping for one borrowed external credential source. */
-export interface ExternalCredentialSourceConfig {
+interface ExternalCredentialSourceConfig {
 	id: string;
 	path?: string;
 	keyring?: { service: string; account?: string };

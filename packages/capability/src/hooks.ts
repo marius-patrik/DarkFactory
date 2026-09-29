@@ -8,7 +8,7 @@ import type {
 } from "./index.ts";
 
 /** One hook's verdict, with the identity needed to attribute it. */
-export interface HookOutcome {
+interface HookOutcome {
 	capability: string;
 	hook: string;
 	status: CapabilityHookResult["status"];
@@ -16,14 +16,14 @@ export interface HookOutcome {
 }
 
 /** Every outcome from one event, plus the capability set that produced them. */
-export interface HookRunResult {
+interface HookRunResult {
 	outcomes: readonly HookOutcome[];
 	/** True when no hook returned `fail`. `fix` is reported, not treated as a failure. */
 	ok: boolean;
 }
 
 /** The events a hook declares, normalising the legacy single-`event` form. */
-export function hookEvents(hook: {
+function hookEvents(hook: {
 	event?: CapabilityHookEvent;
 	events?: readonly CapabilityHookEvent[];
 }): readonly CapabilityHookEvent[] {

@@ -23,7 +23,7 @@ import { detectDrift } from "./drift.ts";
 import { pushSecrets } from "./push.ts";
 import { isGitRepo, syncDataRepo } from "./sync.ts";
 
-export interface SecretsCommandDeps {
+interface SecretsCommandDeps {
 	dfHome: string;
 	repositoryRoot?: string;
 	allowFileKey?: boolean;

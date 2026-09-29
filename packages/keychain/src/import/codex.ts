@@ -5,9 +5,8 @@ import { claimString, jwtClaims } from "./parseJwt.ts";
 import type { HomeReader } from "./reader.ts";
 import { record, stringField } from "./record.ts";
 
-export const OPENAI_TOKEN_ENDPOINT = "https://auth.openai.com/oauth/token";
-
-export interface ImportedCodexOAuth {
+const OPENAI_TOKEN_ENDPOINT = "https://auth.openai.com/oauth/token";
+interface ImportedCodexOAuth {
 	accessToken: string;
 	refreshToken?: string;
 	plan?: string;
@@ -20,7 +19,7 @@ export interface ImportedCodexOAuth {
 }
 
 /** Parse the ChatGPT OAuth triad out of `~/.codex/auth.json` (dsh-stack `codex-auth-json.ts:44-84`). */
-export function parseCodexOAuthDocument(document: Record<string, unknown>): ImportedCodexOAuth | null {
+function parseCodexOAuthDocument(document: Record<string, unknown>): ImportedCodexOAuth | null {
 	const tokens = record(document.tokens);
 	const accessToken = tokens ? stringField(tokens, "access_token") : null;
 	if (!tokens || !accessToken) return null;
@@ -56,18 +55,15 @@ export function parseCodexOAuthDocument(document: Record<string, unknown>): Impo
 		scopes,
 	};
 }
-
-export interface CodexFindOptions {
+interface CodexFindOptions {
 	homeReader: HomeReader;
 }
-
-export interface CodexImport {
+interface CodexImport {
 	document: Record<string, unknown> | null;
 	oauth: ImportedCodexOAuth | null;
 	apiKey: string | null;
 }
-
-export async function findCodexAuth(options: CodexFindOptions): Promise<CodexImport> {
+async function findCodexAuth(options: CodexFindOptions): Promise<CodexImport> {
 	const file = await options.homeReader.read(".codex/auth.json");
 	const document = parseJson(file ?? null, "~/.codex/auth.json");
 	if (!document) return { document, oauth: null, apiKey: null };

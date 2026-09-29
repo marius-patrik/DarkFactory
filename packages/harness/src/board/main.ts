@@ -23,7 +23,7 @@ import type { WebhookPayload } from "./events.ts";
  */
 
 /** What the run was asked to do. */
-export interface AutomationOptions {
+interface AutomationOptions {
 	dryRun: boolean;
 	reconcile: boolean;
 	board: number | null;

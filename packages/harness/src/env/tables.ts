@@ -71,7 +71,7 @@ export const ECOSYSTEM_DOMAINS: Readonly<Record<string, string>> = {
 export const DEFAULT_DOMAIN = "code";
 
 /** A lockfile paired with the package manager that writes it. */
-export type Lockfile = readonly [filename: string, manager: string];
+type Lockfile = readonly [filename: string, manager: string];
 
 /**
  * Ecosystem -> its lockfiles paired with the manager that writes them, most specific first.
@@ -188,7 +188,7 @@ export const ARTIFACT_GLOBS: Readonly<Record<string, readonly string[]>> = {
 };
 
 /** A configuration file that names a formatter outright, overriding the package-manager default. */
-export type FormatterMarker = readonly [filename: string, ecosystem: string, command: string];
+type FormatterMarker = readonly [filename: string, ecosystem: string, command: string];
 
 /** Marker files that name a formatter outright, overriding the package-manager default. */
 export const FORMATTER_MARKERS: readonly FormatterMarker[] = [

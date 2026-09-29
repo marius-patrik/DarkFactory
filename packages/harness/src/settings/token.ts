@@ -14,13 +14,13 @@
  */
 
 /** The `gh` subcommands the installation token can serve on its own. */
-export const APP_CAPABLE_OPERATIONS: readonly string[] = ["label", "issue"];
+const APP_CAPABLE_OPERATIONS: readonly string[] = ["label", "issue"];
 
 /** API path fragments the installation token can serve on its own, matched as substrings. */
 export const APP_CAPABLE_PATHS: readonly string[] = ["/labels", "/issues"];
 
 /** The environment variable holding the personal token that can reach the rest. */
-export const PROJECT_TOKEN_VARIABLE = "GH_PROJECT_TOKEN";
+const PROJECT_TOKEN_VARIABLE = "GH_PROJECT_TOKEN";
 
 /**
  * Whether one `gh` invocation can be served by the installation token.

@@ -53,7 +53,7 @@ import { findParentRequestNumber, findPlanIssueForPr } from "./plan-links.ts";
 import { handleRespond } from "./respond.ts";
 
 /** An event run was handed, and the name GitHub delivered it under. */
-export interface DispatchEventRequest {
+interface DispatchEventRequest {
 	/** Where the event payload was written, for the report when it is not there. */
 	eventPath: string;
 	/** The event name, e.g. `issues`, `issue_comment`, `pull_request_review_comment`. */
@@ -107,7 +107,7 @@ export interface PipelineStages {
 }
 
 /** What `dispatch_event` reached. */
-export type DispatchEventOutcome =
+type DispatchEventOutcome =
 	/** A handler ran, and this is what it did. */
 	| { kind: "handled"; stage: "interpret" | "plan" | "respond"; detail: string }
 	/** An unported stage was handed the event. */

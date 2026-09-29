@@ -18,7 +18,7 @@ export interface VerifyResult {
 }
 
 /** Options for {@link runVerify}. */
-export interface RunVerifyOptions {
+interface RunVerifyOptions {
 	/** Directory the command runs in; required. */
 	worktree: string;
 	/** Shell command line from configuration, e.g. `bun test`. */
@@ -96,7 +96,7 @@ export function runVerify({ worktree, command, timeoutMs, tailBytes = 4096 }: Ru
 }
 
 /** Options for canonical touched-package verification. */
-export interface RunDetectedVerificationOptions {
+interface RunDetectedVerificationOptions {
 	repoDir: string;
 	changedFiles: readonly string[];
 	capabilitiesRoot?: string;
@@ -104,7 +104,7 @@ export interface RunDetectedVerificationOptions {
 }
 
 /** Result for one touched-package verification action, including explicit unsupported gaps. */
-export interface DetectedVerificationResult {
+interface DetectedVerificationResult {
 	action: ResolvedRepositoryAction;
 	result?: VerifyResult;
 }

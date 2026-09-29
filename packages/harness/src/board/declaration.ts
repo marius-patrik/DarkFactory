@@ -59,7 +59,7 @@ function stringList(value: unknown): string[] {
  * and fall back, because an unreadable declaration must not read as "no boards exist" and silently
  * leave every item untracked.
  */
-export function loadBoardDeclaration(root: string): BoardDeclaration {
+function loadBoardDeclaration(root: string): BoardDeclaration {
 	const path = resolveConfigDocumentPath(root);
 	if (!path) throw new Error(`No DarkFactory configuration document found under ${root}.`);
 	const document = parseConfigDocument(readFileSync(path, "utf8"), path);

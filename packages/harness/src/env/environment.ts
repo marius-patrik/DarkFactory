@@ -53,7 +53,7 @@ import {
 export { DEFAULT_DOMAIN, MANIFEST_ECOSYSTEMS } from "./tables.ts";
 
 /** One planned command for an ecosystem: what to run, on which runtimes, with which manager. */
-export interface PlannedCommand {
+interface PlannedCommand {
 	/** The command, or `null` when neither declaration nor defaults named one. */
 	command: string | null;
 	/** Runtime versions to run it on; empty means "one job, whatever the runner provides". */
@@ -63,13 +63,13 @@ export interface PlannedCommand {
 }
 
 /** One planned release build, carrying the globs of what it leaves behind. */
-export interface PlannedBuild extends PlannedCommand {
+interface PlannedBuild extends PlannedCommand {
 	/** Artifact globs relative to each package directory. */
 	artifacts: string[];
 }
 
 /** One package as plain data. */
-export interface PackageData {
+interface PackageData {
 	path: string;
 	ecosystem: string;
 	domain: string;
@@ -94,7 +94,7 @@ export interface EnvironmentData {
 }
 
 /** One buildable unit inside a repository. */
-export class Package {
+class Package {
 	/** Directory holding the package, relative to the repository root (`.` for the root). */
 	readonly path: string;
 	/** The ecosystem the manifest declares. */
@@ -153,7 +153,7 @@ export class Package {
 }
 
 /** Everything the pipeline needs to know about a repository's shape. */
-export class Environment {
+class Environment {
 	constructor(
 		/** Absolute path to the repository root. */
 		readonly root: string,
@@ -563,7 +563,7 @@ function pnpmMembers(root: string): string[] {
  * @param root Absolute repository root.
  * @returns Repository-relative submodule paths; empty when there are none.
  */
-export function submodulePaths(root: string): Set<string> {
+function submodulePaths(root: string): Set<string> {
 	const path = join(root, ".gitmodules");
 	if (!existsSync(path)) return new Set();
 	let source: string;
@@ -605,7 +605,7 @@ function walk(root: string, directory: string, submodules: ReadonlySet<string>, 
  * @param root Absolute or relative path to the repository root.
  * @returns Packages, root-level ones first, then by path and ecosystem.
  */
-export function detect(root: string): Package[] {
+function detect(root: string): Package[] {
 	const repositoryRoot = resolve(root);
 	const submodules = submodulePaths(repositoryRoot);
 	const found: Package[] = [];

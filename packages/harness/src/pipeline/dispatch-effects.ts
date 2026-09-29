@@ -32,7 +32,7 @@ export const COMMAND_HINT_BODY =
  * run's narration, and `warn` is its `print(..., file=sys.stderr)`, which is the run's complaints.
  * The claim election narrates; a failed read complains.
  */
-export interface RunReporting {
+interface RunReporting {
 	/** Writes a progress line, as the Python's `print` did. */
 	say: (message: string) => void;
 	/** Writes a warning, as the Python's stderr print did. */

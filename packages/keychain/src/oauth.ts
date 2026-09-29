@@ -32,7 +32,7 @@ export interface OAuthAuthConfig {
 }
 
 /** Injectable OAuth runtime dependencies for deterministic tests and machine execution. */
-export interface OAuthDependencies {
+interface OAuthDependencies {
 	fetch: typeof globalThis.fetch;
 	now: () => number;
 	env: Readonly<Record<string, string | undefined>>;

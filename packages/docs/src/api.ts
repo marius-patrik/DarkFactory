@@ -18,16 +18,14 @@ import {
 } from "./content.ts";
 
 /** Inputs required to extract a TypeScript API model. */
-export interface TypeScriptApiExtractionOptions {
+interface TypeScriptApiExtractionOptions {
 	entryPoints: readonly string[];
 	tsconfig: string;
 	name?: string;
 }
 
 /** Strictly extracts TypeScript/TSDoc API metadata as TypeDoc JSON without rendering HTML. */
-export async function extractTypeScriptApi(
-	options: TypeScriptApiExtractionOptions,
-): Promise<JSONOutput.ProjectReflection> {
+async function extractTypeScriptApi(options: TypeScriptApiExtractionOptions): Promise<JSONOutput.ProjectReflection> {
 	const app = await Application.bootstrap({
 		name: options.name,
 		entryPoints: [...options.entryPoints],
@@ -100,7 +98,7 @@ function apiSymbol(reflection: any): DocsApiSymbol {
 }
 
 /** Converts strict TypeDoc JSON into the browser-safe API reference carried by the docs graph. */
-export function apiReferenceFromTypeDoc(project: JSONOutput.ProjectReflection): DocsApiReference {
+function apiReferenceFromTypeDoc(project: JSONOutput.ProjectReflection): DocsApiReference {
 	return { name: project.name || "API", symbols: (project.children ?? []).map(apiSymbol) };
 }
 

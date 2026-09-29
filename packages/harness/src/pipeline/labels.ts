@@ -101,7 +101,7 @@ export function classifyType(text: string): TypeLabel {
 }
 
 /** A request's classification. */
-export interface Classification {
+interface Classification {
 	/** The type label, which is also the commit type. */
 	type: TypeLabel;
 	/** The area label, prefixed with `area:`. */

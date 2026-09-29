@@ -10,8 +10,9 @@ import {
 	type ScopeCheckResultSummary,
 	type VerificationActionResultSummary,
 } from "../../protocol/src/result-capture.ts";
+
 /** Supervisor capability required for structured judgement extraction. */
-export interface JudgementSupervisor {
+interface JudgementSupervisor {
 	extractJudgement<T>(options: {
 		answer: string;
 		schema: z.ZodType<T>;
@@ -20,13 +21,13 @@ export interface JudgementSupervisor {
 }
 
 /** Commit author and committer identity. */
-export interface CommitIdentityData {
+interface CommitIdentityData {
 	name: string;
 	email: string;
 }
 
 /** Workspace operations used by captureCodeResult. */
-export interface CodeWorkspaceOperations {
+interface CodeWorkspaceOperations {
 	changedFiles(worktree: string): Promise<string[]>;
 	scopeCheck?(
 		worktree: string,
@@ -49,7 +50,7 @@ let defaultWorkspaceOperations: CodeWorkspaceOperations | undefined;
  *
  * @param ops - Workspace operations implementation.
  */
-export function registerWorkspaceOperations(ops: CodeWorkspaceOperations): void {
+function registerWorkspaceOperations(ops: CodeWorkspaceOperations): void {
 	defaultWorkspaceOperations = ops;
 }
 
@@ -77,7 +78,7 @@ export {
 export const CAPTURE_TOOL_NAME = "capture";
 
 /** Definition of the capture tool provided to model contexts. */
-export interface CaptureToolDefinition {
+interface CaptureToolDefinition {
 	name: string;
 	description: string;
 	parameters: Record<string, unknown>;
@@ -90,7 +91,7 @@ export interface CaptureToolDefinition {
  * @param jsonSchema - The JSON schema describing the expected result.
  * @returns A capture tool definition ready for model contexts.
  */
-export function captureTool(jsonSchema: Record<string, unknown>): CaptureToolDefinition {
+function captureTool(jsonSchema: Record<string, unknown>): CaptureToolDefinition {
 	return {
 		name: CAPTURE_TOOL_NAME,
 		description: "Record the result extracted from the answer.",
@@ -191,7 +192,7 @@ export function readCapture(message: AssistantMessage): Record<string, unknown> 
 }
 
 /** Options for extracting judgement from natural prose. */
-export interface ExtractJudgementOptions<T> {
+interface ExtractJudgementOptions<T> {
 	/** Raw natural prose emitted by the model on natural stop. */
 	answer: string;
 	/** Target Zod schema for structured output. */
@@ -285,7 +286,7 @@ export async function extractJudgementResult<T>(options: ExtractJudgementOptions
 }
 
 /** Options for evaluating code node truth from engine-observed workspace evidence. */
-export interface CaptureCodeResultOptions {
+interface CaptureCodeResultOptions {
 	/** Absolute path to the git worktree. */
 	worktree: string;
 	/** Allowed glob patterns for modified files (scope check). */

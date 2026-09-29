@@ -59,7 +59,7 @@ export function refailureEffectId(issueBody: string, commentBody: string): strin
 }
 
 /** One comment row as the paginated read returns it. */
-export interface ClaimRow {
+interface ClaimRow {
 	/** The comment id GitHub assigned, which orders the claims. */
 	id: number;
 	/** The comment body. */

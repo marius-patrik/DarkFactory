@@ -18,11 +18,7 @@ export const STATUS_FIELD_NAME = "Status";
 export const STATUS_NAMES: readonly CanonicalStatus[] = CANONICAL_STATUSES;
 
 /** The statuses an item can never leave once it holds one. */
-export const TERMINAL_STATUSES: ReadonlySet<CanonicalStatus> = new Set<CanonicalStatus>([
-	"Done",
-	"Dropped",
-	"Superseded",
-]);
+const TERMINAL_STATUSES: ReadonlySet<CanonicalStatus> = new Set<CanonicalStatus>(["Done", "Dropped", "Superseded"]);
 
 /**
  * Labels that name a lifecycle status rather than a type or an area.
@@ -31,7 +27,7 @@ export const TERMINAL_STATUSES: ReadonlySet<CanonicalStatus> = new Set<Canonical
  * remove them. That exclusivity is the reason `setStatusLabel` adds by POST and deletes the rest
  * rather than replacing the label set.
  */
-export const STATUS_LABELS: ReadonlySet<string> = new Set<string>(CANONICAL_STATUSES);
+const STATUS_LABELS: ReadonlySet<string> = new Set<string>(CANONICAL_STATUSES);
 
 /**
  * One status option as the Projects v2 Status field declares it.
@@ -40,7 +36,7 @@ export const STATUS_LABELS: ReadonlySet<string> = new Set<string>(CANONICAL_STAT
  * status outside the canonical seven is a value this type has to be able to carry. The canonical seven
  * remain the default, not the constraint.
  */
-export interface CanonicalStatusOption {
+interface CanonicalStatusOption {
 	readonly name: string;
 	readonly color: string;
 	readonly description: string;

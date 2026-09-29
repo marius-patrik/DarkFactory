@@ -65,7 +65,7 @@ export const DEFAULT_ROUTER_CONFIG: RouterConfig = {
 /**
  * A function that reads a file at the given path and returns its contents as a string.
  */
-export type ConfigReader = (path: string) => Promise<string>;
+type ConfigReader = (path: string) => Promise<string>;
 
 function optionalString(record: Record<string, unknown>, name: string): string | undefined {
 	const value = record[name];

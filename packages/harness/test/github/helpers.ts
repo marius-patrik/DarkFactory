@@ -1,4 +1,4 @@
-export type Call = { url: string; init?: RequestInit };
+type Call = { url: string; init?: RequestInit };
 
 export function json(body: unknown, status = 200, headers: Record<string, string> = {}): Response {
 	return new Response(body === undefined ? undefined : JSON.stringify(body), {
