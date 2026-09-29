@@ -37,7 +37,7 @@ každý vlastním commitem.
 | A2 | `Výpis 1` chyběl v seznamu součástí | ✅ `487e0b06` |
 | A3 | Anotace 128 slov | ✅ `89109fc7` |
 | A4 | Šest klíčových slov | ✅ `1d0d4fe9` |
-| A5 | Metodika — původně rozhodnuto přesunout do kap. 1 jako epistemickou podkapitolu. **Rozhodnutí zrušeno autorem:** teoretická část byla autorovi oznámena jako hotová a přesun by ji znovu otevřel. Metodika zůstává podkapitolou 3.1 uvnitř praktické části, jak uvádí `guide.md`, a nese dvě podkapitoly: Tři kritéria (3.1.1) a Otevřená otázka: složení vrstev (3.1.2). Pravidlo o citování zůstalo odstavcem úvodu 3.1, bez vlastního nadpisu. | ✅ zrušeno, viz E2 |
+| A5 | Metodika — původně rozhodnuto přesunout do kap. 1 jako epistemickou podkapitolu. **Rozhodnutí zrušeno autorem:** teoretická část byla autorovi oznámena jako hotová a přesun by ji znovu otevřel. Metodika zůstává podkapitolou 3.1 uvnitř praktické části, jak uvádí `guide.md`. Podkapitola 3.1.2 (otázka o složení vrstev) byla odstraněna a její myšlenka přešla jako třetí omezení do 4.2 (`55155a11`). Zbývá jediná podkapitola, 3.1.1 Tři kritéria, ale autor pak rozhodl „state once in 1.2 answer in 4.1", takže ani ta není ve svém stavu konečná — viz `PLAN.md` Q-A. Věta o určení revize byla z úvodu 3.1 odstraněna na autorův pokyn; revize se stále uvádí v popiscích a v citacích `@darkfactory-d576ec8f` v těle. | ✅ zrušeno, viz E2; 3.1.1 viz Q-A |
 | A6 | Chyběla výzkumná otázka a hypotéza (kap. 2.3) | ✅ `34ad2ca1` |
 | A7 | Závěr nehodnotil naplnění cíle a neměl doporučení (kap. 2.6) | ✅ `4b53cb88` |
 | A8 | Omezení výzkumu v Diskusi (kap. 2.5) | ✅ `fbbfb7b6` |
@@ -168,7 +168,7 @@ Kód byl ověřen přímo v revizi `d576ec8f`, ne v pracovním stromu, který se
 
 | # | Co | Stav |
 | :-- | :--- | :--- |
-| J5 | **Záznam opakovatelnosti nyní určuje revizi.** Bez určení revize nelze popis ověřit proti kódu, a právě na tomto místě se ukázalo, že čtyři výše uvedená tvrzení revizi neodpovídala. Věta je v §3.1, hned před výčtem čtyř vrstev. | ✅ `4a378768` |
+| J5 | **Záznam opakovatelnosti nyní určuje revizi.** Bez určení revize nelze popis ověřit proti kódu, a právě na tomto místě se ukázalo, že čtyři výše uvedená tvrzení revizi neodpovídala. Věta byla v §3.1 hned před výčtem čtyř vrstev a byla odstraněna na autorův pokyn („remove, this doesnt belong in the paper", `d6eccfd6`) — mluvila o práci, ne o popisovaném systému. | ✅ `4a378768`, věta odstraněna |
 | J6 | **V Typstu značí `*...*` tučné, nikoli kurzívu** (kurzíva je `_..._`). Sedm míst v revizovaném textu používalo `*...*` v úmyslu kurzívy, takže tiskla tučně — mezi nimi název příspěvku *Attention Is All You Need* a heslo *schopen* v §1.2. Všechna nyní `#emph[]`. | ✅ `4a378768` |
 | J7 | **Tři jazykové chyby nalezené čtením sazebného textu: „jako **tato** tři" v závěru, kolize pádu „považován **za** rovnocenný / první bráně" v §3.4 a chybné číslo korekce v komentáři §4.1.**. | ✅ `4a378768` |
 

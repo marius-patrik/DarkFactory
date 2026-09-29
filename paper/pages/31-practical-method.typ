@@ -1,17 +1,20 @@
 // 3.1 Method.
 //
-// The first four paragraphs are the reproducibility record and are carried over from the
-// committed text: what was built, under what conditions, and what the simplification
-// costs. The three level-3 subsections are the method proper, added so that the
-// conditional `musí` of the research question has a measure and the reader can see which
-// rules the work held itself to. Level 3 is used deliberately: it adds content without
-// touching a single number in the outline above it.
+// What remains here is the reproducibility record: what was built, under what conditions,
+// and what the simplification costs. The sentence that named the pinned revision, and the
+// sentence about source types, were both removed at the author's instruction — they
+// described the paper rather than the system.
 //
-// The protocol states the rule, not the list — the introduction already qualifies the
-// sources once, so repeating the list here would give the reader the same paragraph
-// twice. The criteria are this thesis's own operationalisation of a conditional verb and
-// say so; they are not the field's taxonomy. The composition question is posed, and left
-// open: the theory does not answer it and neither does the record below.
+// Tři kritéria was a third level-3 subsection and is the only one left. The author has since
+// directed that the criteria be stated once in 1.2 and answered in 4.1, with 3.1.1 removed
+// (see ../PLAN.md, R13 and Q-A). That is not applied yet: what follows is the current
+// state, and it changes when the author settles Q-A.
+//
+// The composition question used to be 3.1.2. It was cut and its one live idea became the
+// third limitation in the discussion (4.2), beside ownership and scope.
+//
+// The criteria are this thesis's own operationalisation, not the field's taxonomy, and say
+// so.
 #heading(level: 2)[Metodika] <practical-first>
 
 Praktická část implementuje záměrně jednoduchou produkční pipeline, v níž je vývojovým prostředím přímo GitHub a harness produkční coding agent. Cílem je ukázat, jak lze spojit události GitHubu, automatizované plánování, izolovanou práci v kontejneru a lidskou integraci do jednoho opakovatelného procesu.

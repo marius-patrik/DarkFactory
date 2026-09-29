@@ -58,14 +58,14 @@ Czech wording that `paper-verify` greps for:
    `34-practical-implementation.typ` — „Testovací sady se přitom spouštějí pouze jednou a po opravě
    už ne… Opakovatelná kontrola tedy rozliší dobrý a špatný stav, ale není překážkou"
 
-Three methodology criteria, stated **once**, in §3.1.1 as an operationalisation of this thesis and
-not a borrowed taxonomy. `musí` is conditional: only the principles the model does not supply by
-itself are necessary. They are not restated anywhere — §4.1 applies them by symbolic reference,
-§3.5 names the third one in a clause, and the conclusion refers back rather than re-listing them.
-Cutting them entirely was considered and rejected: they are the only measure the paper has for the
-conditional `musí` of the research question, and the marking protocol scores both the aim
-(5 points, "is it verifiable?") and the methods (the most heavily weighted item) on exactly that.
-See `PLAN.md` §2 and §3, decision R1.
+Three methodology criteria, an operationalisation of this thesis and not a borrowed taxonomy.
+**Where they live is not settled.** They are currently stated in §3.1.1, and the author has
+since directed that they be *stated once in §1.2 and answered in §4.1*, with §3.1.1 removed
+(`PLAN.md` R13, Q-A). Until that is done, the text of §3.1.1 is the current state, and it is
+reproduced below so this file does not go stale when §3.1.1 changes.
+
+The author has also directed that the conditional `musí` be dropped (R11) — which means
+sentence 1 below changes with it. Neither edit is applied yet.
 
 1. **Stav leží mimo model a je zjistitelný** — an artefact, where it lives, and a person who can
    look at it without asking the model.
@@ -75,11 +75,18 @@ See `PLAN.md` §2 and §3, decision R1.
 3. **Člověk rozhoduje, co vstoupí do produkce** — a named moment, a named person, and **no other
    path** to the same point.
 
-Applied in §4.1: the first two criteria hold, the third holds **conditionally** — proxy approval can
-fill the named moment with a machine, and the criterion's wording requires no other path. **The
-verdict on whether the configuration satisfies the third criterion is deliberately not pronounced
-and belongs to the author** (`TODO.md` J12). That is a property of the thesis, not an unfinished
-sentence.
+Applied in §4.1: the first two criteria hold, the third holds **conditionally** — proxy approval
+can fill the named moment with a machine, and the criterion's wording requires no other path.
+**The verdict on whether the configuration satisfies the third criterion is deliberately not
+pronounced and belongs to the author** (`TODO.md` J12). That is a property of the thesis, not an
+unfinished sentence.
+
+**What "proxy approval" means**, since the term is easy to misread: it is not an agent acting
+under the author's account. The pipeline opens the pull request with the maintainer's token, so
+GitHub does not count that account's own approval; a **second bot account** submits the
+approving review programmatically with its own `BOT_TOKEN`. The human clicks approve, and the
+approval GitHub honours is the bot's. Without that second credential the pipeline waits for a
+real human approval instead (`PLAN.md` §2a).
 
 The composition question — which harness layer's conventions dominate — was §3.1.2 and has been
 **cut**; it is now the third limitation in §4.2, beside the two that were always there. The nested
@@ -95,8 +102,9 @@ translated because it denotes the actor; the suffix `-ic` means *having the capa
 the actor. Other English terms stay English because they are the industry's, and §1.3 says so.
 
 **§1.3 is one short paragraph, in the introduction.** A 40-term and then a 52-term glossary were
-built and cut twice at the author's instruction. Do not rebuild it. Define a term precisely in the
-chapter that argues with it.
+built and cut twice at the author's instruction. Do not rebuild it. Define a term precisely in
+the chapter that argues with it. This constrains where the three criteria may be stated: §1.2
+may name them as the work's own principles, but must not turn into a term list.
 
 ## House rules for the text
 
@@ -137,6 +145,11 @@ pipe's, not the build's. This happened, and a failed build was reported green.
 
 ## Standing constraints
 
+- **Each concept is stated once in the whole paper.** Where it is needed again, it is referred to
+  symbolically or not at all. The author's words, unqualified, and it applies across the paper.
+  *Not yet settled:* the test an agent used to split 38 "echoes" from 18 "applications" — the
+  author never confirmed it, and until they do, that split is not a licence to keep anything
+  (`PLAN.md` Q-D).
 - **Symbolic cross-references only.** No hardcoded page, section, figure or table numbers in the
   prose. Removing a page has never broken anything because of this.
 - **Every bibliography entry must be cited.** Uncited entries are *deferred, not deleted* — the
@@ -155,10 +168,13 @@ pipe's, not the build's. This happened, and a failed build was reported green.
 - All figures full text width, legend on one line under the graph, and a caption that states its true
   provenance: vendor documentation is not a community post, and an interface illustration is not a
   record of the pipeline.
-- **No sentence describes a figure.** Where a figure has no `@label` reference in the text, that is a
-  decision, not a gap: the author removed the trailing sentence that named the figure, and the
-  sentence the figure belongs to is the reference. Do not add descriptive sentences to satisfy the
-  letter of a linking rule.
+- **No sentence describes a figure.** The author removed the trailing sentence that named a
+  figure, and the sentence the figure *belongs to* — not the one that introduces it — is the
+  reference. Do not add a descriptive sentence to satisfy the letter of a linking rule.
+  *Settled separately:* every figure is to carry a reference, inserted into that existing
+  sentence. Six have none today; which sentence each attaches to is recorded in `PLAN.md` Fáze 2.
+  An earlier draft of that phase said "leading sentence", which is the sentence the author wants
+  gone — corrected.
 
 ## The bar
 

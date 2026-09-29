@@ -4,7 +4,10 @@
 // sources — what kind of text each is, its review status, and who stands behind it —
 // is stated once here, in the paragraph that sorts them, so that the theory chapter can
 // attribute individual sentences without repeating itself. The subsections are fixed by
-// the structure of the work: 1.1 and 1.2 Terminology.
+// the structure of the work: 1.1 Motivace, 1.2 Cíl a výzkumná otázka, 1.3 Terminologie.
+//
+// 1.2 is also where the three principles are to be stated, once, if `PLAN.md` Q-A is settled
+// that way. It must not become a term list: 1.3 owns terminology and is one paragraph.
 #heading(level: 1)[Úvod]
 
 #heading(level: 2)[Motivace: Vývoj a adopce generativní AI] <motivace>
