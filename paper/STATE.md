@@ -82,7 +82,7 @@ Czech wording that `paper-verify` greps for:
    `34-practical-implementation.typ` — „Po čisté review ještě proběhne kontrola souladu výsledného
    diffu se schváleným plánem. Ani ta není porovnáním sad souborů: je to druhý dotaz modelu…"
 3. Approval is a two-entry allowlist on `GITHUB_ACTOR`, not the issue author.
-   `35-practical-integration.typ` — „aktér se porovnává se seznamem dvou pevně zapsaných účtů…
+   `35-practical-integration.typ` — „aktér se porovnává s jedním pevně zapsaným účtem, vlastníkem repozitáře…
    Neověřuje se tedy autor issue ani úroveň oprávnění, ale členství v tomto seznamu"
 4. Test suites run once; not again after the fix.
    `34-practical-implementation.typ` — „Testovací sady se přitom spouštějí pouze jednou a po opravě
@@ -114,8 +114,9 @@ unfinished sentence.
 **What "proxy approval" means**, since the term is easy to misread: it is not an agent acting
 under the author's account. The pipeline opens the pull request with the maintainer's token, so
 GitHub does not count that account's own approval; a **second bot account** submits the
-approving review programmatically with its own `BOT_TOKEN`. The human from the two-account
-allowlist decides, and the bot only carries that decision into the review field, because GitHub
+approving review programmatically with its own `BOT_TOKEN`. The single human in the
+allowlist — the repository owner — decides, and the bot only carries that decision into the
+review field, because GitHub
 will not register the human's approval of a pull request the human opened. Without that second credential the pipeline waits for a
 real human approval instead (Část 2, §2a).
 
@@ -167,7 +168,7 @@ claims about the code passed it. Content checks are greps on the rendered Czech:
 ```sh
 grep -rn 'může skončit bez jakéhokoli verdiktu' pages/   # loop can end with no verdict
 grep -rn 'Po čisté review ještě' pages/
-grep -rn 'seznamem dvou pevně zapsaných účtů' pages/
+grep -rn 'pevně zapsaným účtem, vlastníkem repozitáře' pages/
 grep -rn 'pouze jednou a po opravě už ne' pages/
 ```
 
@@ -405,7 +406,7 @@ the approval action? thats stupid it is me approving"*
    stroj, ne člověk. Přesně to, co autor popsal slovy *„its stupid it is me approving"* —
    autor kliká, ale GitHub uzná jen schválení bota.
 
-Který účet smí schválit, je seznam dvou pevně zapsaných účtů porovnávaný s
+Který účet smí schválit, je jeden pevně zapsaný účet, vlastník repozitáře, porovnávaný s
 `GITHUB_ACTOR` (§3.5). Odtud formulace, kterou autor odmítl jako nepravdivou, že schválení
 „ověřuje autora issue nebo oprávněného člena".
 
@@ -443,7 +444,7 @@ Který účet smí schválit, je seznam dvou pevně zapsaných účtů porovnáv
 | # | Otázka | Proč dosud nerozhodnuto |
 | :-- | :--- | :--- |
 | ~~Q-A~~ | ~~Kolik principů, v jakém znění, a zda vůbec zůstat u trojice.~~ **VYŘEŠENO** | R15. Trojice nezaniká žádnou jinou cestou — maže se celá. Škola kritéria nevyžaduje. |
-| **Q-B** | Zda v §1.2 uvést „vlastní principy, nikoli převzatou taxonomii". | Agentova pochybnost: komise může číst jako přiznání, že výběr není odvozený. Nabízí se k zrušení spolu s kritérii. |
+| ~~Q-B~~ | ~~Zda v §1.2 uvést „vlastní principy, nikoli převzatou taxonomii".~~ **VYŘEŠENO** | Autor: „Delete the line". V práci už není, odstraněna dřív — `grep -rn taxonomi pages/` je prázdný. Nebyla co mazat. |
 | ~~Q-C~~ | ~~Tvar §4.1.~~ **VYŘEŠENO** | Autorova pochybnost, zda vůbec zachovat tři otázky: „40:23 doesnt make sense". Zrušeno spolu s kritérii; §4.1 musí hlavní otázce odpovědět bez nich. Viz R15 a editaci 40:23. |
 | **Q-D** | Zda test 38/18 platí. | Agentův vynález, autor ho nepotvrdil. Bez něj je rozdělení těch 38 neodůvodněné. |
 | **Q-E** | ~~Hranice tří iterací.~~ **VYŘEŠENO** | Autor: „cut it there too". Počet odstraněn ze všech osmi míst (§3.1, §3.4, popisek @fig-darkfactory-pipeline, popis i nápis v `darkfactory-pipeline.svg`, páté zjištění, závěr). V práci zůstává následek — smyčka může skončit bez verdiktu — počet nefiguruje nikde a je ověřen v Části 4, položce J1. Viz Fáze 8. |
@@ -588,7 +589,7 @@ při pokračování; sazba 8 pt pod odstavcem.
 
 ```sh
 grep -rn 'Po čisté review ještě' pages/
-grep -rn 'seznamem dvou pevně zapsaných účtů' pages/
+grep -rn 'pevně zapsaným účtem, vlastníkem repozitáře' pages/
 grep -rn 'pouze jednou a po opravě už ne' pages/
 ```
 
@@ -788,7 +789,7 @@ Kód byl ověřen přímo v revizi `d576ec8f`, ne v pracovním stromu, který se
 | :-- | :--- | :--- |
 | J1 | **§3.4 uváděla, že se opakovaný stejný nález bez progresu označí jako zablokovaný stav.** Ve skutečnosti `Blocked` znamená **vyčerpanou kvótu**; porovnání digestů přišlo až v pozdější revizi (`21dfd85d`). Mechanismus v `d576ec8f`: `MAX_REVIEW_ITERATIONS = 3`, oprava bez změny ukončí běh dřív a vyčerpání nezapíše žádný verdikt ani komentář. **Tento záznam je jediné místo, kde číslo je; v práci ho autor odstranil záměrně ze všech míst** (§3.1, §3.4, popisek @fig-darkfactory-pipeline, popis i nápis v `darkfactory-pipeline.svg`, páté zjištění, závěr) — rozhodl, že se má uvést následek, ne počet. V práci tedy zůstává „smyčka může skončit bez jakéhokoli verdiktu", což je přesně to, co je pro obhajobu důležité, a počet se neuvádí nikde. Grep v `paper-verify` na `nejvýše třemi iteracemi` byl zrušen, protože by vyžadoval větu, kterou autor nechce v textu mít. | ✅ `c23caa69`, číslo z textu odstraněno |
 | J2 | **Pořadí dvou bran bylo obrácené.**. Revize nejprve předá diff modelové review, až pak porovná změněné soubory se schváleným plánem; kód sám čísluje kroky `# 11. Self-review loop` a `# 12. Plan alignment gate`. | ✅ `c23caa69` |
-| J3 | **Schválení pull requestu bylo popsáno jako ověření autora issue nebo oprávněného člena.**. Je to **seznam dvou pevně zapsaných účtů** porovnávaný s `GITHUB_ACTOR` (`handle_pr_approval.py:216-225`) — ne autor issue, ne úroveň oprávnění. | ✅ `c23caa69` |
+| J3 | **Schválení pull requestu bylo popsáno jako ověření autora issue nebo oprávněného člena.**. Je to **jeden pevně zapsaný účet, vlastník repozitáře**, porovnávaný s `GITHUB_ACTOR` (`handle_pr_approval.py:216-225`) — ne autor issue, ne úroveň oprávnění. Set `{repo_owner.lower(), "marius-patrik"}` při `REPO_OWNER=marius-patrik` deduplikuje na jedno jméno; dvě účty nikdy nebyly. | ✅ `c23caa69`, opraveno v `1615ddf0`+ |
 | J4 | **Práce tvrdila, že review a testy jsou skutečnou překážkou.**. `verify_repository` je definována jednou a **volána jednou** (`agent_runner.py:2088`); výstup jde do promptu `fix` a druhý běh nenastane, takže změna s neprocházejícími testy dorazí do draft pull requestu. | ✅ `c23caa69` |
 
 | # | Co | Stav |

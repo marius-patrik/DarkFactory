@@ -16,7 +16,7 @@ Druhé zjištění potvrzuje oddělení lidského rozhodnutí od modelového ná
 
 Třetí zjištění se týká průběhu revize a jeho pořadí. Implementace je nejprve odevzdána jako draft pull request. Automatická kontrola nejprve předá diff modelové review a teprve poté, jakmile je čisté, porovná změněné soubory se schváleným plánem. Nalezené problémy spouštějí samostatný běh opravy, po němž následuje nová kontrola. Teprve čistá review a kontrola souladu s plánem otevřou pull request pro lidskou revizi @darkfactory-d576ec8f.
 
-Čtvrté zjištění se týká zpětné vazby a integrace. Změnový požadavek na pull requestu spouští opravu na stejné větvi a po pushi znovu vstupuje do review smyčky. Schválení pull requestu naopak spouští merge s odstraněním větve, takže pipeline nekončí automatickým vytvořením kódu, ale přechází do explicitního lidského schválení a následné integrace. Kdo schválení vykoná, je v této revizi určeno jen dvojčlenným seznamem účtů, a je-li ochrana větve stále žádající, může potřebné schválení doplnit workflow jménem jiného účtu @darkfactory-d576ec8f.
+Čtvrté zjištění se týká zpětné vazby a integrace. Změnový požadavek na pull requestu spouští opravu na stejné větvi a po pushi znovu vstupuje do review smyčky. Schválení pull requestu naopak spouští merge s odstraněním větve, takže pipeline nekončí automatickým vytvořením kódu, ale přechází do explicitního lidského schválení a následné integrace. Kdo schválení vykoná, je v této revizi určeno jedním účtem, vlastníkem repozitáře. Je-li ochrana větve stále žádající, může potřebné schválení doplnit workflow jménem bota, protože GitHub autorovi jeho vlastního pull requestu schválení nepočítá. Zápis v GitHubu pak nese jméno bota, nikoli jméno člověka, který rozhodl @darkfactory-d576ec8f.
 
 Páté zjištění je záporné a práce ho ponechává. Tři předpoklady, na nichž popis průběhu stál, v této revizi neplatí. Revize se může zastavit bez zaznamenaného verdiktu, takže nerozliší průchod od zastavení; zablokovaný stav zde neznamená opakovaný nález, ale vyčerpanou kvótu; a testy se před sloučením nespouštějí znovou, takže změna, která neprošla, na pull request dorazí. Podmínka zastavení, která první z těchto mezer vyřešila, je v dokumentaci cílové smyčky popsána výslovně @openai-goals; její vyplnění je věcí následné práce, ale zjištění, že chybí, do výsledků patří @darkfactory-d576ec8f.
 
@@ -24,4 +24,4 @@ Na výzkumnou otázku odpovídají tři věci. První je stav, který leží mim
 se k němu lze vrátit bez dotazu na model. Druhý je druh rozhodnutí. Brány před vznikem
 větve jsou lidské a brány před sloučením jsou obě dotazem na model. @diskuse upozorňuje,
 že proto nejsou navzájem nezávislé. Třetí je okamžik, v němž rozhodne účet ze seznamu
-dvou pevně zapsaných; jak se to zaznamená, popisuje čtvrté zjištění.
+vlastníka repozitáře; jak se to zaznamená, popisuje čtvrté zjištění.
