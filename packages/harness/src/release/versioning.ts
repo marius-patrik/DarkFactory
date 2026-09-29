@@ -309,7 +309,7 @@ export interface ReleaseDecision {
 	/** Version currently released, or `null` when nothing has been. */
 	current: string | null;
 	/** Tag currently released, or `null`. */
-	currentTag: string | null;
+	current_tag: string | null;
 	/** The version to release, or `null` when none is warranted. */
 	next: string | null;
 	/** The tag `next` would carry, or `null`. */
@@ -343,7 +343,14 @@ export function resolveRelease(repoRoot: string, requested?: string | null): Rel
 		if (isAhead(declared, current)) {
 			// The file names something newer than what is released: that is the owner's decision,
 			// and it wins over anything the commit log implies.
-			return { mode: config.mode, current, currentTag, next: declared, tag: `${prefix}${declared}`, bump: "declared" };
+			return {
+				mode: config.mode,
+				current,
+				current_tag: currentTag,
+				next: declared,
+				tag: `${prefix}${declared}`,
+				bump: "declared",
+			};
 		}
 		// Either the file already matches the last release, or it names one behind it because a
 		// record never landed. A stale file is not a choice: treating it as one would re-release an
@@ -353,7 +360,7 @@ export function resolveRelease(repoRoot: string, requested?: string | null): Rel
 		return {
 			mode: config.mode,
 			current,
-			currentTag,
+			current_tag: currentTag,
 			next: upcoming,
 			tag: upcoming === null ? null : `${prefix}${upcoming}`,
 			bump,
@@ -362,7 +369,14 @@ export function resolveRelease(repoRoot: string, requested?: string | null): Rel
 
 	if (requested && parseVersion(requested)) {
 		const upcoming = requested.replace(/^v/, "");
-		return { mode: config.mode, current, currentTag, next: upcoming, tag: `${prefix}${upcoming}`, bump: "explicit" };
+		return {
+			mode: config.mode,
+			current,
+			current_tag: currentTag,
+			next: upcoming,
+			tag: `${prefix}${upcoming}`,
+			bump: "explicit",
+		};
 	}
 
 	const bump: Bump = requested ? (requested as Bump) : classifyCommits(commitsSince(repoRoot, currentTag));
@@ -370,9 +384,32 @@ export function resolveRelease(repoRoot: string, requested?: string | null): Rel
 	return {
 		mode: config.mode,
 		current,
-		currentTag,
+		current_tag: currentTag,
 		next: upcoming,
 		tag: upcoming === null ? null : `${prefix}${upcoming}`,
 		bump,
 	};
+}
+
+/*
+ * The program entry. `.github/workflows/release.yml` runs this to resolve the version before
+ * building, and `package.json`'s `release:version` script is the same call. It used to be a second
+ * file at `scripts/versioning.ts` that duplicated every function above; the duplication meant the
+ * version could be resolved two different ways in one flow, so the logic lives here once and the
+ * workflow runs this.
+ */
+if (import.meta.main) {
+	const args = process.argv.slice(2);
+	const value = (name: string): string | undefined => {
+		const index = args.indexOf(name);
+		return index >= 0 ? args[index + 1] : undefined;
+	};
+	const root = value("--repo-root") ?? ".";
+	try {
+		const decision = resolveRelease(root, value("--bump") ?? process.env.REQUESTED_BUMP ?? null);
+		console.log(JSON.stringify(decision, null, 2));
+	} catch (error) {
+		console.error(error instanceof Error ? error.message : String(error));
+		process.exit(1);
+	}
 }

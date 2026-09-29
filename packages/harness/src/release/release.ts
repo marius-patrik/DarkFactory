@@ -13,13 +13,13 @@
 import { existsSync, globSync, readFileSync, statSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { configBlock, parseConfigDocument, resolveConfigDocumentPath } from "@darkfactory/protocol/config-document";
+import { configure } from "./environment.ts";
 import {
 	commitsSince,
 	readManualVersion,
-	resolve as resolveVersion,
-	type VersionDecision,
-} from "../../../../scripts/versioning.ts";
-import { configure } from "./environment.ts";
+	resolveRelease as resolveVersion,
+	type ReleaseDecision as VersionDecision,
+} from "./versioning.ts";
 
 /** Conventional Commit type -> the heading it appears under in the release notes, in order. */
 export const NOTE_SECTIONS: readonly (readonly [string, string])[] = [

@@ -26,7 +26,7 @@ on:
         required: false
         type: string
 
-# The version comes from `scripts/versioning.ts` and the `df` build matrix comes from
+# The version comes from `packages/harness/src/release/versioning.ts` and the `df` build matrix comes from
 # `packages/harness/scripts/release-targets.ts`. Adding a published platform is therefore a change to
 # table, not to this file, and there is one place where the two agree on what is being released.
 #
@@ -73,7 +73,7 @@ jobs:
         env:
           REQUESTED_BUMP: ${{ inputs.bump }}
         run: |
-          bun scripts/versioning.ts --repo-root . > "$RUNNER_TEMP/version.json"
+          bun packages/harness/src/release/versioning.ts --repo-root . > "$RUNNER_TEMP/version.json"
           cat "$RUNNER_TEMP/version.json"
           # An empty `next` means nothing is release-worthy, which is a clean no-op rather than a
           # failure, and every job that would publish is gated on it.

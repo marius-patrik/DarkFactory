@@ -13,7 +13,7 @@
     "typecheck": "bun run --cwd packages/harness typecheck",
     "check": "bun run --cwd packages/harness check",
     "docs": "bun scripts/build-docs.ts",
-    "release:version": "bun scripts/versioning.ts",
+    "release:version": "bun packages/harness/src/release/versioning.ts",
     "release:targets": "bun packages/harness/scripts/release-targets.ts",
     "format:check": "biome format .",
     "lint": "biome lint ."

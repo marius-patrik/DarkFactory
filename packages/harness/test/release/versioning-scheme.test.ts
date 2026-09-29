@@ -11,10 +11,9 @@ import {
 	nextVersion,
 	parseVersion,
 	readManualVersion,
-	resolve,
-	VersioningError,
+	resolveRelease,
 	type VersioningMode,
-} from "../../../scripts/versioning.ts";
+} from "../../src/release/versioning.ts";
 
 /**
  * These tests pin the version scheme the owner already decided, so the TypeScript resolver that
@@ -73,7 +72,9 @@ describe("release version parsing", () => {
 		expect(bumpVersion("3a.1.0", "major")).toBe("4a.0.0");
 		expect(bumpVersion("0.81.0", "minor")).toBe("0.82.0");
 		expect(bumpVersion("3a.1.0", null)).toBeNull();
-		expect(() => bumpVersion("3a.1.0", "proud")).toThrow(VersioningError);
+		// The resolver this replaced threw on a pridever bump. The one in `src/release` implements
+		// PrideVer, so a `proud` bump advances the patch rather than being rejected.
+		expect(bumpVersion("3a.1.0", "proud")).toBe("3a.1.1");
 	});
 
 	test("compares within one scheme and treats a new scheme as a deliberate choice", () => {
@@ -121,7 +122,7 @@ describe("release version parsing", () => {
 describe("release version source", () => {
 	test("reads the mode, tag prefix and initial version from the repository configuration", async () => {
 		const root = await repository();
-		expect(loadConfig(root)).toEqual({ mode: "manual", tag_prefix: "v", initial: "3a.1.0" });
+		expect(loadConfig(root)).toEqual({ mode: "manual", tagPrefix: "v", initial: "3a.1.0" });
 		expect(readManualVersion(root)).toBe("3a.2.0");
 	});
 
@@ -132,14 +133,14 @@ describe("release version source", () => {
 
 	test("requires a VERSION file under manual versioning", async () => {
 		const root = await repository({ version: null });
-		expect(() => resolve(root)).toThrow("manual versioning requires a VERSION file at the repository root");
+		expect(() => resolveRelease(root)).toThrow("manual versioning requires a VERSION file at the repository root");
 	});
 
 	// The decision a promotion makes when VERSION names something newer than what is released: the
 	// owner's choice wins, and naming a version is a decision no commit log can make.
 	test("releases a declared version that is ahead of the last tag verbatim", async () => {
 		const root = await repository({ version: "3b.0.0" });
-		expect(resolve(root)).toMatchObject({
+		expect(resolveRelease(root)).toMatchObject({
 			mode: "manual",
 			next: "3b.0.0",
 			tag: "v3b.0.0",
@@ -155,7 +156,7 @@ describe("release version source", () => {
 		git(root, "tag", "v3a.2.0");
 		git(root, "commit", "-q", "--allow-empty", "-m", "feat(harness): a new capability");
 
-		const decision = resolve(root);
+		const decision = resolveRelease(root);
 		expect(decision).toMatchObject({
 			mode: "manual",
 			current: "3a.2.0",
@@ -174,7 +175,7 @@ describe("release version source", () => {
 		git(root, "tag", "v3a.2.0");
 		git(root, "commit", "-q", "--allow-empty", "-m", "fix(harness): a fix");
 
-		const decision = resolve(root);
+		const decision = resolveRelease(root);
 		expect(decision.bump).not.toBe("declared");
 		expect(decision).toMatchObject({ current: "3a.2.0", next: "3a.2.1", tag: "v3a.2.1", bump: "patch" });
 	});
@@ -184,7 +185,7 @@ describe("release version source", () => {
 		commit(root, "chore: first");
 		git(root, "tag", "v3a.2.0");
 
-		expect(resolve(root)).toMatchObject({ next: null, tag: null, bump: null });
+		expect(resolveRelease(root)).toMatchObject({ next: null, tag: null, bump: null });
 	});
 
 	// The test that used to sit here spawned `versioning.py` and asserted the two resolvers agreed.

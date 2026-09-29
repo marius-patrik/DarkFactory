@@ -2,7 +2,7 @@
  * A drop-in command line for the release workflow, staged to replace `release.py --repo-root ...`.
  *
  * The workflow does not call this yet. It runs `release.py` on purpose, as a cross-check oracle: the
- * release resolves the version and tag twice, with `scripts/versioning.ts` and with the Python, and
+ * release resolves the version and tag twice, with `release/versioning.ts` and with the Python, and
  * fails the release if the two disagree. That double resolution is stated in `release.yml` with a
  * retirement condition, and it is why the Python has not been swapped out. This file is the
  * replacement, waiting on that cross-check being retired rather than being forgotten.
