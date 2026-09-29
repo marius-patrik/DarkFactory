@@ -14,6 +14,8 @@
 import { readFile } from "node:fs/promises";
 import { basename, isAbsolute, join, resolve } from "node:path";
 import { configBlock, parseConfigDocument, resolveConfigDocumentPath } from "@darkfactory/protocol/config-document";
+import { CANONICAL_STATUSES } from "@darkfactory/protocol/workflow";
+import { TYPE_LABELS } from "../pipeline/labels.ts";
 
 /** The filename an installation writes when a repository declares no configuration yet. */
 export const MANIFEST_PATH = "repo.dfconfig";
@@ -425,6 +427,26 @@ export class RepositoryManifest {
 	 * declared every area takes one colour, which is visibly plain rather than pretending to be a
 	 * taxonomy: a repository that has not chosen colours has not chosen them.
 	 */
+	/**
+	 * The status vocabulary this repository's board uses, in column order.
+	 *
+	 * Declared statuses win. An undeclared repository gets the pipeline's own canonical seven, which
+	 * is what `CANONICAL_STATUSES` has always been, so the column order and the statuses the
+	 * projection can return are one list rather than two that can drift apart.
+	 */
+	statuses(): string[] {
+		const declared = this.data.labels;
+		const list = isRecord(declared) ? declared.statuses : undefined;
+		return Array.isArray(list) && list.length > 0 ? list.map((entry) => text(entry)) : [...CANONICAL_STATUSES];
+	}
+
+	/** The permitted Conventional Commit types, sorted. */
+	types(): string[] {
+		const declared = this.data.labels;
+		const list = isRecord(declared) ? declared.types : undefined;
+		return Array.isArray(list) && list.length > 0 ? list.map((entry) => text(entry)) : [...TYPE_LABELS];
+	}
+
 	areaColours(): string[] {
 		const declared = this.data.labels;
 		const list = isRecord(declared) ? declared.area_colours : undefined;

@@ -1,4 +1,5 @@
 import { describe, expect, it } from "bun:test";
+import { CANONICAL_STATUSES } from "@darkfactory/protocol/workflow";
 import {
 	applyActionsPermissions,
 	applyBoardLinks,
@@ -35,6 +36,7 @@ const MANIFEST: RepoSettingsManifestView = {
 	homepage: "https://darkfactory.dev",
 	topics: ["ai", "agents", "bun"],
 	boards: ["DarkFactory", "Fleet"],
+	statusNames: [...CANONICAL_STATUSES],
 	owner: "marius-patrik",
 };
 

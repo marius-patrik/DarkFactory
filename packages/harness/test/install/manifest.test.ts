@@ -2,6 +2,7 @@ import { afterAll, describe, expect, test } from "bun:test";
 import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join, relative } from "node:path";
+import { CANONICAL_STATUSES } from "@darkfactory/protocol/workflow";
 import {
 	AREA_COLOURS,
 	DEFAULT_AREAS,
@@ -11,6 +12,7 @@ import {
 	MANIFEST_PATH,
 	resolveManifestPath,
 } from "../../src/install/manifest.ts";
+import { TYPE_LABELS } from "../../src/pipeline/labels.ts";
 
 // Four levels up: this suite is one directory deeper than `test/ci/`, and a test that reads
 // repository content has to derive the same root the pipeline does or it asserts against the wrong
@@ -115,6 +117,22 @@ describe("areas", () => {
 		const labels = (await loadRepositoryManifest(dir)).areaLabels();
 		expect(labels[0]?.name).toBe("area:core");
 		expect(labels[0]?.colour).toMatch(/^[0-9a-f]{6}$/u);
+	});
+
+	test("the declared statuses decide the vocabulary, in order", async () => {
+		const dir = await declare({ labels: { statuses: ["Triage", "Doing", "Shipped"] } });
+		expect((await loadRepositoryManifest(dir)).statuses()).toEqual(["Triage", "Doing", "Shipped"]);
+	});
+
+	test("an undeclared repository gets the canonical statuses", async () => {
+		const dir = await declare({});
+		expect((await loadRepositoryManifest(dir)).statuses()).toEqual([...CANONICAL_STATUSES]);
+	});
+
+	test("the declared types decide the conventional-commit types", async () => {
+		const dir = await declare({ labels: { types: ["feat", "fix"] } });
+		expect((await loadRepositoryManifest(dir)).types()).toEqual(["feat", "fix"]);
+		expect((await loadRepositoryManifest(await declare({}))).types()).toEqual([...TYPE_LABELS]);
 	});
 
 	test("every area gets a distinct colour from the declared palette", async () => {

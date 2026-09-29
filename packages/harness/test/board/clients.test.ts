@@ -53,6 +53,17 @@ function boardApi(
 	});
 }
 
+/** A board that comes back holding exactly the options just submitted. */
+function taxonomyAnswer(): FakeAnswer {
+	return graphql({
+		updateProjectV2Field: {
+			projectV2Field: {
+				options: ["Triage", "Doing", "Shipped"].map((name) => ({ id: `opt-${name}`, name })),
+			},
+		},
+	});
+}
+
 /** The Status field as a healthy board declares it. */
 const STATUS_FIELD = {
 	id: "F1",
@@ -86,12 +97,16 @@ function restClient(
 function graphqlClient(
 	run: BoardRun,
 	handler: (request: RecordedRequest) => FakeAnswer | undefined,
+	statusNames?: readonly string[],
 ): {
 	client: BoardGraphqlClient;
 	transport: ReturnType<typeof fakeTransport>;
 } {
 	const transport = fakeTransport(handler);
-	return { client: new BoardGraphqlClient({ run, token: "test-token", fetch: transport.fetch }), transport };
+	return {
+		client: new BoardGraphqlClient({ run, token: "test-token", fetch: transport.fetch, statusNames }),
+		transport,
+	};
 }
 
 describe("applying a status label", () => {
@@ -299,6 +314,28 @@ describe("board field and option discovery", () => {
 		const { client } = graphqlClient(run, () => graphqlError("Resource not accessible"));
 		const result = await client.enforceBoardTaxonomy("F_123", [{ id: "opt-old", name: "Backlog" }]);
 		expect(result).toEqual({ Backlog: "opt-old" });
+	});
+
+	test("the declared vocabulary decides the columns, not the canonical list", async () => {
+		// The declaration is data: a repository that declares a different set of statuses gets exactly
+		// those columns, in its order, with no change to the client.
+		const run = quietRun();
+		const { client, transport } = graphqlClient(
+			run,
+			(request) => (operationOf(request) === "EnforceTaxonomy" ? taxonomyAnswer() : undefined),
+			["Triage", "Doing", "Shipped"],
+		);
+		await client.enforceBoardTaxonomy("F_123", []);
+		const submitted = transport.requests[0] as RecordedRequest;
+		const options = (
+			submitted.body as {
+				variables: { input: { singleSelectOptions: { name: string; description: string }[] } };
+			}
+		).variables.input.singleSelectOptions;
+		expect(options.map((option) => option.name)).toEqual(["Triage", "Doing", "Shipped"]);
+		// A name the presentation table has never heard of still gets a column, because the projection
+		// can produce any status the repository declares and an item in a missing column is unreachable.
+		expect(options.every((option) => option.description.length > 0)).toBe(true);
 	});
 
 	test("field discovery runs once per client, not once per mutation", async () => {

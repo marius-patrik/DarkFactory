@@ -175,6 +175,8 @@ export interface RepoSettingsManifestView {
 	topics: string[];
 	boards: string[];
 	globalBoard?: string | undefined;
+	/** The declared status vocabulary, in column order; the canonical seven when undeclared. */
+	statusNames: string[];
 	owner: string;
 }
 
@@ -439,6 +441,7 @@ export async function runRepoSettings(
 		topics: repositoryManifest.topics(),
 		boards: repositoryManifest.boards(env),
 		globalBoard: repositoryManifest.globalBoard(env),
+		statusNames: repositoryManifest.statuses(),
 		owner: repositoryManifest.owner(env),
 	};
 
@@ -514,8 +517,12 @@ export async function runRepoSettings(
  * @param env The environment the token fallback chain is read from.
  * @param run The run whose budget and failure list the client reports against.
  */
-export function createBoardPort(env: RepoSettingsEnv, run: BoardRun): RepoSettingsBoardPort {
-	const client = new BoardGraphqlClient({ run, env });
+export function createBoardPort(
+	env: RepoSettingsEnv,
+	run: BoardRun,
+	statusNames?: readonly string[],
+): RepoSettingsBoardPort {
+	const client = new BoardGraphqlClient({ run, env, statusNames });
 	return {
 		async readProjects(owner: string): Promise<ProjectListing> {
 			// The client swallows a failed listing and returns nothing, because its other callers want

@@ -241,11 +241,13 @@
         "docs"
       ],
       "statuses": [
+        "Backlog",
         "ToDo",
         "In Progress",
         "Blocked",
-        "In Review",
-        "Done"
+        "Done",
+        "Superseded",
+        "Dropped"
       ]
     },
     "board": {

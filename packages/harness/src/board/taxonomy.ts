@@ -33,9 +33,15 @@ export const TERMINAL_STATUSES: ReadonlySet<CanonicalStatus> = new Set<Canonical
  */
 export const STATUS_LABELS: ReadonlySet<string> = new Set<string>(CANONICAL_STATUSES);
 
-/** One canonical status option as the Projects v2 Status field declares it. */
+/**
+ * One status option as the Projects v2 Status field declares it.
+ *
+ * `name` is a plain string, not a `CanonicalStatus`: the vocabulary is declared per repository, so a
+ * status outside the canonical seven is a value this type has to be able to carry. The canonical seven
+ * remain the default, not the constraint.
+ */
 export interface CanonicalStatusOption {
-	readonly name: CanonicalStatus;
+	readonly name: string;
 	readonly color: string;
 	readonly description: string;
 }
@@ -56,6 +62,21 @@ export const CANONICAL_STATUS_OPTIONS: readonly CanonicalStatusOption[] = [
 	{ name: "Superseded", color: "GRAY", description: "Outranked by a newer request or plan" },
 	{ name: "Dropped", color: "RED", description: "Closed without implementation or abandoned" },
 ];
+
+/**
+ * The Status field options for a declared vocabulary, in that order.
+ *
+ * The presentation of a status is the table above; the *order and membership* are data, read from
+ * the repository's declaration. A name the presentation table does not know still gets a column, with
+ * a neutral description, because dropping a declared status would leave the items in it unreachable —
+ * the projection can produce any status the repository declares.
+ */
+export function statusOptionsFor(names: readonly string[]): readonly CanonicalStatusOption[] {
+	return names.map((name) => {
+		const known = CANONICAL_STATUS_OPTIONS.find((option) => option.name === name);
+		return known ?? { name, color: "GRAY", description: `${name} (declared by this repository)` };
+	});
+}
 
 /** Whether a label is one automation owns as a status. */
 export function isStatusLabel(name: string): boolean {

@@ -1,7 +1,8 @@
+import { CANONICAL_STATUSES } from "@darkfactory/protocol/workflow";
 import { FetchTransport, type GitHubFetch } from "../github/transport.ts";
 import { BoardRequestError, type BoardRun, describeFailure, GraphqlError, isRateLimited } from "./run.ts";
 import type { FieldValueConnection } from "./status.ts";
-import { CANONICAL_STATUS_OPTIONS } from "./taxonomy.ts";
+import { statusOptionsFor } from "./taxonomy.ts";
 
 /**
  * Projects v2 reads and writes.
@@ -64,6 +65,13 @@ export interface BoardGraphqlOptions {
 	readonly run: BoardRun;
 	/** The HTTP implementation, so a test can answer without a network. */
 	readonly fetch?: GitHubFetch;
+	/**
+	 * The status vocabulary this repository declares, in column order.
+	 *
+	 * Data, not code: the caller reads it from the manifest so a repository that declares a different
+	 * set of statuses needs no change here. Omitted, the pipeline's canonical seven are used.
+	 */
+	readonly statusNames?: readonly string[];
 }
 
 const GET_PROJECTS = `
@@ -254,9 +262,12 @@ export class BoardGraphqlClient {
 	readonly #token: string;
 	readonly #run: BoardRun;
 	readonly #transport: FetchTransport;
+	readonly #statusNames: readonly string[];
 	#projects: Map<string, ProjectNode> | null = null;
 
 	constructor(options: BoardGraphqlOptions) {
+		this.#statusNames =
+			options.statusNames && options.statusNames.length > 0 ? options.statusNames : CANONICAL_STATUSES;
 		const env = options.env ?? process.env;
 		this.#token = options.token || env.GH_PROJECT_TOKEN || env.GH_TOKEN || env.GITHUB_TOKEN || "";
 		this.#run = options.run;
@@ -539,7 +550,7 @@ export class BoardGraphqlClient {
 		fieldId: string,
 		existingOptions: readonly StatusOptionNode[],
 	): Promise<Record<string, string>> {
-		const optionsInput = CANONICAL_STATUS_OPTIONS.map((option) => ({
+		const optionsInput = statusOptionsFor(this.#statusNames).map((option) => ({
 			name: option.name,
 			color: option.color,
 			description: option.description,
