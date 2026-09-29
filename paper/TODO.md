@@ -3,15 +3,22 @@
 Práce *Agentické inženýrství ve vývoji softwaru*, s podtitulkem *Návrh a implementace DarkFactory* (DarkFactory). Zbývající body, o kterých je známo, že nejsou
 vyřešené. Nové položky přidat na konec příslušné sekce.
 
-Stav zkontrolován na `docs/thesis` ve větvi `c9c221f9`: 43 stran, sazba bez varování,
+Stav zkontrolován na `docs/thesis` ve větvi `55155a11`: 42 strany, sazba bez varování,
 `bun run check` projde, skript na rozestup odstavců měří závazných 8 pt.
 Čísla stránek a odkazy na soubory níže byly přepsány na stav tohoto commitu; kde záznam
 uvádí stav starší, je to výslovně uvedeno.
+
+**Probíhá plánovaný úklid celé práce, viz `PLAN.md`.** Zásada je, že každý pojem je
+v práci vyřčen jednou; průzkum našel 38 ozvěn a 18 legitimních aplikací, a právě ty
+ozvěny se odstraňují. Sekce B níže se proto v Fázi 1–2 znovu otevře a část položek
+z Fází 5 spadne. Plán není hotový, dokud autor nepotvrdí.
 
 **Celkem otevřeno: 6 položek** — pět je práce pro autora nebo kontrolu rodným mluvčím
 (B1–B4, H1) a jedna (E2, umístění metodiky) je otevřená jen formálně: viz A5, kde je
 původní rozhodnutí zrušeno a metodika zůstává v 3.1. Žádná nečeká na
 vedoucího: způsob citací byl s ním ověřen a zadaný rozsah písemně neexistuje.
+Nad to běží úklid celé práce podle `PLAN.md`, který tyto položky částečně přebírá:
+B1–B4 jsou Fáze 1, H1 se posoudí ve Fázi 6 společně s necitovanými zdroji.
 
 Sekce J zaznamenává čtyři tvrzení, která o popsané revizi neplatila, a opravy,
 které z nich následovaly.

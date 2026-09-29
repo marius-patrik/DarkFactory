@@ -29,9 +29,10 @@ Four chapters. Results live under the conclusion, not in a chapter of their own.
 1 Úvod              1.1 Motivace · 1.2 Cíl + výzkumná otázka + hypotéza · 1.3 Terminologie
 2 Teoretická část   2.1 Agent (+ .1 LLM, .2 smyčka, .3 nástroje/paměť, .4 kontext)
                     2.2 Agentické inženýrství · 2.3 Softwareová továrna
-3 Praktická část    3.1 Metodika · 3.2 Architektura · 3.3 Interpretace a plánování
-                    3.4 Implementace a automatická revize · 3.5 Zpětná vazba, schválení, úklid
-4 Závěr             4.1 Zjištění · 4.2 Diskuse · 4.3 Shrnutí
+3 Praktická část    3.1 Metodika (+ .1 Tři kritéria) · 3.2 Architektura
+                    3.3 Interpretace a plánování · 3.4 Implementace a automatická revize
+                    3.5 Zpětná vazba, schválení, úklid
+4 Závěr             4.1 Zjištění · 4.2 Diskuse (+ .1 Omezení výzkumu) · 4.3 Shrnutí
 ```
 
 The theory chapter is deliberately the one the supervisor has already seen. A 44-page restructure
@@ -57,9 +58,14 @@ Czech wording that `paper-verify` greps for:
    `34-practical-implementation.typ` — „Testovací sady se přitom spouštějí pouze jednou a po opravě
    už ne… Opakovatelná kontrola tedy rozliší dobrý a špatný stav, ale není překážkou"
 
-Three methodology criteria, stated in §3.1 as an operationalisation of this thesis and not a
-borrowed taxonomy. `musí` is conditional: only the principles the model does not supply by itself
-are necessary.
+Three methodology criteria, stated **once**, in §3.1.1 as an operationalisation of this thesis and
+not a borrowed taxonomy. `musí` is conditional: only the principles the model does not supply by
+itself are necessary. They are not restated anywhere — §4.1 applies them by symbolic reference,
+§3.5 names the third one in a clause, and the conclusion refers back rather than re-listing them.
+Cutting them entirely was considered and rejected: they are the only measure the paper has for the
+conditional `musí` of the research question, and the marking protocol scores both the aim
+(5 points, "is it verifiable?") and the methods (the most heavily weighted item) on exactly that.
+See `PLAN.md` §2 and §3, decision R1.
 
 1. **Stav leží mimo model a je zjistitelný** — an artefact, where it lives, and a person who can
    look at it without asking the model.
@@ -75,10 +81,11 @@ verdict on whether the configuration satisfies the third criterion is deliberate
 and belongs to the author** (`TODO.md` J12). That is a property of the thesis, not an unfinished
 sentence.
 
-The composition question (§3.1.2 `<slozeni>`) — which harness layer's conventions dominate — is
-recorded as a limitation, not answered. The nested turns do not increment the outer run's turn
-counter (`@openai-agents-sandbox`); whether that cost matters here **was not determined**, and the
-text says so. It has exactly one owner, the conclusion.
+The composition question — which harness layer's conventions dominate — was §3.1.2 and has been
+**cut**; it is now the third limitation in §4.2, beside the two that were always there. The nested
+turns do not increment the outer run's turn counter (`@openai-agents-sandbox`); whether that cost
+matters here **was not determined**, and the text says so. It has exactly one owner, the
+limitations in the discussion.
 
 ## Terminology
 
