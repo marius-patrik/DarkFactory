@@ -18,5 +18,3 @@ postavit.
 Agenti tuto hranici posunuli. Dokážou přeformulovat zadání, sestavit plán, opravit chybu, kterou sám způsobili,
 a rozhodnout, který nástroj je na řadě — tedy vykonat i krok, jehož postup předem dán není. Teoreticky tím
 otevřeli cestu k vývoji zcela bez lidské účasti.
-
-V praxi to ale zatím nenastalo.
