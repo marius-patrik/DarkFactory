@@ -42,6 +42,11 @@ dceřiném issue, větvi a diffu — kde ho lze přečíst bez agenta. Dvě rozh
 patří člověku a jsou oddělená, takže plán lze odmítnout i poté, co bylo přijato jeho východisko.
 Obojí je zapsáno dřív, než existuje co zkazovat.
 
+Jedna z těchto podmínek však drží jen částečně. Hranice schváleného plánu není skutečnou hranicí
+zápisu. Změna rozsahu se zapíše jako Plan Deviation s odůvodněním a oprava poběží dál,
+takže rozhodnutí člověka zůstane platit, i když už výsledek jeho rozsah přesahuje.
+Zápis to zachytí, ale nahradit to schválení nemůže.
+
 Spolehlivost tedy nesídlí v modelu. Sídlí v tom, kam se práce zapisuje, a v tom, kdo v ní
 rozhoduje. Hypotéza, že „praktická autonomie agentického systému není dána pouze schopnostmi modelu,
 ale především návrhem systému, který řídí stav, nástroje, rozhodovací brány a

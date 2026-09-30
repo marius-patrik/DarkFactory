@@ -12,8 +12,7 @@ výstup kontroly agentnímu kroku `fix`, který má opravit chybu bez opuštěn�
 Na draft pull requestu začíná automatická review smyčka. Každá iterace načte aktuální větev a diff a předá je
 modelové revizi, zatímco průběžná integrace (CI) znovu spustí tytéž nástroje. Nalezený problém runner zveřejní a spustí
 nový běh s fází opravy, která změní větev a spustí další review. Nález vyžadující zásah mimo plán se neodmítne:
-runner jej zapíše jako Plan Deviation s odůvodněním na původním issue a plán tím doplní. Schválený plán tedy není
-neměnný, ale každá jeho změna je zapsaná a odůvodněná.
+runner jej zapíše jako Plan Deviation s odůvodněním na původním issue a plán tím doplní. Každá změna schváleného plánu je tedy zapsaná a odůvodněná.
 
 Po čisté review proběhne kontrola souladu výsledného diffu se schváleným plánem. Jde o druhý dotaz modelu,
 tentokrát na shodu s textem plánu. Teprve když oba dotazy vyjdou bez nálezu, je
