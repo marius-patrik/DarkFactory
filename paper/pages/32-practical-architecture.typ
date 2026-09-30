@@ -1,23 +1,17 @@
 // 3.2 System design.
-//
-// Purpose:
-// - explain why DarkFactory is GitHub-native;
-// - explain why the first version is intentionally minimal;
-// - explain the design goals before describing components;
-// - make clear what DarkFactory itself is responsible for versus what external coding-agent
-//   harnesses provide;
-// - establish the bootstrap idea: the system is already capable of running the agents that
-//   can extend it.
-//
-// Material to migrate here from the current practical chapter:
-// - GitHub as interface and durable state;
-// - event-driven operation rather than a permanent server;
-// - isolation of agent work;
-// - deterministic orchestration around model-driven steps;
-// - human decision points;
-// - the reason for using production coding-agent harnesses rather than implementing a model
-//   runtime from scratch.
-//
-// Do not turn this into another theory section. This is the concrete design rationale of
-// DarkFactory.
+// The pinned revision is evidence for the case-study system described here; this file itself is
+// edited on the current thesis PR branch.
+
 #heading(level: 2)[Návrh systému DarkFactory] <darkfactory-design>
+
+DarkFactory byla navržena jako záměrně malá, GitHub-native realizace principů popsaných v teoretické části. Cílem první verze nebylo pokrýt co nejvíce funkcí, ale uzavřít nejmenší prakticky použitelný vývojový cyklus: přijmout požadavek, předat otevřenou inženýrskou práci coding agentovi, zachovat průběžný stav a vrátit výsledek do běžného GitHub workflow. Počáteční rozsah byl zároveň zvolen tak, aby bylo možné první funkční podobu vytvořit v jednom souvislém agentním běhu a následné rozšiřování už provádět pomocí stejné pipeline.
+
+Základním návrhovým rozhodnutím je použití GitHubu nejen jako hostingu repozitáře, ale také jako hlavního rozhraní a trvalé stavové vrstvy systému. Požadavek, diskuse, schválení, větev, commity a pull request proto zůstávají mimo kontext modelu a přežívají jednotlivé agentní běhy. Události GitHubu spouštějí příslušná GitHub Actions workflow, takže DarkFactory pro základní průchod nepotřebuje vlastní trvale běžící server. Každý agentní krok probíhá odděleně a pracovní prostředí je izolováno kontejnerem @darkfactory-d576ec8f.
+
+DarkFactory záměrně neimplementuje vlastní coding-agent runtime. Produkční harness zajišťuje agentní smyčku, komunikaci s modelem, nástroje a práci s jeho kontextem; DarkFactory nad tím řídí pořadí kroků, předávání vstupů a výstupů, stav procesu a lidské brány. Otevřené úlohy, jako interpretace požadavku, plánování, implementace nebo revize, řeší model prostřednictvím harnessu. Kroky, které lze určit přesněji, například spuštění workflow, práce s větví, testy, formátování nebo změna stavu, zůstávají programově řízené @darkfactory-d576ec8f.
+
+Důležitou součástí návrhu je dokumentace jako rozhraní mezi strojově prováděným procesem a člověkem. Ve zkoumané revizi vyžadují pravidla projektu úplnou dokumentaci veřejného API přímo ve zdrojovém kódu a současně generování dokumentačního webu z kanonických souborů repozitáře. Dokumentace se tedy neudržuje jako druhá ručně psaná kopie systému; publikační vrstva vzniká ze stejných zdrojů, podle kterých pracují agenti a automatizace. Tím dokumentace propojuje konkrétní implementaci s člověkem, který potřebuje systém pochopit, kontrolovat a dále směrovat @darkfactory-d576ec8f.
+
+Návrh zachovává explicitní rozhodovací body člověka. Člověk nemusí řídit jednotlivé technické kroky, ale schvaluje záměr a plán ještě před implementací a na konci rozhoduje o přijetí výsledku. Mezi těmito body pokračuje workflow automaticky. Rozdělení odpovědností je proto záměrné: model provádí otevřený inženýrský úsudek, harness poskytuje agentní schopnosti, DarkFactory řídí proces a stav a člověk určuje, zda se proces může posunout přes klíčové hranice @darkfactory-d576ec8f.
+
+Tato první verze současně tvoří bootstrap pro další vývoj DarkFactory. Systém byl sám vytvořen pomocí komerčních coding agentů a po uzavření základního cyklu už dokáže stejné nástroje spouštět pro práci na vlastním repozitáři. Smyslem jednoduchého začátku tedy není zůstat u malé implementace, ale co nejrychleji získat funkční pipeline, kterou lze následně po menších krocích používat k rozšiřování sebe sama. Následující část proto ukazuje, jak jsou tato návrhová rozhodnutí realizována konkrétními komponentami systému.
