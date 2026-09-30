@@ -16,5 +16,3 @@ GitHub Actions reagují na otevření požadavku, nový komentář, komentář k
 Soubor `agent_runner.py` řídí fáze interpretace, plánování, implementace, automatické revize, kontroly souladu s plánem a reakce na zpětnou vazbu. Vlastní agentní práce je oddělena pomocí registru v `harnesses.py`, který popisuje podporované agentní vrstvy, jejich příkazové rozhraní, autentizaci a záložní modely @darkfactory-d576ec8f.
 
 Přihlašovací údaje jsou od trvalého stavu oddělené. Operace nad GitHubem používají autorizovaný token nebo GitHub App, zatímco přihlašovací údaje poskytovatelů modelů vstupují pouze do běhu, který je potřebuje @darkfactory-d576ec8f.
-
-Dokumentační vrstva generuje web z dokumentace přímo ve zdrojových souborech a z kanonických souborů repozitáře. Člověk tak dostává čitelný pohled nad stejnými zdroji, které používá automatizace @darkfactory-d576ec8f.
