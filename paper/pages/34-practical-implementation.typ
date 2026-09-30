@@ -52,14 +52,15 @@ další revizí. Poté je změna uložena do commitu, větev odeslána a otevře
 
 Na draft pull requestu pokračuje automatická review smyčka. Model obdrží aktuální diff a stav větve, hledá
 konkrétní problémy a případný nález vrací do opravného běhu. Současně se nad větví znovu spouští CI. Smyčka
-je omezená, aby agent nemohl spotřebovávat prostředky bez konce; může proto skončit i bez čistého verdiktu,
-v takovém případě pull request zůstává ve stavu draft. Pokud revize vyžaduje změnu mimo schválený plán,
-runner ji zapíše jako `Plan Deviation` s odůvodněním místo toho, aby ji skryl uvnitř implementace
-@darkfactory-d576ec8f.
+je omezená na tři iterace, aby agent nemohl spotřebovávat prostředky bez konce. Pokud ani poslední iterace
+neskončí čistým verdiktem, runner přesto pokračuje k následující kontrole souladu s plánem
+@darkfactory-d576ec8f. Pokud revize vyžaduje změnu mimo schválený plán, runner ji zapíše jako
+`Plan Deviation` s odůvodněním místo toho, aby ji skryl uvnitř implementace.
 
 Po automatické revizi následuje samostatná kontrola souladu výsledného diffu se schváleným plánem. Jde o jiný
 modelový dotaz než běžná code review: neposuzuje obecnou kvalitu změny, ale zda implementace odpovídá tomu,
-co člověk předem schválil. Teprve po dokončení této fáze může být výsledek předán k lidské revizi.
+co člověk předem schválil. Teprve po úspěšném dokončení této fáze může být výsledek předán k lidské revizi
+@darkfactory-d576ec8f.
 
 #figure(
   image("/components/img/darkfactory-pipeline.svg", width: 100%),
