@@ -33,7 +33,7 @@ Po schválení plánu vznikne nebo se obnoví pracovní větev. Agent provede zm
 
 Nad požadavkem na sloučení pokračuje automatická revizní smyčka. Model hledá konkrétní problémy a nález vrací do opravného běhu. Současně se nad větví spouští #term("Continuous Integration", cs: "průběžná integrace", definition: "Automatické spuštění kontrol nad změnou před jejím začleněním do hlavní větve."). Smyčka je omezena na tři iterace. Pokud ani poslední iterace neskončí čistým verdiktem, proces pokračuje ke kontrole souladu s plánem @darkfactory-d576ec8f.
 
-Samostatný modelový krok následně posoudí, zda výsledný diff odpovídá schválenému plánu. Po úspěšném dokončení této kontroly může být změna předána člověku. Celý průchod shrnuje @fig-darkfactory-pipeline.
+Samostatný modelový krok následně posoudí, zda výsledná změna odpovídá schválenému plánu. Po úspěšném dokončení této kontroly může být změna předána člověku. Celý průchod shrnuje @fig-darkfactory-pipeline.
 
 #figure(
   image("/components/img/darkfactory-pipeline.svg", width: 100%),
