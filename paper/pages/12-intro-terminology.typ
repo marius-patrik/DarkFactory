@@ -1,7 +1,4 @@
-// 1.2 Terminology.
-//
-// One paragraph, and one only: how the English words map onto Czech. The terms that stay
-// in English are defined in the theory chapter, in the section that argues with them.
+// 1.3 Terminology.
 #heading(level: 2)[Terminologie] <terminologie>
 
 Překlad anglických výrazů v této práci sleduje jedno pravidlo. Co anglicky nazýváme
