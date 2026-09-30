@@ -50,4 +50,4 @@ Práce vychází z předpokladu, že v analyzovaných současných systémech a 
 
 Praktická část má podobu inženýrské případové studie systému DarkFactory. Nejde o experimentální měření úspěšnosti modelu, ale o systematický popis a kritické zhodnocení toho, jak jsou uvedené principy spojeny v jednom konkrétním produkčním systému.
 
-Rozsah práce je omezen na vybrané současné zdroje a na jednu implementaci systému DarkFactory. Závěry proto popisují konkrétní realizaci širšího pozorovaného vzoru.
+DarkFactory je záměrně navržena jako jednoduchá počáteční implementace. Jejím cílem není pokrýt co nejširší množství funkcí, ale vytvořit uzavřenou pipeline schopnou sama provozovat coding agenty a sloužit jako základ pro další rozvoj stejným procesem. Závěry práce se proto vztahují k této počáteční implementaci a k principům, které demonstruje.
