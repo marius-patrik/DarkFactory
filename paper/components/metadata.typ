@@ -25,7 +25,7 @@
 
   annotation-cs: [
     Práce se zabývá současným agentickým inženýrstvím ve vývoji softwaru. S rostoucími
-    schopnostmi a adopcí generativní AI se rozšiřují možnosti coding agentů, jejich praktické
+    schopnostmi a adopcí generativní AI se rozšiřují možnosti agentů pro vývoj softwaru, jejich praktické
     využití je však stále méně rozšířené než běžné používání chatbotů. Cílem práce je popsat
     a systematizovat principy současného agentického inženýrství a na systému DarkFactory
     ukázat, co jejich propojení umožňuje v praxi.
@@ -33,11 +33,11 @@
     Teoretická část vysvětluje vztah mezi jazykovým modelem, agentem a agentní vrstvou a
     shrnuje práci s kontextem, nástroji, trvalým stavem, specifikací, orchestrací,
     programovým ověřováním a lidskými rozhodovacími body. Popisuje také současnou podobu
-    softwarové továrny, v níž jsou coding agenti začleněni do běžného repozitářového procesu.
+    softwarové továrny, v níž jsou agenti začleněni do běžného repozitářového procesu.
 
     Praktická část má podobu inženýrské případové studie DarkFactory, záměrně jednoduché
     agentické softwarové továrny nativně postavené na GitHubu. Systém byl implementován
-    pomocí komerčních coding agentů. Již v této podobě dokáže agenty sám spouštět a řídit
+    pomocí komerčních agentů. Již v této podobě dokáže agenty sám spouštět a řídit
     a vytváří základ pro další rozvoj stejným procesem.
 
     Studie ukazuje, že praktický agentický proces vzniká kombinací modelového úsudku
