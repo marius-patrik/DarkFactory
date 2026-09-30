@@ -2,7 +2,7 @@
 
 #heading(level: 2)[#term-name("Agent") – co to je a jak funguje] <theory-first>
 
-#term("Agent", definition: "Systém, v němž model prostřednictvím nástrojů jedná nad prostředím.") je model doplněný o #term("Harness", cs: "agentní harness", definition: "Vrstva kolem modelu, která mu předává kontext, nástroje, oprávnění, stav a pravidla běhu.") @langchain-harness. Model navrhuje další krok a harness zajišťuje, aby se tento návrh mohl bezpečně změnit v akci. Model je proto jen jednou vrstvou širšího systému. Rozvrstvení shrnuje @fig-harness-layers.
+#term("Agent", definition: "Systém, v němž model prostřednictvím nástrojů jedná nad prostředím.") je model doplněný o #term("Harness", cs: "agentní harness", definition: "Vrstva kolem modelu, která mu předává kontext, nástroje, oprávnění, stav a pravidla běhu.") @langchain-harness. Model navrhuje další krok a agentní vrstva zajišťuje, aby se tento návrh mohl bezpečně změnit v akci. Model je proto jen jednou vrstvou širšího systému. Rozvrstvení shrnuje @fig-harness-layers.
 
 #figure(
   image("/components/img/harness-layers.svg", width: 100%),
@@ -13,9 +13,9 @@
 
 #term("Large Language Model", cs: "jazykový model", definition: "Model, který z kontextu odhaduje pravděpodobnosti následujících tokenů.") je výpočetní jádro agenta. Současné modely běžně používají architekturu #term("Transformer", definition: "Neuronová architektura založená na mechanismu attention, která zpracovává vztahy mezi tokeny v kontextu.") představenou v roce 2017 @vaswani2017.
 
-Jejím základem je #term("Attention", cs: "pozornost", definition: "Mechanismus, který při výpočtu reprezentace tokenu váží informace z dalších tokenů v kontextu."). Každý token tak může při své reprezentaci využít informace z ostatních pozic. U standardní plné attention rostou výpočetní náklady přibližně s druhou mocninou délky kontextu.
+Jejím základem je #term("Attention", cs: "pozornost", definition: "Mechanismus, který při výpočtu reprezentace tokenu váží informace z dalších tokenů v kontextu."). Každý token tak může při své reprezentaci využít informace z ostatních pozic. U standardní plné pozornosti rostou výpočetní náklady přibližně s druhou mocninou délky kontextu.
 
-Model sám mezi jednotlivými voláními neudržuje pracovní stav a bez okolního systému nemá přístup k souborům, příkazům ani nástrojům. Při #term("Inference", cs: "inference", definition: "Použití natrénovaného modelu k vytvoření výstupu z aktuálního vstupu.") zpracuje aktuální kontext a vytváří výstupní tokeny. Trvalý stav, nástroje a oprávnění proto musí dodat okolní harness.
+Model sám mezi jednotlivými voláními neudržuje pracovní stav a bez okolního systému nemá přístup k souborům, příkazům ani nástrojům. Při #term("Inference", cs: "inference", definition: "Použití natrénovaného modelu k vytvoření výstupu z aktuálního vstupu.") zpracuje aktuální kontext a vytváří výstupní tokeny. Trvalý stav, nástroje a oprávnění proto musí dodat okolní agentní vrstva.
 
 #term("Embedding", cs: "vektorová reprezentace", definition: "Číselný vektor, který zachycuje vlastnosti nebo význam objektu tak, aby podobné objekty ležely v prostoru blízko sebe.") umožňuje reprezentovat sémantické vztahy ve vektorovém prostoru. Známým příkladem je vztah mezi slovy král, královna, muž a žena @mikolov2013linguistic @fig-embedding-queen.
 
@@ -36,7 +36,7 @@ Jeden cyklus lze zjednodušit do pěti kroků
 - zapsat výsledek jako pozorování
 - vrátit se k dalšímu kroku
 
-Harness provádí akci mimo model a výsledek vrací zpět do kontextu. Smyčka pokračuje, dokud model nevydá závěrečnou odpověď místo dalšího požadavku na nástroj. Průběh shrnuje @fig-react-loop.
+Agentní vrstva provádí akci mimo model a výsledek vrací zpět do kontextu. Smyčka pokračuje, dokud model nevydá závěrečnou odpověď místo dalšího požadavku na nástroj. Průběh shrnuje @fig-react-loop.
 
 #figure(
   image("/components/img/react-loop.svg", width: 100%),
@@ -45,7 +45,7 @@ Harness provádí akci mimo model a výsledek vrací zpět do kontextu. Smyčka 
 
 #heading(level: 3)[#term-name("Tools", cs: "nástroje")]
 
-Zadání určuje, co má agent udělat, zatímco harness určuje, co skutečně může provést @langchain-harness.
+Zadání určuje, co má agent udělat, zatímco agentní vrstva určuje, co skutečně může provést @langchain-harness.
 
 - #term("Tools", cs: "nástroje", definition: "Funkce zpřístupněné modelu pro práci s prostředím, například čtení souborů, vyhledávání nebo spouštění příkazů.") umožňují agentovi přímo měnit nebo zjišťovat stav prostředí @anthropic2024tooluse
 - #term("Skills", cs: "dovednosti", definition: "Opakovaně použitelné balíčky instrukcí, skriptů a zdrojů pro určitý typ úlohy.") spojují instrukce a pomocné prostředky @agentskills-spec
