@@ -5,6 +5,7 @@
 
 #let apply(body) = {
   set figure(numbering: "1")
+  set figure.caption(separator: [ — ])
 
   show figure.caption: set text(size: 10pt)
   show figure.caption: set align(left)
