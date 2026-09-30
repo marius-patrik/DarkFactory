@@ -43,23 +43,12 @@ S rozvojem nástrojů roste i jejich adopce. Rozsah veřejného použití samotn
 
 #heading(level: 2)[Cíl, výzkumná otázka, hypotéza a vymezení] <intro-goal>
 
-Výzkumná otázka práce zní: #emph[Za jakých podmínek agentický systém spolehlivě
-vykonává inženýrskou práci?] Inženýrskou prací se zde rozumí změna repozitáře, kterou
-může jiný člověk než její autor přezkoumat a sloučit, aniž by musel agenta na cokoli ptát;
-v tomto smyslu je měřena schopnost systému a v tomto smyslu je brána člověka
-nezaměnitelnou.
+Cílem práce je popsat a analyzovat konkrétní implementaci současného přístupu k agentickému inženýrství ve vývoji softwaru.
 
-Práce předpokládá tuto hypotézu:
+Výzkumná otázka pak zní: #emph[Jaké architektonické a procesní principy se opakují v současném agentickém vývoji softwaru a jak jsou realizovány v systému DarkFactory?]
 
-Praktická autonomie agentického systému není dána pouze schopnostmi modelu, ale především návrhem systému, který řídí stav, nástroje, rozhodovací brány a integraci výsledku.
+Práce vychází z předpokladu, že v analyzovaných současných systémech a zdrojích se opakuje vzor, ve kterém jazykový model je součástí širšího systému, který zajišťuje kontext, nástroje, trvalý stav, orchestraci, ověřování a lidské rozhodovací body.
 
-Hypotéza se ověřuje v praktické části a z jejího výsledku práce vychází.
+Praktická část má podobu inženýrské případové studie systému DarkFactory. Nejde o experimentální měření úspěšnosti modelu, ale o systematický popis a kritické zhodnocení toho, jak jsou uvedené principy spojeny v jednom konkrétním produkčním systému.
 
-Praktická část popisuje DarkFactory, záměrně minimální produkční pipeline pro
-AI-asistovaný softwarový vývoj @darkfactory-d576ec8f. Její běh, brány a uložený stav
-tvoří harness této práce; jako vykonávací engine používá produkční harnessy, protože to je
-pro popsanou míru detailu nejjednodušší.
-
-Rozsah práce je záměrně úzký a odpovídá jedné revizi repozitáře: popisuje počáteční
-implementaci, v níž je agentní smyčka provedena cizím nástrojem. Její rozsah slouží jako
-základ, na němž navazuje práce následující.
+Rozsah práce je omezen na vybrané současné zdroje a na jednu implementaci systému DarkFactory. Závěry proto popisují konkrétní realizaci širšího pozorovaného vzoru.
