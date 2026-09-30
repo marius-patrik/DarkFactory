@@ -22,7 +22,7 @@
 // against a list; the list was deleted.
 #heading(level: 1)[Závěr]
 
-#heading(level: 2)[Zjištění a diskuse]
+#heading(level: 2)[Zjištění a diskuse] <zjiisteni>
 
 Krok, na kterém stojí krok následující, nezůstává v konverzaci. Požadavek je issue, porozumění
 zadání komentář, plán child issue s typem `Plan:`, hotová práce větev s diffem a schválení
@@ -73,28 +73,35 @@ kontext větve, ale běh se vrátí do review smyčky, nikoli k plánu.
 Poslední brána zase oprávnění nekontroluje. Aktéra porovnává s jedním pevně zapsaným účtem,
 vlastníkem repozitáře. Neověřuje se autor issue ani úroveň oprávnění.
 
-#heading(level: 3)[Odpověď na výzkumnou otázku]
+Otázka zní, za jakých podmínek agentický systém spolehlivě vykonává inženýrskou práci. Odpověď
+nechť leží v pojmech, které teoretická část už zavedla: kontext, brána a druh jejího rozhodnutí.
 
-Otázka zní, za jakých podmínek agentický systém spolehlivě vykonává inženýrskou práci. Popsaná
-konfigurace odpovídá dvěma podmínkám.
+První podmínka říká, že **kontext, na kterém běh stojí, musí ležet mimo model**. Kontextové okno
+je pracovní kontext jednoho volání a jeho schopnost využívat podstatné informace s délkou klesá;
+kompakce pak starší průběh nahradí souhrnem. Agentická práce potřebuje stav, který přežije delší
+než jedno volání, a v konverzaci ho nemá.
 
-První podmínka říká, že každý krok, který umožňuje krok následující, je zapsaný mimo konverzaci.
-Není potřeba si nic pamatovat, protože je to uložené. Není potřeba nic vysvětlovat, protože je to
-čitelné. Podmínka vylučuje práci, která existuje jen jako text v okně modelu.
+Druhá podmínka říká, že **každá brána musí vědět, jaké rozhodnutí činí, a druh toho rozhodnutí
+nesmí být zaměněn**. Kontrola, kterou lze přepočítat, brána posuzovaná modelem a lidská brána
+jsou tři různé věci a jednou druhou nelze nahradit. Brána, která neví, že rozhoduje, je brána,
+jejíž rozhodnutí nelze přezkoumat.
 
-Druhá podmínka říká, že dvě rozhodnutí před vznikem větve patří člověku, a patří mu odděleně.
-Člověk může přijmout porozumění zadání a plán, který z něj vychází, přesto odmítnout. Oba body jsou
-přitom zapsány dřív, než existuje co zkazovat. Podmínka vylučuje systém, v němž rozhoduje kód
-nebo samotný model.
-
-Obě podmínky mají svůj protějšek. Kdyby práce zůstala v konverzaci, stačil by jeden člověk, který
-si pamatuje. Kdyby o plánu rozhodoval model, stačilo by, že se model vyjádří.
+Popsaná konfigurace obě podmínky splňuje a obě staví mimo model. Stav leží v issue, komentáři,
+dceřiném issue, větvi a diffu — kde ho lze přečíst bez agenta. Dvě rozhodnutí před vznikem větve
+patří člověku a jsou oddělená, takže plán lze odmítnout i poté, co bylo přijato jeho východisko.
+Obojí je zapsáno dřív, než existuje co zkazovat.
 
 Spolehlivost tedy nesídlí v modelu. Sídlí v tom, kam se práce zapisuje, a v tom, kdo v ní
 rozhoduje. Hypotéza, že „praktická autonomie je vlastností návrhu systému, který práci řídí, a
 nikoli vlastností modelu, který v něm pracuje", se potvrzuje.
 
-#heading(level: 3)[Hranice platnosti]
+Proti tomu lze namítnout, že plán i diff posuzuje model, takže spolehlivost běhu nakonec stojí
+na modelu. Jenže oba texty leží mimo konverzaci a člověk je čte. Chyba v posouzení se tak projeví
+jako chyba v zápisu, který je k přečtení, ne jako změna, kterou by nikdo nespatřil. Spolehlivost tu
+stojí na místě zápisu a na tom, kdo rozhoduje, ne na schopnosti modelu. Průchod jako celek je
+zakreslen v @fig-darkfactory-pipeline.
+
+#heading(level: 3)[Shrnutí]
 
 Tvrzení platí pro jednu revizi, jeden repozitář a jednu sadu modelů. Přenos na jiný repozitář nebo
 jinou sadu modelů z popisu neplyne.
@@ -105,12 +112,6 @@ změny procházejí novým schválením.
 
 Spolehlivě zde neznamená, že změna je správná. Znamená to, že je zapsaná a že se dá přečíst bez
 agenta.
-
-Proti tomu lze namítnout, že plán i diff posuzuje model, takže spolehlivost běhu nakonec stojí na
-modelu. Jenže oba texty leží mimo konverzaci a člověk je čte. Chyba v posouzení se tak projeví jako
-chyba v zápisu, který je k přečtení, ne jako změna, kterou by nikdo nespatřil. Spolehlivost tu stojí
-na místě zápisu a na tom, kdo rozhoduje, ne na schopnosti modelu. Průchod jako celek je zakreslen
-v @fig-darkfactory-pipeline.
 
 Cíl práce byl ověřit, za jakých podmínek agentický systém spolehlivě vykonává inženýrskou práci. Cíl
 byl dosažen a hypotéza se potvrdila. V praktické části byla implementována produkční pipeline, v níž

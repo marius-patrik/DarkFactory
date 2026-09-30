@@ -17,7 +17,7 @@
     <terminologie>,
     <theory-first>,
     <practical-first>,
-    <results-first>,
+    <zjiisteni>,
   )
 
   show heading.where(level: 1): it => {
