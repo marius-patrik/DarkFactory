@@ -527,20 +527,25 @@ ve Fázi 6 proti finálnímu textu.
 
 | # | Kde | Co | Navržená oprava |
 | :--- | :--- | :--- | :--- |
-| R1 | `22:56–57` | „Spolehlivost tu nevzniká z modelu" opakuje `21:15–16` | `Spolehlivost tu vzniká z toho, že se chyba stane součástí dalšího kroku.` |
+| R1 | `22:56–57` | „Spolehlivost tu nevzniká z modelu" opakuje `21:15–16` | ✅ **smazáno celé** |
 | R2 | `22:4` | „Jeho předmětem není samotný agent ani jeho model, ale systém" opakuje `21:12–13` | `Jeho předmětem je systém, v němž agent pracuje` |
-| R3 | `22:4` | „efektivně a kontrolovaně" vrací „účinným, kontrolovaným" z věty nad | vypustit oba přívlastky |
-| R4 | `10:65` | znovu páruje `Agent Loop → agentní smyčka`, už vyřčeno v §1.3 | `v níž je agentní smyčka provedena cizím nástrojem` |
-| B2 | `10:15` | „velkým rozvojem" — hodnocení bez měřítka | `prošly v krátké době vývojem` |
+| R3 | `22:4` | „efektivně a kontrolovaně" vrací „účinným, kontrolovaným" z věty nad | ✅ oba přívlastky vypuštěny |
+| R4 | `10:65` | znovu páruje `Agent Loop → agentní smyčka`, už vyřčeno v §1.3 | ✅ gloss `#emph[Agent Loop]` smazán |
+| B2 | `10:15` | „velkým rozvojem" — **autor: nechat** (`leave it`) | — |
+| B3 | `10:42` | „rychle šíří" — **NENÍ NÁLEZ.** Autor: „thats the point 0,36 agents but 28 AI". Věta je argument, ne rozpor: 28 % chatbotů vs 0,36 % agentů, a „Přesto" ten rozdíl výslovně zdůrazňuje. Agent to četl jako rozpor s měřítkem dvě věty výš. | — |
+| B6 | `21:100` | `Skilly, scripty` proti `Skills, skripty` v `21:86` | ✅ `Skilly` v obou (`-`) |
+| B7 | `10:29`, `22:16`, `22:51`, `22:61` | `Screenshot` | ✅ `Snímek` ve všech 4. Agent tvrdil „2 výskyty a česká forma někde jinde" — **chybně**, česká forma v práci nebyla žádná |
+| B9 | `21:14` | „smyčka agenta" proti „agentní smyčka" | **autor: nechat** — je to výčet vrstev, ne použití definovaného termínu |
+| R2 | `22:4` | **NENÍ NÁLEZ.** Autor: „keep the first describes what an agent is the second agentic engineering". §2.1.1 definuje agenta, §2.2 předmět disciplíny — dvě různé výty. | — |
 | B3 | `10:42` | „rychle šíří" — v rozporu s 0,36 % v předcházející větě | `Přesto je zřejmé, že mění způsob práce, proto…` |
 | B4 | `21:21` | „nyní proslulé" — nepodložené tvrzení o přijetí | ✅ hotovo `3e89f4a7` |
-| B5 | `22:55` | „Zásadní přitom je" — zdvojené zdůraznění | `Přitom nejde o jediný pokus` |
+| B5 | `22:55` | „Zásadní přitom je" — zdvojené zdůraznění | ✅ `Nejde o jediný pokus:` |
 | B6 | `21:100` | `Skilly, scripty` proti `Skills, skripty` v `21:86` | `Skills, skripty a hooky` |
 | B7 | `10:29` | `Screenshot` proti `Snímek`, který práce užívá | `Snímek` |
 | B8 | `23:18` | „co smí do výroby vstoupit" bez zdroje | **⚠ Podmínka:** jen pokud `@nato1969` to tvrzení nese. Jinak vyřadit. Zdroj nevymýšlet. |
 | B9 | `21:14`, `21:50` | „smyčka agenta" proti „agentní smyčka" ve `12:8`, `12:12`, `21:52` | `agentní smyčka`; nadpis `Agentní smyčka (Loop)` |
 
-**B1 (`21:42`) — věta popisující obrázek.** `Tento vztah schematicky znázorňuje
+**B1 (`21:42`) — věta popisující obrázek. ✅ vyřešeno.** `Tento vztah schematicky znázorňuje
 @fig-embedding-queen.` Odkaz patří do věty, se kterou obrázek souvisí, a ta věta zruší:
 `Známým příkladem je vztah mezi vektory slov král, královna, muž a žena
 @mikolov2013linguistic @fig-embedding-queen.` Porušuje R3.

@@ -26,7 +26,7 @@ nástroje mu zpravidla nebyly k dispozici, takže i nadále všechno provedl už
 #figure(
   image("/components/img/chatgpt-cannot-see-image.jpg", width: 100%),
   caption: [Chatbot odpovídá textem a práci nechává člověku: místo aby snímek posoudil, přizná,
-  že obrázky neumí, a je to uživatel, kdo musí dojít k závěru. Screenshot z bezplatné verze
+  že obrázky neumí, a je to uživatel, kdo musí dojít k závěru. Snímek z bezplatné verze
   ChatGPT, převzato z @khurana2023chatgpt.],
 ) <fig-chatgpt-cannot-see>
 
@@ -62,5 +62,5 @@ tvoří harness této práce; jako vykonávací engine používá produkční ha
 pro popsanou míru detailu nejjednodušší.
 
 Rozsah práce je záměrně úzký a odpovídá jedné revizi repozitáře: popisuje počáteční
-implementaci, v níž je agentní smyčka (#emph[Agent Loop]) provedena cizím nástrojem. Její rozsah slouží jako
+implementaci, v níž je agentní smyčka provedena cizím nástrojem. Její rozsah slouží jako
 základ, na němž navazuje práce následující.

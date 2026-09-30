@@ -1,7 +1,7 @@
 // 2.3 Agentic engineering.
 #heading(level: 2)[Agentické inženýrství]
 
-Agentické inženýrství (#strong[Agentic Engineering]) označuje soubor postupů, jimiž se vývoj softwaru pomocí coding agentů stává účinným, kontrolovaným, opakovatelným a škálovatelným @willison-agentic-engineering. Jeho předmětem není samotný agent ani jeho model, ale systém, v němž agent pracuje: zadání, omezení, nástroje, pravidla integrace a odpovědnost člověka. Odtud také jeho popis jako archetypu #strong[agentického inženýra], jehož přidanou hodnotu už netvoří psaní kódu, ale formulace zadání, řízení agentních běhů a kritické posouzení strojem vytvořených výstupů @alenezi2026agentic. Mezi hlavní oblasti patří: #strong[Prompt engineering] @openai-prompt-engineering, #strong[Context engineering] @anthropic-context-engineering, #strong[Harness engineering] @anthropic-harness-design @openai-agents-sandbox, #strong[Loop Engineering] @openai-goals a #strong[Workflow/Graph Engineering] @openai-agent-orchestration. Cílem je, aby vývojář mohl efektivně a kontrolovaně delegovat dílčí úkoly agentovi, aniž by ztratil přehled o záměru, rozsahu a kvalitě výsledku.
+Agentické inženýrství (#strong[Agentic Engineering]) označuje soubor postupů, jimiž se vývoj softwaru pomocí coding agentů stává účinným, kontrolovaným, opakovatelným a škálovatelným @willison-agentic-engineering. Jeho předmětem není samotný agent ani jeho model, ale systém, v němž agent pracuje: zadání, omezení, nástroje, pravidla integrace a odpovědnost člověka. Odtud také jeho popis jako archetypu #strong[agentického inženýra], jehož přidanou hodnotu už netvoří psaní kódu, ale formulace zadání, řízení agentních běhů a kritické posouzení strojem vytvořených výstupů @alenezi2026agentic. Mezi hlavní oblasti patří: #strong[Prompt engineering] @openai-prompt-engineering, #strong[Context engineering] @anthropic-context-engineering, #strong[Harness engineering] @anthropic-harness-design @openai-agents-sandbox, #strong[Loop Engineering] @openai-goals a #strong[Workflow/Graph Engineering] @openai-agent-orchestration. Cílem je, aby vývojář mohl delegovat dílčí úkoly agentovi, aniž by ztratil přehled o záměru, rozsahu a kvalitě výsledku.
 
 #heading(level: 3)[Specifikace (Specification)]
 
@@ -13,7 +13,7 @@ V praxi to znamená, že plán nevzniká až během práce agenta, ale před ní
   image("/components/img/claude-code-plan.png", width: 100%),
   caption: [Plán, který model navrhne, než se začne psát kód: seznam kroků podle souborů, které se
   mění, a otázka, zda se má pokračovat. Znění plánu je tak oddělené od jeho provádění — je to
-  rozhodnutí, které člověk schvaluje nebo odmítne, nikoli popis práce, která už běží. Screenshot
+  rozhodnutí, které člověk schvaluje nebo odmítne, nikoli popis práce, která už běží. Snímek
   z Claude Code, převzato z @gallardo2025beyond.],
 ) <fig-claude-code-plan>
 
@@ -48,18 +48,17 @@ navazují. Čtyři vzorce na to odpovídají:
   image("/components/img/claude-code-dynamic-workflows.png", width: 100%),
   caption: [Postup práce dynamického workflow v Claude Code: vlevo fáze plánu se stavem,
   vpravo rozvinutá fáze #emph[CodeReview] se 16 agenty, u každého model, spotřebované
-  tokeny, počet nástrojů a doba běhu. Screenshot pochází z komunitního příspěvku; rozhraní
+  tokeny, počet nástrojů a doba běhu. Snímek pochází z komunitního příspěvku; rozhraní
   i jeho chování popisuje dokumentace @anthropic-dynamic-workflows.],
 ) <fig-dynamic-workflows>
 
-- #strong[Goal loop] je nadřazená řídicí smyčka. Po dílčím dokončení ReAct smyčky se pozorovaný stav porovná s cílem a podmínkami přijetí a běh skončí, nebo pokračuje další iterací. Vzor pochází z tzv. #strong[Ralph loop], který v roce 2025 popsal Geoffrey Huntley jako smyčku, jež opakovaně spouští agenta se stejným zadáním a stav si drží v pracovním stromu, nikoli v přepisu konverzace @huntley2025ralph. Dnes je to běžná funkce Claude Code i Codexu @claude-goal @openai-goals. Zásadní přitom je, že nejde o jediný pokus: agent dostává zpět to, co jeho krok vyrobil,
-  a může podle toho postup změnit. Spolehlivost tu nevzniká z modelu, ale z toho, že se chyba stane
-  součástí dalšího kroku.
+- #strong[Goal loop] je nadřazená řídicí smyčka. Po dílčím dokončení ReAct smyčky se pozorovaný stav porovná s cílem a podmínkami přijetí a běh skončí, nebo pokračuje další iterací. Vzor pochází z tzv. #strong[Ralph loop], který v roce 2025 popsal Geoffrey Huntley jako smyčku, jež opakovaně spouští agenta se stejným zadáním a stav si drží v pracovním stromu, nikoli v přepisu konverzace @huntley2025ralph. Dnes je to běžná funkce Claude Code i Codexu @claude-goal @openai-goals. Nejde o jediný pokus: agent dostává zpět to, co jeho krok vyrobil,
+  a může podle toho postup změnit.
 
 #figure(
   image("/components/img/codex-goal-complete.png", width: 100%),
   caption: [Cíl, proti němuž agent postupuje, a jeho splnění: po dokončení dílčího kroku se stav
-  porovná s cílem a běh v tomto případě končí, včetně doby, kterou zabral. Screenshot pochází
+  porovná s cílem a běh v tomto případě končí, včetně doby, kterou zabral. Snímek pochází
   z komunitního příspěvku; funkci popisuje dokumentace @openai-goals.],
 ) <fig-codex-goal>
 

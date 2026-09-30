@@ -1,7 +1,7 @@
 // 3.3 Request intake and planning.
 #heading(level: 2)[Interpretace a plánování požadavku]
 
-Výchozím bodem je issue s formulovaným požadavkem. Požadavek se však nevytváří jako
+Výchozím bodem je issue s formulovaným požadavkem. Požadavek se nevytváří jako
 volný text: repozitář nabízí předlohu, která vyžaduje vyplnit několik polí, a právě ta
 určují, co pipeline dostane. Předloha má šest polí, z nichž tři povinná. První požadavek,
 který pipeline zpracovala, ji nevyplnil: napsal volně, pod nadpisy `Problem` a

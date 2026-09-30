@@ -39,7 +39,7 @@ ukládání výsledků a oprávnění musí přijít zvenčí — a to je práv�
 
 Vektorové reprezentace, označované jako #strong[embeddingy], zachycují sémantické vztahy
 v prostoru vektorů. Známým příkladem je vztah mezi vektory slov král, královna, muž a žena
-@mikolov2013linguistic. Tento vztah schematicky znázorňuje @fig-embedding-queen.
+@mikolov2013linguistic @fig-embedding-queen.
 
 #figure(
   image("/components/img/vector-embedding-queen.svg", width: 100%),
@@ -83,7 +83,7 @@ roviny, které se dají měnit nezávisle, a odpovídají běžnému výčtu sou
 - #strong[Nástroje] umožňují agentovi číst a upravovat soubory, vyhledávat nebo spouštět
   příkazy. Než se nástroj spustí, harness jeho vstup ověří proti předepsanému schématu, takže
   chybný požadavek se neprovede.
-- #strong[Skills] spojují opakovaně použitelné instrukce, skripty a zdroje pro určitý typ úlohy
+- #strong[Skilly] spojují opakovaně použitelné instrukce, skripty a zdroje pro určitý typ úlohy
   @agentskills-spec.
 - #strong[Hooks] reagují na události životního cyklu a mohou před akcí či po ní vynutit kontrolu
   @openai-agents-lifecycle.

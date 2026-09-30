@@ -21,8 +21,8 @@ pořadí jednotlivých kroků @fig-darkfactory-pipeline.
 ) <fig-darkfactory-pipeline>
 
 Workflow `agent.yml` reaguje na otevření issue, nový komentář, review komentář, `repository_dispatch` nebo ruční
-spuštění. Podmínka na úrovni jobu ověří, zda je agent pro repozitář povolen, a odfiltruje automatické komentáře,
-aby vlastní výstup pipeline nevytvářel nové události. Workflow provede checkout cílového repozitáře, sestaví obraz
+spuštění. Podmínka na úrovni jobu ověří, zda je agent pro repozitář povolen, a odfiltruje automatické
+komentáře, aby si výstup nevytvářel další události. Workflow provede checkout cílového repozitáře, sestaví obraz
 podle `docker/Dockerfile.agent` a spustí příkaz `dispatch` v kontejneru.
 
 Pythonovský runner není náhradou harnessu. Převádí událost GitHubu na konkrétní agentní krok, zpracovává jeho
@@ -31,8 +31,7 @@ výstup a vyvolává další událost. Modelové kroky stále provádí harness 
 
 Každý harness je definován deklarativně: binár, způsob, jak se z promptu sestaví příkazová řádka, a způsob
 přihlášení. Přidání harnessu je tedy změna dat, nikoli kódu @darkfactory-d576ec8f. V registru je osm harnessů
-v konfigurovatelném pořadí a obrázek ukazuje čtyři z nich. Harness, jehož binár v obrazu chybí, se přeskočí, takže
-jeden obraz unese jen podmnožinu nainstalovaných nástrojů.
+v konfigurovatelném pořadí.
 
 Přihlašovací údaje se neukládají do repozitáře. GitHub App nebo jiný autorizovaný token se používá pro checkout,
 issue, pull requesty a push; přihlašovací údaje modelových providerů jsou předány workflow jako GitHub Secrets a
