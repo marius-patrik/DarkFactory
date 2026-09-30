@@ -101,7 +101,7 @@ jako chyba v zápisu, který je k přečtení, ne jako změna, kterou by nikdo n
 stojí na místě zápisu a na tom, kdo rozhoduje, ne na schopnosti modelu. Průchod jako celek je
 zakreslen v @fig-darkfactory-pipeline.
 
-#heading(level: 3)[Shrnutí]
+#heading(level: 2)[Shrnutí]
 
 
 Cíl práce byl ověřit, za jakých podmínek agentický systém spolehlivě vykonává inženýrskou práci. Cíl
