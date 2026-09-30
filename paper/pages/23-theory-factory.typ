@@ -12,8 +12,8 @@ přes implementaci až po revizi — a nechává člověka jen tam, kde jeho ús
 @nato1969. Pojem je o půl století starší než dnešní vlna agentů: poprvé jej použil Robert Bemer
 v návrhu strojově řízeného výrobního prostředí @bemer-chm.
 
-Továrna automatizovala jen kroky, jejichž postup byl předem dán. Agent vykoná i krok, jehož
-postup předem dán není: zadání přeformuluje, plán sestaví, chybu, kterou sám způsobí, opraví
-a rozhodne, na řadě je další nástroj, nebo ne. Automatizovatelná část se tím posouvá
+Továrna automatizovala jen kroky, jejichž postup byl předem dán. Agent vykoná i kroky, jejichž
+postup dán není: zadání přeformuluje, plán sestaví, chybu, kterou sám způsobí, opraví
+a rozhodne, který nástroj je na řadě. Automatizovatelná část se tím posouvá
 z provádění na úsudek, zatímco člověk zůstává tam, kde byl v každé dosavadní továrně —
 u určení, co je správné a co smí do výroby vstoupit.
