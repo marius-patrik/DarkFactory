@@ -103,26 +103,15 @@ zakreslen v @fig-darkfactory-pipeline.
 
 #heading(level: 2)[Shrnutí]
 
+V praktické části byla implementována produkční pipeline, v níž události GitHubu spouštějí agentní
+kroky v izolovaném kontejneru. Popsaná konfigurace DarkFactory poskytuje odpověď, kterou lze přečíst
+přímo z pořadí kroků. Vykonaná práce musí být zapsaná mimo konverzaci, aby na ni bylo možné se podívat
+bez agenta. Kritické rozhodnutí musí patřit člověku, aby je bylo možné odmítnout.
 
-Cíl práce byl ověřit, za jakých podmínek agentický systém spolehlivě vykonává inženýrskou práci. Cíl
-byl dosažen a hypotéza se potvrdila. V praktické části byla implementována produkční pipeline, v níž
-události GitHubu spouštějí agentní kroky v izolovaném kontejneru. Popsaná konfigurace DarkFactory
-poskytuje odpověď, kterou lze přečíst přímo z pořadí kroků. Vykonaná práce musí být zapsaná mimo
-konverzaci, aby na ni bylo možné se podívat bez agenta. Dvě rozhodnutí před vznikem větve musí patřit
-člověku, aby je bylo možné odmítnout. Praktická autonomie je v tomto systému vlastností návrhu, který
-práci řídí, a nikoli vlastností modelu, který v něm pracuje.
+Pro další výzkum plynou tato doporučení.
 
-Pro další výzkum plynou čtyři doporučení.
+Ověřit, zda podmínky platí i mimo popsanou konfiguraci — na jiném repozitáři, při jiné sadě
+harnessů a při jiné sadě modelů. Závěr vychází z jedné revize a jednoho repozitáře; na jiný systém
+z popisu přenést nelze.
 
-Předně ověřit, zda podmínky platí i mimo popsanou konfiguraci — na jiném repozitáři, při jiné sadě
-harnessů a při jiné sadě modelů. Dnešní odpověď je sázena na jednu revizi a na jeden repozitář;
-přenos na jiný systém z popisu neplyne.
-
-Dále prozkoumat, zda lze dosáhnout toho, aby plán byl hranicí, tak že se změna rozsahu vrátí k
-lidskému schválení. Dnes se změna zapíše jako odůvodněná odchylka a k bráně se běh nevrátí.
-
-Dále opřít poslední bránu o oprávnění v repozitáři, ne o porovnání s jedním účtem, aby záznam o
-schválení odpovídal tomu, kdo skutečně rozhodl. Dnes se aktér porovnává s vlastníkem repozitáře.
-
-Nakonec posoudit architekturu znovu až za ní, až se posune z revize zde popsané, a zjistit, zda
-podmínky vydrží její rozšíření.
+Prověřit později, až architektura postoupí dál, zda podmínky drží i v jejím rozšíření.
