@@ -24,8 +24,7 @@
   annotation-cs: [
     Práce zkoumá, za jakých podmínek agentický systém spolehlivě vykonává inženýrskou práci,
     tedy změnu repozitáře, kterou může přezkoumat a sloučit člověk, který nemusí agenta
-    obsluhovat ručně. Předpokládá přitom, že praktická autonomie je vlastností návrhu systému,
-    který práci řídí, a nikoli vlastností modelu, který v něm pracuje.
+    obsluhovat ručně. Předpokládá přitom, že praktická autonomie agentického systému není dána pouze schopnostmi modelu, ale především návrhem systému, který řídí stav, nástroje, rozhodovací brány a integraci výsledku.
 
     Práce vymezuje kratkou historii nástrojů založených na jazykových modelech, vysvětluje, co
     agent je a jak funguje, a popisuje principy agentického inženýrství, tedy praktiky pro
@@ -42,9 +41,9 @@
   abstract-en: [
     The thesis asks under what conditions an agentic system performs engineering work
     reliably — that is, a change to a repository that a person who need not operate the
-    agent by hand can review and merge. It assumes that practical autonomy is a property of
-    the design of the system that directs the work, not a property of the model operating
-    in it.
+    agent by hand can review and merge. It assumes that practical autonomy in an agentic system is not determined solely by the model's
+    capabilities, but above all by the design of the system that governs state, tools,
+    decision gates and the integration of the result.
 
     The thesis sets out the short history of tools built on language models, explains what
     an agent is and how it works, and describes the principles of agentic engineering, that

@@ -92,8 +92,9 @@ patří člověku a jsou oddělená, takže plán lze odmítnout i poté, co byl
 Obojí je zapsáno dřív, než existuje co zkazovat.
 
 Spolehlivost tedy nesídlí v modelu. Sídlí v tom, kam se práce zapisuje, a v tom, kdo v ní
-rozhoduje. Hypotéza, že „praktická autonomie je vlastností návrhu systému, který práci řídí, a
-nikoli vlastností modelu, který v něm pracuje", se potvrzuje.
+rozhoduje. Hypotéza, že „praktická autonomie agentického systému není dána pouze schopnostmi modelu,
+ale především návrhem systému, který řídí stav, nástroje, rozhodovací brány a
+integraci výsledku", se potvrzuje.
 
 Proti tomu lze namítnout, že plán i diff posuzuje model, takže spolehlivost běhu nakonec stojí
 na modelu. Jenže oba texty leží mimo konverzaci a člověk je čte. Chyba v posouzení se tak projeví

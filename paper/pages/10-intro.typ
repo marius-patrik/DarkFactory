@@ -51,8 +51,7 @@ nezaměnitelnou.
 
 Práce předpokládá tuto hypotézu:
 
-Praktická autonomie je vlastností návrhu systému, který práci řídí, a nikoli vlastností
-modelu, který v něm pracuje.
+Praktická autonomie agentického systému není dána pouze schopnostmi modelu, ale především návrhem systému, který řídí stav, nástroje, rozhodovací brány a integraci výsledku.
 
 Hypotéza se ověřuje v praktické části a z jejího výsledku práce vychází.
 
