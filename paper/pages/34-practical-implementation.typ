@@ -15,14 +15,6 @@ nový běh s fází opravy, která změní větev a spustí další review. Nál
 runner jej zapíše jako Plan Deviation s odůvodněním na původním issue a plán tím doplní. Schválený plán tedy není
 neměnný, ale každá jeho změna je zapsaná a odůvodněná.
 
-Smyčka však může skončit bez jakéhokoli verdiktu a bez komentáře. Pull request zůstane ve stavu draft a nikdo
-zvenčí nepozná, zda review prošlo, nebo se jen zastavilo. Jediným stavem, který v této revizi znamená zablokování,
-je vyčerpaná kvóta — tehdy se zapíše kontrolní bod, stav na projektové tabuli a komentář s výzvou k obnovení
-@darkfactory-d576ec8f.
-
-Požadavek, který tuto meze odhalil, žádá, aby se běh po opakováních stejného nálezu zastavil a napsal to
-výslovně do issue.
-
-Po čisté review ještě proběhne kontrola souladu výsledného diffu se schváleným plánem. Ani ta není porovnáním sad
-souborů: je to druhý dotaz modelu, tentokrát na shodu s textem plánu. Teprve když oba dotazy vyjdou bez nálezu, je
+Po čisté review proběhne kontrola souladu výsledného diffu se schváleným plánem. Jde o druhý dotaz modelu,
+tentokrát na shodu s textem plánu. Teprve když oba dotazy vyjdou bez nálezu, je
 draft pull request označen jako připravený k lidské revizi.
