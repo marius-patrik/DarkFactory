@@ -1,9 +1,7 @@
-// 1.3 Terminology.
+#import "../components/terms.typ": term-name
+
 #heading(level: 2)[Terminologie] <terminologie>
 
-Překlad anglických výrazů v této práci sleduje jedno pravidlo. Co anglicky nazýváme
-#strong[agent], je česky #strong[agentní] — agent, agentní krok, agentní smyčka. Co anglicky nazýváme #strong[agentic], je česky #strong[agentické] — agentický systém, agentické
-inženýrství. Podstatné jméno #strong[agent] se tedy nepřekládá, protože označuje samotného
-jednajícího, zatímco přípona #strong[-ic] znamená schopnost jednat, nikoli
-samotného jednajícího @mw-agentic. Podle téhož pravidla je #emph[Agent Loop] česky
-#emph[agentní smyčka], protože jde o smyčku agenta, a nikoli o vlastnost systému.
+Anglické odborné termíny jsou v práci uváděny anglicky a při vhodném českém ekvivalentu také česky v závorce. Při prvním zavedení jsou označeny hvězdičkou, tučně a kurzívou. Stručná definice se uvádí v poznámce pod čarou, aby hlavní text mohl pokračovat rovnou mechanismem nebo použitím daného pojmu.
+
+Rozlišení slov #term-name("Agent") a #term-name("Agentic") je zachováno i v češtině. Agent označuje samotného jednajícího, zatímco agentic popisuje schopnost systému jednat @mw-agentic. Proto se používá například agentní smyčka, ale agentické inženýrství.
