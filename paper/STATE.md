@@ -4,6 +4,14 @@
 Single state file. It replaced `TODO.md`, `PLAN.md` and `CONTEXT.md`; those three are gone, and their content
 lives here unchanged. Git keeps their history.
 
+**Verify against the revision, not HEAD.** Every practical claim describes `d576ec8f`
+and nothing else. When checking a fact, the artefact to read is the one at that revision —
+`git show d576ec8f:<path>` — and NOT whatever the working tree currently holds. The two
+diverge: HEAD has a `request.yml` that removed the two-gate approval flow §3.3 describes,
+and later harness behaviour differs. Reading HEAD produced a false alarm about the paper
+twice in one session (the account count, the issue template), and the author had to
+correct both. `git log` for ordering questions, `git show d576ec8f:...` for content.
+
 **Anchor: `docs/thesis` at `3d70cd55`. 32 pages. Paper builds green.**
 **Direction: SHORTER, not longer.** Author: „we want to keep it as low as possible
 we are rewriting the paper to be cleaner not longer". Real content in chapters 1-5
