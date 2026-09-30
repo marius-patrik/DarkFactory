@@ -76,9 +76,6 @@ export type CredentialSlot =
 	| { type: "cookie"; value: string }
 	| { type: "other"; value: string };
 
-/** Credential slot types that can be written directly. */
-type WritableSlotType = Exclude<CredentialSlot["type"], "oauth">;
-
 /** Typed non-secret OAuth/account metadata retained alongside credential slots. */
 export interface AccountAuthMetadata {
 	/** OAuth scopes granted to the account. */

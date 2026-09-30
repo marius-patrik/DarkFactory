@@ -55,7 +55,7 @@ describe("ConfiguredBorrowedCredentialCoordinator", () => {
 			label: "work",
 			metadata: {
 				ownership: "borrowed",
-				importer: "fixture-cli",
+				importedFrom: "fixture-cli",
 				source_entry: "work",
 			},
 			slots: {
@@ -103,11 +103,49 @@ describe("ConfiguredBorrowedCredentialCoordinator", () => {
 			id: "fixture:work",
 			provider: "fixture",
 			label: "work",
-			metadata: { ownership: "borrowed", importer: "fixture-keyring" },
+			metadata: { ownership: "borrowed", importedFrom: "fixture-keyring" },
 			slots: { oauth: { type: "oauth", access: "stale", refresh: "stale", expires: 0 } },
 		});
 		expect(plan.mode).toBe("reimport-only");
 		expect(plan.credential).toMatchObject({ access: "keyring-access", refresh: "keyring-refresh" });
 		expect(plan.credential.expires).toBe(Date.parse("2033-05-18T03:33:20.000Z"));
 	});
+});
+
+/**
+ * A borrowed account is only findable through the field an importer actually writes.
+ *
+ * `df account borrow` and every importer record the source as `importedFrom`; the coordinator used to
+ * look for `importer`, which nothing has ever set, so a real borrowed account could not find its
+ * source. The fixtures above used `importer` too, so the test agreed with the bug. This pins the
+ * field the product writes.
+ */
+test("the source is found through the field an importer writes", async () => {
+	const home = await temporaryHome();
+	const sourcePath = join(home, "source.json");
+	await writeFile(
+		sourcePath,
+		JSON.stringify({ accessToken: "from-source", refreshToken: "r", expiresAt: 2_000_000_000_000 }),
+	);
+	const store = new FileCredentialStore(
+		join(home, "df"),
+		undefined,
+		undefined,
+		new ConfiguredBorrowedCredentialCoordinator(home, [
+			{
+				id: "source-cli",
+				path: "source.json",
+				fields: { access: "accessToken", refresh: "refreshToken", expires: "expiresAt" },
+			},
+		]),
+	);
+	await store.modifyAccount("acme:work", async () => ({
+		id: "acme:work",
+		provider: "acme",
+		label: "work",
+		metadata: { ownership: "borrowed", importedFrom: "source-cli" },
+		slots: { oauth: { type: "oauth", access: "stale", refresh: "stale", expires: 0 } },
+	}));
+	const credential = await store.readCredential("acme", "work");
+	expect(credential).toMatchObject({ type: "oauth", access: "from-source" });
 });

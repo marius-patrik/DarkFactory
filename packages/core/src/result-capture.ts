@@ -45,15 +45,6 @@ interface CodeWorkspaceOperations {
 
 let defaultWorkspaceOperations: CodeWorkspaceOperations | undefined;
 
-/**
- * Register default workspace operations for code-node truth derivation.
- *
- * @param ops - Workspace operations implementation.
- */
-function registerWorkspaceOperations(ops: CodeWorkspaceOperations): void {
-	defaultWorkspaceOperations = ops;
-}
-
 export {
 	type AlignmentResultData,
 	alignmentResultSchema,

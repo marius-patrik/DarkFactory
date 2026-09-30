@@ -9,7 +9,6 @@
  * appeared in two repositories' Projects tabs.
  */
 
-import type { CanonicalStatus } from "../../../protocol/src/workflow.ts";
 import { STATUS_OPTIONS, statusPresentation } from "./taxonomy.ts";
 
 /** One option of a Projects v2 single-select field. */
@@ -104,9 +103,4 @@ export function appliedStatusOptions(response: unknown): string[] {
 	)?.updateProjectV2Field?.projectV2Field?.options;
 	if (!Array.isArray(options)) return [];
 	return options.map((entry) => (typeof entry?.name === "string" ? entry.name : ""));
-}
-
-/** The names this taxonomy will write, typed as statuses rather than as loose strings. */
-function canonicalStatusNames(): CanonicalStatus[] {
-	return [...STATUS_OPTIONS];
 }

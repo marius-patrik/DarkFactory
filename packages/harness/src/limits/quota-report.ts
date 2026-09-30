@@ -149,8 +149,3 @@ export function operatorQuotaSnapshot(report: QuotaReport): OperatorQuotaSnapsho
 		})),
 	};
 }
-
-/** Builds the canonical runtime quota report and immediately projects its redacted operator snapshot. */
-async function buildOperatorQuotaSnapshot(input: QuotaReportInput): Promise<OperatorQuotaSnapshot> {
-	return operatorQuotaSnapshot(await buildQuotaReport(input));
-}

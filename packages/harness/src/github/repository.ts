@@ -48,6 +48,18 @@ interface CreatePullRequestInput {
 	draft?: boolean;
 }
 /** Options for updating an existing GitHub pull request. */
+/** The `closingIssuesReferences` selection this class asks for. */
+interface ClosingIssueReferences {
+	readonly repository: {
+		readonly pullRequest: {
+			readonly closingIssuesReferences: {
+				readonly nodes: { readonly number: number }[];
+				readonly pageInfo: { readonly hasNextPage: boolean; readonly endCursor: string | null };
+			};
+		};
+	};
+}
+
 interface UpdatePullRequestInput {
 	title?: string;
 	body?: string;
@@ -268,7 +280,10 @@ export class GitHubRepository {
 		const nodes = await this.#client.collectGraphQL<{ number: number }>(
 			query,
 			{ owner: this.#owner, repo: this.#repo, number },
-			(data) => (data as any).repository.pullRequest.closingIssuesReferences,
+			// The shape is the query's own: `closingIssuesReferences(first:100,after:$cursor){nodes{number}
+			// pageInfo{hasNextPage endCursor}}`. Un-exporting the input interfaces below made this
+			// visible to the linter, and it was an `any` standing in for a shape the query states.
+			(data) => (data as ClosingIssueReferences).repository.pullRequest.closingIssuesReferences,
 		);
 		return [...new Set(nodes.map((node) => node.number))].sort((a, b) => a - b);
 	}

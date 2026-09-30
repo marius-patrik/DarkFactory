@@ -2,8 +2,6 @@ import type { TaskKind } from "../../protocol/src/model.ts";
 
 /** Current capability ABI compatibility version. */
 export const CAPABILITY_ABI_VERSION = "1" as const;
-/** Literal type of the supported capability ABI version. */
-type CapabilityAbiVersion = typeof CAPABILITY_ABI_VERSION;
 
 /** JSON Schema object used to describe capability tool inputs. */
 export type JsonSchema = Readonly<Record<string, unknown>>;

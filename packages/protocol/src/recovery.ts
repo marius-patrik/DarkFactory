@@ -123,22 +123,8 @@ export const recoveryIntakeRecordSchema = z.object({
 	auditEvidence: z.array(z.string().min(1)),
 });
 
-/** Local/recovered source category. */
-type RecoverySourceKind = z.infer<typeof recoverySourceKindSchema>;
-/** Exact dirty/untracked snapshot identity. */
-type RecoverySnapshotIdentity = z.infer<typeof recoverySnapshotIdentitySchema>;
 /** Exact local/recovered implementation source identity. */
 export type RecoverySourceIdentity = z.infer<typeof recoverySourceIdentitySchema>;
-/** Request/version binding for one recovery intake. */
-type RecoveryRequestBinding = z.infer<typeof recoveryRequestBindingSchema>;
-/** Metadata-only sensitive-data finding. */
-type RecoverySensitiveFinding = z.infer<typeof recoverySensitiveFindingSchema>;
-/** Secret/publication safety state. */
-type RecoverySafety = z.infer<typeof recoverySafetySchema>;
-/** Planning reuse/freshness state. */
-type RecoveryPlanningState = z.infer<typeof recoveryPlanningStateSchema>;
-/** Terminal recovery disposition. */
-type RecoveryDisposition = z.infer<typeof recoveryDispositionSchema>;
 /** Cleanup eligibility state. */
 export type RecoveryCleanupState = z.infer<typeof recoveryCleanupStateSchema>;
 /** Durable governed recovery provenance/audit record. */

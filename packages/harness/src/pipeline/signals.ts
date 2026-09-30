@@ -93,15 +93,6 @@ const PRINT_TIMEOUT_PATTERNS: readonly RegExp[] = [
 ];
 
 /**
- * What a classified attempt means for the ladder.
- *
- * `rotate` covers both quota and auth: each means another account, pool, or harness is worth
- * trying, and they are kept as one verdict because the ladder's response is identical and splitting
- * them is how the two paths came to drift.
- */
-type AttemptVerdict = "answer" | "rotate" | "no-output" | "error";
-
-/**
  * Report whether text indicates quota or rate-limit exhaustion.
  *
  * @param text - Subprocess stderr/stdout, or a runner-authored failure detail.

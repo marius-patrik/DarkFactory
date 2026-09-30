@@ -1,3 +1,5 @@
+<!-- Generated from docs/home.md by @darkfactory/docs. Do not edit README.md directly. -->
+
 # DarkFactory — Product Requirements Document
 
 **Status: NORMATIVE.**

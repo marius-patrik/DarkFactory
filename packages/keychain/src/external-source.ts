@@ -9,10 +9,10 @@ import type {
 import { decodeExternalKeyringPayload, type ExternalKeyring } from "./external-keyring.ts";
 
 /** Supported expiry representations in external CLI credential documents. */
-type ExternalExpiryFormat = "epoch_ms" | "epoch_seconds" | "iso";
+export type ExternalExpiryFormat = "epoch_ms" | "epoch_seconds" | "iso";
 
 /** Declarative mapping for one borrowed external credential source. */
-interface ExternalCredentialSourceConfig {
+export interface ExternalCredentialSourceConfig {
 	id: string;
 	path?: string;
 	keyring?: { service: string; account?: string };
@@ -86,7 +86,11 @@ export class ConfiguredBorrowedCredentialCoordinator implements BorrowedCredenti
 	}
 
 	private config(account: AccountRecord): ExternalCredentialSourceConfig {
-		const id = account.metadata?.importer;
+		// Every importer records the source under `importedFrom` -- that is the field
+		// `markImportedAccount` and `df account borrow` both write, and the field the account record
+		// carries. This read `importer`, which nothing has ever set, so a borrowed account could never
+		// find its source. It only went unnoticed because no account was ever borrowed.
+		const id = account.metadata?.importedFrom ?? account.metadata?.importer;
 		const config = id ? this.sources.get(id) : undefined;
 		if (!config) throw new Error(`Borrowed account ${account.id} has no configured source importer`);
 		return config;

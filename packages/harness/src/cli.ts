@@ -17,12 +17,15 @@ import { importGrokAccount } from "../../keychain/src/import/grok.ts";
 import { OsClaudeKeyringAdapter } from "../../keychain/src/import/keyring.ts";
 import { importKimiAccount } from "../../keychain/src/import/kimi.ts";
 import { OsHomeReader } from "../../keychain/src/import/reader.ts";
+import type { ExternalCredentialSourceConfig, ExternalExpiryFormat } from "../../keychain/src/index.ts";
 import {
+	ConfiguredBorrowedCredentialCoordinator,
 	defaultDfHome,
 	exportCredentialAccount,
 	FileCredentialStore,
 	importCredentialAccount,
 	loadVaultKey,
+	OsExternalKeyring,
 	parseAccountId,
 } from "../../keychain/src/index.ts";
 import { loginProviderAccount } from "../../keychain/src/login.ts";
@@ -92,6 +95,7 @@ function usage(): string {
 		"  df accounts",
 		"  df account set <account-id> <slot> --type <api_key|header|cookie|other> [--from-vault NAME]  # value from stdin or the vault",
 		"  df account import <antigravity|claude|codex|grok|kimi> --account <label>",
+		"  df account borrow <claude|...> --account <label>   re-read the source CLI's credential",
 		"  df account export <provider:label>",
 		"  df account load <provider:label> --from-env <VAR>",
 		"  df login <provider> [--account <label>]",
@@ -420,6 +424,49 @@ async function accountImportCommand(
 	} else throw new Error(`Importer parser is not implemented: ${declaration.parser}`);
 	await markImportedAccount(store, declaration.targetProvider, label, declaration.id);
 	console.log(`Imported ${source}/${label}.`);
+}
+
+/**
+ * Registers an account that keeps re-reading the source CLI's credential instead of holding a copy.
+ *
+ * `df account import` copies: the token is written into df's own store and `ownership` is
+ * `df-owned`, so a token the source CLI later refreshes is invisible here. Borrowing registers the
+ * account with `ownership: "borrowed"` and the importer id, and `BorrowedCredentialCoordinator` then
+ * re-reads the declared path or keyring entry on every use. df never writes the source.
+ */
+async function accountBorrowCommand(
+	registry: ProviderRegistry,
+	store: FileCredentialStore,
+	args: string[],
+): Promise<void> {
+	const source = args[0];
+	const label = option(args, "--account");
+	if (!label) throw new Error("account borrow requires --account <label>");
+	const declaration = registry.entries.flatMap((entry) => entry.importers ?? []).find((entry) => entry.id === source);
+	if (!declaration) throw new Error(`Unknown account borrow source: ${source ?? ""}`);
+	const id = `${declaration.targetProvider}:${label}`;
+	await store.modifyAccount(id, async (current) =>
+		current
+			? {
+					...current,
+					metadata: {
+						...(current.metadata ?? {}),
+						importedFrom: declaration.id,
+						ownership: "borrowed",
+						sync: "machine-only",
+					},
+				}
+			: undefined,
+	);
+	console.log(
+		`Borrowing ${declaration.targetProvider}/${label} from ${declaration.id} ` +
+			`(${declaration.keyring ? `keyring ${declaration.keyring.service}` : (declaration.path ?? "declared path")}).`,
+	);
+}
+
+/** The expiry field's declared name, mapped onto what the coordinator parses. */
+function expiryFormat(declared: "epoch_seconds" | "epoch_milliseconds" | "iso"): ExternalExpiryFormat {
+	return declared === "epoch_milliseconds" ? "epoch_ms" : declared;
 }
 
 async function markImportedAccount(
@@ -1629,10 +1676,28 @@ export async function main(args = process.argv.slice(2)): Promise<void> {
 		fallbackTtlMs: config.cooldownTtlMs,
 		persist: (candidate) => candidate.provider !== "faux",
 	});
+	// Borrowed accounts re-read the source CLI's credential through this coordinator. Constructed
+	// here, beside the store, because the store is what consults it: without a coordinator here every
+	// borrowed account falls through to its stored copy, and nothing could ever be borrowed.
+	const borrowedSources: ExternalCredentialSourceConfig[] = registry.entries.flatMap((entry) =>
+		(entry.importers ?? []).map((importer) => ({
+			id: importer.id,
+			...(importer.path ? { path: importer.path } : {}),
+			...(importer.keyring ? { keyring: importer.keyring } : {}),
+			fields: {
+				access: importer.fieldMapping.access ?? "accessToken",
+				refresh: importer.fieldMapping.refresh ?? "refreshToken",
+				expires: importer.fieldMapping.expires ?? "expiresAt",
+				...(importer.fieldMapping.accountId ? { accountId: importer.fieldMapping.accountId } : {}),
+			},
+			...(importer.formats?.expires ? { expires: expiryFormat(importer.formats.expires) } : {}),
+		})),
+	);
 	const store = new FileCredentialStore(
 		home,
 		localCredentialFallback(home, config, providerConfig),
 		(provider, label) => ledger.clearAccount(provider, label),
+		new ConfiguredBorrowedCredentialCoordinator(homedir(), borrowedSources, new OsExternalKeyring()),
 	);
 	const command = args[0];
 	switch (command) {
@@ -1661,6 +1726,7 @@ export async function main(args = process.argv.slice(2)): Promise<void> {
 		case "account":
 			if (args[1] === "set") return accountSetCommand(store, args.slice(2));
 			if (args[1] === "import") return accountImportCommand(registry, store, args.slice(2));
+			if (args[1] === "borrow") return accountBorrowCommand(registry, store, args.slice(2));
 			if (args[1] === "export") return accountExportCommand(store, args.slice(2));
 			if (args[1] === "load") return accountLoadCommand(store, args.slice(2));
 			throw new Error(`Unknown account command: ${args[1] ?? ""}`);

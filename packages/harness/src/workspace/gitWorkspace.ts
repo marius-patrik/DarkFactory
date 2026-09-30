@@ -473,3 +473,20 @@ export function pushWithLease(worktree: string, remote: string, branch: string, 
 	}
 	return remoteSha;
 }
+
+/**
+ * Rejects a ref that is not a plain Git reference, so a caller-supplied branch or remote name can
+ * never be read as an option or a second argument.
+ */
+function validateRef(ref: string, name = "ref"): void {
+	if (!ref || typeof ref !== "string" || !/^[a-zA-Z0-9_\-./~^@{}+]+$/.test(ref) || ref.startsWith("-")) {
+		throw new Error(`Invalid ${name}: ${ref}`);
+	}
+}
+
+/** Creates a branch at a start point and checks it out. */
+export function createBranch(worktree: string, branch: string, startPoint: string): void {
+	validateRef(branch, "branch");
+	validateRef(startPoint, "startPoint");
+	runGit(worktree, ["checkout", "-b", branch, startPoint]);
+}

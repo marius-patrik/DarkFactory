@@ -51,8 +51,14 @@ export function decodeExternalKeyringPayload(value: string): string {
 	}
 }
 
-/** macOS read-only external keyring adapter. Other platforms return no entries. */
-class OsExternalKeyring implements ExternalKeyring {
+/**
+ * macOS read-only external keyring adapter. Other platforms return no entries.
+ *
+ * Exported so `df account borrow` can construct it: the borrowed-credential path is only reachable
+ * when something supplies an `ExternalKeyring`, and this is the implementation for the one platform
+ * that has a readable system keyring.
+ */
+export class OsExternalKeyring implements ExternalKeyring {
 	async listServices(): Promise<Array<{ service: string; account: string | null }>> {
 		if (process.platform !== "darwin") return [];
 		try {

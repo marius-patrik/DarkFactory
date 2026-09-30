@@ -69,17 +69,6 @@ const VERB_ALIASES: Readonly<Record<string, PipelineCommand | undefined>> = {
 	resume: "resume",
 };
 
-/**
- * Whole-comment approval matcher for issues (strict grammar plus legacy words).
- *
- * Exported because a caller may want to test a comment against the issue gate without also
- * decoding which command it was.
- */
-const ISSUE_COMMAND_RE = /^\s*(?:\/df\s+approve|\/approve|approve|lgtm|good|\/df\s+resume|\/resume|resume)\s*$/iu;
-
-/** Whole-comment approval matcher for pull requests (strict grammar plus legacy words). */
-const PR_COMMAND_RE = /^\s*(?:\/df\s+approve|\/approve|approve|merge|\/merge|lgtm)\s*$/iu;
-
 /** Words whose mere mention (outside a command) earns at most a one-time hint. */
 const HINT_WORDS = /\b(approve(?:d)?|lgtm|merge|resume|revise|reject)\b/iu;
 

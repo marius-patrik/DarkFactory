@@ -18,7 +18,6 @@ export const repoRoot = join(import.meta.dir, "..", "..", "..", "..");
 /** The workflows this repository ships. */
 const workflowDir = join(repoRoot, ".github", "workflows");
 /** The pipeline's shared automation scripts. */
-const scriptDir = join(repoRoot, ".github", "scripts");
 /** The issue chooser and its templates. */
 export const issueTemplateDir = join(repoRoot, ".github", "ISSUE_TEMPLATE");
 
@@ -106,13 +105,6 @@ export function steps(workflow: Workflow, jobId: string): Step[] {
 	return job.steps ?? [];
 }
 
-/** The position of the named step, so an ordering claim can be made about parsed structure. */
-function stepIndex(workflow: Workflow, jobId: string, stepName: string): number {
-	const index = steps(workflow, jobId).findIndex((step) => step.name === stepName);
-	if (index === -1) throw new Error(`no step ${stepName} in job ${jobId}`);
-	return index;
-}
-
 /** Every step of every job of one workflow, flattened for document-wide claims. */
 export function allSteps(workflow: Workflow): Array<{ job: string; step: Step }> {
 	return Object.entries(workflow.jobs).flatMap(([job, definition]) =>
@@ -137,18 +129,6 @@ export function workflowScripts(workflow: Workflow): string {
 /** The steps of a workflow that invoke the given action. */
 export function stepsUsing(workflow: Workflow, action: string): Array<{ job: string; step: Step }> {
 	return allSteps(workflow).filter((entry) => entry.step.uses?.startsWith(`${action}@`));
-}
-
-/** Every automation script file name, sorted. */
-function scriptNames(): string[] {
-	return readdirSync(scriptDir)
-		.filter((name) => name.endsWith(".py"))
-		.sort();
-}
-
-/** The raw text of one automation script. */
-function scriptSource(name: string): string {
-	return readFileSync(join(scriptDir, name), "utf8");
 }
 
 /** The `repo` block of `repo.dfconfig`, the one declaration the shared automation reads. */

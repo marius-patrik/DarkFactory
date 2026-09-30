@@ -227,10 +227,5 @@ export async function reconcileManifest(root: string, ref: string, planned: stri
 	return true;
 }
 
-/** The path the combined configuration was reconciled at, relative to the repository root. */
-function reconciledManifestPath(root: string): string {
-	return relative(root, resolveManifestPath(root));
-}
-
 /** Re-exported so a caller planning an installation need not import two modules for one path. */
 export { MANIFEST_PATH };

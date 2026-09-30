@@ -5,7 +5,6 @@ import { claimString, jwtClaims } from "./parseJwt.ts";
 import type { HomeReader } from "./reader.ts";
 import { record, stringField } from "./record.ts";
 
-const OPENAI_TOKEN_ENDPOINT = "https://auth.openai.com/oauth/token";
 interface ImportedCodexOAuth {
 	accessToken: string;
 	refreshToken?: string;

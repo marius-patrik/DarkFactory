@@ -5,7 +5,6 @@ import { parseJson } from "./parseJson.ts";
 import type { HomeReader } from "./reader.ts";
 import { record, stringField } from "./record.ts";
 
-const ANTHROPIC_TOKEN_ENDPOINT = "https://console.anthropic.com/v1/oauth/token";
 interface ImportedClaudeLogin {
 	accessToken: string;
 	refreshToken?: string;
