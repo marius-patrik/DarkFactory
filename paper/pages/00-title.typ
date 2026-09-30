@@ -18,8 +18,8 @@
 ]
 #align(left)[
   #grid(columns: (1fr, auto), column-gutter: 1.2em,
-    [Autor práce: #meta.author, #meta.class],
-    [Vedoucí práce: #meta.supervisor],
+    [Autor práce — #meta.author, #meta.class],
+    [Vedoucí práce — #meta.supervisor],
   )
   #v(0.8cm)
   #align(center)[#text(size: 12pt, str(meta.year))]
