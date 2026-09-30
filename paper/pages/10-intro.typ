@@ -43,7 +43,7 @@ S rozvojem nástrojů roste i jejich adopce. Rozsah veřejného použití samotn
 
 #heading(level: 2)[Cíl, výzkumná otázka, hypotéza a vymezení] <intro-goal>
 
-Cílem práce je popsat a analyzovat konkrétní implementaci současného přístupu k agentickému inženýrství ve vývoji softwaru.
+Cílem práce je popsat a systematizovat principy současného agentického inženýrství ve vývoji softwaru a na systému DarkFactory ukázat, co jejich propojení umožňuje v praxi.
 
 Výzkumná otázka pak zní: #emph[Jaké architektonické a procesní principy se opakují v současném agentickém vývoji softwaru a jak jsou realizovány v systému DarkFactory?]
 
