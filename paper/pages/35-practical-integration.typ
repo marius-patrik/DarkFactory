@@ -22,6 +22,5 @@ Přesun na projektovou tabuli dělá osobní přístupový token. GitHub přiřa
 a tabule patří uživateli, takže aplikace k této tabuli nedosáhne @darkfactory-d576ec8f.
 
 Popsaný průchod končí tam, kde pythonovský runner volal cizí produkční CLI @darkfactory-d576ec8f. Popsaná
-architektura je tedy prvním krokem a její popis nenahrazuje posouzení vlastních omezení, které patří do
-@diskuse. Projekt @darkfactory se od tohoto stavu posunul dál; kam se posunul a proč, je předmětem práce
+architektura je tedy prvním krokem a její popis nenahrazuje posouzení vlastních omezení. Projekt DarkFactory se od tohoto stavu posunul dál; kam se posunul a proč, je předmětem práce
 následující, a zde to záměrně není rozvedeno.
