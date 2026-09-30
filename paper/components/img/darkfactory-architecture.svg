@@ -1,5 +1,5 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 430" role="img" aria-labelledby="t d">
-  <title id="t">Jednoduchá produkční architektura DarkFactory</title>
+  <title id="t">Architektura pipeline DarkFactory</title>
   <desc id="d">Čtyři navazující vrstvy: GitHub jako vývojové prostředí a zdroj událostí, GitHub Actions jako výpočetní prostředí, Docker s pythonovským runnerem jako izolační vrstva a produkční harness, který poskytuje modelu nástroje a pozorování.</desc>
   <defs>
     <marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
@@ -19,7 +19,7 @@
     .edge{fill:none;stroke:#1a1a1a;stroke-width:1.6;marker-end:url(#a)}
   </style>
 
-  <text x="30" y="36" class="title">Jednoduchá produkční architektura</text>
+  <text x="30" y="36" class="title">Architektura pipeline</text>
   <text x="970" y="35" text-anchor="end" class="rev">d576ec8f</text>
 
   <!-- 1 · GitHub -->

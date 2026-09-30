@@ -1,5 +1,5 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 430" role="img" aria-labelledby="t d">
-  <title id="t">Jednoduchý průchod požadavku DarkFactory</title>
+  <title id="t">Průchod požadavku DarkFactory</title>
   <desc id="d">Požadavek v issue prochází interpretací, plánováním a dvěma lidskými bránami, poté implementací na pracovní větvi, ověřením, draft pull requestem a review smyčkou a může skončit bez verdiktu. Po schválení následuje merge a odstranění větve.</desc>
   <defs>
     <marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
@@ -21,7 +21,7 @@
     .edge{fill:none;stroke:#1a1a1a;stroke-width:1.6;marker-end:url(#a)}
   </style>
 
-  <text x="30" y="36" class="title">Jednoduchý průchod požadavku</text>
+  <text x="30" y="36" class="title">Průchod požadavku</text>
   <text x="970" y="35" text-anchor="end" class="rev">d576ec8f</text>
 
   <!-- phase 1 -->
