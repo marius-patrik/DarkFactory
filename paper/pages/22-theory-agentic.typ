@@ -25,10 +25,11 @@ Více agentů samo o sobě nezaručuje lepší výsledek. Paralelizace přináš
 když jsou omezeny vzájemné závislosti a koordinátor dokáže odhalit konflikty, ověřit dílčí
 výstupy a posoudit sloučený výsledek vůči společným podmínkám přijetí. Orchestrace proto
 zahrnuje nejen rozdělení práce, ale také správu kontextu, pořadí kroků, sdílený stav
-a integrační kontroly. Je nezbytná právě pro rozsáhlé úlohy, které se do jednoho kontextového
-okna nevejdou: spoléhat se tam na kompakci by znamenalo ztratit kontext, na kterém celé zadání
-stojí, a agent by navíc nebyl schopen pracovat na částech, které na sebe bezprostředně
-navazují. Čtyři vzorce na to odpovídají:
+a integrační kontroly. Je zvlášť důležitá u rozsáhlých úloh, které se nevejdou do jednoho
+kontextového okna. Samotná kompakce sice umožňuje v práci pokračovat, ale nemusí zachovat
+všechny detaily potřebné pro jednotlivé části úlohy. Rozdělení práce mezi více běhů nebo
+agentů umožňuje každé části pracovat s vlastním relevantním kontextem a jejich výsledky
+následně koordinovaně spojit. Čtyři vzorce na to odpovídají:
 
 - #strong[Coordinator/subagent] rozdělí rozsáhlou úlohu na dílčí běhy. Koordinátor deleguje
   podúkol specializovanému subagentovi s vlastním kontextem a přebírá jeho výsledek, nezávislé
