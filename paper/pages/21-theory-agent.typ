@@ -14,7 +14,14 @@ dopředuje kontext, nástroje a pravidla, jejichž prostřednictvím se návrh m
 Celý systém tvoří několik vrstev — rozhraní, smyčka agenta, oprávnění, nástroje, uložený stav
 a prostředí, v němž běží — a model je jen jedna z nich. Spolehlivost agenta proto neurčuje
 samotný model, ale skladba těch vrstev. Čím jsou modely schopnější, tím menší část práce zbývá
-pro tuto skladbu a tím víc práce přebírá model.
+pro tuto skladbu a tím víc práce přebírá model. Rozvrstvení shrnuje @fig-harness-layers.
+
+#figure(
+  image("/components/img/harness-layers.svg", width: 100%),
+  caption: [Od jazykového modelu k agentickému systému. Jazykový model je jednou ze čtyř
+  součástí harnessu; repozitář, oprávnění ani trvalý stav mu nedává samotný, ale vrstva, která
+  jeho návrh převádí na akci s dohledatelným výsledkem.],
+) <fig-harness-layers>
 
 #heading(level: 3)[Jazykový model (LLM)]
 

@@ -1,0 +1,62 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 980 510" role="img" aria-labelledby="t d">
+  <title id="t">Od jazykového modelu k agentickému systému</title>
+  <desc id="d">Jazykový model je jednou ze čtyř součástí, které dohromady tvoří harness: agentní smyčka s kontextem, nástroje s oprávněním, stav uložený mimo model a výpočetní prostředí. Teprve celek dospívá k akci s dohledatelným výsledkem; samotný model k němu nedojde.</desc>
+  <defs>
+    <marker id="a" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M0 0 10 5 0 10Z" fill="#1a1a1a"/>
+    </marker>
+  </defs>
+  <style>
+    .box{fill:#fff;stroke:#1a1a1a;stroke-width:1.8}
+    .soft{fill:#f2f2f2;stroke:#1a1a1a;stroke-width:1.8}
+    .group{fill:none;stroke:#1a1a1a;stroke-width:1.8;stroke-dasharray:5 4}
+    .label{font:700 17px Caladea,serif;fill:#1a1a1a}
+    .small{font:italic 13px Caladea,serif;fill:#5a5a5a}
+    .note{font:italic 15px Caladea,serif;fill:#333}
+    .arrow{fill:none;stroke:#1a1a1a;stroke-width:1.8;marker-end:url(#a)}
+  </style>
+
+  <text x="40" y="34" class="label">Hranice, za kterou model přestává být celou soustavou</text>
+
+  <path d="M480 176V236" class="arrow"/>
+  <path d="M500 279V176" class="arrow"/>
+
+  <rect x="290" y="60" width="400" height="330" rx="10" class="group"/>
+  <text x="490" y="368" class="label" text-anchor="middle">Harness</text>
+
+  <rect x="310" y="90" width="170" height="86" rx="6" class="box"/>
+  <text x="395" y="116" class="label" text-anchor="middle">Agentní smyčka</text>
+  <text x="395" y="139" class="label" text-anchor="middle">+ kontext</text>
+  <text x="395" y="161" class="small" text-anchor="middle">instrukce, historie</text>
+
+  <rect x="500" y="90" width="170" height="86" rx="6" class="box"/>
+  <text x="585" y="116" class="label" text-anchor="middle">Nástroje</text>
+  <text x="585" y="139" class="label" text-anchor="middle">+ oprávnění</text>
+  <text x="585" y="161" class="small" text-anchor="middle">co smí a jak se to ověří</text>
+
+  <rect x="310" y="236" width="170" height="86" rx="6" class="box"/>
+  <text x="395" y="262" class="label" text-anchor="middle">Stav / paměť</text>
+  <text x="395" y="285" class="label" text-anchor="middle">mimo model</text>
+  <text x="395" y="307" class="small" text-anchor="middle">issue, větev, commit</text>
+
+  <rect x="500" y="236" width="170" height="86" rx="6" class="box"/>
+  <text x="585" y="262" class="label" text-anchor="middle">Prostředí</text>
+  <text x="585" y="285" class="small" text-anchor="middle">repozitář, shell, CI</text>
+
+  <rect x="40" y="176" width="180" height="96" rx="6" class="soft"/>
+  <text x="130" y="208" class="label" text-anchor="middle">Jazykový model</text>
+  <text x="130" y="231" class="label" text-anchor="middle">(LLM)</text>
+  <text x="130" y="256" class="small" text-anchor="middle">navrhuje další krok</text>
+
+  <path d="M220 224H284" class="arrow"/>
+
+  <rect x="760" y="176" width="180" height="96" rx="6" class="box"/>
+  <text x="850" y="208" class="label" text-anchor="middle">Akce</text>
+  <text x="850" y="231" class="label" text-anchor="middle">a výsledek</text>
+  <text x="850" y="256" class="small" text-anchor="middle">editace, test, commit</text>
+
+  <path d="M696 224H754" class="arrow"/>
+
+  <text x="40" y="466" class="note">Model je uvnitř harnessu, ne nad ním. Repozitář, oprávnění ani trvalý stav mu nedává samotný;</text>
+  <text x="40" y="488" class="note">dodává je vrstva, která jeho návrh převádí na akci, jejíž výsledek lze dohledat.</text>
+</svg>
