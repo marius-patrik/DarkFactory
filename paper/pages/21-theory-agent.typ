@@ -100,10 +100,7 @@ Každá akce ještě předtím projde oprávněním, které pro ni platí: prov�
 člověka, nebo zakázat. Ani když model navrhne něco nebezpečného, dostane se to k provedení jen
 tehdy, když to oprávnění dovolí.
 
-Instrukce pro agenta leží v repozitáři, standardně v souboru #strong[`AGENTS.md`] @agents-md
-(u Anthropicu v #strong[`CLAUDE.md`]). Takový soubor může existovat v několika úrovních — v kořeni
-projektu, ve složce i v jednotlivých podadresářích — a harness si načte jen ten, který se týká
-právě otevřených souborů. Skilly, skripty a hooky leží pod složkou #strong[`.agents/`] @agentskills-spec.
+Instrukce pro coding agenty lze verzovat přímo s repozitářem. Otevřený standard #strong[`AGENTS.md`], podporovaný řadou současných coding agentů, poskytuje předvídatelné místo pro projektové instrukce, například příkazy sestavení, testy a konvence @agents-md. Pro rozšiřitelné schopnosti se používá standard #strong[Agent Skills], v němž je každý skill adresář obsahující soubor #strong[`SKILL.md`] @agentskills-spec. Konkrétní umístění těchto adresářů se mezi harnessy liší; některé systémy používají #strong[`.agents/skills/`], jiné vlastní adresáře.
 
 #heading(level: 3)[Kontext (Context)]
 
