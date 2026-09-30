@@ -60,7 +60,7 @@ neskončí čistým verdiktem, runner přesto pokračuje k následující kontro
 Po automatické revizi následuje samostatná kontrola souladu výsledného diffu se schváleným plánem. Jde o jiný
 modelový dotaz než běžná code review: neposuzuje obecnou kvalitu změny, ale zda implementace odpovídá tomu,
 co člověk předem schválil. Teprve po úspěšném dokončení této fáze může být výsledek předán k lidské revizi
-@darkfactory-d576ec8f.
+@darkfactory-d576ec8f. Celý sled fází shrnuje @fig-darkfactory-pipeline.
 
 #figure(
   image("/components/img/darkfactory-pipeline.svg", width: 100%),
