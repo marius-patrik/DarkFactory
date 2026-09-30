@@ -40,7 +40,7 @@ Agentní vrstva provádí akci mimo model a výsledek vrací zpět do kontextu. 
 
 #figure(
   image("/components/img/react-loop.svg", width: 100%),
-  caption: [Smyčka ReAct @yao2022.],
+  caption: [#term-name("ReAct") @yao2022.],
 ) <fig-react-loop>
 
 #heading(level: 3)[#term-name("Tools", cs: "nástroje")]
@@ -54,7 +54,7 @@ Zadání určuje, co má agent udělat, zatímco agentní vrstva určuje, co sku
 
 Každá akce může být navíc řízena oprávněním, které ji povolí automaticky, vyžádá souhlas člověka nebo ji zakáže.
 
-Projektové instrukce lze verzovat přímo s repozitářem. #term("AGENTS.md", definition: "Standardní soubor s projektovými instrukcemi určenými coding agentům.") poskytuje společné místo pro příkazy sestavení, testy a konvence @agents-md. #term("Agent Skills", cs: "dovednosti agentů", definition: "Otevřený formát pro adresáře opakovaně použitelných schopností agenta.") používají soubor #term("SKILL.md", definition: "Vstupní soubor jedné dovednosti agenta, který popisuje její použití a dostupné zdroje.") @agentskills-spec.
+Projektové instrukce lze verzovat přímo s repozitářem. #term("AGENTS.md", definition: "Standardní soubor s projektovými instrukcemi určenými agentům.") poskytuje společné místo pro příkazy sestavení, testy a konvence @agents-md. #term("Agent Skills", cs: "dovednosti agentů", definition: "Otevřený formát pro adresáře opakovaně použitelných schopností agenta.") používají soubor #term("SKILL.md", definition: "Vstupní soubor jedné dovednosti agenta, který popisuje její použití a dostupné zdroje.") @agentskills-spec.
 
 #heading(level: 3)[#term-name("Context", cs: "kontext")]
 
