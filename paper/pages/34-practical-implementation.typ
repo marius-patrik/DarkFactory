@@ -6,10 +6,7 @@ obsahuje schválený plán, omezení na jeho rozsah a pravidla pro testy a dokum
 repozitář, upravuje soubory a používá nástroje nad `/workspace`.
 
 Po implementaci runner spustí dostupné formátovací nástroje a deklarované testovací sady. Při neúspěchu předá
-výstup kontroly agentnímu kroku `fix`, který má opravit chybu bez opuštění schváleného rozsahu. Testovací sady se
-přitom spouštějí pouze jednou a po opravě už ne: kód se zformátuje, zakomituje a odešle dál, i kdyby opravená
-verze stále neprocházela. Změna s neprocházejícími testy se dostane do draft pull requestu stejně jako změna
-procházející. Runner následně vytvoří commit, odešle větev a otevře draft pull request
+výstup kontroly agentnímu kroku `fix`, který má opravit chybu bez opuštění schváleného rozsahu. Runner následně vytvoří commit, odešle větev a otevře draft pull request
 @darkfactory-d576ec8f.
 
 Na draft pull requestu začíná automatická review smyčka. Každá iterace načte aktuální větev a diff a předá je
