@@ -1,74 +1,18 @@
-// 4.1 Findings and discussion.
+// Chapter 4: findings and discussion.
 //
-// STUBBED pending this rewrite. Every admission the practical part used to carry
-// is now gone from chapter 3 by the author's direction, so this section is the only
-// place left where the system is allowed to be judged. Findings and limits share
-// one section, deliberately: a finding without its limit reads as advocacy.
+// The structure is final, but the argument is intentionally left open until chapters 2 and 3
+// are finished. Do not turn this back into a reliability verdict or a second walkthrough of
+// the pipeline.
 //
-// Order: the findings first, in the order the run happens, then what they do
-// not show, then the interpretation, then the three named limitations.
-//   Findings 1-4, then one negative finding — it stays, it is the reason the rest
-//   can be read as measurement rather than marketing.
-//   Then: the run can stop without a recorded verdict; repeatable checks are a
-//   signal, not a barrier; simplicity has a cost in coverage and in dependence.
-//   Then three limits: ownership (the loop is a foreign harness), scope (the
-//   runner calls foreign harnesses for every agentic step), layer composition
-//   (two harness layers, which one's conventions dominate).
-// Closing: the conclusions are defended from the first limit. The thesis claim —
-// structure, not the choice of CLI — is stated once, in 4.1 or 4.2, not twice.
-//
-// Answers the research question, which now asks under what conditions the
-// system does the work reliably. Answer in prose (R15). Do not grade the system
-// against a list; the list was deleted.
-#heading(level: 1)[Závěr]
+// Final pass should:
+// - answer the research question using the principles actually established in chapter 2;
+// - interpret what the DarkFactory case shows, rather than score it;
+// - include the concrete limitations exposed by the implementation;
+// - distinguish case-bounded findings from broader claims.
+#heading(level: 1)[Zjištění a diskuse]
 
-#heading(level: 2)[Zjištění a diskuse] <zjiisteni>
-
-Otázka zní, za jakých podmínek agentický systém spolehlivě vykonává inženýrskou práci. Odpověď
-nechť leží v pojmech, které teoretická část už zavedla: kontext, brána a druh jejího rozhodnutí.
-
-První podmínka říká, že **kontext, na kterém běh stojí, musí ležet mimo model**. Kontextové okno
-je pracovní kontext jednoho volání a jeho schopnost využívat podstatné informace s délkou klesá;
-kompakce pak starší průběh nahradí souhrnem. Agentická práce potřebuje stav, který přežije delší
-než jedno volání, a v konverzaci ho nemá.
-
-Druhá podmínka říká, že **každá brána musí vědět, jaké rozhodnutí činí, a druh toho rozhodnutí
-nesmí být zaměněn**. Kontrola, kterou lze přepočítat, brána posuzovaná modelem a lidská brána
-jsou tři různé věci a jednou druhou nelze nahradit. Brána, která neví, že rozhoduje, je brána,
-jejíž rozhodnutí nelze přezkoumat.
-
-Popsaná konfigurace obě podmínky splňuje a obě staví mimo model. Stav leží v issue, komentáři,
-dceřiném issue, větvi a diffu — kde ho lze přečíst bez agenta. Dvě rozhodnutí před vznikem větve
-patří člověku a jsou oddělená, takže plán lze odmítnout i poté, co bylo přijato jeho východisko.
-Obojí je zapsáno dřív, než existuje co zkazovat.
-
-Jedna z těchto podmínek však drží jen částečně. Hranice schváleného plánu není skutečnou hranicí
-zápisu. Změna rozsahu se zapíše jako Plan Deviation s odůvodněním a oprava poběží dál,
-takže rozhodnutí člověka zůstane platit, i když už výsledek jeho rozsah přesahuje.
-Zápis to zachytí, ale nahradit to schválení nemůže.
-
-Spolehlivost tedy nesídlí v modelu. Sídlí v tom, kam se práce zapisuje, a v tom, kdo v ní
-rozhoduje. Hypotéza, že „praktická autonomie agentického systému není dána pouze schopnostmi modelu,
-ale především návrhem systému, který řídí stav, nástroje, rozhodovací brány a
-integraci výsledku“, je pro zkoumaný artefakt podpořena, nikoli univerzálně dokázána.
-
-Proti tomu lze namítnout, že plán i diff posuzuje model, takže spolehlivost běhu nakonec stojí
-na modelu. Jenže oba texty leží mimo konverzaci a člověk je čte. Chyba v posouzení se tak projeví
-jako chyba v zápisu, který je k přečtení, ne jako změna, kterou by nikdo nespatřil. Spolehlivost tu
-stojí na místě zápisu a na tom, kdo rozhoduje, ne na schopnosti modelu. Průchod jako celek je
-zakreslen v @fig-darkfactory-pipeline.
-
-#heading(level: 2)[Shrnutí]
-
-V praktické části byla implementována produkční pipeline, v níž události GitHubu spouštějí agentní
-kroky v izolovaném kontejneru. Popsaná konfigurace DarkFactory poskytuje odpověď, kterou lze přečíst
-přímo z pořadí kroků. Vykonaná práce musí být zapsaná mimo konverzaci, aby na ni bylo možné se podívat
-bez agenta. Kritické rozhodnutí musí patřit člověku, aby je bylo možné odmítnout.
-
-Pro další výzkum plynou tato doporučení.
-
-Ověřit, zda podmínky platí i mimo popsanou konfiguraci — na jiném repozitáři, při jiné sadě
-harnessů a při jiné sadě modelů. Závěr vychází z jedné revize a jednoho repozitáře; na jiný systém
-z popisu přenést nelze.
-
-Prověřit později, až architektura postoupí dál, zda podmínky drží i v jejím rozšíření.
+// TODO after theory + practical are final:
+// 1. What recurring principles are concretely realized in DarkFactory?
+// 2. What does their composition enable in practice?
+// 3. Where does the initial bootstrap implementation depart from or limit those principles?
+// 4. What can and cannot be generalized from this case?
