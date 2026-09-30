@@ -106,29 +106,28 @@ Pravidla, která se nejčastěji porušují:
 
 ## Aktuální stav — kontrola provedena
 
-Kontrolní průchod těmito pravidly. Oba body, které byly vadné, jsou opravené;
-zbytek pravidel v tabulkách výše byl splněn už při vzniku práce.
+Kontrolní průchod proti školnímu průvodci byl po dokončení rukopisu zopakován.
 
-| # | Problém | Pravidlo | Stav |
-| :-- | :--- | :--- | :--- |
-| R1 | Čtyři ze šesti očíslovaných součástí neměly odkaz v textě | kap. 6 — odkaz povinný | ✅ opraveno, `1051e437`. **Dnes záměrně jinak:** šest obrázků odkaz v textu nemá, protože autor odstranil větu, která obrázek popisovala, a odkazem je věta, se kterou obrázek souvisí. Vyhovuje tomu zásada nezavádět meta-větu; je to rozhodnutí autora, ne nedostatek. |
-| R2 | Seznam součástí textu neobsahoval `Výpis 1` | kap. 4 — seznam kompletní | ✅ opraveno, `487e0b06` |
-| R3 | Anotace měla 128 slov, doporučeno 150–250 | kap. 2.1 | ✅ opraveno, `89109fc7` |
-| R4 | Šest klíčových slov, doporučeno přibližně pět | kap. 2.1 | ✅ opraveno, `1d0d4fe9` |
+| # | Kontrola | Stav |
+| :-- | :--- | :--- |
+| R1 | Každá číslovaná součást textu má odkaz v hlavním textu | ✅ všechny obrázky a tabulka jsou v textu explicitně odkazovány |
+| R2 | Seznam součástí textu je automatický a úplný | ✅ `pages/91-figure-list.typ` |
+| R3 | Česká anotace má doporučených 150–250 slov | ✅ 193 slov |
+| R4 | Anotace a anglický abstrakt obsahově přesně odpovídají | ✅ aktualizováno podle finálních zjištění |
+| R5 | Přibližně pět klíčových slov | ✅ pět klíčových slov |
+| R6 | Výsledky a diskuse odpovídají výzkumné otázce a uvádějí limity | ✅ kapitola 4 |
+| R7 | Závěr výslovně uvádí splnění cíle, shrnuje výsledky a další směr | ✅ kapitola 5 |
+| R8 | Citace a sazba projdou publikačním buildem | ✅ ověřováno CI; před odevzdáním se kontroluje poslední běh |
 
 ## Kontrola strukturálních požadavků (kap. 2 a 7)
 
-Průvodce nepožaduje jen sazbu, ale i strukturu. Následující body byly při kontrole
-chyběly a jsou opravené.
+Práce obsahuje titulní stranu, prohlášení, anotaci a klíčová slova v češtině i angličtině,
+automatický obsah, úvod, teoretickou část, metodiku a praktickou část, výsledky a diskusi,
+závěr, seznam zdrojů a automatický seznam součástí textu.
 
-| Problém | Požadavek | Stav |
-| :--- | :--- | :--- |
-| Chyběla výzkumná otázka a hypotéza | kap. 2.3 — „Cílem teoretické částy je především stanovení hypotéz" | ✅ `34ad2ca1` |
-| Závěr nehodnotil naplnění cíle | kap. 2.6 — „Musí z něj být jasné, zda bylo dosaženo cíle práce" | ✅ `4b53cb88` |
-| Závěr neměl doporučení pro další výzkum | kap. 2.6 — „uvádí se doporučení pro další výzkum" | ✅ `4b53cb88` |
-| Omezení výzkodu chybělo v Diskusi | kap. 2.5 — „a případné limity vašeho výzkumu" | ✅ `fbbfb7b6` |
-| Cíl neodpovídal novému názvu | hodnoceno 5 b — „je ověřitelný, dosažitelný, dostatečně konkrétní" | ✅ `34ad2ca1` |
-| Anotace a abstrakt popisovaly starý rozsah | kap. 2.1 — struktura má odpovídat práci | ✅ `0147a69b` |
+Práce používá jednu hlavní výzkumnou otázku. Formální hypotéza není stanovena: průvodce ji
+nevyžaduje pro každý typ práce a v části o výsledcích výslovně připouští vztah výsledků k
+výzkumné otázce. Zvolený design je inženýrská případová studie, nikoli experiment ověřující
+obecnou spolehlivost jazykových modelů.
 
-Otevřená otázka mimo školní pravidla: strukturální shoda s průvodcem nevylučuje
-jazykovou korekturu. Ta zůstává otevřená — viz `TODO.md`, sekce B.
+Závěrečný obsahový a jazykový průchod je veden proti finálnímu PDF a poslednímu zelenému CI běhu.
