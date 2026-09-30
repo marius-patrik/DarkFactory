@@ -5,9 +5,9 @@ V této práci se #strong[agentickým inženýrstvím] (#strong[Agentic Engineer
 
 #heading(level: 3)[Specifikace (Specification)]
 
-Spolehlivé delegování práce začíná explicitním vymezením cíle, rozsahu, omezení a podmínek přijetí. Specifikace popisuje nejen požadovaný výsledek, ale také části systému, které se měnit nemají, a způsob, jakým bude výsledek ověřen. Tento přístup, označovaný jako #strong[spec-first] nebo #emph[spec-driven development], dává agentovi před implementací měřitelné hranice a člověku podklad pro posouzení výsledku. Přitom jde o postup používaný i v klasickém vývoji softwaru.
+#strong[Spec-first development] staví specifikaci před samotnou implementaci. Tento princip nevznikl s coding agenty; navazuje na dlouhodobou praxi #strong[requirements engineering], v níž jsou požadavky a očekávané vlastnosti systému popsány před nebo v průběhu jeho realizace. IEEE vydalo samostatný standard pro #emph[Software Requirements Specification] už v roce 1984 @ieee830-1984 a současný standard ISO/IEC/IEEE 29148 formalizuje procesy a výstupy requirements engineering v průběhu životního cyklu softwaru @iso29148-2018.
 
-V praxi to znamená, že plán nevzniká až během práce agenta, ale před ní: jeho znění se nejprve dohodnou s člověkem, zapíše do souboru a teprve potom se agent pustí do změn.
+U coding agentů získává tento přístup nový význam. Specifikace už neslouží pouze jako podklad pro lidského vývojáře, ale může být přímo předána agentovi jako vymezení cíle, požadavků a omezení implementace. Čím samostatněji má agent pracovat, tím důležitější je, aby bylo před zahájením implementace dostatečně přesně určeno, #strong[co má být výsledkem], zatímco konkrétní postup může agent zvolit sám.
 
 #figure(
   image("/components/img/claude-code-plan.png", width: 100%),
