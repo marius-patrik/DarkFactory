@@ -1,4 +1,4 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 430" role="img" aria-labelledby="t d">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 500" role="img" aria-labelledby="t d">
   <title id="t">Průchod požadavku DarkFactory</title>
   <desc id="d">Požadavek v issue prochází interpretací, plánováním a dvěma lidskými bránami, poté implementací na pracovní větvi, ověřením, draft pull requestem a review smyčkou a může skončit bez verdiktu. Po schválení následuje merge a odstranění větve.</desc>
   <defs>
@@ -91,8 +91,21 @@
   <text x="847" y="274" text-anchor="middle" class="gatetxt">REVIEW ↔ FIX</text>
   <text x="847" y="300" text-anchor="middle" class="head">Bez verdiktu</text>
 
-  <path d="M847 320V336H639V326" class="edge"/>
+  <path d="M878 320V368" class="edge"/>
 
-  <text x="500" y="386" text-anchor="middle" class="note">Po čisté review a kontrole souladu se schváleným plánem se pull request předá člověku.</text>
-  <text x="500" y="408" text-anchor="middle" class="note">Schválení spustí merge s odstraněním pracovní větve.</text>
+  <!-- phase 3 -->
+  <rect x="30" y="368" width="940" height="66" rx="7" class="phase"/>
+  <text x="46" y="388" class="plabel">KONTROLA SOULADU A INTEGRACE</text>
+
+  <rect x="560" y="378" width="200" height="48" rx="5" class="box"/>
+  <text x="660" y="407" text-anchor="middle" class="head">Kontrola souladu s plánem</text>
+
+  <path d="M760 402H786" class="edge"/>
+
+  <rect x="786" y="378" width="184" height="48" rx="5" class="gate"/>
+  <text x="878" y="396" text-anchor="middle" class="gatetxt">LIDSKÁ BRÁNA</text>
+  <text x="878" y="415" text-anchor="middle" class="head">Revize + merge</text>
+
+  <text x="500" y="462" text-anchor="middle" class="note">Schválení spustí merge s odstraněním pracovní větve; trvalý stav práce zůstává čitelný</text>
+  <text x="500" y="482" text-anchor="middle" class="note">v issue, komentářích, větvi, commitech, pull requestu a záznamu CI.</text>
 </svg>
