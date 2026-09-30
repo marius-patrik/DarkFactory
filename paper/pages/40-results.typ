@@ -112,7 +112,7 @@ konverzaci, aby na ni bylo možné se podívat bez agenta. Dvě rozhodnutí pře
 člověku, aby je bylo možné odmítnout. Praktická autonomie je v tomto systému vlastností návrhu, který
 práci řídí, a nikoli vlastností modelu, který v něm pracuje.
 
-Pro další výzkum plyne čtyř doporučení.
+Pro další výzkum plynou čtyři doporučení.
 
 Předně ověřit, zda podmínky platí i mimo popsanou konfiguraci — na jiném repozitáři, při jiné sadě
 harnessů a při jiné sadě modelů. Dnešní odpověď je sázena na jednu revizi a na jeden repozitář;
