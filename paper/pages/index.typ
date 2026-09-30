@@ -36,7 +36,6 @@
 #include "35-practical-integration.typ"
 
 #include "40-results.typ"
-#include "41-discussion.typ"
 #include "50-conclusion.typ"
 
 // ── back matter ──────────────────────────────────────────
