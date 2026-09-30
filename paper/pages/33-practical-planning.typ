@@ -1,12 +1,9 @@
 // 3.3 Request intake and planning.
 #heading(level: 2)[Interpretace a plánování požadavku]
 
-Výchozím bodem je issue s formulovaným požadavkem. Požadavek se nevytváří jako
-volný text: repozitář nabízí předlohu, která vyžaduje vyplnit několik polí, a právě ta
-určují, co pipeline dostane. Předloha má šest polí, z nichž tři povinná. První požadavek,
-který pipeline zpracovala, ji nevyplnil: napsal volně, pod nadpisy `Problem` a
-`Contract`. Runner předává modelu titulek i tělo issue, takže právě to rozhoduje, co se
-do zadání dostane @fig-issue-template @darkfactory-d576ec8f.
+Výchozím bodem je issue s formulovaným požadavkem. Repozitář nabízí předlohu, která vyžaduje
+vyplnit šest polí, z nichž tři povinná. Právě ta určují, co pipeline dostane
+@fig-issue-template @darkfactory-d576ec8f.
 
 #let field(body) = block(
   stroke: 0.5pt + luma(72%),
@@ -50,10 +47,10 @@ do zadání dostane @fig-issue-template @darkfactory-d576ec8f.
 
 Runner načte titulek a text issue, vyžádá si od modelu interpretaci a zapíše výsledek jako
 komentář. Komentář odděluje doslovné shrnutí požadavku, architektonický rozsah a návrh
-verifikace. Interpretace je tak artefakt, který přežije běh a dá se k němu vrátit.
+verifikace.
 
-Po schválení interpretace je workflow spuštěno znovu a runner založí #emph[child] issue
-s názvem začínajícím na `Plan:`, nativně propojené s původním issue. Model dostane
+Po schválení interpretace je workflow spuštěno znovu, runner založí #emph[child] issue typu
+`Plan:` propojené s původním issue. Model dostane
 schválený požadavek a sestaví implementační plán s očekávanými změnami, soubory nebo
 oblastmi repozitáře a kroky ověření. Plán se zobrazí v issue a schvaluje se samostatně.
 Obě brány před vznikem větve jsou lidské a protože jsou oddělené, lze schválit
@@ -63,6 +60,3 @@ Komentář se změnou nebo odmítnutím se předá zpět interpretaci nebo plán
 opravuje rozhodnutí před vytvořením pracovní větve. Tento model odděluje porozumění
 zadání, plánování a vlastní implementaci @darkfactory-d576ec8f.
 
-Přijaté akceptační podmínky jsou text, který vstupuje do kontextu, a nikdo je
-v popsané revizi nepřevádí na spustitelnou kontrolu. Podmínka, kterou nelze spustit, se
-při prokazování chová stejně jako podmínka, která neplatí.
