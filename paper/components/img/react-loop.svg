@@ -1,6 +1,6 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 980 600" role="img" aria-labelledby="t d">
-  <title id="t">Vzor ReAct</title>
-  <desc id="d">ReAct střídá myšlenku, akci a pozorování; myšlenku vždy navrhuje model, akci provádí harness a pozorování mu vrátí. Zadání vyvolá myšlenku, myšlenka vyjádří akci, prostředí akci provede a vrátí pozorování, pozorování vyvolá další myšlenku. Myšlenka, akce i pozorování se postupně připojují do kontextu, který tak roste, a smyčka končí odpovědí místo další akce.</desc>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 980 540" role="img" aria-labelledby="t d">
+  <title id="t">Agentní smyčka: model navrhuje, harness provádí a vrací pozorování</title>
+  <desc id="d">Čtyři kroky se střídají v uzavřeném cyklu. Harness sestaví kontext, model z něj zvolí další krok, harness požadavek na nástroj provede a výsledek mu vrátí jako pozorování; cyklus se opakuje, dokud model místo požadavku na nástroj nevydá závěrečnou odpověď, čímž smyčka končí.</desc>
   <defs>
     <marker id="a" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto">
       <path d="M0 0L10 5L0 10Z" fill="#1a1a1a"/>
@@ -9,76 +9,59 @@
   <style>
     .box{fill:#fff;stroke:#1a1a1a;stroke-width:1.8}
     .soft{fill:#e0e0e0;stroke:#1a1a1a;stroke-width:1.8}
-    .label{font:700 19px Caladea,serif;fill:#1a1a1a}
-    .note{font:italic 15px Caladea,serif;fill:#333}
+    .label{font:700 18px Caladea,serif;fill:#1a1a1a}
+    .owner{font:700 11px Caladea,serif;letter-spacing:.6px;fill:#1a1a1a}
     .small{font:italic 14px Caladea,serif;fill:#5a5a5a}
-    .onDark{fill:#fff}
-    .onLight{fill:#1a1a1a}
+    .note{font:italic 15px Caladea,serif;fill:#333}
     .arrow{fill:none;stroke:#1a1a1a;stroke-width:1.8;marker-end:url(#a)}
   </style>
 
   <text x="40" y="34" class="label">Model navrhuje, harness provádí a vrací pozorování</text>
-  <text x="40" y="56" class="small">jeden průchod smyčkou; cyklus se opakuje, dokud model neodpoví</text>
+  <text x="40" y="56" class="small">jeden cyklus smyčky; cyklus se opakuje, dokud model neodpoví</text>
 
   <rect x="516" y="24" width="14" height="14" rx="3" class="box"/>
-  <text x="538" y="36" class="small">model navrhuje</text>
+  <text x="538" y="36" class="small">krok navrhuje model</text>
   <rect x="516" y="48" width="14" height="14" rx="3" class="soft"/>
-  <text x="538" y="60" class="small">harness provádí akci</text>
+  <text x="538" y="60" class="small">krok provádí harness</text>
 
-  <rect x="40" y="76" width="240" height="40" rx="6" class="box"/>
-  <text x="56" y="102" class="label">Zadání</text>
-  <path d="M160 116V138" class="arrow"/>
+  <!-- 1. context, assembled by the harness -->
+  <rect x="60" y="112" width="230" height="92" rx="6" class="soft"/>
+  <text x="175" y="136" text-anchor="middle" class="owner">HARNESS SESTAVÍ</text>
+  <text x="175" y="162" text-anchor="middle" class="label">Kontext</text>
+  <text x="175" y="188" text-anchor="middle" class="small">instrukce, historie, stav</text>
 
-  <rect x="40" y="140" width="240" height="40" rx="6" class="box"/>
-  <text x="56" y="166" class="label">Myšlenka 1</text>
-  <text x="306" y="166" class="note">model nejprve zdůvodní, co udělá</text>
-  <path d="M160 180V202" class="arrow"/>
+  <!-- 2. the model chooses the next step -->
+  <rect x="375" y="112" width="230" height="92" rx="6" class="box"/>
+  <text x="490" y="136" text-anchor="middle" class="owner">MODEL NAVRHUJE</text>
+  <text x="490" y="162" text-anchor="middle" class="label">Volba dalšího kroku</text>
+  <text x="490" y="188" text-anchor="middle" class="small">myšlenka, pak žádost o nástroj</text>
 
-  <rect x="40" y="204" width="240" height="40" rx="6" class="soft"/>
-  <text x="56" y="230" class="label">Akce 1</text>
-  <text x="306" y="230" class="note">požadavek na nástroj, ne odpověď</text>
-  <path d="M160 244V266" class="arrow"/>
+  <!-- 3. the harness executes the request -->
+  <rect x="690" y="112" width="230" height="92" rx="6" class="soft"/>
+  <text x="805" y="136" text-anchor="middle" class="owner">HARNESS PROVÁDÍ</text>
+  <text x="805" y="162" text-anchor="middle" class="label">Nástroj / akce</text>
+  <text x="805" y="188" text-anchor="middle" class="small">čtení, editace, test</text>
 
-  <rect x="40" y="268" width="240" height="40" rx="6" class="soft"/>
-  <text x="56" y="294" class="label">Pozorování 1</text>
-  <text x="306" y="294" class="note">výsledek akce, ne předpoklad modelu</text>
-  <path d="M160 308V330" class="arrow"/>
+  <path d="M290 158H369" class="arrow"/>
+  <path d="M605 158H684" class="arrow"/>
 
-  <rect x="40" y="332" width="240" height="40" rx="6" class="box"/>
-  <text x="56" y="358" class="label">Myšlenka 2</text>
-  <path d="M160 372V394" class="arrow"/>
+  <!-- exit: answering instead of asking for a tool ends the loop -->
+  <path d="M490 204V256" class="arrow"/>
+  <rect x="375" y="256" width="230" height="66" rx="6" class="box"/>
+  <text x="490" y="284" text-anchor="middle" class="label">Odpověď</text>
+  <text x="490" y="308" text-anchor="middle" class="small">místo žádosti o nástroj — smyčka končí</text>
 
-  <rect x="40" y="396" width="240" height="40" rx="6" class="soft"/>
-  <text x="56" y="422" class="label">Akce 2</text>
-  <path d="M160 436V458" class="arrow"/>
+  <!-- 4. observation returns to the context -->
+  <rect x="690" y="366" width="230" height="92" rx="6" class="soft"/>
+  <text x="805" y="390" text-anchor="middle" class="owner">HARNESS VRÁCÍ</text>
+  <text x="805" y="416" text-anchor="middle" class="label">Pozorování</text>
+  <text x="805" y="442" text-anchor="middle" class="small">výsledek akce, ne předpoklad</text>
 
-  <rect x="40" y="460" width="240" height="40" rx="6" class="soft"/>
-  <text x="56" y="486" class="label">Pozorování 2</text>
-  <text x="306" y="422" class="note">druhý průchod běží stejně, s delším kontextem</text>
-  <text x="306" y="486" class="note">smyčka pokračuje, dokud okno nedojde k hranici</text>
-  <path d="M160 500V520" class="arrow"/>
+  <path d="M805 204V360" class="arrow"/>
 
-  <rect x="40" y="524" width="240" height="40" rx="6" class="box"/>
-  <text x="56" y="550" class="label">Odpověď</text>
-  <text x="306" y="550" class="note">místo další akce — a tím smyčka končí</text>
+  <path d="M690 412H290V204" class="arrow"/>
+  <text x="490" y="426" text-anchor="middle" class="note">opakovat do ukončení</text>
 
-  <!-- what the model actually has: every step above is appended, so the context grows -->
-  <text x="700" y="34" class="label">Kontext</text>
-  <text x="700" y="56" class="small">co model v daném okamžiku vidí</text>
-  <rect x="700" y="76" width="240" height="508" rx="6" class="box"/>
-
-  <rect x="716" y="556" width="208" height="24" fill="#3f3f3f"/>
-  <rect x="716" y="486" width="208" height="66" fill="#d9d9d9"/>
-  <rect x="716" y="412" width="208" height="70" fill="#b8b8b8"/>
-  <rect x="716" y="332" width="208" height="76" fill="#8c8c8c"/>
-
-  <text x="820" y="573" text-anchor="middle" class="small onDark">zadání</text>
-  <text x="820" y="525" text-anchor="middle" class="note onLight">myšlenka 1</text>
-  <text x="820" y="453" text-anchor="middle" class="note onLight">akce 1</text>
-  <text x="820" y="376" text-anchor="middle" class="note onDark">pozorování 1</text>
-  <text x="820" y="200" text-anchor="middle" class="small">další kroky přidávají</text>
-  <text x="820" y="220" text-anchor="middle" class="small">další tokeny, až okno</text>
-  <text x="820" y="240" text-anchor="middle" class="small">dojde k hranici</text>
-  <text x="820" y="140" text-anchor="middle" class="small">a pozornosti už</text>
-  <text x="820" y="160" text-anchor="middle" class="small">vystačí</text>
+  <text x="40" y="500" class="note">Každý krok se připojí k přepisu, takže model navazuje na to, co už viděl;</text>
+  <text x="40" y="522" class="note">požadavek na nástroj posílá harness, ne prostředí, a jeho výsledek se vrací do kontextu.</text>
 </svg>

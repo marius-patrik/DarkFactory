@@ -15,7 +15,7 @@ vazba se tak nevrací do schváleného plánu ani nevyžaduje nový počátek ce
 
 Schválení pull requestu zpracovává samostatný workflow. Ten nejprve ověří, kdo akci provedl: aktér se porovnává
 s jedním pevně zapsaným účtem, vlastníkem repozitáře. Neověřuje se tedy autor issue ani úroveň oprávnění, ale
-členství v tomto seznamu @darkfactory-d576ec8f. Workflow pak převede draft na stav „ready",
+členství v tomto seznamu @darkfactory-d576ec8f. Workflow pak převede draft na stav „ready“,
 zkontroluje požadované schválení a spustí merge s `--delete-branch`, takže se pracovní větev po
 sloučení odstraní.
 

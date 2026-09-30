@@ -14,6 +14,6 @@ Po dlouhou dobu to zůstávalo heslem. Automatizovat se dařilo kroky s předem 
 plán a posouzení výsledku zůstávaly na člověku, protože šlo o práci vyžadující porozumění tomu, co se má
 postavit.
 
-Agenti tuto hranici posunuli. Dokážou přeformulovat zadání, sestavit plán, opravit chybu, kterou sám způsobili,
+Agenti tuto hranici posunuli. Dokážou přeformulovat zadání, sestavit plán, opravit chybu, kterou sami způsobili,
 a rozhodnout, který nástroj je na řadě — tedy vykonat i krok, jehož postup předem dán není. Teoreticky tím
 otevřeli cestu k vývoji zcela bez lidské účasti.
