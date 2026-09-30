@@ -30,36 +30,38 @@
 
     Teoretická část vysvětluje vztah mezi jazykovým modelem, agentem a harness vrstvou a
     shrnuje práci s kontextem, nástroji, trvalým stavem, orchestrací, ověřováním a lidskými
-    rozhodovacími body.
+    rozhodovacími body. Popisuje také současnou podobu softwarové továrny, v níž jsou coding
+    agenti začleněni do běžného repozitářového workflow.
 
-    Praktická část má podobu případové studie systému DarkFactory, agentické softwarové továrny
-    nativně postavené na GitHubu. DarkFactory řídí práci coding agentů od přijetí požadavku přes
-    jeho interpretaci, plánování a implementaci až po revizi a lidské schválení výsledku.
+    Praktická část má podobu případové studie DarkFactory, záměrně jednoduché agentické
+    softwarové továrny nativně postavené na GitHubu. Systém byl implementován pomocí
+    komerčních coding agentů a slouží jako bootstrap: již dokáže agenty sám spouštět a řídit
+    a vytváří základ pro další rozvoj stejným procesem.
 
     Studie ukazuje, že jazykový model je pouze jednou částí širšího systému. Okolní vrstvy
     zajišťují stav, nástroje, pořadí kroků, programové kontroly a rozhodovací brány. Přínosem
-    práce je systematizace těchto principů a ukázka jejich konkrétní realizace, včetně omezení
-    zvoleného návrhu.
+    práce je systematizace těchto principů a ukázka jejich konkrétní realizace.
   ],
   abstract-en: [
     The thesis deals with contemporary agentic engineering in software development. As the
     capabilities and adoption of generative AI grow, so do the possibilities of coding agents,
-    but their practical use is still less widespread than the ordinary use of chatbots. The aim
-    of the thesis is therefore to describe and systematize the principles of contemporary agentic
-    engineering and, using DarkFactory, to show what their combination enables in practice.
+    but their practical use remains less widespread than ordinary chatbot use. The aim of the
+    thesis is therefore to describe and systematize the principles of contemporary agentic
+    engineering and, using DarkFactory, show what their combination enables in practice.
 
     The theoretical part explains the relationship between the language model, the agent, and
     the harness layer, and summarizes work with context, tools, durable state, orchestration,
-    verification, and human decision points.
+    verification, and human decision points. It also describes the contemporary form of the
+    software factory, in which coding agents are integrated into ordinary repository workflows.
 
-    The practical part takes the form of a case study of DarkFactory, an agentic software factory
-    built natively on GitHub. DarkFactory manages the work of coding agents from receiving a
-    request through its interpretation, planning, and implementation to review and human
-    approval of the result.
+    The practical part takes the form of a case study of DarkFactory, a deliberately simple
+    agentic software factory built natively on GitHub. The system was implemented using
+    commercial coding agents and serves as a bootstrap: it can already launch and manage agents
+    itself and creates a foundation for further development using the same process.
 
     The study shows that the language model is only one part of a broader system. The surrounding
     layers provide state, tools, the ordering of steps, programmatic checks, and decision gates.
     The contribution of the thesis is the systematization of these principles and a demonstration
-    of their concrete implementation, including the limitations of the chosen design.
+    of their concrete implementation.
   ],
 )
