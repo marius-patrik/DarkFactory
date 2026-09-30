@@ -22,48 +22,41 @@
   practical-title: "DarkFactory",
 
   annotation-cs: [
-    Práce se zabývá otázkou, za jakých podmínek agentický systém spolehlivě vykonává
-    inženýrskou práci. Inženýrskou prací zde chápe změnu repozitáře, kterou může přezkoumat
-    a sloučit člověk, který agenta na nic nepožádal. Předpokládala přitom, že praktická
-    autonomie je vlastností návrhu systému, který práci řídí, a nikoli vlastností modelu,
-    který v něm pracuje.
+    Práce zkoumá, za jakých podmínek agentický systém spolehlivě vykonává inženýrskou práci —
+    tedy změnu repozitáře, kterou může přezkoumat a sloučit člověk, který agenta na nic nepožádal.
+    Předpokládá přitom, že praktická autonomie je vlastností návrhu systému, který práci řídí, a
+    nikoli vlastností modelu, který v něm pracuje.
 
-    V praktické části byla implementována produkční pipeline DarkFactory. Napsaly ji
-    komerční coding agenty, které následně sama provozuje. Události GitHubu spouštějí
-    agentní kroky v izolovaném kontejneru, kde harness poskytuje model, nástroje a
-    pozorování. Požadavek tak vede od issue přes lidsky schválený plán až ke sloučenému
-    pull requestu.
+    Praktická část popisuje DarkFactory, produkční pipeline pro AI-asistovaný softwarový vývoj,
+    kterou napsaly komerční coding agenty a která nyní sama provozuje. GitHub slouží zároveň jako
+    vývojové prostředí a jako trvalý stav, události z něj spouštějí agentní kroky v izolovaném
+    kontejneru a harness poskytuje model, nástroje a pozorování. Požadavek tak vede od issue
+    přes lidsky schválený plán ke sloučenému pull requestu.
 
-    Z tohoto posoupání vychází, že spolehlivost nesídlí v modelu. Každý krok, na kterém
-    stojí krok následující, je zapisován mimo konverzaci, a dvě rozhodnutí před vznikem
-    větve patří člověku. Model je v tomto systému položka konfigurace: harness je zapsán
-    deklarativně, v registru je osm harnessů v konfigurovatelném pořadí a chybějící binář
-    se přeskočí. Plán i výsledný diff se však posuzují až dotazem na model. Hypotéza se
-    potvrdila. Popsaná konfigurace ale neudržuje všechny hranice: schválený plán není
-    hranicí rozsahu a poslední brána neověřuje oprávnění. Pro další výzkum zůstává ověřit
-    přenos podmínek na jiný repozitář a jinou sadu modelů.
+    Z tohoto posoupání vychází, že spolehlivost nesídlí v modelu: každý krok, na kterém stojí krok
+    následující, je zapisován mimo konverzaci, a dvě rozhodnutí před vznikem větve patří člověku.
+    Plán i výsledný diff se však posuzují až dotazem na model, takže posouzení je právě v tomto
+    úseku nejisté. Popsaná konfigurace neudržuje všechny hranice — schválený plán není hranicí
+    rozsahu a poslední brána neověřuje oprávnění v repozitáři.
   ],
   abstract-en: [
-    The work asks under what conditions an agentic system performs engineering work
-    reliably. Engineering work is taken to be a change to a repository that a person other
-    than its author can review and merge without asking the agent anything. It assumes that
-    practical autonomy is a property of the system's design, not of the model that operates
-    in it.
+    This thesis asks under what conditions an agentic system performs engineering work
+    reliably — that is, a change to a repository that a person who has not asked the agent
+    anything can review and merge. It assumes that practical autonomy is a property of the
+    design of the system that directs the work, not a property of the model operating in it.
 
-    The practical part implements the production pipeline DarkFactory. Commercial coding
-    agents wrote it, and DarkFactory now operates them. GitHub events trigger agentic steps
-    in an isolated container, where a production harness supplies the model, the tools and
-    the observations. A request therefore travels from an issue through a human-approved
-    plan to a merged pull request.
+    The practical part describes DarkFactory, a production pipeline for AI-assisted software
+    development, written by commercial coding agents, which it now operates itself. GitHub
+    serves as both the development environment and the durable state; its events trigger
+    agentic steps in an isolated container, and a harness supplies the model, the tools and
+    the observations. A request therefore travels from an issue through a human-approved plan
+    to a merged pull request.
 
-    Reading that sequence step by step, reliability does not reside in the model. Every
-    step the next one depends on is written outside the conversation, and the two decisions
-    taken before the branch exists belong to a person. The model is a configuration value
-    here: the harness is declarative, eight harnesses are registered in a configurable
-    order, and a missing binary is skipped. Both the plan and the resulting diff are,
-    however, judged by asking a model. The hypothesis is confirmed. The configuration does
-    not hold every boundary: the approved plan is not a boundary of scope, and the final
-    gate checks no permission. Further research should test whether these conditions
-    transfer to another repository and another set of models.
+    Reading that sequence, reliability does not reside in the model: every step the next one
+    depends on is written outside the conversation, and the two decisions taken before the
+    branch exists belong to a person. The plan and the resulting diff are, however, judged
+    by asking a model, so the assessment is least certain in that stretch. The configuration
+    described does not hold every boundary — the approved plan is not a boundary of scope,
+    and the final gate checks no permission.
   ],
 )
