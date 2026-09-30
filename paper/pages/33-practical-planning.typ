@@ -13,6 +13,7 @@ vyplnit šest polí, z nichž tři povinná. Právě ta určují, co pipeline do
   body,
 )
 #let req(name) = [#strong[#raw(name)] #text(size: 8pt, fill: luma(45%))[povinné]]
+#let opt(name) = [#strong[#raw(name)] #text(size: 8pt, fill: luma(45%))[volitelné]]
 
 #figure(
   kind: table,
@@ -23,26 +24,24 @@ vyplnit šest polí, z nichž tři povinná. Právě ta určují, co pipeline do
     stroke: none,
     table.header(
       [#text(size: 9pt, fill: luma(35%))[Pole předlohy issue]],
-      [#text(size: 9pt, fill: luma(35%))[Jak to vypadá v issue #727]],
+      [#text(size: 9pt, fill: luma(35%))[Co pole vyžaduje]],
     ),
     req("Verbatim User Request"),
-    field[#strong[restore the agent container build from the checked-in Bun lock owner]],
+    field[Přesné znění požadavku, nedesumované a neočištěné, aby se záměr neztratil
+    parafrází.],
     req("Area / Component"),
     field[`area:ci`],
     req("Request Type"),
     field[`bug`],
-    table.cell(colspan: 2)[
-      #text(size: 9pt, fill: luma(35%))[ místo vyplnění předlohy — co napsal požadavek #727 ]
-      #v(3pt)
-      #field[
-        #strong[Problem] — `Dockerfile.agent` kopíruje kořenový `bun.lock`, ale repozitář
-        má jen `harness/bun.lock`; běh agenta tak padá ještě před spuštěním.
-        Viz `### Contract` v issue.
-      ]
-    ],
+    opt("Parent Epic"),
+    field[Propojení s nadřazenou epikou, pokud existuje.],
+    opt("Proposed Acceptance Criteria"),
+    field[Podmínky, podle nichž má změna spočívat v hotovu.],
+    opt("Additional Context"),
+    field[Libovolný další kontext, který autor považuje za důležitý.],
   ),
-  caption: [Předloha issue a její vyplnění v prvním zpracovaném požadavku
-  @darkfactory-d576ec8f.],
+  caption: [Pole předlohy issue pro uživatelský požadavek: tři jsou povinná, tři
+  volitelná @darkfactory-d576ec8f.],
 ) <fig-issue-template>
 
 Runner načte titulek a text issue, vyžádá si od modelu interpretaci a zapíše výsledek jako
