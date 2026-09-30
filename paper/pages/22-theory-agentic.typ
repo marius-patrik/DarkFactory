@@ -1,4 +1,4 @@
-// 2.3 Agentic engineering.
+// 2.2 Agentic engineering.
 #heading(level: 2)[Agentické inženýrství]
 
 V této práci se #strong[agentickým inženýrstvím] (#strong[Agentic Engineering]) rozumí soubor postupů pro návrh a řízení vývoje softwaru pomocí coding agentů. Jeho předmětem není samotný model, ale širší systém, v němž agent pracuje: zadání, kontext, nástroje, omezení, orchestrace, pravidla integrace a odpovědnost člověka. Tomu odpovídá i popis role #strong[agentického inženýra], jehož práce se vedle samotného kódu přesouvá k formulaci zadání, řízení agentních běhů a kritickému posouzení strojem vytvořených výstupů @alenezi2026agentic. Mezi hlavní oblasti patří #strong[Prompt engineering] @openai-prompt-engineering, #strong[Context engineering] @anthropic-context-engineering, #strong[Harness engineering] @anthropic-harness-design @openai-agents-sandbox, #strong[Loop Engineering] @openai-goals a #strong[Workflow/Graph Engineering] @openai-agent-orchestration. Tyto postupy umožňují delegovat ohraničenou část vývojové práce agentovi, zatímco záměr, hranice procesu a integrace výsledku zůstávají explicitně řízené.
