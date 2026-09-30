@@ -29,7 +29,7 @@ Průchod začíná vytvořením #term("Issue", cs: "požadavek", definition: "Je
 
 Řídicí skript předá zadání modelu k interpretaci a výsledek zapíše jako komentář. Po lidském schválení vznikne propojený plánovací požadavek `Plan`, ve kterém agent připraví implementační plán. Také plán musí člověk schválit před vznikem pracovní větve @darkfactory-d576ec8f.
 
-Po schválení plánu vznikne nebo se obnoví pracovní větev. Agent provede změny v izolovaném prostředí a řídicí skript následně spustí dostupné formátovací a testovací příkazy. Při neúspěchu dostane agent jeden opravný krok. Poté se změna uloží do commitu, větev se odešle a otevře se koncept #term("Pull Request", cs: "požadavek na sloučení", definition: "Návrh změny v repozitáři, který spojuje diff, automatické kontroly a lidskou revizi.") @darkfactory-d576ec8f.
+Po schválení plánu vznikne nebo se obnoví pracovní větev. Agent provede změny v izolovaném prostředí a řídicí skript následně spustí dostupné formátovací a testovací příkazy. Při neúspěchu dostane agent jeden opravný krok. Poté se změna uloží do commitu, větev se odešle a otevře se koncept #term("Pull Request", cs: "požadavek na sloučení", definition: "Návrh změny v repozitáři, který spojuje rozdíl změn, automatické kontroly a lidskou revizi.") @darkfactory-d576ec8f.
 
 Nad požadavkem na sloučení pokračuje automatická revizní smyčka. Model hledá konkrétní problémy a nález vrací do opravného běhu. Současně se nad větví spouští #term("Continuous Integration", cs: "průběžná integrace", definition: "Automatické spuštění kontrol nad změnou před jejím začleněním do hlavní větve."). Smyčka je omezena na tři iterace. Pokud ani poslední iterace neskončí čistým verdiktem, proces pokračuje ke kontrole souladu s plánem @darkfactory-d576ec8f.
 
