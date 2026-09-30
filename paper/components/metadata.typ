@@ -30,17 +30,17 @@
     a systematizovat principy současného agentického inženýrství a na systému DarkFactory
     ukázat, co jejich propojení umožňuje v praxi.
 
-    Teoretická část vysvětluje vztah mezi jazykovým modelem, agentem a harness vrstvou a
+    Teoretická část vysvětluje vztah mezi jazykovým modelem, agentem a agentní vrstvou a
     shrnuje práci s kontextem, nástroji, trvalým stavem, specifikací, orchestrací,
     programovým ověřováním a lidskými rozhodovacími body. Popisuje také současnou podobu
-    softwarové továrny, v níž jsou coding agenti začleněni do běžného repozitářového workflow.
+    softwarové továrny, v níž jsou coding agenti začleněni do běžného repozitářového procesu.
 
     Praktická část má podobu inženýrské případové studie DarkFactory, záměrně jednoduché
     agentické softwarové továrny nativně postavené na GitHubu. Systém byl implementován
-    pomocí komerčních coding agentů a slouží jako bootstrap a již dokáže agenty sám spouštět
-    a řídit a vytváří základ pro další rozvoj stejným procesem.
+    pomocí komerčních coding agentů. Již v této podobě dokáže agenty sám spouštět a řídit
+    a vytváří základ pro další rozvoj stejným procesem.
 
-    Studie ukazuje, že praktické agentické workflow vzniká kombinací modelového úsudku
+    Studie ukazuje, že praktický agentický proces vzniká kombinací modelového úsudku
     s trvalým stavem mimo model, programovou orchestrací, deterministickými kontrolami a
     lidskými branami. Současně odhaluje omezení počáteční implementace, zejména u modelové
     revize, opakování verifikace a změn schváleného rozsahu. Přínosem práce je systematizace
@@ -61,7 +61,7 @@
 
     The practical part takes the form of an engineering case study of DarkFactory, a deliberately
     simple agentic software factory built natively on GitHub. The system was implemented using
-    commercial coding agents and serves as a bootstrap and can already launch and manage agents
+    commercial coding agents. Even in this initial form, it can already launch and manage agents
     itself and creates a foundation for further development using the same process.
 
     The study shows that a practical agentic workflow arises from combining model judgment with
