@@ -74,9 +74,9 @@ předchozí krok uspěl; průběh shrnuje @fig-react-loop.
 
 #figure(
   image("/components/img/react-loop.svg", width: 100%),
-  caption: [Vzor ReAct: myšlenka, akce a pozorování se střídají a každý z nich se připojí do
-  kontextu, takže smyčka pokračuje na tom, co už model viděl. Končí odpovědí místo dalšího
-  požadavku na nástroj @yao2022.],
+  caption: [Vzor ReAct: myšlenku navrhuje model, akci provádí harness a pozorování mu vrátí.
+  Každý krok se připojí do kontextu, takže smyčka pokračuje na tom, co už model viděl. Končí
+  odpovědí místo dalšího požadavku na nástroj @yao2022.],
 ) <fig-react-loop>
 
 

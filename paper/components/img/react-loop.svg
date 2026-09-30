@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 980 600" role="img" aria-labelledby="t d">
   <title id="t">Vzor ReAct</title>
-  <desc id="d">ReAct střídá myšlenku, akci a pozorování. Zadání vyvolá myšlenku, myšlenka vyjádří akci, prostředí akci provede a vrátí pozorování, pozorování vyvolá další myšlenku. Myšlenka, akce i pozorování se postupně připojují do kontextu, který tak roste, a smyčka končí odpovědí místo další akce.</desc>
+  <desc id="d">ReAct střídá myšlenku, akci a pozorování; myšlenku vždy navrhuje model, akci provádí harness a pozorování mu vrátí. Zadání vyvolá myšlenku, myšlenka vyjádří akci, prostředí akci provede a vrátí pozorování, pozorování vyvolá další myšlenku. Myšlenka, akce i pozorování se postupně připojují do kontextu, který tak roste, a smyčka končí odpovědí místo další akce.</desc>
   <defs>
     <marker id="a" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto">
       <path d="M0 0L10 5L0 10Z" fill="#1a1a1a"/>
@@ -8,7 +8,7 @@
   </defs>
   <style>
     .box{fill:#fff;stroke:#1a1a1a;stroke-width:1.8}
-    .soft{fill:#f2f2f2;stroke:#1a1a1a;stroke-width:1.8}
+    .soft{fill:#e0e0e0;stroke:#1a1a1a;stroke-width:1.8}
     .label{font:700 19px Caladea,serif;fill:#1a1a1a}
     .note{font:italic 15px Caladea,serif;fill:#333}
     .small{font:italic 14px Caladea,serif;fill:#5a5a5a}
@@ -17,8 +17,13 @@
     .arrow{fill:none;stroke:#1a1a1a;stroke-width:1.8;marker-end:url(#a)}
   </style>
 
-  <text x="40" y="34" class="label">Trajektorie</text>
+  <text x="40" y="34" class="label">Model navrhuje, harness provádí a vrací pozorování</text>
   <text x="40" y="56" class="small">jeden průchod smyčkou; cyklus se opakuje, dokud model neodpoví</text>
+
+  <rect x="516" y="24" width="14" height="14" rx="3" class="box"/>
+  <text x="538" y="36" class="small">model navrhuje</text>
+  <rect x="516" y="48" width="14" height="14" rx="3" class="soft"/>
+  <text x="538" y="60" class="small">harness provádí akci</text>
 
   <rect x="40" y="76" width="240" height="40" rx="6" class="box"/>
   <text x="56" y="102" class="label">Zadání</text>
