@@ -1,19 +1,10 @@
 // 2.3 Software factory.
-//
-// One paragraph says what the term means, one says what agents change. The 1968 origin
-// is kept in a clause because it is what separates this from a 2026 marketing word; the
-// conference quotations, the later clarification and the industry statistics are gone,
-// and the section's own contribution is not argued here because the discussion and the
-// conclusion already say it.
 #heading(level: 2)[Softwareová továrna] <software-factory>
 
-Softwareová továrna je prostředí, které má automatizovat co největší část vývoje softwaru, od zadání přes
-implementaci až po revizi @nato1969.
+#strong[Softwareová továrna] označuje prostředí, které převádí vývoj softwaru do co nejvíce řízeného a opakovatelného procesu. Samotná myšlenka není nová. Robert W. Bemer ji už na konferenci NATO o softwarovém inženýrství v roce 1968 popsal jako #emph[machine-controlled production environment, or software factory] @nato1969. V jeho návrhu měly konstrukce programu, jeho kontrola i používání probíhat uvnitř společného prostředí vybaveného potřebnými nástroji pro práci se soubory, kompilaci, testování a sestavení systému.
 
-Po dlouhou dobu to zůstávalo heslem. Automatizovat se dařilo kroky s předem daným postupem, zatímco zadání,
-plán a posouzení výsledku zůstávaly na člověku, protože šlo o práci vyžadující porozumění tomu, co se má
-postavit.
+Tradiční automatizace se uplatňuje především tam, kde lze postup předem přesně popsat programem. Coding agenti tuto hranici posouvají: jazykový model může podle aktuálního stavu systému volit další kroky a používat nástroje i v úlohách, jejichž přesný postup není předem pevně určen. Softwareová továrna tak může kombinovat běžnou deterministickou automatizaci s agentními kroky a lidským rozhodováním.
 
-Agenti tuto hranici posunuli. Dokážou přeformulovat zadání, sestavit plán, opravit chybu, kterou sami způsobili,
-a rozhodnout, který nástroj je na řadě — tedy vykonat i krok, jehož postup předem dán není. Teoreticky tím
-otevřeli cestu k vývoji zcela bez lidské účasti.
+Takové uspořádání se již používá v reálném softwarovém inženýrství. Společnost Stripe o svých interních agentech #emph[Minions] uvádí: #quote[Minions now ship over 1,000 PRs to production every week. In all these cases, humans just have to review and approve.] @stripe-minions-2026 Meta podobně popisuje vlastní agentní platformu, která automatizuje hledání a opravu výkonnostních problémů a dokáže dovést proces až k pull requestu připravenému k lidské revizi @meta-capacity-efficiency-2026.
+
+DarkFactory, popsaná v praktické části této práce, představuje záměrně jednoduchý #strong[bootstrap] tohoto přístupu. Její počáteční implementace už dokáže coding agenty spouštět a řídit v rámci repozitářového workflow a zároveň vytváří základ, který lze pomocí stejné pipeline dále rozvíjet.
