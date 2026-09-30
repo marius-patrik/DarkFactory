@@ -25,7 +25,7 @@
 #import "styles/main.typ": apply
 #import "components/metadata.typ": meta
 
-#set document(title: meta.title + ": " + meta.subtitle, author: meta.author, date: none)
+#set document(title: meta.title + " — " + meta.subtitle, author: meta.author, date: none)
 
 // Applies every `#set`/`#show` rule in ./styles to everything below.
 #show: apply
