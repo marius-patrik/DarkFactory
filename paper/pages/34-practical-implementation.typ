@@ -1,19 +1,25 @@
-// 3.4 Implementation and automatic review.
-#heading(level: 2)[Implementace a automatická revize]
-
-Po schválení plánu runner vytvoří nebo načte pracovní větev odvozenou z výchozí větve. Implementační instrukce
-obsahuje schválený plán, omezení na jeho rozsah a pravidla pro testy a dokumentaci. Harness následně prochází
-repozitář a upravuje soubory.
-
-Po implementaci runner spustí dostupné formátovací nástroje a deklarované testovací sady. Při neúspěchu předá
-výstup kontroly agentnímu kroku `fix`, který má opravit chybu bez opuštění schváleného rozsahu. Runner následně vytvoří commit, odešle větev a otevře draft pull request
-@darkfactory-d576ec8f.
-
-Na draft pull requestu začíná automatická review smyčka. Každá iterace načte aktuální větev a diff a předá je
-modelové revizi, zatímco průběžná integrace (CI) znovu spustí tytéž nástroje. Nalezený problém runner zveřejní a spustí
-nový běh s fází opravy, která změní větev a spustí další review. Nález vyžadující zásah mimo plán se neodmítne:
-runner jej zapíše jako Plan Deviation s odůvodněním na původním issue a plán tím doplní. Každá změna schváleného plánu je tedy zapsaná a odůvodněná.
-
-Po čisté review proběhne kontrola souladu výsledného diffu se schváleným plánem. Jde o druhý dotaz modelu,
-tentokrát na shodu s textem plánu. Teprve když oba dotazy vyjdou bez nálezu, je
-draft pull request označen jako připravený k lidské revizi.
+// 3.4 End-to-end request flow.
+//
+// Purpose:
+// - give one chronological walkthrough from user request to merged change;
+// - combine the old planning, implementation/review and human-integration sections;
+// - use the pipeline diagram here;
+// - keep the flow readable at the level of engineering stages rather than implementation
+//   minutiae.
+//
+// Intended flow:
+// issue / request
+// -> interpretation
+// -> human approval
+// -> implementation plan
+// -> human approval
+// -> branch + coding-agent implementation
+// -> deterministic checks
+// -> draft pull request
+// -> review/fix loop
+// -> human feedback / approval
+// -> merge + cleanup.
+//
+// Concrete limitations or design weaknesses discovered in this flow belong in Chapter 4,
+// not in the descriptive walkthrough unless needed to explain actual behavior.
+#heading(level: 2)[Průchod požadavku systémem] <darkfactory-request-flow>
