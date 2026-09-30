@@ -173,6 +173,15 @@ jobs:
           cd "$GITHUB_WORKSPACE/$DF_ACTION_CWD"
           bash -lc "$DF_ACTION_COMMAND"
 
+      - name: Upload compiled paper
+        if: matrix.ecosystem == 'typst' && matrix.cwd == 'paper' && success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: paper-pdf
+          path: paper/out/paper.pdf
+          if-no-files-found: error
+          retention-days: 7
+
   docs-check:
     name: docs-check
     runs-on: ubuntu-latest
