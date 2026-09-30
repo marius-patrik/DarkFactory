@@ -23,3 +23,103 @@
 #heading(level: 1)[Závěr]
 
 #heading(level: 2)[Zjištění a diskuse]
+
+Krok, na kterém stojí krok následující, nezůstává v konverzaci. Požadavek je issue, porozumění
+zadání komentář, plán child issue s typem `Plan:`, hotová práce větev s diffem a schválení
+zaznamenaný stav pull requestu. Člověk si všechny z nich přečte v repozitáři, kam se dostane bez
+jediného dotazu na agenta. Runner přijme událost a převede ji na právě jeden agentní krok, rozhodne,
+kam událost směřuje, zpracuje její výstup a vyvolá další. Git drží stav, výpočet poskytují GitHub
+Actions @fig-darkfactory-architecture @darkfactory-d576ec8f. Přihlašovací údaje do repozitáře
+nepatří; do kontejneru jdou přes GitHub Secrets.
+
+Omezení je i na úrovni workflow. Job ověří, zda je agent pro daný repozitář povolen, a odfiltruje
+automatické komentáře, aby si výstup nevytvářel další události. Kde systém smí běžet, je tedy
+napsáno mimo model.
+
+Druhé zjištění se týka dvou rozhodnutí, která padají před vznikem větve. Člověk nejprve schválí
+porozumění požadavku a plán schvaluje zvlášť. Předloha navíc vyžaduje šest polí, z nichž tři
+povinná, a právě ty určují, co pipeline dostane @fig-issue-template. Brány jsou lidské a oddělené,
+takže plán lze odmítnout i poté, co bylo přijato jeho východisko @darkfactory-d576ec8f. Komentář
+se změnou nebo odmítnutím se vrací do interpretace nebo do plánování, takže brána není slepý bod:
+rozhodnutí se opravuje dřív, než vznikne větev.
+
+Po druhé bráně už není co rozhodovat. Větev se vytvoří nebo načte, harness projde repozitář,
+spustí se formátovací nástroje a deklarované testovací sady, následuje commit, push a draft pull
+request. Tento úsek neobsahuje úsudek modelu.
+
+Model je v této konfiguraci položka konfigurace, nikoli součást struktury. Každý harness je zapsán
+deklarativně: binář, způsob, jak se z promptu sestaví příkazová řádka, a způsob přihlášení.
+V registru je osm harnessů v konfigurovatelném pořadí a chybějící binář se přeskočí, místo aby běh
+zabrál. Jeden obraz vzniká z jedné definice, takže výměna modelu je změna dat, ne změna kódu
+@darkfactory-d576ec8f. Dostupná sada modelů tak závisí na tom, co je v obrazu.
+
+Ve zbytku běhu naopak nic volání modelu nenahrazuje. Plán posuzuje dotaz na model a stejně tak
+výsledný diff. Po čisté revizi následuje kontrola souladu diffu se schváleným plánem, což je
+druhý dotaz na model. Spolehlivost v tomto úseku je právě tak nejistá, jako je nejisté to, co
+posuzuje.
+
+Konec běhu už žádné rozhodnutí neobsahuje. Draft pull request se převede do stavu připraveného,
+workflow zkontroluje schválení, provede merge a větev po sloučení odstraní. Výsledkem je změna
+v repozitáři, kterou lze přečíst bez znalosti průběhu.
+
+Konfigurace ale několik věcí nezaručuje. Schválený plán není hranicí. Hranice je zadána jen textem:
+implementační instrukce nese plán, omezení na jeho rozsah a pravidla pro testy a dokumentaci, a
+zakazuje sahat mimo něj. Nikdo nehlídá, aby se jí agent držel. Nález revize, který plán překročí,
+se proto neodmítne, ale zapíše se jako Plan Deviation s odůvodněním na původním issue, doplní plán
+a pustí opravu. K bráně, která plán schválila, se běh nevrátí. Změnový požadavek na pull requestu
+spustí opravný běh na téže větvi; agent přitom obdrží plán, konkrétní zpětnou vazbu a aktuální
+kontext větve, ale běh se vrátí do review smyčky, nikoli k plánu.
+
+Runner spustí deklarované testovací sady jednou, ještě před krokem `fix`, a po opravě jen
+přeformátuje. Zopakování přebírá průběžná integrace, která už vidí opravenou větev.
+
+Poslední brána zase oprávnění nekontroluje. Aktéra porovnává s jedním pevně zapsaným účtem,
+vlastníkem repozitáře. Neověřuje se autor issue ani úroveň oprávnění. Protože pull request otevřel
+token patřící tomu účtu, musí schválení odeslat bot. V záznamu tak stojí jméno bota a jméno člověka
+zůstává textem v těle revize.
+
+#heading(level: 3)[Odpověď na výzkumnou otázku]
+
+Otázka zní, za jakých podmínek agentický systém spolehlivě vykonává inženýrskou práci. Popsaná
+konfigurace odpovídá dvěma podmínkám.
+
+První podmínka říká, že každý krok, který umožňuje krok následující, je zapsaný mimo konverzaci.
+Není potřeba si nic pamatovat, protože je to uložené. Není potřeba nic vysvětlovat, protože je to
+čitelné. Podmínka vylučuje práci, která existuje jen jako text v okně modelu.
+
+Druhá podmínka říká, že dvě rozhodnutí před vznikem větve patří člověku, a patří mu odděleně.
+Člověk může přijmout porozumění zadání a plán, který z něj vychází, přesto odmítnout. Oba body jsou
+přitom zapsány dřív, než existuje co zkazovat. Podmínka vylučuje systém, v němž rozhoduje kód
+nebo samotný model.
+
+Obě podmínky mají svůj protějšek. Kdyby práce zůstala v konverzaci, stačil by jeden člověk, který
+si pamatuje. Kdyby o plánu rozhodoval model, stačilo by, že se model vyjádří.
+
+Spolehlivost tedy nesídlí v modelu. Sídlí v tom, kam se práce zapisuje, a v tom, kdo v ní
+rozhoduje. Hypotéza, že „praktická autonomie je vlastností návrhu systému, který práci řídí, a
+nikoli vlastností modelu, který v něm pracuje", se potvrzuje.
+
+Protiargument by mohl být, že poslední zjištění hypotézu vyvracejí. Nevyvracejí ji. Tam, kde
+konfigurace hranici neudrží, práci přesto zapisuje. Odůvodněná odchylka leží na původním issue,
+zpětná vazba na pull requestu. Rozhodnutí, které se změnilo, zůstává dohledatelné. Chybí místo,
+kde se má člověk podívat, nikoli to, že by se jeho rozhodnutí ztratilo.
+
+#heading(level: 3)[Hranice platnosti]
+
+Tvrzení platí pro jednu revizi, jeden repozitář a jednu sadu modelů. Přenos na jiný repozitář nebo
+jinou sadu modelů z popisu neplyne.
+
+Rozsah závěru je užší, než obě podmínky společně naznačují. Potvrzeno je, že práce je zapsaná a
+že dvě rozhodnutí patří člověku. Není potvrzeno, že schválený plán práci ohraničuje, ani že jeho
+změny procházejí novým schválením.
+
+Spolehlivě zde neznamená, že změna je správná. Znamená to, že je zapsaná a že se dá přečíst bez
+agenta.
+
+#heading(level: 3)[Závěr]
+
+Proti tomu lze namítnout, že plán i diff posuzuje model, takže spolehlivost běhu nakonec stojí na
+modelu. Jenže oba texty leží mimo konverzaci a člověk je čte. Chyba v posouzení se tak projeví jako
+chyba v zápisu, který je k přečtení, ne jako změna, kterou by nikdo nespatřil. Spolehlivost tu stojí
+na místě zápisu a na tom, kdo rozhoduje, ne na schopnosti modelu. Průchod jako celek je zakreslen
+v @fig-darkfactory-pipeline.
