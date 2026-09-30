@@ -22,41 +22,42 @@
   practical-title: "DarkFactory",
 
   annotation-cs: [
-    Práce zkoumá, za jakých podmínek agentický systém spolehlivě vykonává inženýrskou práci —
-    tedy změnu repozitáře, kterou může přezkoumat a sloučit člověk, který agenta na nic nepožádal.
-    Předpokládá přitom, že praktická autonomie je vlastností návrhu systému, který práci řídí, a
-    nikoli vlastností modelu, který v něm pracuje.
+    Práce zkoumá, za jakých podmínek agentický systém spolehlivě vykonává inženýrskou práci,
+    tedy změnu repozitáře, kterou může přezkoumat a sloučit člověk, který nemusí agenta
+    obsluhovat ručně. Předpokládá přitom, že praktická autonomie je vlastností návrhu systému,
+    který práci řídí, a nikoli vlastností modelu, který v něm pracuje.
 
-    Praktická část popisuje DarkFactory, produkční pipeline pro AI-asistovaný softwarový vývoj,
-    kterou napsaly komerční coding agenty a která nyní sama provozuje. GitHub slouží zároveň jako
-    vývojové prostředí a jako trvalý stav, události z něj spouštějí agentní kroky v izolovaném
-    kontejneru a harness poskytuje model, nástroje a pozorování. Požadavek tak vede od issue
-    přes lidsky schválený plán ke sloučenému pull requestu.
+    Práce vymezuje kratkou historii nástrojů založených na jazykových modelech, vysvětluje, co
+    agent je a jak funguje, a popisuje principy agentického inženýrství, tedy praktiky pro
+    spolehlivou inženýrskou práci pomocí agentických systémů. Jazykový model je sám o sobě jen
+    funkcí; agent vzniká až propojením s nástroji, prostředím a stavem.
 
-    Z tohoto posoupání vychází, že spolehlivost nesídlí v modelu: každý krok, na kterém stojí krok
-    následující, je zapisován mimo konverzaci, a dvě rozhodnutí před vznikem větve patří člověku.
-    Plán i výsledný diff se však posuzují až dotazem na model, takže posouzení je právě v tomto
-    úseku nejisté. Popsaná konfigurace neudržuje všechny hranice — schválený plán není hranicí
-    rozsahu a poslední brána neověřuje oprávnění v repozitáři.
+    Praktická část představuje DarkFactory, produkční pipeline pro AI-asistovaný softwarový
+    vývoj. Tu napsaly komerční coding agenty. DarkFactory je nyní sama provozuje: události GitHubu
+    spouštějí agentní kroky v izolovaném kontejneru a požadavek vede od issue přes lidsky schválený
+    plán ke sloučenému pull requestu. Harness poskytuje modelu nástroje a pozorování, zatímco
+    runner převádí událost na agentní krok. Stav běhu leží v repozitáři, nikoli v konverzaci
+    s modelem.
   ],
   abstract-en: [
-    This thesis asks under what conditions an agentic system performs engineering work
-    reliably — that is, a change to a repository that a person who has not asked the agent
-    anything can review and merge. It assumes that practical autonomy is a property of the
-    design of the system that directs the work, not a property of the model operating in it.
+    The thesis asks under what conditions an agentic system performs engineering work
+    reliably — that is, a change to a repository that a person who need not operate the
+    agent by hand can review and merge. It assumes that practical autonomy is a property of
+    the design of the system that directs the work, not a property of the model operating
+    in it.
 
-    The practical part describes DarkFactory, a production pipeline for AI-assisted software
-    development, written by commercial coding agents, which it now operates itself. GitHub
-    serves as both the development environment and the durable state; its events trigger
-    agentic steps in an isolated container, and a harness supplies the model, the tools and
-    the observations. A request therefore travels from an issue through a human-approved plan
-    to a merged pull request.
+    The thesis sets out the short history of tools built on language models, explains what
+    an agent is and how it works, and describes the principles of agentic engineering, that
+    is, the practices for reliable engineering work with the help of agentic systems. A
+    language model is by itself only a function; an agent comes into being only once it is
+    connected to tools, an environment and state.
 
-    Reading that sequence, reliability does not reside in the model: every step the next one
-    depends on is written outside the conversation, and the two decisions taken before the
-    branch exists belong to a person. The plan and the resulting diff are, however, judged
-    by asking a model, so the assessment is least certain in that stretch. The configuration
-    described does not hold every boundary — the approved plan is not a boundary of scope,
-    and the final gate checks no permission.
+    The practical part presents DarkFactory, a production pipeline for AI-assisted software
+    development. Commercial coding agents wrote it. DarkFactory now operates those agents
+    itself: GitHub events trigger agentic steps in an isolated container, and a request
+    travels from an issue through a human-approved plan to a merged pull request. A harness
+    supplies the model with tools and observations, while a runner turns an event into one
+    agentic step. The state of a run lies in the repository, not in the conversation with the
+    model.
   ],
 )
