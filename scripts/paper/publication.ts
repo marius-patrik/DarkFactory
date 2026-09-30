@@ -11,7 +11,7 @@ const manifest = await Bun.file(join(PAPER_ROOT, "typst.toml")).text();
 const declared = /^\s*entrypoint\s*=\s*"([^"]+)"/mu.exec(manifest)?.[1];
 if (!declared) throw new Error("paper/typst.toml declares no entrypoint");
 const SOURCE = join(PAPER_ROOT, declared);
-const FONT_PATH = join(PAPER_ROOT, "fonts");
+const FONT_PATH = join(PAPER_ROOT, "components", "fonts");
 const PDF = join(REPOSITORY_ROOT, "PAPER.pdf");
 const CHECK = process.argv.includes("--check");
 
