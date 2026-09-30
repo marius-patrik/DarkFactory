@@ -7,13 +7,11 @@
 // conclusion already say it.
 #heading(level: 2)[Softwareová továrna] <software-factory>
 
-Softwareová továrna je systém, který přebírá co největší část práce na softwaru — od zadání
-přes implementaci až po revizi — a nechává člověka jen tam, kde jeho úsudek nelze nahradit
-@nato1969. Pojem je o půl století starší než dnešní vlna agentů: poprvé jej použil Robert Bemer
-v návrhu strojově řízeného výrobního prostředí @bemer-chm.
+Softwareová továrna přebírá co největší část práce na softwaru, od zadání přes implementaci až po revizi. Člověka
+nechává jen tam, kde jeho úsudek nelze nahradit @nato1969. Pojem je o půl století starší než dnešní vlna agentů.
+Poprvé jej použil Robert Bemer v návrhu strojově řízeného výrobního prostředí @bemer-chm.
 
-Továrna automatizovala jen kroky, jejichž postup byl předem dán. Agent vykoná i kroky, jejichž
-postup dán není: zadání přeformuluje, plán sestaví, chybu, kterou sám způsobí, opraví
-a rozhodne, který nástroj je na řadě. Automatizovatelná část se tím posouvá
-z provádění na úsudek, zatímco člověk zůstává tam, kde byl v každé dosavadní továrně —
-u určení, co je správné a co smí do výroby vstoupit.
+Továrna automatizovala jen kroky, jejichž postup byl předem dán. Agent vykoná i kroky, jejichž postup dán není:
+zadání přeformuluje, plán sestaví, chybu, kterou sám způsobí, opraví a rozhodne, který nástroj je na řadě.
+Automatizovatelná část se posouvá z provádění na úsudek. Člověk zůstává tam, kde byl v každé dosavadní továrně — u
+určení, co je správné a co smí do výroby vstoupit.

@@ -9,7 +9,7 @@
 // in the introduction, and are not repeated here.
 #heading(level: 2)[Agent: Co to je a jak funguje] <theory-first>
 
-#strong[Agent je model plus harness] @langchain-harness: model navrhuje a harness mu
+#strong[Agent je model plus harness] @langchain-harness. Model navrhuje a harness mu
 dopředuje kontext, nástroje a pravidla, jejichž prostřednictvím se návrh mění v čin.
 Celý systém tvoří několik vrstev — rozhraní, smyčka agenta, oprávnění, nástroje, uložený stav
 a prostředí, v němž běží — a model je jen jedna z nich. Spolehlivost agenta proto neurčuje
