@@ -1,111 +1,65 @@
-// 2.1 What an agent is and how it works.
-//
-// The model and the harness are one subject, not two: the harness is what turns a model
-// into something that acts, so splitting them left the reader with a definition and then a
-// set of mechanisms with no link between them. The model comes first, then its context,
-// then the loop it runs in, then what it is allowed to do with.
-//
-// The three-step progression and the line between a chatbot and an agent are stated once,
-// in the introduction, and are not repeated here.
-#heading(level: 2)[Agent: Co to je a jak funguje] <theory-first>
+#import "../components/terms.typ": term, term-name
 
-#strong[Agent je model plus harness] @langchain-harness. Model navrhuje a harness mu
-dopředuje kontext, nástroje a pravidla, jejichž prostřednictvím se návrh mění v čin.
-Celý systém tvoří několik vrstev — rozhraní, smyčka agenta, oprávnění, nástroje, uložený stav
-a prostředí, v němž běží — a model je jen jedna z nich. Spolehlivost agenta proto neurčuje
-samotný model, ale skladba těch vrstev. Čím jsou modely schopnější, tím menší část práce zbývá
-pro tuto skladbu a tím víc práce přebírá model. Rozvrstvení shrnuje @fig-harness-layers.
+#heading(level: 2)[#term-name("Agent") – co to je a jak funguje] <theory-first>
+
+#term("Agent", definition: "Systém, v němž model prostřednictvím nástrojů jedná nad prostředím.") je model doplněný o #term("Harness", cs: "agentní harness", definition: "Vrstva kolem modelu, která mu předává kontext, nástroje, oprávnění, stav a pravidla běhu.") @langchain-harness. Model navrhuje další krok a harness zajišťuje, aby se tento návrh mohl bezpečně změnit v akci. Model je proto jen jednou vrstvou širšího systému. Rozvrstvení shrnuje @fig-harness-layers.
 
 #figure(
   image("/components/img/harness-layers.svg", width: 100%),
-  caption: [Od jazykového modelu k agentickému systému. Jazykový model je jednou ze čtyř
-  součástí harnessu; repozitář, oprávnění ani trvalý stav mu nedává samotný, ale vrstva, která
-  jeho návrh převádí na akci s dohledatelným výsledkem.],
+  caption: [Vrstvy agentického systému.],
 ) <fig-harness-layers>
 
-#heading(level: 3)[Jazykový model (LLM)]
+#heading(level: 3)[#term-name("Large Language Model", cs: "jazykový model")]
 
-Současný jazykový model stojí na architektuře #strong[Transformer], kterou představil Google
-v roce 2017 v práci #strong[#emph[„Attention Is All You Need“]] @vaswani2017.
+#term("Large Language Model", cs: "jazykový model", definition: "Model, který z kontextu odhaduje pravděpodobnosti následujících tokenů.") je výpočetní jádro agenta. Současné modely běžně používají architekturu #term("Transformer", definition: "Neuronová architektura založená na mechanismu attention, která zpracovává vztahy mezi tokeny v kontextu.") představenou v roce 2017 @vaswani2017.
 
-Její základem je #strong[attention]: ke každému tokenu se připočítá vážený součet hodnot všech
-ostatních, takže jeho reprezentace nese informaci z celého kontextu a vzdálenost mezi pozicemi
-není pevně daná jejich pořadím. Všechny tokeny se vyhodnocují proti sobě najednou, ale náklady
-rostou s druhou mocninou délky kontextu.
+Jejím základem je #term("Attention", cs: "pozornost", definition: "Mechanismus, který při výpočtu reprezentace tokenu váží informace z dalších tokenů v kontextu."). Každý token tak může při své reprezentaci využít informace z ostatních pozic. U standardní plné attention rostou výpočetní náklady přibližně s druhou mocninou délky kontextu.
 
-Jazykový model je sám o sobě jen funkce. Na základě toho, co dostane v kontextu, vypočítá
-rozložení pravděpodobností nad následujícím tokenem a jeden z nich vybere. Mezi voláními si
-nic nepamatuje, nezná nic mimo text, který mu byl předložen, a nemá přístup k souborům,
-příkazům ani stavu práce. Všechno, co o zadání ví, je v kontextu, a jinudy se to do něj
-nedostane.
+Model sám mezi jednotlivými voláními neudržuje pracovní stav a bez okolního systému nemá přístup k souborům, příkazům ani nástrojům. Při #term("Inference", cs: "inference", definition: "Použití natrénovaného modelu k vytvoření výstupu z aktuálního vstupu.") zpracuje aktuální kontext a vytváří výstupní tokeny. Trvalý stav, nástroje a oprávnění proto musí dodat okolní harness.
 
-Při #strong[inferenci] tedy model zpracuje obsah kontextového okna a vytváří výstupní tokeny
-jeden za druhým, přičemž každý nový token se stane součástí kontextu pro další krok. To je
-celá jeho schopnost: převést kontext na posloupnost tokenů. Stav mezi kroky, nástroje,
-ukládání výsledků a oprávnění musí přijít zvenčí — a to je právě to, co doplňuje harness.
-
-Vektorové reprezentace, označované jako #strong[embeddingy], zachycují sémantické vztahy
-v prostoru vektorů. Známým příkladem je vztah mezi vektory slov král, královna, muž a žena
-@mikolov2013linguistic @fig-embedding-queen.
+#term("Embedding", cs: "vektorová reprezentace", definition: "Číselný vektor, který zachycuje vlastnosti nebo význam objektu tak, aby podobné objekty ležely v prostoru blízko sebe.") umožňuje reprezentovat sémantické vztahy ve vektorovém prostoru. Známým příkladem je vztah mezi slovy král, královna, muž a žena @mikolov2013linguistic @fig-embedding-queen.
 
 #figure(
   image("/components/img/vector-embedding-queen.svg", width: 100%),
-  caption: [Ilustrace sémantického vztahu mezi vektorovými reprezentacemi slov #emph[král, královna, muž a žena] @mikolov2013linguistic.],
+  caption: [Sémantické vztahy ve vektorovém prostoru @mikolov2013linguistic.],
 ) <fig-embedding-queen>
 
+#heading(level: 3)[#term-name("Agent Loop", cs: "agentní smyčka")]
 
-#heading(level: 3)[Smyčka (Loop)]
+#term("Agent Loop", cs: "agentní smyčka", definition: "Opakovaný cyklus, v němž model vyhodnotí stav, zvolí další akci, obdrží její výsledek a pokračuje.") propojuje jednotlivá volání modelu. Často využívá vzor #term("ReAct", cs: "Reasoning and Acting", definition: "Vzor střídající uvažování modelu, akci nad prostředím a pozorování výsledku.") @yao2022.
 
-Základním mechanismem agentického systému je #strong[agentní smyčka]: konkrétní implementace
-vzoru #strong[ReAct] (#emph[Reasoning and Acting]) @yao2022 v daném harnessu. Jeden cyklus má
-pět kroků:
+Jeden cyklus lze zjednodušit do pěti kroků
 
-- sestavit kontext: systémové pokyny, dosavadní přepis, stav prostředí;
-- nechat model odpovědět;
-- je-li v odpovědi požadavek na nástroj, provést jej;
-- zapsat výsledek nástroje jako pozorování;
-- vrátit se na první krok.
+- sestavit kontext — systémové pokyny, dosavadní průběh a stav prostředí
+- nechat model odpovědět
+- provést požadovaný nástroj
+- zapsat výsledek jako pozorování
+- vrátit se k dalšímu kroku
 
-Model přitom v každém cyklu nejprve zdůvodní, co udělá, a teprve pak žádá o nástroj
-@yao2022. Harness akci provede mimo model a výsledek mu vrátí; ten se připojí
-k přepisu a cyklus běží dál. Smyčka končí teprve tehdy, když model místo požadavku na
-nástroj vydá závěrečnou odpověď. V prosté posloupnosti promptů by model nemohl poznat, zda
-předchozí krok uspěl; průběh shrnuje @fig-react-loop.
+Harness provádí akci mimo model a výsledek vrací zpět do kontextu. Smyčka pokračuje, dokud model nevydá závěrečnou odpověď místo dalšího požadavku na nástroj. Průběh shrnuje @fig-react-loop.
 
 #figure(
   image("/components/img/react-loop.svg", width: 100%),
-  caption: [Vzor ReAct: myšlenku navrhuje model, akci provádí harness a pozorování mu vrátí.
-  Každý krok se připojí do kontextu, takže smyčka pokračuje na tom, co už model viděl. Končí
-  odpovědí místo dalšího požadavku na nástroj @yao2022.],
+  caption: [Smyčka ReAct @yao2022.],
 ) <fig-react-loop>
 
+#heading(level: 3)[#term-name("Tools", cs: "nástroje")]
 
+Zadání určuje, co má agent udělat, zatímco harness určuje, co skutečně může provést @langchain-harness.
 
-#heading(level: 3)[Nástroje (Tools)]
+- #term("Tools", cs: "nástroje", definition: "Funkce zpřístupněné modelu pro práci s prostředím, například čtení souborů, vyhledávání nebo spouštění příkazů.") umožňují agentovi přímo měnit nebo zjišťovat stav prostředí @anthropic2024tooluse
+- #term("Skills", cs: "dovednosti", definition: "Opakovaně použitelné balíčky instrukcí, skriptů a zdrojů pro určitý typ úlohy.") spojují instrukce a pomocné prostředky @agentskills-spec
+- #term("Hooks", cs: "háčky", definition: "Programové reakce na události životního cyklu, které mohou před akcí nebo po ní vynutit další krok.") doplňují běh o deterministické zásahy @openai-agents-lifecycle
+- #term("Model Context Protocol", cs: "protokol modelového kontextu", definition: "Standard klient–server pro připojování externích nástrojů a datových zdrojů k agentním systémům.") standardizuje připojení externích zdrojů @mcp-specification
 
-Zadání určuje, co má agent udělat; co mu je dovoleno udělat, určuje harness. Jde o dvě
-roviny, které se dají měnit nezávisle, a odpovídají běžnému výčtu součástí harnessu
-@langchain-harness:
+Každá akce může být navíc řízena oprávněním, které ji povolí automaticky, vyžádá souhlas člověka nebo ji zakáže.
 
-- #strong[Nástroje] umožňují agentovi číst a upravovat soubory, vyhledávat nebo spouštět
-  příkazy @anthropic2024tooluse.
-- #strong[Skilly] spojují opakovaně použitelné instrukce, skripty a zdroje pro určitý typ úlohy
-  @agentskills-spec.
-- #strong[Hooks] reagují na události životního cyklu a mohou před akcí či po ní vynutit kontrolu
-  @openai-agents-lifecycle.
-- #strong[Model Context Protocol] (#strong[MCP]) standardizuje napojení externích nástrojů a
-  datových zdrojů prostřednictvím rozhraní klient--server @mcp-specification.
+Projektové instrukce lze verzovat přímo s repozitářem. #term("AGENTS.md", definition: "Standardní soubor s projektovými instrukcemi určenými coding agentům.") poskytuje společné místo pro příkazy sestavení, testy a konvence @agents-md. #term("Agent Skills", cs: "dovednosti agentů", definition: "Otevřený formát pro adresáře opakovaně použitelných schopností agenta.") používají soubor #term("SKILL.md", definition: "Vstupní soubor jedné dovednosti agenta, který popisuje její použití a dostupné zdroje.") @agentskills-spec.
 
-Každá akce ještě předtím projde oprávněním, které pro ni platí: provést automaticky, zeptat se
-člověka, nebo zakázat. Ani když model navrhne něco nebezpečného, dostane se to k provedení jen
-tehdy, když to oprávnění dovolí.
+#heading(level: 3)[#term-name("Context", cs: "kontext")]
 
-Instrukce pro coding agenty lze verzovat přímo s repozitářem. Otevřený standard #strong[`AGENTS.md`], podporovaný řadou současných coding agentů, poskytuje předvídatelné místo pro projektové instrukce, například příkazy sestavení, testy a konvence @agents-md. Pro rozšiřitelné schopnosti se používá standard #strong[Agent Skills], v němž je každý skill adresář obsahující soubor #strong[`SKILL.md`] @agentskills-spec. Konkrétní umístění těchto adresářů se mezi harnessy liší; některé systémy používají #strong[`.agents/skills/`], jiné vlastní adresáře.
+#term("Context Window", cs: "kontextové okno", definition: "Množství vstupních a průběžných informací, které může model zpracovat v jednom běhu.") obsahuje instrukce, části repozitáře, historii nástrojů i výsledky předchozích kroků. Samotná velikost okna nezaručuje správné využití všech informací. Výkon modelů může klesat například tehdy, když se důležitá informace nachází uprostřed dlouhého vstupu @liu2024.
 
-#heading(level: 3)[Kontext (Context)]
+Postupné zhoršování využitelnosti příliš rozsáhlého kontextu se označuje jako #term("Context Rot", cs: "degradace kontextu", definition: "Zhoršování schopnosti modelu využít relevantní informace s rostoucím nebo nekvalitním kontextem.") @anthropic-context-engineering. Jedním z řešení je #term("Compaction", cs: "kompakce", definition: "Nahrazení starší části průběhu kratším souhrnem důležitých rozhodnutí, výsledků a otevřených úkolů."), která zmenší historii a zachová jen podstatný stav @anthropic-context-engineering.
 
-#strong[Kontextové okno] zahrnuje pracovní kontext jednoho volání modelu: instrukce, části repozitáře, historii volání nástrojů i výsledky předchozích kroků. Jeho velikost sama o sobě nezaručuje, že model všechny podstatné informace správně využije. Liu et al. ukázali, že výkon modelů při práci s dlouhým kontextem závisí mimo jiné na pozici relevantní informace a může výrazně klesat, pokud se důležitá informace nachází uprostřed vstupu @liu2024.
-
-S rostoucím množstvím kontextu se může obecně zhoršovat schopnost modelu rozlišovat a využívat podstatné informace; tento problém se označuje jako #strong[context rot] @anthropic-context-engineering. Jedním ze způsobů, jak u dlouhých agentních běhů udržet kontext v použitelném rozsahu, je #strong[kompakce] (#emph[compaction]), při níž jsou starší části průběhu nahrazeny kratším souhrnem důležitých rozhodnutí, výsledků a otevřených úkolů @anthropic-context-engineering.
-
-Od tohoto omezení je potřeba odlišit kvalitu samotného obsahu kontextu. Zastaralé instrukce, rozpory mezi soubory nebo již neplatný stav mohou agenta vést špatným směrem bez ohledu na velikost kontextového okna. Proto je vhodné uchovávat autoritativní dlouhodobý stav mimo samotný přepis konverzace a do kontextu v každém kroku vybírat aktuální informace, které agent skutečně potřebuje.
+Dlouhodobý autoritativní stav je proto vhodné uchovávat mimo samotný přepis konverzace a do pracovního kontextu v každém kroku vybírat jen aktuální informace potřebné pro danou úlohu.
