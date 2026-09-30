@@ -7,7 +7,7 @@ V této práci se #strong[agentickým inženýrstvím] (#strong[Agentic Engineer
 
 #strong[Spec-first development] staví specifikaci před samotnou implementaci. Tento princip nevznikl s coding agenty; navazuje na dlouhodobou praxi #strong[requirements engineering], v níž jsou požadavky a očekávané vlastnosti systému popsány před nebo v průběhu jeho realizace. IEEE vydalo samostatný standard pro #emph[Software Requirements Specification] už v roce 1984 @ieee830-1984 a současný standard ISO/IEC/IEEE 29148 formalizuje procesy a výstupy requirements engineering v průběhu životního cyklu softwaru @iso29148-2018.
 
-U coding agentů získává tento přístup nový význam. Specifikace už neslouží pouze jako podklad pro lidského vývojáře, ale může být přímo předána agentovi jako vymezení cíle, požadavků a omezení implementace. Čím samostatněji má agent pracovat, tím důležitější je, aby bylo před zahájením implementace dostatečně přesně určeno, #strong[co má být výsledkem], zatímco konkrétní postup může agent zvolit sám.
+U coding agentů získává tento přístup nový význam. Specifikace už neslouží pouze jako podklad pro lidského vývojáře, ale může být přímo předána agentovi jako vymezení cíle, požadavků a omezení implementace. Čím samostatněji má agent pracovat, tím důležitější je, aby bylo před zahájením implementace dostatečně přesně určeno, #strong[co má být výsledkem], zatímco konkrétní postup může agent zvolit sám. Příklad oddělení návrhu plánu od jeho provedení ukazuje @fig-claude-code-plan.
 
 #figure(
   image("/components/img/claude-code-plan.png", width: 100%),
@@ -33,7 +33,7 @@ následně koordinovaně spojit. Čtyři vzorce na to odpovídají:
 
 - #strong[Coordinator/subagent] rozdělí rozsáhlou úlohu na dílčí běhy. Koordinátor deleguje
   podúkol specializovanému subagentovi s vlastním kontextem a přebírá jeho výsledek, nezávislé
-  podúlohy zpracují paralelní pracovníci.
+  podúlohy zpracují paralelní pracovníci @fig-antigravity-subagents.
 
 #figure(
   image("/components/img/antigravity-cli-subagents.jpg", width: 100%),
@@ -43,7 +43,7 @@ následně koordinovaně spojit. Čtyři vzorce na to odpovídají:
 - #strong[Workflow graph] předem určuje závislosti, pořadí a větvení fází @openai-agent-orchestration.
   Claude Code u dynamických workflow napíše skript, který runtime vykonává na pozadí, takže smyčku,
   větvení i mezivýsledky drží skript místo kontextu modelu a plán je program, který lze přečíst
-  a znovu spustit @anthropic-dynamic-workflows.
+  a znovu spustit @anthropic-dynamic-workflows @fig-dynamic-workflows.
 
 #figure(
   image("/components/img/claude-code-dynamic-workflows.png", width: 100%),
@@ -53,7 +53,7 @@ následně koordinovaně spojit. Čtyři vzorce na to odpovídají:
   i jeho chování popisuje dokumentace @anthropic-dynamic-workflows.],
 ) <fig-dynamic-workflows>
 
-- #strong[Goal loop] je nadřazená řídicí smyčka. Po dílčím dokončení ReAct smyčky se pozorovaný stav porovná s cílem a podmínkami přijetí a běh skončí, nebo pokračuje další iterací. Vzor pochází z tzv. #strong[Ralph loop], který v roce 2025 popsal Geoffrey Huntley jako smyčku, jež opakovaně spouští agenta se stejným zadáním a stav si drží v pracovním stromu, nikoli v přepisu konverzace @huntley2025ralph. Dnes je to běžná funkce Claude Code i Codexu @claude-goal @openai-goals.
+- #strong[Goal loop] je nadřazená řídicí smyčka. Po dílčím dokončení ReAct smyčky se pozorovaný stav porovná s cílem a podmínkami přijetí a běh skončí, nebo pokračuje další iterací. Vzor pochází z tzv. #strong[Ralph loop], který v roce 2025 popsal Geoffrey Huntley jako smyčku, jež opakovaně spouští agenta se stejným zadáním a stav si drží v pracovním stromu, nikoli v přepisu konverzace @huntley2025ralph. Dnes je to běžná funkce Claude Code i Codexu @claude-goal @openai-goals @fig-codex-goal.
 
 #figure(
   image("/components/img/codex-goal-complete.png", width: 100%),
