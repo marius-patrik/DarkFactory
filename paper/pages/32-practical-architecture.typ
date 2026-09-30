@@ -22,7 +22,7 @@ pořadí jednotlivých kroků @fig-darkfactory-pipeline.
 
 Workflow `agent.yml` reaguje na otevření issue, nový komentář, review komentář, `repository_dispatch` nebo ruční
 spuštění. Podmínka na úrovni jobu ověří, zda je agent pro repozitář povolen, a odfiltruje automatické
-komentáře, aby si výstup nevytvářel další události. Workflow provede checkout cílového repozitáře, sestaví obraz
+komentáře, aby jeho výstup nevytvářel další události. Workflow provede checkout cílového repozitáře, sestaví obraz
 podle `docker/Dockerfile.agent` a spustí příkaz `dispatch` v kontejneru.
 
 Pythonovský runner není náhradou harnessu. Převádí událost GitHubu na konkrétní agentní krok, zpracovává jeho
@@ -35,4 +35,4 @@ v konfigurovatelném pořadí.
 
 Přihlašovací údaje se neukládají do repozitáře. GitHub App nebo jiný autorizovaný token se používá pro checkout,
 issue, pull requesty a push; přihlašovací údaje modelových providerů jsou předány workflow jako GitHub Secrets a
-následně prostředím kontejneru @darkfactory-d576ec8f.
+následně do kontejneru @darkfactory-d576ec8f.

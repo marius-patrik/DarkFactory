@@ -28,19 +28,19 @@ Krok, na kterém stojí krok následující, nezůstává v konverzaci. Požadav
 zadání komentář, plán child issue s typem `Plan:`, hotová práce větev s diffem a schválení
 zaznamenaný stav pull requestu. Člověk si všechny z nich přečte v repozitáři, kam se dostane bez
 jediného dotazu na agenta. Runner přijme událost a převede ji na právě jeden agentní krok, rozhodne,
-kam událost směřuje, zpracuje její výstup a vyvolá další. Git drží stav, výpočet poskytují GitHub
+kam událost směřuje, zpracuje jeho výstup a vyvolá další. Git drží stav, výpočet poskytují GitHub
 Actions @fig-darkfactory-architecture @darkfactory-d576ec8f. Přihlašovací údaje do repozitáře
 nepatří; do kontejneru jdou přes GitHub Secrets.
 
 Omezení je i na úrovni workflow. Job ověří, zda je agent pro daný repozitář povolen, a odfiltruje
-automatické komentáře, aby si výstup nevytvářel další události. Kde systém smí běžet, je tedy
+automatické komentáře, aby jeho výstup nevytvářel další události. Kde systém smí běžet, je tedy
 napsáno mimo model.
 
-Druhé zjištění se týka dvou rozhodnutí, která padají před vznikem větve. Člověk nejprve schválí
+Zjištění se týká dvou rozhodnutí, která padají před vznikem větve. Člověk nejprve schválí
 porozumění požadavku a plán schvaluje zvlášť. Předloha navíc vyžaduje šest polí, z nichž tři
 povinná, a právě ty určují, co pipeline dostane @fig-issue-template. Brány jsou lidské a oddělené,
 takže plán lze odmítnout i poté, co bylo přijato jeho východisko @darkfactory-d576ec8f. Komentář
-se změnou nebo odmítnutím se vrací do interpretace nebo do plánování, takže brána není slepý bod:
+se změnou nebo odmítnutím se vrací do interpretace nebo do plánování, takže brána není slepým bodem:
 rozhodnutí se opravuje dřív, než vznikne větev.
 
 Po druhé bráně už není co rozhodovat. Větev se vytvoří nebo načte, harness projde repozitář,
