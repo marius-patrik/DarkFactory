@@ -2,7 +2,7 @@ import { expect, test } from "bun:test";
 import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { replaceFile } from "../../src/storage/replace-file.ts";
+import { replaceFile } from "../../../keychain/src/storage/replace-file.ts";
 
 function errno(code: string): NodeJS.ErrnoException {
 	return Object.assign(new Error(`${code}: operation not permitted, rename`), { code });

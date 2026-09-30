@@ -1,10 +1,10 @@
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
+import { withFileLock } from "../../../keychain/src/storage/file-lock.ts";
+import { replaceFile } from "../../../keychain/src/storage/replace-file.ts";
 import type { Candidate } from "../failover.ts";
 import type { DeclaredLimitConfig, LimitPolicyConfig, ProviderConfig } from "../providers/schema.ts";
 import { nextPacificMidnight } from "../quota.ts";
-import { withFileLock } from "../storage/file-lock.ts";
-import { replaceFile } from "../storage/replace-file.ts";
 import type { LimitLedger } from "./ledger.ts";
 import type { TaskEstimate } from "./routing.ts";
 import type { LimitEntry, LimitType } from "./types.ts";

@@ -1,6 +1,6 @@
 import { promises as fs } from "node:fs";
 import { join } from "node:path";
-import { replaceFile } from "../storage/replace-file";
+import { replaceFile } from "../../../keychain/src/storage/replace-file.ts";
 import type { RunState, WorkflowGraph } from "./types";
 
 /**

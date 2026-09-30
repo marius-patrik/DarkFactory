@@ -1,8 +1,8 @@
 import { appendFile, mkdir, readFile, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
+import { withFileLock } from "../../../keychain/src/storage/file-lock.ts";
+import { replaceFile } from "../../../keychain/src/storage/replace-file.ts";
 import type { Candidate } from "../failover.ts";
-import { withFileLock } from "../storage/file-lock.ts";
-import { replaceFile } from "../storage/replace-file.ts";
 import { type LimitEntry, limitKey } from "./types.ts";
 
 interface LedgerFile {

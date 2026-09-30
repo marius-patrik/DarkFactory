@@ -2,8 +2,8 @@ import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import type { Credential, Model, Provider, ProviderHeaders } from "@earendil-works/pi-ai";
 import { defaultDfHome, FileCredentialStore } from "../../../keychain/src/index.ts";
+import { replaceFile } from "../../../keychain/src/storage/replace-file.ts";
 import type { ApiKeyAuthConfig, ModelListConfig, ProviderConfig } from "../providers/schema.ts";
-import { replaceFile } from "../storage/replace-file.ts";
 
 const DEFAULT_MODEL_CATALOG_TTL_MS = 6 * 60 * 60 * 1000;
 const PI_CATALOG_BASE_URL = "https://pi.dev";
