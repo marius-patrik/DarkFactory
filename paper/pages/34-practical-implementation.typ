@@ -21,10 +21,8 @@ je vyčerpaná kvóta — tehdy se zapíše kontrolní bod, stav na projektové 
 @darkfactory-d576ec8f.
 
 Požadavek, který tuto meze odhalil, žádá, aby se běh po opakováních stejného nálezu zastavil a napsal to
-výslovně do issue. Popsaná revize to neumí, ačkoli je podmínka zastavení v té dokumentaci uvedena výslovně
-@openai-goals.
+výslovně do issue.
 
 Po čisté review ještě proběhne kontrola souladu výsledného diffu se schváleným plánem. Ani ta není porovnáním sad
 souborů: je to druhý dotaz modelu, tentokrát na shodu s textem plánu. Teprve když oba dotazy vyjdou bez nálezu, je
-draft pull request označen jako připravený k lidské revizi. Dodavatelé tento typ hodnotitele popisují stejně
-omezeně @claude-goal, a je proto s první branou rovnocenný, ne její náhradou.
+draft pull request označen jako připravený k lidské revizi.
