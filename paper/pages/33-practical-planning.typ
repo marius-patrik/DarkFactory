@@ -27,11 +27,11 @@ kontejneru nad checkoutnutým pracovním stromem. DarkFactory tím používá Gi
 událostní mechanismus i jako krátkodobé výpočetní prostředí, aniž by základní pipeline vyžadovala vlastní
 trvale běžící službu @darkfactory-d576ec8f.
 
-Pythonovský `agent_runner.py` je orchestrace nad harnesssem, nikoli jeho náhrada. Rozlišuje jednotlivé
+Pythonovský `agent_runner.py` je orchestrace nad harnessem, nikoli jeho náhrada. Rozlišuje jednotlivé
 fáze, například interpretaci, plánování, implementaci, automatickou revizi, kontrolu souladu s plánem
 a reakci na zpětnou vazbu. Současně zpracovává stav procesu a výstupy jednotlivých kroků. Vlastní práce
-coding agenta je oddělena za registry v `harnesses.py`: každý podporovaný harness deklaruje binární
-soubor, způsob sestavení příkazové řádky, autentizaci a modelové fallbacky. Pořadí harnessů lze měnit
+coding agenta je oddělena prostřednictvím registru v `harnesses.py`: každý podporovaný harness deklaruje
+binární soubor, způsob sestavení příkazové řádky, autentizaci a modelové fallbacky. Pořadí harnessů lze měnit
 konfigurací, takže orchestrace nemusí znát konkrétní CLI, které modelový krok právě provádí
 @darkfactory-d576ec8f.
 
