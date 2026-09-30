@@ -14,66 +14,61 @@ Když cokoliv z tohoto seznamu brání úpravě, **zastav se a napiš to autorov
 sám, neinterpretuj to jinak, nevynechej to. Tvrzení, která byla jednou vyvrácena, byla vyvrácena
 proto, že se na ni dalo spoléhat.
 
-## Připnutá revize
+## Tento seznam se stará. Když je položka zastaralá, je chyba v seznamu
 
-Praktická část popisuje **jedinou** revizi: `d576ec8f` (14. září), citovanou jako
-`@darkfactory-d576ec8f`. Je to poslední revize, v níž pipeline ještě volala produkční harnesse
-přímo.
+Invarianty jsou tvrzení **o kódu a o přijatých rozhodnutích**, a obojí se mění. Tento soubor
+proto není zdroj pravdy o tom, co práce právě tvrdí — je to pravda o tom, co **bylo** třeba
+neprozřít. Konkrétní stav práce patří do jejího stavového souboru, ne sem.
 
-**Nic nepřepisovat z HEAD.** Tvrzení o kódu se ověřují proti `d576ec8f`, ne proti současnému stavu
-repozitáře. Novější revize pipeline přesměrovala přes `df`, takže v HEAD je přímé volání těch CLI
-mrtvý kód a čtení z HEAD dává nesprávné závěry.
+Před použitím každé položky ověř, že ještě platí:
 
-## Čtyři opravená tvrzení
+1. **Je tvrzení o kódu stále v kódu?** Otevři zdroj. Tvrzení, které už neplatí, je horší než
+   žádné, protože vypadá ověřené.
+2. **Je výrok, na který se položka vztahuje, ještě v práci?** Řada položek cituje větu z textu.
+   Když věta zmizela, zruš se i položka — neopravuj ji dosazováním jiného místa.
+3. **Je struktura ta, jaká je teď?** Struktura práce se mění. Položka o kapitole, která už
+   neexistuje, je zastaralá.
+4. **Sem nepíš revizi, commit, řádek ani název souboru.** Dovednost je přenosná a má přežít
+   repozitář. Co platí dnes, patří do stavového souboru práce.
 
-Každé z nich bylo v práci napsáno špatně a bylo opraveno. Změna, která by je vrátila, je chyba.
+Když položka neplatí: **zapiš nález do stavového souboru práce a položku odstraň.** Nevyhazuj ji
+tiše a neopravuj domýšlením. Nález musí být dohledatelný, jinak se chyba vrátí.
 
-**1. `Blocked` znamená vyčerpanou kvótu, ne opakovaný nález.**
-`pages/34-practical-implementation.typ`
-> „Smyčka je ohraničena nejvýše třemi iteracemi… Po vyčerpání tří iterací však smyčka skončí bez
-> jakéhokoli verdiktu a bez komentáře… Jediným stavem, který v této revizi znamená zablokování, je
-> vyčerpaná kvóta…"
+## Ověřuj proti revizi, kterou práce popisuje
 
-**2. Čisté review běží před kontrolou souladu s plánem, ne po ní.**
-`pages/34-practical-implementation.typ`
-> „Po čisté review ještě proběhne kontrola souladu výsledného diffu se schváleným plánem. Ani ta
-> není porovnáním sad souborů: je to druhý dotaz modelu…"
+Praktická část může popisovat **jedinou** revizi, zpravidla jinou než HEAD. Citace na ni je
+v textu vidět; najdeš ji mezi citacemi, které odkazují na vlastní kód.
 
-**3. Schválení je seznam dvou účtů, ne autor issue.**
-`pages/35-practical-integration.typ`
-> „aktér se porovnává se seznamem dvou pevně zapsaných účtů… Neověřuje se tedy autor issue ani
-> úroveň oprávnění, ale členství v tomto seznamu"
+**Nic nepřepisuj z HEAD.** Tvrzení o kódu se ověřují proti revizi, kterou práce popisuje. Novější
+revize mívá přesměrovanou cestu, takže kód v HEAD je mrtvý a čtení z HEAD dává nesprávný závěr.
+`git log` na pořadí, revize na obsah.
 
-**4. Testy se spouštějí jednou; po opravě už ne.**
-`pages/34-practical-implementation.typ`
-> „Testovací sady se přitom spouštějí pouze jednou a po opravě už ne… Opakovatelná kontrola tedy
-> rozliší dobrý a špatný stav, ale není překážkou"
+## Opravené chyby, jejichž vzor se opakuje
 
-Kontrola, že tyto čtyři věty v textu jsou, je v dovednosti `paper-verify`. Je to grep na české
-znění, protože sada publikace kontroluje strukturu PDF, ne obsah.
+Každou z nich byla práce dřív napsaná špatně. Konkrétní znění je v jejím stavovém souboru; tady
+zůstává **vzor chyby**, aby se příště nerepakovala. Před použitím ověř podle pravidla nahoře, jestli
+se vztahují k současnému textu.
 
-## Tři metodická kritéria
+**1. `Blocked` znamená jednu věc, ne jinou.** Když práce popisuje, co blokuje běh, dej pozor na
+počet iterací: počet bývá v kódu jiný, než byl napsán, a smyčka může skončit bez jakéhokoli
+verdiktu a bez komentáře — pak je jediným blokátorem to, co je vyčerpané, a ne to, že se něco
+opakovalo. **Počet iterací se uvádí jen tehdy, když je ověřený v kódu, a ne v popisku obrázku,
+který ho tvrdí bez dokladu.**
 
-Formulovaná v §3.1 výslovně jako **provozní převedení této práce**, nikoli jako převzatá
-taxonomie. Podmínka `musí` je míněna podmíněně: nutné jsou jen ty principy, které samotný model bez
-zásady okolí neposkytne.
+**2. Pořadí dvou kontrol.** Když běh nejprve ověří jednu věc a pak druhou, nesmí se to v textu
+obrátit. Pozor na formulaci „ještě proběhne", která zřejmě popisuje pořadí, ale nepřesně.
 
-1. **Stav leží mimo model a je zjistitelný.** Je třeba pojmenovat artefakt, kde žije, a člověka, který
-   se na něj podívá, aniž by se musel modelu zeptat.
-2. **Brány jsou výslovné a druhy jejich rozhodnutí se nerozplývají.** Brána musí existovat, vědět,
-   jaké rozhodnutí činí, a své rozhodnutí označit podle druhu. Tři druhy: deterministická kontrola
-   (výsledek lze přepočítat nebo spustit znovu bez modelu), brána hodnocená modelem (dotaz na jiný
-   model, tedy stejně pravděpodobný jako to, co posuzuje), a lidská brána. Běh nesmí projít jedním
-   druhem brány prostředky jiného.
-3. **Člověk rozhoduje, co vstoupí do produkce.** Určený okamžik, určená osoba, určené rozhodnutí a
-   **žádná jiná cesta do téhož bodu**. Podmínka ‚určený‘ je ostrá.
+**3. Seznam účtů, který vypadá na dva a je jeden.** Množina v kódu mívá podobu
+`{a.lower(), "b"}`, kde `a` zrovna nabývá hodnotu `b` — pak je v ní **jedno** jméno. Seznam
+účtů v práci musí odpovídat tomu, co kód po deduplikaci obsahuje. Když je tvrzení „neověřuje se
+autor issue ani úroveň oprávnění", musí být pravdivé: opisuje to, co kód **ne**kontroluje.
 
-Aplikace je v §4.1. První dvě kritéria popsaná konfigurace plní, třetí **plní podmíněně** — proxy
-schválení může vyplnit jmenovaný okamžik strojem, a znění kritéria vyžaduje nepřítomnost jakékoli
-jiné cesty.
+**4. Opakovatelná kontrola není totéž co překážka.** Když testy běží a neprojdou, ale běh
+pokračuje, je to věc, kterou je třeba napsat — a je to věc, kterou je třeba z textu **vyříadit**,
+má-li patřit jen jednou. Obojí je pravda; chybou je napsat ji dvakrát nebo ji vynechat.
 
-**Rozsud o tom, zda konfigurace třetí kritérium splňuje, záměrně není pronesen a patří autorovi.**
-Nedoplňuj ho. Není to nedostatek textu, je to záměr.
+**5. Diagram není zdroj tvrzení.** Popisek obrázku a poznámka uvnitř SVG tvrdí věci, které nikdo
+neověřil. Diagram může tvrdit opak toho, co dělá kód. Když je v rozporu, rozhoduje kód.
 
 ## Odkazy a křížové reference
 
