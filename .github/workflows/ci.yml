@@ -173,12 +173,16 @@ jobs:
           cd "$GITHUB_WORKSPACE/$DF_ACTION_CWD"
           bash -lc "$DF_ACTION_COMMAND"
 
+      - name: Build publication paper
+        if: matrix.ecosystem == 'typst' && matrix.cwd == 'paper' && success()
+        run: bun run --cwd paper publication
+
       - name: Upload compiled paper
         if: matrix.ecosystem == 'typst' && matrix.cwd == 'paper' && success()
         uses: actions/upload-artifact@v4
         with:
           name: paper-pdf
-          path: paper/out/paper.pdf
+          path: PAPER.pdf
           if-no-files-found: error
           retention-days: 7
 
