@@ -20,6 +20,8 @@
   title: "Agentické inženýrství ve vývoji softwaru",
   subtitle: "Návrh a implementace DarkFactory",
   practical-title: "DarkFactory",
+  keywords-cs: ("coding agenti", "harness", "softwarová továrna", "orchestrace", "generativní AI"),
+  keywords-en: ("coding agents", "harness", "software factory", "orchestration", "generative AI"),
 
   annotation-cs: [
     Práce se zabývá současným agentickým inženýrstvím ve vývoji softwaru. S rostoucími
@@ -35,7 +37,7 @@
 
     Praktická část má podobu inženýrské případové studie DarkFactory, záměrně jednoduché
     agentické softwarové továrny nativně postavené na GitHubu. Systém byl implementován
-    pomocí komerčních coding agentů a slouží jako bootstrap: již dokáže agenty sám spouštět
+    pomocí komerčních coding agentů a slouží jako bootstrap a již dokáže agenty sám spouštět
     a řídit a vytváří základ pro další rozvoj stejným procesem.
 
     Studie ukazuje, že praktické agentické workflow vzniká kombinací modelového úsudku
@@ -59,7 +61,7 @@
 
     The practical part takes the form of an engineering case study of DarkFactory, a deliberately
     simple agentic software factory built natively on GitHub. The system was implemented using
-    commercial coding agents and serves as a bootstrap: it can already launch and manage agents
+    commercial coding agents and serves as a bootstrap and can already launch and manage agents
     itself and creates a foundation for further development using the same process.
 
     The study shows that a practical agentic workflow arises from combining model judgment with
