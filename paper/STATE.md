@@ -542,6 +542,22 @@ ve Fázi 6 proti finálnímu textu.
 | B5 | `22:55` | „Zásadní přitom je" — zdvojené zdůraznění | ✅ `Nejde o jediný pokus:` |
 | B6 | `21:100` | `Skilly, scripty` proti `Skills, skripty` v `21:86` | `Skills, skripty a hooky` |
 | B7 | `10:29` | `Screenshot` proti `Snímek`, který práce užívá | `Snímek` |
+**Tabulka 1 — issue #727 bylo vyřaděno (ověřeno, ne odhad).** Tabulka dříve tvrdila, že
+požadavek #727 předlohu nevyplnil a psal volně pod `Problem` a `Contract`. Nepravdivé ve dvou
+směrech, ověřeno proti repozitáři:
+- **#727 předlohu POUŽILO.** Titulek „Request: …" je prefix z `request.yml` a tělo má
+  přesně sekce `### Problem` a `### Contract`. Na toto upozornil autor.
+- **#727 nepatří k `d576ec8f`.** Zadáno 20. 9. 2026, revize ze 14. 9. 2026 — o šest dní
+  později, proti **pozdější** verzi formuláře.
+- **Předloha v `d576ec8f` sekce `Problem`/`Contract` nemá.** Jejích šest polí:
+  `Verbatim User Request`, `Area / Component`, `Request Type`, `Parent Epic`,
+  `Proposed Acceptance Criteria`, `Additional Context`; tři povinná, tři volitelná.
+  Věta v §3.3 „šest polí, z nichž tři povinná" byla správná, špatný byl jen příklad.
+- **⚠ Citovat revizi, ne HEAD.** Současné `request.yml` v HEAD píše výslovně „no separate
+  Interpretation approval or mandatory child Plan issue" — to je popis *pozdější* práce.
+  §3.3 popisuje dvě oddělená lidská schválení a `Plan:` child issue, což je pro `d576ec8f`
+  správně. Citace z HEAD by systém popsala špatně.
+
 | B8 | `23:18` | „co smí do výroby vstoupit" bez zdroje | **⚠ Podmínka:** jen pokud `@nato1969` to tvrzení nese. Jinak vyřadit. Zdroj nevymýšlet. |
 | B9 | `21:14`, `21:50` | „smyčka agenta" proti „agentní smyčka" ve `12:8`, `12:12`, `21:52` | `agentní smyčka`; nadpis `Agentní smyčka (Loop)` |
 
