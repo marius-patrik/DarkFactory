@@ -106,10 +106,31 @@ změny procházejí novým schválením.
 Spolehlivě zde neznamená, že změna je správná. Znamená to, že je zapsaná a že se dá přečíst bez
 agenta.
 
-#heading(level: 3)[Závěr]
-
 Proti tomu lze namítnout, že plán i diff posuzuje model, takže spolehlivost běhu nakonec stojí na
 modelu. Jenže oba texty leží mimo konverzaci a člověk je čte. Chyba v posouzení se tak projeví jako
 chyba v zápisu, který je k přečtení, ne jako změna, kterou by nikdo nespatřil. Spolehlivost tu stojí
 na místě zápisu a na tom, kdo rozhoduje, ne na schopnosti modelu. Průchod jako celek je zakreslen
 v @fig-darkfactory-pipeline.
+
+Cíl práce byl ověřit, za jakých podmínek agentický systém spolehlivě vykonává inženýrskou práci. Cíl
+byl dosažen a hypotéza se potvrdila. V praktické části byla implementována produkční pipeline, v níž
+události GitHubu spouštějí agentní kroky v izolovaném kontejneru. Popsaná konfigurace DarkFactory
+poskytuje odpověď, kterou lze přečíst přímo z pořadí kroků. Vykonaná práce musí být zapsaná mimo
+konverzaci, aby na ni bylo možné se podívat bez agenta. Dvě rozhodnutí před vznikem větve musí patřit
+člověku, aby je bylo možné odmítnout. Praktická autonomie je v tomto systému vlastností návrhu, který
+práci řídí, a nikoli vlastností modelu, který v něm pracuje.
+
+Pro další výzkum plyne čtyř doporučení.
+
+Předně ověřit, zda podmínky platí i mimo popsanou konfiguraci — na jiném repozitáři, při jiné sadě
+harnessů a při jiné sadě modelů. Dnešní odpověď je sázena na jednu revizi a na jeden repozitář;
+přenos na jiný systém z popisu neplyne.
+
+Dále prozkoumat, zda lze dosáhnout toho, aby plán byl hranicí, tak že se změna rozsahu vrátí k
+lidskému schválení. Dnes se změna zapíše jako odůvodněná odchylka a k bráně se běh nevrátí.
+
+Dále opřít poslední bránu o oprávnění v repozitáři, ne o porovnání s jedním účtem, aby záznam o
+schválení odpovídal tomu, kdo skutečně rozhodl. Dnes se aktér porovnává s vlastníkem repozitáře.
+
+Nakonec posoudit architekturu znovu až za ní, až se posune z revize zde popsané, a zjistit, zda
+podmínky vydrží její rozšíření.
