@@ -1,7 +1,9 @@
-// Chapter 4. Zjištění a diskuse.
+// 4.1 Findings and discussion.
 //
-// STUBBED pending the §3.2-3.5 rewrite. Findings and limits now share one
-// section, deliberately: a finding without its limit reads as advocacy.
+// STUBBED pending this rewrite. Every admission the practical part used to carry
+// is now gone from chapter 3 by the author's direction, so this section is the only
+// place left where the system is allowed to be judged. Findings and limits share
+// one section, deliberately: a finding without its limit reads as advocacy.
 //
 // Order: the findings first, in the order the run happens, then what they do
 // not show, then the interpretation, then the three named limitations.
@@ -13,9 +15,11 @@
 //   runner calls foreign harnesses for every agentic step), layer composition
 //   (two harness layers, which one's conventions dominate).
 // Closing: the conclusions are defended from the first limit. The thesis claim —
-// structure, not the choice of CLI — is stated once, here or in 5, not twice.
+// structure, not the choice of CLI — is stated once, in 4.1 or 4.2, not twice.
 //
 // Answers the research question, which now asks under what conditions the
 // system does the work reliably. Answer in prose (R15). Do not grade the system
 // against a list; the list was deleted.
-#heading(level: 1)[Zjištění a diskuse] <diskuse>
+#heading(level: 1)[Závěr]
+
+#heading(level: 2)[Zjištění a diskuse]
