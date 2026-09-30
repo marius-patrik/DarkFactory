@@ -11,7 +11,7 @@
 
 #heading(level: 3)[#term-name("Large Language Model", cs: "jazykový model")]
 
-#term("Large Language Model", cs: "jazykový model", definition: "Model, který z kontextu odhaduje pravděpodobnosti následujících tokenů.") je výpočetní jádro agenta. Současné modely běžně používají architekturu #term("Transformer", definition: "Neuronová architektura založená na mechanismu attention, která zpracovává vztahy mezi tokeny v kontextu.") představenou v roce 2017 @vaswani2017.
+#term("Large Language Model", cs: "jazykový model", definition: "Model, který z kontextu odhaduje pravděpodobnosti následujících tokenů.") je výpočetní jádro agenta. Současné modely běžně používají architekturu #term("Transformer", definition: "Neuronová architektura založená na mechanismu pozornosti, která zpracovává vztahy mezi tokeny v kontextu.") představenou v roce 2017 @vaswani2017.
 
 Jejím základem je #term("Attention", cs: "pozornost", definition: "Mechanismus, který při výpočtu reprezentace tokenu váží informace z dalších tokenů v kontextu."). Každý token tak může při své reprezentaci využít informace z ostatních pozic. U standardní plné pozornosti rostou výpočetní náklady přibližně s druhou mocninou délky kontextu.
 
