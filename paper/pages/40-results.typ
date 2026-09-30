@@ -24,55 +24,6 @@
 
 #heading(level: 2)[Zjištění a diskuse] <zjiisteni>
 
-Krok, na kterém stojí krok následující, nezůstává v konverzaci. Požadavek je issue, porozumění
-zadání komentář, plán child issue s typem `Plan:`, hotová práce větev s diffem a schválení
-zaznamenaný stav pull requestu. Člověk si všechny z nich přečte v repozitáři, kam se dostane bez
-jediného dotazu na agenta. Runner přijme událost a převede ji na právě jeden agentní krok, rozhodne,
-kam událost směřuje, zpracuje jeho výstup a vyvolá další. Git drží stav, výpočet poskytují GitHub
-Actions @fig-darkfactory-architecture @darkfactory-d576ec8f. Přihlašovací údaje do repozitáře
-nepatří; do kontejneru jdou přes GitHub Secrets.
-
-Omezení je i na úrovni workflow. Job ověří, zda je agent pro daný repozitář povolen, a odfiltruje
-automatické komentáře, aby jeho výstup nevytvářel další události. Kde systém smí běžet, je tedy
-napsáno mimo model.
-
-Zjištění se týká dvou rozhodnutí, která padají před vznikem větve. Člověk nejprve schválí
-porozumění požadavku a plán schvaluje zvlášť. Předloha navíc vyžaduje šest polí, z nichž tři
-povinná, a právě ty určují, co pipeline dostane @fig-issue-template. Brány jsou lidské a oddělené,
-takže plán lze odmítnout i poté, co bylo přijato jeho východisko @darkfactory-d576ec8f. Komentář
-se změnou nebo odmítnutím se vrací do interpretace nebo do plánování, takže brána není slepým bodem:
-rozhodnutí se opravuje dřív, než vznikne větev.
-
-Po druhé bráně už není co rozhodovat. Větev se vytvoří nebo načte, harness projde repozitář,
-spustí se formátovací nástroje a deklarované testovací sady, následuje commit, push a draft pull
-request. Tento úsek neobsahuje úsudek modelu.
-
-Model je v této konfiguraci položka konfigurace, nikoli součást struktury. Každý harness je zapsán
-deklarativně: binář, způsob, jak se z promptu sestaví příkazová řádka, a způsob přihlášení.
-V registru je osm harnessů v konfigurovatelném pořadí a chybějící binář se přeskočí, místo aby běh
-zabrál. Jeden obraz vzniká z jedné definice, takže výměna modelu je změna dat, ne změna kódu
-@darkfactory-d576ec8f. Dostupná sada modelů tak závisí na tom, co je v obrazu.
-
-Ve zbytku běhu naopak nic volání modelu nenahrazuje. Plán posuzuje dotaz na model a stejně tak
-výsledný diff. Po čisté revizi následuje kontrola souladu diffu se schváleným plánem, což je
-druhý dotaz na model. Spolehlivost v tomto úseku je právě tak nejistá, jako je nejisté to, co
-posuzuje.
-
-Konec běhu už žádné rozhodnutí neobsahuje. Draft pull request se převede do stavu připraveného,
-workflow zkontroluje schválení, provede merge a větev po sloučení odstraní. Výsledkem je změna
-v repozitáři, kterou lze přečíst bez znalosti průběhu.
-
-Konfigurace ale několik věcí nezaručuje. Schválený plán není hranicí. Hranice je zadána jen textem:
-implementační instrukce nese plán, omezení na jeho rozsah a pravidla pro testy a dokumentaci, a
-zakazuje sahat mimo něj. Nález revize, který plán překročí,
-se proto neodmítne, ale zapíše se jako Plan Deviation s odůvodněním na původním issue, doplní plán
-a pustí opravu. K bráně, která plán schválila, se běh nevrátí. Změnový požadavek na pull requestu
-spustí opravný běh na téže větvi; agent přitom obdrží plán, konkrétní zpětnou vazbu a aktuální
-kontext větve, ale běh se vrátí do review smyčky, nikoli k plánu.
-
-Poslední brána zase oprávnění nekontroluje. Aktéra porovnává s jedním pevně zapsaným účtem,
-vlastníkem repozitáře. Neověřuje se autor issue ani úroveň oprávnění.
-
 Otázka zní, za jakých podmínek agentický systém spolehlivě vykonává inženýrskou práci. Odpověď
 nechť leží v pojmech, které teoretická část už zavedla: kontext, brána a druh jejího rozhodnutí.
 
