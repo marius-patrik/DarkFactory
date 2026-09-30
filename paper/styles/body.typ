@@ -16,6 +16,7 @@
   // required 8pt gap. Re-measure after any change to the leading, the size, or this value -
   // `spacing: 12pt` here looks like compliance and is no gap at all.
   set par(justify: true, leading: 1.5 * 0.65em, spacing: 19.7pt, first-line-indent: 0pt)
-  set text(font: PISMO, size: 12pt, lang: "cs", hyphenate: true)
+  set text(font: PISMO, size: 12pt, lang: "cs", hyphenate: false)
+  show par: it => block(breakable: false, it)
   body
 }
