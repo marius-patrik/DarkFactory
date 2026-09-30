@@ -18,27 +18,19 @@ vyplnit šest polí, z nichž tři povinná. Právě ta určují, co pipeline do
 #figure(
   kind: table,
   table(
-    columns: (0.40fr, 0.60fr),
-    align: (left + top, left + top),
+    columns: (1fr,),
+    align: left,
     inset: (x: 6pt, y: 5pt),
     stroke: none,
     table.header(
       [#text(size: 9pt, fill: luma(35%))[Pole předlohy issue]],
-      [#text(size: 9pt, fill: luma(35%))[Co pole vyžaduje]],
     ),
     req("Verbatim User Request"),
-    field[Přesné znění požadavku, nedesumované a neočištěné, aby se záměr neztratil
-    parafrází.],
     req("Area / Component"),
-    field[`area:ci`],
     req("Request Type"),
-    field[`bug`],
     opt("Parent Epic"),
-    field[Propojení s nadřazenou epikou, pokud existuje.],
     opt("Proposed Acceptance Criteria"),
-    field[Podmínky, podle nichž má změna spočívat v hotovu.],
     opt("Additional Context"),
-    field[Libovolný další kontext, který autor považuje za důležitý.],
   ),
   caption: [Pole předlohy issue pro uživatelský požadavek: tři jsou povinná, tři
   volitelná @darkfactory-d576ec8f.],
@@ -51,8 +43,7 @@ verifikace.
 Po schválení interpretace je workflow spuštěno znovu, runner založí #emph[child] issue typu
 `Plan:` propojené s původním issue. Model dostane
 schválený požadavek a sestaví implementační plán s očekávanými změnami, soubory nebo
-oblastmi repozitáře a kroky ověření. Plán se zobrazí v issue a schvaluje se samostatně.
-Obě brány před vznikem větve jsou lidské a protože jsou oddělené, lze schválit
+oblastmi repozitáře a kroky ověření. Obě brány před vznikem větve jsou lidské a protože jsou oddělené, lze schválit
 porozumění zadání a odmítnout plán, který z něj vychází @darkfactory-d576ec8f.
 
 Komentář se změnou nebo odmítnutím se předá zpět interpretaci nebo plánování, takže se
