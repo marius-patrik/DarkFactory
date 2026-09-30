@@ -86,4 +86,4 @@ review finding can amend the plan without a renewed human approval.
 - Stale hypothesis/K1–K5/TODO source notes have been removed from manuscript files.
 - Chapter 4 answers the research question and states case-bounded limitations.
 - Chapter 5 explicitly states that the goal was fulfilled and introduces no new claim.
-- Remaining work is mechanical only: require a green final build and visually inspect the produced PDF.
+- Final publication PDF was generated from CI, visually inspected across all 40 pages, and confirmed to embed the bundled Caladea family. The tracked `PAPER.pdf` was regenerated from the same publication build. No manuscript work remains.
