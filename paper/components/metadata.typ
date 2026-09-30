@@ -42,24 +42,24 @@
     zvoleného návrhu.
   ],
   abstract-en: [
-    The thesis asks under what conditions an agentic system performs engineering work
-    reliably — that is, a change to a repository that a person who need not operate the
-    agent by hand can review and merge. It assumes that practical autonomy in an agentic system is not determined solely by the model's
-    capabilities, but above all by the design of the system that governs state, tools,
-    decision gates and the integration of the result.
+    The thesis deals with contemporary agentic engineering in software development. As the
+    capabilities and adoption of generative AI grow, so do the possibilities of coding agents,
+    but their practical use is still less widespread than the ordinary use of chatbots. The aim
+    of the thesis is therefore to describe and systematize the principles of contemporary agentic
+    engineering and, using DarkFactory, to show what their combination enables in practice.
 
-    The thesis sets out the short history of tools built on language models, explains what
-    an agent is and how it works, and describes the principles of agentic engineering, that
-    is, the practices for reliable engineering work with the help of agentic systems. A
-    language model is by itself only a function; an agent comes into being only once it is
-    connected to tools, an environment and state.
+    The theoretical part explains the relationship between the language model, the agent, and
+    the harness layer, and summarizes work with context, tools, durable state, orchestration,
+    verification, and human decision points.
 
-    The practical part presents DarkFactory, a production pipeline for AI-assisted software
-    development. Commercial coding agents wrote it. DarkFactory now operates those agents
-    itself: GitHub events trigger agentic steps in an isolated container, and a request
-    travels from an issue through a human-approved plan to a merged pull request. A harness
-    supplies the model with tools and observations, while a runner turns an event into one
-    agentic step. The state of a run lies in the repository, not in the conversation with the
-    model.
+    The practical part takes the form of a case study of DarkFactory, an agentic software factory
+    built natively on GitHub. DarkFactory manages the work of coding agents from receiving a
+    request through its interpretation, planning, and implementation to review and human
+    approval of the result.
+
+    The study shows that the language model is only one part of a broader system. The surrounding
+    layers provide state, tools, the ordering of steps, programmatic checks, and decision gates.
+    The contribution of the thesis is the systematization of these principles and a demonstration
+    of their concrete implementation, including the limitations of the chosen design.
   ],
 )
