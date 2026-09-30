@@ -4,7 +4,7 @@
 
 #term("Agentic Engineering", cs: "agentické inženýrství", definition: "Návrh a řízení softwarového vývoje tak, aby coding agenti pracovali uvnitř explicitně navrženého systému pravidel, kontextu, nástrojů, kontrol a lidských rozhodnutí.") označuje soubor postupů pro vývoj softwaru pomocí #term-name("Coding Agents", cs: "coding agenti"). Předmětem není jen model, ale celý systém, ve kterém pracuje @alenezi2026agentic.
 
-Mezi jeho hlavní oblasti patří #term("Prompt Engineering", cs: "inženýrství promptů", definition: "Formulace instrukcí, omezení, příkladů a očekávaného výstupu konkrétního modelového kroku.") @openai-prompt-engineering, #term("Context Engineering", cs: "kontextové inženýrství", definition: "Výběr, uspořádání, obnova a kompakce informací dostupných modelu v daném kroku.") @anthropic-context-engineering, #term("Harness Engineering", cs: "inženýrství harnessu", definition: "Návrh okolní vrstvy, která modelu poskytuje nástroje, stav, oprávnění a pravidla běhu.") @anthropic-harness-design @openai-agents-sandbox, #term("Loop Engineering", cs: "inženýrství smyček", definition: "Návrh řídicích smyček, které opakovaně porovnávají stav s cílem a rozhodují o dalším kroku.") @openai-goals a #term("Workflow/Graph Engineering", cs: "inženýrství workflow a grafů", definition: "Návrh pořadí, závislostí a větvení mezi více kroky nebo agenty.") @openai-agent-orchestration.
+Mezi jeho hlavní oblasti patří #term("Prompt Engineering", cs: "inženýrství promptů", definition: "Formulace instrukcí, omezení, příkladů a očekávaného výstupu konkrétního modelového kroku.") @openai-prompt-engineering, #term("Context Engineering", cs: "kontextové inženýrství", definition: "Výběr, uspořádání, obnova a kompakce informací dostupných modelu v daném kroku.") @anthropic-context-engineering, #term("Harness Engineering", cs: "inženýrství harnessu", definition: "Návrh okolní vrstvy, která modelu poskytuje nástroje, stav, oprávnění a pravidla běhu.") @anthropic-harness-design @openai-agents-sandbox, #term("Loop Engineering", cs: "inženýrství smyček", definition: "Návrh řídicích smyček, které opakovaně porovnávají stav s cílem a rozhodují o dalším kroku.") @openai-goals a #term("Workflow/Graph Engineering", cs: "inženýrství pracovních postupů a grafů", definition: "Návrh pořadí, závislostí a větvení mezi více kroky nebo agenty.") @openai-agent-orchestration.
 
 #heading(level: 3)[#term-name("Specification", cs: "specifikace")]
 
@@ -30,7 +30,7 @@ Inženýrství promptů se soustředí na jeden inferenční krok, zatímco kont
   caption: [Paralelní subagenti v Google Antigravity @antigravity-cli.],
 ) <fig-antigravity-subagents>
 
-- #term("Workflow Graph", cs: "graf workflow", definition: "Graf, který předem určuje závislosti, pořadí a větvení kroků.") drží strukturu procesu mimo kontext modelu @openai-agent-orchestration. Claude Code může u dynamických pracovních postupů vytvořit skript, který tento proces vykonává @anthropic-dynamic-workflows @fig-dynamic-workflows
+- #term("Workflow Graph", cs: "graf pracovního postupu", definition: "Graf, který předem určuje závislosti, pořadí a větvení kroků.") drží strukturu procesu mimo kontext modelu @openai-agent-orchestration. Claude Code může u dynamických pracovních postupů vytvořit skript, který tento proces vykonává @anthropic-dynamic-workflows @fig-dynamic-workflows
 
 #figure(
   image("/components/img/claude-code-dynamic-workflows.png", width: 100%),
