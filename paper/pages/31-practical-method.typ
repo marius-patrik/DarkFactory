@@ -24,6 +24,6 @@
 // so.
 #heading(level: 2)[Metodika] <practical-first>
 
-Praktická část implementuje záměrně jednoduchou produkční pipeline, v níž je vývojovým prostředím přímo GitHub a harness produkční coding agent. Cílem je ukázat, jak lze spojit události GitHubu, automatizované plánování, izolovanou práci v kontejneru a lidskou integraci do jednoho opakovatelného procesu.
+Praktická část má podobu inženýrské případové studie systému DarkFactory. Cílem není měřit obecnou úspěšnost jazykových modelů ani porovnávat konkrétní coding agenty, ale na jednom reálném systému ukázat, jak se principy popsané v teoretické části propojují v produkčním vývojovém procesu.
 
-Pipeline byla implementována pomocí komerčních coding agentů a následně je sama provozuje. Cílem nebyla stavba co nejucelenějšího systému, ale co nejmenší uzavřená smyčka, na níž lze ukázat, jak se navzájem ovlivňují agent, harness a lidský recenzent. Pozornost je proto soustředěna na tuto interakci a na její členění, nikoli na šíři nabízených funkcí.
+Součástí případové studie je návrh a implementace DarkFactory pomocí komerčních coding agentů. Systém je záměrně jednoduchý a jeho počáteční podoba slouží jako bootstrap: již dokáže coding agenty sama spouštět a řídit, a vytváří tak základ, který lze pomocí stejného procesu dále rozvíjet. Praktická část popisuje architekturu systému a sleduje, jak požadavek prochází jeho jednotlivými fázemi — od zadání a plánování přes implementaci a revizi až po lidské schválení výsledku. Pozornost je věnována tomu, jak se v tomto procesu doplňují coding agent, harness, programová orchestrace a člověk.
