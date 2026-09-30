@@ -101,6 +101,71 @@ a command whose output went through a pipe — `$?` is then the pipe's.
 work and is a deliberate tension against `rules.md` R1, which is scored under *odkazování*.
 Unresolved; the author has not chosen a direction.
 
+
+## Working framing draft — NOT YET APPLIED TO MANUSCRIPT
+
+This section records the wording currently being worked on in conversation. It is not a
+final manuscript instruction. Do not copy it into the paper without explicit confirmation.
+
+### Motivation
+
+The motivation is the gap between broad adoption of generative AI and the much narrower
+use of coding agents, together with the rapid increase in what these systems can do.
+
+The current figure/source in the paper uses:
+- free AI chatbots: ~28% of world population;
+- regular AI coding-agent users: editorial estimate ~0.36% of world population.
+
+The 0.36% value is an estimate, not a census. Do **not** replace it with 0.08%: that number
+belongs to a different metric (Copilot Coding Agent's share among a tracked set of GitHub
+agent commits), not global population adoption.
+
+Intended framing:
+
+> Generative AI has spread rapidly while its capabilities have expanded from text
+> completion and chat toward agents that can act in development environments. General
+> chatbot use is already broad, while regular coding-agent use remains much narrower.
+> The motivation of the paper is therefore to show what these more capable tools can
+> achieve when they are placed inside a deliberately engineered process rather than used
+> as isolated model calls.
+
+The last paragraph of §1.1 should eventually express that idea without turning the
+motivation into a market-adoption study.
+
+### Goal — current preferred wording
+
+> Cílem práce je popsat a systematizovat principy současného agentického inženýrství ve
+> vývoji softwaru a na systému DarkFactory ukázat, co jejich propojení umožňuje v praxi.
+
+This should replace the currently applied first sentence of §1.2 if approved. The research
+question can remain:
+
+> Jaké architektonické a procesní principy se opakují v současném agentickém vývoji
+> softwaru a jak jsou realizovány v systému DarkFactory?
+
+### Annotation — working draft
+
+> Práce se zabývá současným agentickým inženýrstvím ve vývoji softwaru a zkoumá, jaké
+> principy se opakují v dnešních agentických systémech. Teoretická část vysvětluje vztah
+> mezi jazykovým modelem, agentem a harness vrstvou a shrnuje práci s kontextem,
+> nástroji, trvalým stavem, orchestrací, ověřováním a lidskými rozhodovacími body.
+>
+> Praktická část má podobu případové studie systému DarkFactory, agentické softwarové
+> továrny nativně postavené na GitHubu. DarkFactory řídí práci coding agentů od přijetí
+> požadavku přes jeho interpretaci, plánování a implementaci až po revizi a lidské
+> schválení výsledku. Případová studie nesleduje obecnou úspěšnost modelů, ale způsob,
+> jakým jsou tyto principy spojeny v jednom konkrétním systému.
+>
+> Studie ukazuje, že jazykový model je pouze jednou částí širšího systému. Okolní vrstvy
+> zajišťují stav, nástroje, pořadí kroků, programové kontroly a rozhodovací brány.
+> Přínosem práce je tyto principy systematizovat a ukázat jejich praktickou realizaci na
+> konkrétním případu, včetně omezení zvoleného návrhu.
+>
+> Výsledkem je praktický příklad toho, jak lze současné postupy agentického inženýrství
+> spojit do jednoho řízeného vývojového procesu.
+
+The abstract should be translated only after the Czech annotation is final.
+
 ## Open
 
 Ordered as the author sequenced them.
