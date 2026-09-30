@@ -1,13 +1,4 @@
-// Chapter 1, including 1.1 Aim, research question, hypothesis and scope.
-//
-// The introduction carries no unheaded survey of the literature; the qualification of
-// sources — what kind of text each is, its review status, and who stands behind it —
-// is stated once here, in the paragraph that sorts them, so that the theory chapter can
-// attribute individual sentences without repeating itself. The subsections are fixed by
-// the structure of the work: 1.1 Motivace, 1.2 Cíl a výzkumná otázka, 1.3 Terminologie.
-//
-// 1.2 is also where the three principles are to be stated, once, if Q-A in ../STATE.md is settled
-// that way. It must not become a term list: 1.3 owns terminology and is one paragraph.
+// Chapter 1: motivation, goal, research question, scope and terminology.
 #heading(level: 1)[Úvod]
 
 #heading(level: 2)[Motivace: Vývoj a adopce generativní AI] <motivace>
@@ -31,7 +22,7 @@ nástroje mu zpravidla nebyly k dispozici, takže i nadále všechno provedl už
 ) <fig-chatgpt-cannot-see>
 
 Další posun představují #emph[agenti] @github-copilot-agent @openai-codex-2025 @openai-codex-app-2026,
-kteří mohou získat přístup k souborům, příkazům a běhovému prostředí. Model tak už pouze nenavrhuje výsledek, ale může prostřednictvím nástrojů sám provádět jednotlivé kroky práce.
+kteří mohou získat přístup k souborům, příkazům a běhovému prostředí. Model tak již nejen navrhuje výsledek, ale může prostřednictvím nástrojů sám provádět jednotlivé kroky práce.
 
 #figure(
   image("/components/img/gradually-ai-usage-2026.svg", width: 100%),
@@ -42,10 +33,10 @@ Podle jednoho zveřejněného odhadu používá bezplatné AI chatboty přibliž
 
 #heading(level: 2)[Cíl, výzkumná otázka a vymezení] <intro-goal>
 
-Cílem práce je popsat a systematizovat principy současného agentického inženýrství ve vývoji softwaru a na systému DarkFactory ukázat, co jejich propojení umožňuje v praxi. Pozornost je přitom věnována také způsobu, jakým lze coding agenty začlenit přímo do běžného repozitářového workflow. Takové propojení agentů s existujícími procesy vývoje se již používá v produkčním softwarovém inženýrství a představuje současnou podobu myšlenky softwarové továrny.
+Cílem práce je popsat a systematizovat principy současného agentického inženýrství ve vývoji softwaru a na systému DarkFactory ukázat, co jejich propojení umožňuje v praxi. Pozornost je přitom věnována také způsobu, jakým lze coding agenty začlenit přímo do běžného repozitářového workflow. Takové propojení agentů s existujícími procesy vývoje se již používá v produkčním softwarovém inženýrství a představuje současnou podobu myšlenky softwarové továrny @stripe-minions-2026 @meta-capacity-efficiency-2026.
 
 Výzkumná otázka práce zní: #emph[Jaké architektonické a procesní principy se opakují v současném agentickém vývoji softwaru a jak jsou realizovány v systému DarkFactory?]
 
 Práce vychází z předpokladu, že jazykový model je v současných agentických systémech pouze jednou částí širšího celku. Praktické použití coding agentů proto závisí také na způsobu práce s kontextem, nástroji a trvalým stavem, na orchestraci jednotlivých kroků, automatickém ověřování a zapojení člověka do rozhodovacích bodů. Teoretická část tyto opakující se principy popisuje a praktická část ukazuje jejich propojení v jednom konkrétním systému.
 
-Praktická část má podobu inženýrské případové studie DarkFactory, agentické softwarové továrny nativně postavené na GitHubu. Systém byl implementován pomocí komerčních coding agentů a je záměrně navržen jako jednoduchá počáteční implementace. Již v této podobě dokáže coding agenty sama spouštět a řídit, a vytváří tak základ, který lze pomocí stejného procesu dále rozvíjet. Cílem případové studie není měřit obecnou úspěšnost jazykových modelů ani porovnávat jednotlivé coding agenty, ale popsat konkrétní realizaci současných postupů agentického inženýrství a ukázat, co jejich spojení umožňuje v praxi.
+Praktická část má podobu inženýrské případové studie DarkFactory, agentické softwarové továrny nativně postavené na GitHubu. Systém byl implementován pomocí komerčních coding agentů a je záměrně navržen jako jednoduchá počáteční implementace. Již v této podobě dokáže sama spouštět a řídit coding agenty a vytváří tak základ, který lze pomocí stejného procesu dále rozvíjet. Cílem případové studie není měřit obecnou úspěšnost jazykových modelů ani porovnávat jednotlivé coding agenty, ale popsat konkrétní realizaci současných postupů agentického inženýrství a ukázat, co jejich spojení umožňuje v praxi.
