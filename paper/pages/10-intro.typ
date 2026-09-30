@@ -40,14 +40,12 @@ kteří mohou získat přístup k souborům, příkazům a běhovému prostřed�
 
 Podle jednoho zveřejněného odhadu používá bezplatné AI chatboty přibližně 28~% světové populace, zatímco pravidelní uživatelé coding agentů tvoří přibližně 0,36~% @gradually-ai-usage-2026 @fig-gradually-usage. Agentické nástroje jsou tedy stále výrazně méně rozšířené než běžné konverzační použití generativní AI. Motivací této práce je proto ukázat, čeho lze s těmito nástroji dosáhnout při použití současných postupů agentického inženýrství.
 
-#heading(level: 2)[Cíl, výzkumná otázka, hypotéza a vymezení] <intro-goal>
+#heading(level: 2)[Cíl, výzkumná otázka a vymezení] <intro-goal>
 
-Cílem práce je popsat a systematizovat principy současného agentického inženýrství ve vývoji softwaru a na systému DarkFactory ukázat, co jejich propojení umožňuje v praxi.
+Cílem práce je popsat a systematizovat principy současného agentického inženýrství ve vývoji softwaru a na systému DarkFactory ukázat, co jejich propojení umožňuje v praxi. Pozornost je přitom věnována také způsobu, jakým lze coding agenty začlenit přímo do běžného repozitářového workflow. Takové propojení agentů s existujícími procesy vývoje se již používá v produkčním softwarovém inženýrství a představuje současnou podobu myšlenky softwarové továrny.
 
-Výzkumná otázka pak zní: #emph[Jaké architektonické a procesní principy se opakují v současném agentickém vývoji softwaru a jak jsou realizovány v systému DarkFactory?]
+Výzkumná otázka práce zní: #emph[Jaké architektonické a procesní principy se opakují v současném agentickém vývoji softwaru a jak jsou realizovány v systému DarkFactory?]
 
-Práce vychází z předpokladu, že v analyzovaných současných systémech a zdrojích se opakuje vzor, ve kterém jazykový model je součástí širšího systému, který zajišťuje kontext, nástroje, trvalý stav, orchestraci, ověřování a lidské rozhodovací body.
+Práce vychází z předpokladu, že jazykový model je v současných agentických systémech pouze jednou částí širšího celku. Praktické použití coding agentů proto závisí také na způsobu práce s kontextem, nástroji a trvalým stavem, na orchestraci jednotlivých kroků, automatickém ověřování a zapojení člověka do rozhodovacích bodů. Teoretická část tyto opakující se principy popisuje a praktická část ukazuje jejich propojení v jednom konkrétním systému.
 
-Praktická část má podobu inženýrské případové studie systému DarkFactory. Nejde o experimentální měření úspěšnosti modelu, ale o systematický popis a kritické zhodnocení toho, jak jsou uvedené principy spojeny v jednom konkrétním produkčním systému.
-
-DarkFactory je záměrně navržena jako jednoduchá počáteční implementace. Jejím cílem není pokrýt co nejširší množství funkcí, ale vytvořit uzavřenou pipeline schopnou sama provozovat coding agenty a sloužit jako základ pro další rozvoj stejným procesem. Závěry práce se proto vztahují k této počáteční implementaci a k principům, které demonstruje.
+Praktická část má podobu inženýrské případové studie DarkFactory, agentické softwarové továrny nativně postavené na GitHubu. Systém byl implementován pomocí komerčních coding agentů a je záměrně navržen jako jednoduchá počáteční implementace. Již v této podobě dokáže coding agenty sama spouštět a řídit, a vytváří tak základ, který lze pomocí stejného procesu dále rozvíjet. Cílem případové studie není měřit obecnou úspěšnost jazykových modelů ani porovnávat jednotlivé coding agenty, ale popsat konkrétní realizaci současných postupů agentického inženýrství a ukázat, co jejich spojení umožňuje v praxi.
