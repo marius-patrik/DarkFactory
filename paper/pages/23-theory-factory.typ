@@ -8,8 +8,7 @@
 #heading(level: 2)[Softwareová továrna] <software-factory>
 
 Softwareová továrna je prostředí, které má automatizovat co největší část vývoje softwaru, od zadání přes
-implementaci až po revizi @nato1969. Pojem je půl století starý než dnešní vlna agentů: poprvé jej použil
-Robert Bemer v návrhu strojově řízeného výrobního prostředí @bemer-chm.
+implementaci až po revizi @nato1969.
 
 Po dlouhou dobu to zůstávalo heslem. Automatizovat se dařilo kroky s předem daným postupem, zatímco zadání,
 plán a posouzení výsledku zůstávaly na člověku, protože šlo o práci vyžadující porozumění tomu, co se má

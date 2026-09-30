@@ -52,8 +52,7 @@ navazují. Čtyři vzorce na to odpovídají:
   i jeho chování popisuje dokumentace @anthropic-dynamic-workflows.],
 ) <fig-dynamic-workflows>
 
-- #strong[Goal loop] je nadřazená řídicí smyčka. Po dílčím dokončení ReAct smyčky se pozorovaný stav porovná s cílem a podmínkami přijetí a běh skončí, nebo pokračuje další iterací. Vzor pochází z tzv. #strong[Ralph loop], který v roce 2025 popsal Geoffrey Huntley jako smyčku, jež opakovaně spouští agenta se stejným zadáním a stav si drží v pracovním stromu, nikoli v přepisu konverzace @huntley2025ralph. Dnes je to běžná funkce Claude Code i Codexu @claude-goal @openai-goals. Nejde o jediný pokus: agent dostává zpět to, co jeho krok vyrobil,
-  a může podle toho postup změnit.
+- #strong[Goal loop] je nadřazená řídicí smyčka. Po dílčím dokončení ReAct smyčky se pozorovaný stav porovná s cílem a podmínkami přijetí a běh skončí, nebo pokračuje další iterací. Vzor pochází z tzv. #strong[Ralph loop], který v roce 2025 popsal Geoffrey Huntley jako smyčku, jež opakovaně spouští agenta se stejným zadáním a stav si drží v pracovním stromu, nikoli v přepisu konverzace @huntley2025ralph. Dnes je to běžná funkce Claude Code i Codexu @claude-goal @openai-goals.
 
 #figure(
   image("/components/img/codex-goal-complete.png", width: 100%),
