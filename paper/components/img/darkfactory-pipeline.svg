@@ -94,5 +94,5 @@
   <path d="M847 320V336H639V326" class="edge"/>
 
   <text x="500" y="386" text-anchor="middle" class="note">Po čisté review a kontrole souladu se schváleným plánem se pull request předá člověku.</text>
-  <text x="500" y="408" text-anchor="middle" class="note">Schválení spustí merge s odstraněním pracovní větve; opakování téhož nálezu bez progresu běh zablokuje.</text>
+  <text x="500" y="408" text-anchor="middle" class="note">Schválení spustí merge s odstraněním pracovní větve.</text>
 </svg>
