@@ -1,65 +1,47 @@
-// 2.2 Agentic engineering.
-#heading(level: 2)[Agentické inženýrství]
+#import "../components/terms.typ": term, term-name
 
-V této práci se #strong[agentickým inženýrstvím] (#strong[Agentic Engineering]) rozumí soubor postupů pro návrh a řízení vývoje softwaru pomocí coding agentů. Jeho předmětem není samotný model, ale širší systém, v němž agent pracuje: zadání, kontext, nástroje, omezení, orchestrace, pravidla integrace a odpovědnost člověka. Tomu odpovídá i popis role #strong[agentického inženýra], jehož práce se vedle samotného kódu přesouvá k formulaci zadání, řízení agentních běhů a kritickému posouzení strojem vytvořených výstupů @alenezi2026agentic. Mezi hlavní oblasti patří #strong[Prompt engineering] @openai-prompt-engineering, #strong[Context engineering] @anthropic-context-engineering, #strong[Harness engineering] @anthropic-harness-design @openai-agents-sandbox, #strong[Loop Engineering] @openai-goals a #strong[Workflow/Graph Engineering] @openai-agent-orchestration. Tyto postupy umožňují delegovat ohraničenou část vývojové práce agentovi, zatímco záměr, hranice procesu a integrace výsledku zůstávají explicitně řízené.
+#heading(level: 2)[#term-name("Agentic Engineering", cs: "agentické inženýrství")]
 
-#heading(level: 3)[Specifikace (Specification)]
+#term("Agentic Engineering", cs: "agentické inženýrství", definition: "Návrh a řízení softwarového vývoje tak, aby coding agenti pracovali uvnitř explicitně navrženého systému pravidel, kontextu, nástrojů, kontrol a lidských rozhodnutí.") označuje soubor postupů pro vývoj softwaru pomocí coding agentů. Předmětem není jen model, ale celý systém, ve kterém pracuje @alenezi2026agentic.
 
-#strong[Spec-first development] staví specifikaci před samotnou implementaci. Tento princip nevznikl s coding agenty; navazuje na dlouhodobou praxi #strong[requirements engineering], v níž jsou požadavky a očekávané vlastnosti systému popsány před nebo v průběhu jeho realizace. IEEE vydalo samostatný standard pro #emph[Software Requirements Specification] už v roce 1984 @ieee830-1984 a současný standard ISO/IEC/IEEE 29148 formalizuje procesy a výstupy requirements engineering v průběhu životního cyklu softwaru @iso29148-2018.
+Mezi jeho hlavní oblasti patří #term("Prompt Engineering", cs: "inženýrství promptů", definition: "Formulace instrukcí, omezení, příkladů a očekávaného výstupu konkrétního modelového kroku.") @openai-prompt-engineering, #term("Context Engineering", cs: "kontextové inženýrství", definition: "Výběr, uspořádání, obnova a kompakce informací dostupných modelu v daném kroku.") @anthropic-context-engineering, #term("Harness Engineering", cs: "inženýrství harnessu", definition: "Návrh okolní vrstvy, která modelu poskytuje nástroje, stav, oprávnění a pravidla běhu.") @anthropic-harness-design @openai-agents-sandbox, #term("Loop Engineering", cs: "inženýrství smyček", definition: "Návrh řídicích smyček, které opakovaně porovnávají stav s cílem a rozhodují o dalším kroku.") @openai-goals a #term("Workflow/Graph Engineering", cs: "inženýrství workflow a grafů", definition: "Návrh pořadí, závislostí a větvení mezi více kroky nebo agenty.") @openai-agent-orchestration.
 
-U coding agentů získává tento přístup nový význam. Specifikace už neslouží pouze jako podklad pro lidského vývojáře, ale může být přímo předána agentovi jako vymezení cíle, požadavků a omezení implementace. Čím samostatněji má agent pracovat, tím důležitější je, aby bylo před zahájením implementace dostatečně přesně určeno, #strong[co má být výsledkem], zatímco konkrétní postup může agent zvolit sám. Příklad oddělení návrhu plánu od jeho provedení ukazuje @fig-claude-code-plan.
+#heading(level: 3)[#term-name("Specification", cs: "specifikace")]
+
+#term("Spec-first Development", cs: "vývoj od specifikace", definition: "Postup, v němž je požadovaný výsledek a jeho omezení popsán před samotnou implementací.") staví specifikaci před implementaci. Navazuje na starší #term("Requirements Engineering", cs: "inženýrství požadavků", definition: "Systematická práce se zjišťováním, popisem a správou požadavků na software."). IEEE vydalo standard pro Software Requirements Specification už v roce 1984 @ieee830-1984 a současný ISO/IEC/IEEE 29148 formalizuje práci s požadavky v průběhu životního cyklu @iso29148-2018.
+
+U coding agentů může specifikace přímo vymezit cíl a hranice implementace, zatímco konkrétní technický postup zvolí agent. Oddělení návrhu plánu od jeho provedení ukazuje @fig-claude-code-plan.
 
 #figure(
   image("/components/img/claude-code-plan.png", width: 100%),
-  caption: [Plán, který model navrhne, než se začne psát kód: seznam kroků podle souborů, které se
-  mění, a otázka, zda se má pokračovat. Znění plánu je tak oddělené od jeho provádění — je to
-  rozhodnutí, které člověk schvaluje nebo odmítne, nikoli popis práce, která už běží. Snímek
-  z Claude Code, převzato z @gallardo2025beyond.],
+  caption: [Plán před implementací v Claude Code @gallardo2025beyond.],
 ) <fig-claude-code-plan>
 
-#strong[Prompt engineering] se soustředí na formulaci instrukcí, omezení, příkladů a očekávaného výstupu konkrétního inferenčního kroku @openai-prompt-engineering. #strong[Context engineering] řeší širší a průběžný výběr, uspořádání, obnovování a kompakci informací, které má model v daném kroku k dispozici @anthropic-context-engineering. 
+Prompt engineering se soustředí na jeden inferenční krok, zatímco context engineering pracuje s širším průběžným stavem a informacemi dostupnými modelu @openai-prompt-engineering @anthropic-context-engineering.
 
-#heading(level: 3)[Orchestrace (Orchestration)]
+#heading(level: 3)[#term-name("Orchestration", cs: "orchestrace")]
 
-Více agentů samo o sobě nezaručuje lepší výsledek. Paralelizace přináší užitek jen tehdy,
-když jsou omezeny vzájemné závislosti a koordinátor dokáže odhalit konflikty, ověřit dílčí
-výstupy a posoudit sloučený výsledek vůči společným podmínkám přijetí. Orchestrace proto
-zahrnuje nejen rozdělení práce, ale také správu kontextu, pořadí kroků, sdílený stav
-a integrační kontroly. Je zvlášť důležitá u rozsáhlých úloh, které se nevejdou do jednoho
-kontextového okna. Samotná kompakce sice umožňuje v práci pokračovat, ale nemusí zachovat
-všechny detaily potřebné pro jednotlivé části úlohy. Rozdělení práce mezi více běhů nebo
-agentů umožňuje každé části pracovat s vlastním relevantním kontextem a jejich výsledky
-následně koordinovaně spojit. Čtyři vzorce na to odpovídají:
+#term("Orchestration", cs: "orchestrace", definition: "Řízení pořadí, závislostí, sdíleného stavu a integračních kontrol mezi více kroky nebo agenty.") je důležitá tam, kde úloha přesahuje jeden agentní běh. Více agentů samo o sobě nezaručuje lepší výsledek. Přínos vzniká až tehdy, když jsou jejich úlohy vhodně rozdělené a výstupy znovu spojeny vůči společnému cíli.
 
-- #strong[Coordinator/subagent] rozdělí rozsáhlou úlohu na dílčí běhy. Koordinátor deleguje
-  podúkol specializovanému subagentovi s vlastním kontextem a přebírá jeho výsledek, nezávislé
-  podúlohy zpracují paralelní pracovníci @fig-antigravity-subagents.
+- #term("Coordinator/Subagent", cs: "koordinátor a subagent", definition: "Vzor, v němž koordinátor deleguje dílčí úlohy samostatným agentům s vlastním kontextem.") umožňuje oddělit nebo paralelizovat dílčí práci @fig-antigravity-subagents
 
 #figure(
   image("/components/img/antigravity-cli-subagents.jpg", width: 100%),
-  caption: [Rozhraní Google Antigravity CLI, tedy harnessu agenta běžícího v terminálu: koordinátor definuje tři specializované subagenty a spouští je souběžně; každý běží vlastním kontextem @antigravity-cli.],
+  caption: [Paralelní subagenti v Google Antigravity CLI @antigravity-cli.],
 ) <fig-antigravity-subagents>
 
-- #strong[Workflow graph] předem určuje závislosti, pořadí a větvení fází @openai-agent-orchestration.
-  Claude Code u dynamických workflow napíše skript, který runtime vykonává na pozadí, takže smyčku,
-  větvení i mezivýsledky drží skript místo kontextu modelu a plán je program, který lze přečíst
-  a znovu spustit @anthropic-dynamic-workflows @fig-dynamic-workflows.
+- #term("Workflow Graph", cs: "graf workflow", definition: "Graf, který předem určuje závislosti, pořadí a větvení kroků.") drží strukturu procesu mimo kontext modelu @openai-agent-orchestration. Claude Code může u dynamických workflow vytvořit skript, který tento proces vykonává @anthropic-dynamic-workflows @fig-dynamic-workflows
 
 #figure(
   image("/components/img/claude-code-dynamic-workflows.png", width: 100%),
-  caption: [Postup práce dynamického workflow v Claude Code: vlevo fáze plánu se stavem,
-  vpravo rozvinutá fáze #emph[CodeReview] se 16 agenty, u každého model, spotřebované
-  tokeny, počet nástrojů a doba běhu. Snímek pochází z komunitního příspěvku; rozhraní
-  i jeho chování popisuje dokumentace @anthropic-dynamic-workflows.],
+  caption: [Dynamické workflow v Claude Code @anthropic-dynamic-workflows.],
 ) <fig-dynamic-workflows>
 
-- #strong[Goal loop] je nadřazená řídicí smyčka. Po dílčím dokončení ReAct smyčky se pozorovaný stav porovná s cílem a podmínkami přijetí a běh skončí, nebo pokračuje další iterací. Vzor pochází z tzv. #strong[Ralph loop], který v roce 2025 popsal Geoffrey Huntley jako smyčku, jež opakovaně spouští agenta se stejným zadáním a stav si drží v pracovním stromu, nikoli v přepisu konverzace @huntley2025ralph. Dnes je to běžná funkce Claude Code i Codexu @claude-goal @openai-goals @fig-codex-goal.
+- #term("Goal Loop", cs: "cílová smyčka", definition: "Nadřazená smyčka, která po dílčím běhu porovná stav s cílem a rozhodne, zda práce skončí nebo pokračuje.") opakovaně spouští práci proti stejnému cíli. Vzor navazuje na #term("Ralph Loop", cs: "Ralphova smyčka", definition: "Jednoduchý vzor opakovaného spouštění coding agenta, který drží stav v pracovním stromu místo v přepisu konverzace.") popsaný Geoffreyem Huntleym @huntley2025ralph. Podobné cílové smyčky dnes podporují Claude Code i Codex @claude-goal @openai-goals @fig-codex-goal
 
 #figure(
   image("/components/img/codex-goal-complete.png", width: 100%),
-  caption: [Cíl, proti němuž agent postupuje, a jeho splnění: po dokončení dílčího kroku se stav
-  porovná s cílem a běh v tomto případě končí, včetně doby, kterou zabral. Snímek pochází
-  z komunitního příspěvku; funkci popisuje dokumentace @openai-goals.],
+  caption: [Cílová smyčka v Codexu @openai-goals.],
 ) <fig-codex-goal>
 
-- #strong[human-in-the-loop] (#strong[HITL]) označuje bod, v němž se automatizovaná smyčka doplní o kontrolní brány vyžadující explicitní lidské rozhodnutí, například schválení specifikace, potvrzení implementačního plánu nebo přijetí výsledného diffu. Vývojář tak může ponechat agentovi ohraničenou implementační práci a současně si zachovat odpovědnost za záměr a integraci.
+- #term("Human-in-the-loop", cs: "člověk v rozhodovací smyčce", definition: "Zapojení explicitního lidského rozhodnutí do jinak automatizovaného procesu.") ponechává člověku kontrolní brány, například schválení specifikace, plánu nebo výsledného diffu
