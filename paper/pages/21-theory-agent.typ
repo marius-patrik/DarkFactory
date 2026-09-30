@@ -104,16 +104,8 @@ Instrukce pro coding agenty lze verzovat přímo s repozitářem. Otevřený sta
 
 #heading(level: 3)[Kontext (Context)]
 
-#strong[Kontextové okno] zahrnuje pracovní kontext jednoho volání modelu: instrukce, části
-repozitáře, historii volání nástrojů i výsledky předchozích kroků. Jeho kapacita sama o sobě
-nezaručuje, že model všechny podstatné informace správně využije.
+#strong[Kontextové okno] zahrnuje pracovní kontext jednoho volání modelu: instrukce, části repozitáře, historii volání nástrojů i výsledky předchozích kroků. Jeho velikost sama o sobě nezaručuje, že model všechny podstatné informace správně využije. Liu et al. ukázali, že výkon modelů při práci s dlouhým kontextem závisí mimo jiné na pozici relevantní informace a může výrazně klesat, pokud se důležitá informace nachází uprostřed vstupu @liu2024.
 
-#strong[Kompakce] (#emph[compaction]) po překročení limitu nahradí starší průběh souhrnem
-rozhodnutí a výsledků @anthropic-context-engineering.
+S rostoucím množstvím kontextu se může obecně zhoršovat schopnost modelu rozlišovat a využívat podstatné informace; tento problém se označuje jako #strong[context rot] @anthropic-context-engineering. Jedním ze způsobů, jak u dlouhých agentních běhů udržet kontext v použitelném rozsahu, je #strong[kompakce] (#emph[compaction]), při níž jsou starší části průběhu nahrazeny kratším souhrnem důležitých rozhodnutí, výsledků a otevřených úkolů @anthropic-context-engineering.
 
-S rostoucí délkou vstupu ale klesá úspěšnost, s jakou model podstatné informace využije
-@liu2024. Toto zhoršování práce s nahromaděným kontextem se označuje jako #strong[context rot]
-@anthropic-context-engineering. Paměť agenta se zkazí takto: zastaralé instrukce, které nikdo
-neupraví, spory mezi soubory na různých úrovních a pravidla, která se posouvají, aniž by je
-někdo schválil. Kompakce musí přežít sama sebe — když v souhrnu zůstane jen to, co bylo napsáno
-naposledy, agent ztratí to, na čem stála celá práce.
+Od tohoto omezení je potřeba odlišit kvalitu samotného obsahu kontextu. Zastaralé instrukce, rozpory mezi soubory nebo již neplatný stav mohou agenta vést špatným směrem bez ohledu na velikost kontextového okna. Proto je vhodné uchovávat autoritativní dlouhodobý stav mimo samotný přepis konverzace a do kontextu v každém kroku vybírat aktuální informace, které agent skutečně potřebuje.
