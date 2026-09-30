@@ -4,7 +4,17 @@
 Single state file. It replaced `TODO.md`, `PLAN.md` and `CONTEXT.md`; those three are gone, and their content
 lives here unchanged. Git keeps their history.
 
-**Anchor: `docs/thesis` at `b6ae110f`. 40 pages. Paper builds green.**
+**Anchor: `docs/thesis` at `3d70cd55`. 32 pages. Paper builds green.**
+**Direction: SHORTER, not longer.** Author: „we want to keep it as low as possible
+we are rewriting the paper to be cleaner not longer". Real content in chapters 1-5
+measures **3,025 words / 21,670 characters** with chapters 4 and 5 stubbed. Treat
+18,000 as a floor and 30,000 as a ceiling, and aim low. Do not propose adding
+characters to reach a target — we are over 18k already. A density claim is not
+padding: if it cannot be measured, it does not belong.
+**No length requirement exists in `rules.md` or `guide.md`** — searched for 18000,
+18 000, 18k and every round number to 50,000; the only page rules are about
+numbering and components. If an 18k minimum was given by a supervisor, that
+conversation is the authority, not these files.
 
 **How this file is used.** Part 1 is what is *true* of the thesis. Part 2 is what has been
 *decided* and by whom, and what is still open. Part 3 is the cleanup pass, phase by phase,
@@ -539,6 +549,17 @@ ve Fázi 6 proti finálnímu textu.
 - **§4 — veškeré podkapitoly na stužku.** Obsah se zkrátí na poznámky, než se všechny
   napíší podle nejnižšího. Týká se §4.1 Zjištění, §4.2 Diskuse, §4.3 Shrnutí.
 - **§3.2–§3.5 — drasticky zkrátit a přepsat**, aby šly číst čistě, prostě a jednoduše.
+**HOTOVO** `21a16d38`, `bfeb4083`, `83dd1f5b`, `8bcba4b9`. Výsledek: 3.2 15 vět @
+14,5 · 3.3 16 @ 15,8 · 3.4 23 @ 16,2 · 3.5 13 @ 15,8. Cíl je průměr pod 14 slov.
+Na této hustotě psát i kapitoly 4 a 5 — nevrátit 2,510 slov, která tam byla před
+stužkou, protože většina toho objemu byla redundance, která se celý den řešila.
+**Tři skutečné vady, které přepsání našlo (ne o prose):** `darkfactory-pipeline.svg`
+tvrdil, že opakovaný nález běh zablokuje — kód říká, že smyčka může skončit bez
+verdiktu a jen vyčerpaná kvóta blokuje. `Tabulka 1` chyběla v seznamu součástí,
+protože `#figure` nemělo `kind:` a Typst bral tabulku jako obrázek; `rules.md:68`
+hodnotí ten seznam na úplnost. A reference na `@fig-issue-template` v 3.4 mířila na
+tabulku předlohy issue, jako by ukazovala požadavek o zastavení smyčky — neukazuje.
+**§2.3 přepsán** `c8bf6246`: z 24,4 průměru (nejhorší v práci) na 13,8.
 - **§2.1.2 Smyčka, §2.1.3 Nástroje, §2.2.1 Specifikace, §2.2.2 Orchestrace** — nadpisy
   přejmenovány `3e89f4a7`, obsah se zkrátí v témže průchodu jako §3.
 - **§3.4 viz `50:22`.** @brown2020 je po `da27b0cb` necitovaný; @kimi-k25-swarm po
