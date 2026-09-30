@@ -103,15 +103,6 @@ zakreslen v @fig-darkfactory-pipeline.
 
 #heading(level: 3)[Shrnutí]
 
-Tvrzení platí pro jednu revizi, jeden repozitář a jednu sadu modelů. Přenos na jiný repozitář nebo
-jinou sadu modelů z popisu neplyne.
-
-Rozsah závěru je užší, než obě podmínky společně naznačují. Potvrzeno je, že práce je zapsaná a
-že dvě rozhodnutí patří člověku. Není potvrzeno, že schválený plán práci ohraničuje, ani že jeho
-změny procházejí novým schválením.
-
-Spolehlivě zde neznamená, že změna je správná. Znamená to, že je zapsaná a že se dá přečíst bez
-agenta.
 
 Cíl práce byl ověřit, za jakých podmínek agentický systém spolehlivě vykonává inženýrskou práci. Cíl
 byl dosažen a hypotéza se potvrdila. V praktické části byla implementována produkční pipeline, v níž
