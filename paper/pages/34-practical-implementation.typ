@@ -3,7 +3,7 @@
 
 Po schválení plánu runner vytvoří nebo načte pracovní větev odvozenou z výchozí větve. Implementační instrukce
 obsahuje schválený plán, omezení na jeho rozsah a pravidla pro testy a dokumentaci. Harness následně prochází
-repozitář, upravuje soubory a používá nástroje nad `/workspace`.
+repozitář a upravuje soubory.
 
 Po implementaci runner spustí dostupné formátovací nástroje a deklarované testovací sady. Při neúspěchu předá
 výstup kontroly agentnímu kroku `fix`, který má opravit chybu bez opuštění schváleného rozsahu. Runner následně vytvoří commit, odešle větev a otevře draft pull request
