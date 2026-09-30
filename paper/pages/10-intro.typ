@@ -20,7 +20,7 @@ Nástroje založené na jazykových modelech prošli v krátké době velkým ro
   přijme nebo odmítne @github-copilot-completion.],
 ) <fig-copilot-inline>
 
-Potom přišly konverzační chatboty @github-copilot-chat, v nichž model sestavuje odpověď, ale
+Potom přišly konverzační chatboty, v nichž model sestavuje odpověď, ale
 nástroje mu zpravidla nebyly k dispozici, takže i nadále všechno provedl uživatel.
 
 #figure(

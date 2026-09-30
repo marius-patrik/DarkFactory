@@ -60,7 +60,7 @@ pět kroků:
 - vrátit se na první krok.
 
 Model přitom v každém cyklu nejprve zdůvodní, co udělá, a teprve pak žádá o nástroj
-@anthropic2024tooluse. Harness akci provede mimo model a výsledek mu vrátí; ten se připojí
+@yao2022. Harness akci provede mimo model a výsledek mu vrátí; ten se připojí
 k přepisu a cyklus běží dál. Smyčka končí teprve tehdy, když model místo požadavku na
 nástroj vydá závěrečnou odpověď. V prosté posloupnosti promptů by model nemohl poznat, zda
 předchozí krok uspěl; průběh shrnuje @fig-react-loop.
@@ -81,8 +81,7 @@ roviny, které se dají měnit nezávisle, a odpovídají běžnému výčtu sou
 @langchain-harness:
 
 - #strong[Nástroje] umožňují agentovi číst a upravovat soubory, vyhledávat nebo spouštět
-  příkazy. Než se nástroj spustí, harness jeho vstup ověří proti předepsanému schématu, takže
-  chybný požadavek se neprovede.
+  příkazy @anthropic2024tooluse.
 - #strong[Skilly] spojují opakovaně použitelné instrukce, skripty a zdroje pro určitý typ úlohy
   @agentskills-spec.
 - #strong[Hooks] reagují na události životního cyklu a mohou před akcí či po ní vynutit kontrolu
