@@ -3,7 +3,7 @@
 
 #heading(level: 2)[Motivace: Vývoj a adopce generativní AI] <motivace>
 
-Od svého vzniku se nástroje založené na jazykových modelech neustále zlepšují a roste také jejich adopce. Jednou z prvních široce používaných forem ve vývoji softwaru bylo doplňování kódu přímo v editoru @github-copilot-completion.
+Od svého vzniku se nástroje založené na jazykových modelech neustále zlepšují a roste také jejich adopce. Jednou z prvních široce používaných forem ve vývoji softwaru bylo doplňování kódu přímo v editoru @github-copilot-completion, jehož příklad ukazuje @fig-copilot-inline.
 
 #figure(
   image("/components/img/vscode-copilot-inline-suggestions.png", width: 100%),
@@ -12,7 +12,7 @@ Od svého vzniku se nástroje založené na jazykových modelech neustále zlep�
 ) <fig-copilot-inline>
 
 Potom přišly konverzační chatboty, v nichž model sestavuje odpověď, ale
-nástroje mu zpravidla nebyly k dispozici, takže i nadále všechno provedl uživatel.
+nástroje mu zpravidla nebyly k dispozici, takže i nadále všechno provedl uživatel. Tento způsob použití ilustruje @fig-chatgpt-cannot-see.
 
 #figure(
   image("/components/img/chatgpt-cannot-see-image.jpg", width: 100%),
