@@ -14,10 +14,8 @@
   // one leaves a near-blank page between the part opener and its first subsection.
   let inline-openers = (
     <motivace>,
-    <terminologie>,
     <theory-first>,
     <practical-first>,
-    <zjiisteni>,
   )
 
   show heading.where(level: 1): it => {
