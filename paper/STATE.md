@@ -1,6 +1,6 @@
 # STATE — DarkFactory thesis
 
-Updated 2026-09-30 after the framing pass. This file describes the current manuscript and the remaining work. Superseded reliability/criteria framing has been removed; git history remains the record of prior versions.
+Updated 2026-10-01 after the final content-alignment pass.
 
 ## Identity
 
@@ -12,13 +12,10 @@ Updated 2026-09-30 after the framing pass. This file describes the current manus
 - Source: Typst under `paper/`
 - Branch: `docs/thesis`
 
-## Current framing
+## Final framing
 
-The paper is an **engineering case study of contemporary agentic software-development practice**, not an experiment measuring model reliability.
-
-### Motivation
-
-Generative-AI capabilities and adoption continue to grow, while regular coding-agent use remains much narrower than ordinary chatbot use. The paper therefore asks what current agentic-engineering practices make possible when coding agents are placed inside a deliberately engineered process.
+The paper is an **engineering case study of contemporary agentic software-development practice**,
+not an experiment measuring general model reliability.
 
 ### Goal
 
@@ -28,24 +25,9 @@ Generative-AI capabilities and adoption continue to grow, while regular coding-a
 
 > Jaké architektonické a procesní principy se opakují v současném agentickém vývoji softwaru a jak jsou realizovány v systému DarkFactory?
 
-There is **no formal reliability hypothesis** and no K1–K5 evaluation scheme.
+There is no formal reliability hypothesis and no K1–K5 evaluation scheme.
 
-### Software-factory framing
-
-- The software-factory idea predates generative AI; §2.3 grounds the term in Bemer/NATO 1968.
-- Coding agents extend automation into steps whose exact procedure is not fully hard-coded in advance.
-- Stripe and Meta are used as primary-source examples that agentic repository/PR workflows are already used in production software engineering.
-- DarkFactory is presented as a deliberately simple, GitHub-native **bootstrap implementation** of this broader pattern.
-
-### Practical framing
-
-- §3.1 names the method as an engineering case study.
-- DarkFactory was implemented using commercial coding agents.
-- The practical chapter describes how the system is built and how a request moves through it.
-- The initial implementation is intentionally simple: it can already launch and manage coding agents and serves as a base that can be extended through the same pipeline.
-- The study does not compare commercial agents or estimate general model success rates.
-
-## Current structure
+## Final structure
 
 ```
 1 Úvod
@@ -58,60 +40,50 @@ There is **no formal reliability hypothesis** and no K1–K5 evaluation scheme.
   2.3 Softwareová továrna
 3 Praktická část
   3.1 Metodika
-  3.2 Architektura produkčního běhu
-  3.3 Interpretace a plánování požadavku
-  3.4 Implementace a automatická revize
-  3.5 Zpětná vazba, schválení a úklid
+  3.2 Návrh systému DarkFactory
+  3.3 Architektura systému
+  3.4 Průchod požadavku systémem
+  3.5 Implementace pomocí coding agentů
 4 Zjištění a diskuse
 5 Závěr
 ```
 
-Chapter 4 and Chapter 5 are intentionally stubbed until theory and the practical chapter are final.
+## Final practical framing
 
-## Applied framing decisions
+- DarkFactory is a deliberately small GitHub-native bootstrap implementation of a software factory.
+- The practical chapter is grounded in the pinned case-study revision `d576ec8f`.
+- GitHub carries durable workflow state; GitHub Actions dispatch work; Docker isolates runs;
+  the runner orchestrates stages; commercial coding-agent harnesses provide the agent loop.
+- Inline API documentation and canonical repository documents feed generated documentation,
+  which acts as the bridge between the implementation and the human operator.
+- The end-to-end description covers request interpretation, plan approval, implementation,
+  deterministic checks, bounded model review, plan alignment, human review, merge and cleanup.
+- DarkFactory itself was implemented with commercial coding agents. Its initial scope was kept
+  small enough to bootstrap a pipeline that can then be used to extend the same system.
 
-- Czech annotation and English abstract match the case-study/software-factory framing.
-- Keywords: coding agenti; harness; softwarová továrna; orchestrace; generativní AI.
-- §1.2 no longer claims experimental verification of reliability.
-- §2.2 defines agentic engineering operationally for this paper rather than as a universal taxonomy.
-- §2.3 defines software factory, gives the historical origin, explains what coding agents change, and grounds present-day use in Stripe and Meta.
-- §3.1 treats DarkFactory as a GitHub-native case implementation of that broader pattern.
-- Chapter 4 is findings/discussion, not a scorecard.
-- Chapter 5 is a standalone conclusion.
+## Final findings
 
-## Remaining work
+The case supports a recurring composition rather than a universal architecture:
 
-1. **Theory precision pass**
-   - check §2.1 for overstatements about ReAct, context, tools, and standards;
-   - keep claims descriptive and source-supported;
-   - ensure all figures are referenced in prose.
+- durable state outside the model;
+- a deliberate split between model judgment, harness capabilities and programmatic orchestration;
+- specification and explicit human decision gates;
+- deterministic checks where the result can be computed;
+- integration through ordinary repository artifacts such as branches and pull requests;
+- documentation generated from canonical sources as a human-facing view over the implementation.
 
-2. **Practical chapter**
-   - rewrite/finish §3.2–§3.5 as the implementation case study;
-   - keep the focus on concrete architecture, design decisions, and actual workflow;
-   - avoid reintroducing scoring criteria or experimental language.
+The discussion also records the concrete limits of the pinned bootstrap revision: model-based
+review is not deterministic verification, the bounded review loop can exhaust without a clean
+verdict, verification is not repeated after its one automated fix attempt, and an out-of-scope
+review finding can amend the plan without a renewed human approval.
 
-3. **Findings and discussion**
-   - answer the research question from the completed theory + case;
-   - identify what the DarkFactory case demonstrates;
-   - state concrete limitations of the initial bootstrap implementation;
-   - keep case-bounded findings distinct from broader industry observations.
+## Completed final alignment
 
-4. **Conclusion**
-   - confirm how the stated goal was fulfilled;
-   - summarize only the major findings;
-   - close with the bootstrap implication if still supported by the finished case.
-
-5. **Final compliance pass**
-   - citations and bibliography;
-   - figure references/captions;
-   - language and terminology consistency;
-   - build and inspect final PDF against the GJKT guide.
-
-## Do not reintroduce
-
-- K1–K5 evaluation criteria;
-- a general model-reliability experiment;
-- a claim that DarkFactory proves the one correct architecture;
-- an iteration cap that is not supported by the implementation;
-- a separate formal “limitations” apparatus unless the finished discussion actually needs it.
+- Czech annotation and English abstract match the final findings; Czech annotation is within the
+  school guide's recommended 150–250-word range.
+- Production software-factory framing is cited with Stripe and Meta primary-source examples.
+- Every numbered figure/table has an explicit prose reference.
+- Stale hypothesis/K1–K5/TODO source notes have been removed from manuscript files.
+- Chapter 4 answers the research question and states case-bounded limitations.
+- Chapter 5 explicitly states that the goal was fulfilled and introduces no new claim.
+- Remaining work is mechanical only: require a green final build and visually inspect the produced PDF.
