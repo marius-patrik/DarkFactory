@@ -10,7 +10,7 @@ Mezi jeho hlavní oblasti patří #term("Prompt Engineering", cs: "inženýrstv�
 
 #term("Spec-first Development", cs: "vývoj od specifikace", definition: "Postup, v němž je požadovaný výsledek a jeho omezení popsán před samotnou implementací.") staví specifikaci před implementaci. Navazuje na starší #term("Requirements Engineering", cs: "inženýrství požadavků", definition: "Systematická práce se zjišťováním, popisem a správou požadavků na software."). IEEE vydalo standard pro #term-name("Software Requirements Specification", cs: "specifikace požadavků na software") už v roce 1984 @ieee830-1984 a současný ISO/IEC/IEEE 29148 formalizuje práci s požadavky v průběhu životního cyklu @iso29148-2018.
 
-U coding agentů může specifikace přímo vymezit cíl a hranice implementace, zatímco konkrétní technický postup zvolí agent. Oddělení návrhu plánu od jeho provedení ukazuje @fig-claude-code-plan.
+U agentů může specifikace přímo vymezit cíl a hranice implementace, zatímco konkrétní technický postup zvolí agent. Oddělení návrhu plánu od jeho provedení ukazuje @fig-claude-code-plan.
 
 #figure(
   image("/components/img/claude-code-plan.png", width: 100%),
