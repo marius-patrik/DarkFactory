@@ -22,21 +22,24 @@
   practical-title: "DarkFactory",
 
   annotation-cs: [
-    Práce zkoumá, za jakých podmínek agentický systém spolehlivě vykonává inženýrskou práci,
-    tedy změnu repozitáře, kterou může přezkoumat a sloučit člověk, který nemusí agenta
-    obsluhovat ručně. Předpokládá přitom, že praktická autonomie agentického systému není dána pouze schopnostmi modelu, ale především návrhem systému, který řídí stav, nástroje, rozhodovací brány a integraci výsledku.
+    Práce se zabývá současným agentickým inženýrstvím ve vývoji softwaru. S rostoucími
+    schopnostmi a adopcí generativní AI se rozšiřují i možnosti coding agentů, jejich praktické
+    využití je však stále méně rozšířené než běžné používání chatbotů. Cílem práce je proto
+    popsat a systematizovat principy současného agentického inženýrství a na systému DarkFactory
+    ukázat, co jejich propojení umožňuje v praxi.
 
-    Práce vymezuje kratkou historii nástrojů založených na jazykových modelech, vysvětluje, co
-    agent je a jak funguje, a popisuje principy agentického inženýrství, tedy praktiky pro
-    spolehlivou inženýrskou práci pomocí agentických systémů. Jazykový model je sám o sobě jen
-    funkcí; agent vzniká až propojením s nástroji, prostředím a stavem.
+    Teoretická část vysvětluje vztah mezi jazykovým modelem, agentem a harness vrstvou a
+    shrnuje práci s kontextem, nástroji, trvalým stavem, orchestrací, ověřováním a lidskými
+    rozhodovacími body.
 
-    Praktická část představuje DarkFactory, produkční pipeline pro AI-asistovaný softwarový
-    vývoj. Tu napsaly komerční coding agenty. DarkFactory je nyní sama provozuje: události GitHubu
-    spouštějí agentní kroky v izolovaném kontejneru a požadavek vede od issue přes lidsky schválený
-    plán ke sloučenému pull requestu. Harness poskytuje modelu nástroje a pozorování, zatímco
-    runner převádí událost na agentní krok. Stav běhu leží v repozitáři, nikoli v konverzaci
-    s modelem.
+    Praktická část má podobu případové studie systému DarkFactory, agentické softwarové továrny
+    nativně postavené na GitHubu. DarkFactory řídí práci coding agentů od přijetí požadavku přes
+    jeho interpretaci, plánování a implementaci až po revizi a lidské schválení výsledku.
+
+    Studie ukazuje, že jazykový model je pouze jednou částí širšího systému. Okolní vrstvy
+    zajišťují stav, nástroje, pořadí kroků, programové kontroly a rozhodovací brány. Přínosem
+    práce je systematizace těchto principů a ukázka jejich konkrétní realizace, včetně omezení
+    zvoleného návrhu.
   ],
   abstract-en: [
     The thesis asks under what conditions an agentic system performs engineering work
