@@ -64,19 +64,14 @@ v repozitáři, kterou lze přečíst bez znalosti průběhu.
 
 Konfigurace ale několik věcí nezaručuje. Schválený plán není hranicí. Hranice je zadána jen textem:
 implementační instrukce nese plán, omezení na jeho rozsah a pravidla pro testy a dokumentaci, a
-zakazuje sahat mimo něj. Nikdo nehlídá, aby se jí agent držel. Nález revize, který plán překročí,
+zakazuje sahat mimo něj. Nález revize, který plán překročí,
 se proto neodmítne, ale zapíše se jako Plan Deviation s odůvodněním na původním issue, doplní plán
 a pustí opravu. K bráně, která plán schválila, se běh nevrátí. Změnový požadavek na pull requestu
 spustí opravný běh na téže větvi; agent přitom obdrží plán, konkrétní zpětnou vazbu a aktuální
 kontext větve, ale běh se vrátí do review smyčky, nikoli k plánu.
 
-Runner spustí deklarované testovací sady jednou, ještě před krokem `fix`, a po opravě jen
-přeformátuje. Zopakování přebírá průběžná integrace, která už vidí opravenou větev.
-
 Poslední brána zase oprávnění nekontroluje. Aktéra porovnává s jedním pevně zapsaným účtem,
-vlastníkem repozitáře. Neověřuje se autor issue ani úroveň oprávnění. Protože pull request otevřel
-token patřící tomu účtu, musí schválení odeslat bot. V záznamu tak stojí jméno bota a jméno člověka
-zůstává textem v těle revize.
+vlastníkem repozitáře. Neověřuje se autor issue ani úroveň oprávnění.
 
 #heading(level: 3)[Odpověď na výzkumnou otázku]
 
@@ -98,11 +93,6 @@ si pamatuje. Kdyby o plánu rozhodoval model, stačilo by, že se model vyjádř
 Spolehlivost tedy nesídlí v modelu. Sídlí v tom, kam se práce zapisuje, a v tom, kdo v ní
 rozhoduje. Hypotéza, že „praktická autonomie je vlastností návrhu systému, který práci řídí, a
 nikoli vlastností modelu, který v něm pracuje", se potvrzuje.
-
-Protiargument by mohl být, že poslední zjištění hypotézu vyvracejí. Nevyvracejí ji. Tam, kde
-konfigurace hranici neudrží, práci přesto zapisuje. Odůvodněná odchylka leží na původním issue,
-zpětná vazba na pull requestu. Rozhodnutí, které se změnilo, zůstává dohledatelné. Chybí místo,
-kde se má člověk podívat, nikoli to, že by se jeho rozhodnutí ztratilo.
 
 #heading(level: 3)[Hranice platnosti]
 
