@@ -19,7 +19,7 @@
   #meta.annotation-cs
 
   #v(0.6em)
-  #strong[Klíčová slova:] coding agents; software factory; AI; Agentic Engineering; harness
+  #strong[Klíčová slova:] coding agenti; harness; softwarová továrna; orchestrace; generativní AI
 ]
 
 #pagebreak(weak: true)
@@ -28,5 +28,5 @@
   #meta.abstract-en
 
   #v(0.6em)
-  #strong[Keywords:] coding agents; software factory; AI; Agentic Engineering; harness
+  #strong[Keywords:] coding agents; harness; software factory; orchestration; generative AI
 ]
