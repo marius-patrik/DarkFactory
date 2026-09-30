@@ -12,13 +12,25 @@ and later harness behaviour differs. Reading HEAD produced a false alarm about t
 twice in one session (the account count, the issue template), and the author had to
 correct both. `git log` for ordering questions, `git show d576ec8f:...` for content.
 
-**Anchor: `docs/thesis` at `3d70cd55`. 32 pages. Paper builds green.**
+**Anchor: `docs/thesis` at `2abe4309`. 33 pages. Paper builds green.**
+**Bibliography: 31 entries, every one cited.** Was 51. 16 uncited were deleted on the author's
+instruction, then 4 more as later cuts orphaned them: `bemer-chm` (origin of the term, cut),
+`github-copilot-chat`, `anthropic2024tooluse` (moved to the tools bullet), `willison-agentic-engineering`
+(author's own wording kept, citation dropped). Audit of every remaining citation is in §5a.
 **Direction: SHORTER, not longer.** Author: „we want to keep it as low as possible
 we are rewriting the paper to be cleaner not longer". Real content in chapters 1-5
 measures **3,025 words / 21,670 characters** with chapters 4 and 5 stubbed. Treat
 18,000 as a floor and 30,000 as a ceiling, and aim low. Do not propose adding
 characters to reach a target — we are over 18k already. A density claim is not
 padding: if it cannot be measured, it does not belong.
+**4.1 MUST REACH A VERDICT.** Author, on a draft that said the hypothesis was "neither
+confirmed nor refuted" because nothing was measured: **„dont like any of these we should rewrite
+something we can actually claim it can be either false or true but it should not say we didnt
+measure it"**. So 4.1 answers the research question as a claim, in one direction, argued from the
+described configuration checked step by step. The limits go in the limitations at the end of 4.1,
+**never in the answer**. No invented metric, no run count, no experiment — there is none, and the
+author is the one who would be asked about it.
+
 **No length requirement exists in `rules.md` or `guide.md`** — searched for 18000,
 18 000, 18k and every round number to 50,000; the only page rules are about
 numbering and components. If an 18k minimum was given by a supervisor, that
@@ -520,6 +532,27 @@ tvrdí — `může skončit bez jakéhokoli verdiktu`. Počet se ověřuje proti
 
 ---
 
+## 4a. Struktura kapitoly 4 — rozhodnuto
+
+**4 Závěr → 4.1 Zjištění a diskuse → 4.2 Shrnutí. Žádná pátá kapitola.** Autorovo zadání,
+`af165cc5`. Dříve to bylo 4.1 Zjištění / 4.2 Diskuse / 4.3 Shrnutí a samostatná kapitola 5;
+`41-discussion.typ` je smazán a jeho include vyhozen. Label `<diskuse>` zanikl spolu s poslední
+odkazující větí v §3.5 — nesmí se použít, neexistuje.
+
+4.2 drží **jen dvě věci**, které vyžaduje kap. 2.6 průvodce: zda byl cíl naplněn, a doporučení
+pro další výzkum. Žádná rekapitulace teorie, žádná nová odpověď na výzkumnou otázku.
+
+**Chapter 3 je mechanismus, kapitola 4 je jediné místo, kde se smí soustavy hodnotit.** Všechny
+verdikty, přiznání i formulace typu „je to omezení" byly dnes vyrézány z §3.2, §3.3, §3.4 i §3.5
+na autorův pokyn. Zůstalo:
+- **Fakt, že smyčka může skončit bez verdiktu, žije už jen v popisku `@fig-darkfactory-pipeline`
+  v §3.2** a v SVG. V próze se nesmí vrátit; 4.1 ho odkáže na obrázek, neopakuje.
+- **Fakt, že testy běží jednou a po opravě už ne, v práci není napsán vůbec** (`72758739`). Byl
+  jediným místem. Jestli ho 4.1 potřebuje, patří tam.
+- Tvrzení, že smyčka agenta je cizí harness a autor strukturu nevlastní, **v práci už není
+  nijak** — autor to vyrézal. Pokud to 4.1 potřebuje, musí se to opřít o §3.2, kde je psáno, že
+  krok provádí harness.
+
 ## 5. Otevřené otázky pro autora
 
 **Vyřídil autor** (R14): necitované položky bibliografie se nechají do konce, posoudí se
@@ -596,6 +629,25 @@ tabulku předlohy issue, jako by ukazovala požadavek o zastavení smyčky — n
 - **Anotace a abstrakt nahradit stužkou** do dokončení přepisu;author je dořeší s citacemi
   a závěrem na konci. DŮLEŽITÉ: aneboť jsou stužkou, **metadata a `03-outline` mohou být
   dočasně nesouladné** — to je záměr, ne chyba.
+
+**Audit citací (2026-09-30) — tři citace nepodporovaly to, k čemu byly připojeny.** Vyhledáno
+čtením zdroje, ne jeho názvu; kód ověřen proti `d576ec8f`.
+- `@github-copilot-chat` na `10:23` nesl „nástroje mu zpravidla nebyly k dispozici". Stránka
+  dokumentuje **agent mode**, plan mode, subagenty a nástroje, které *„read files, edit code, and
+  run commands"* — zdroj tvrzení **popíral**. Autor: nechat formulaci, odhodit citaci, položku
+  smazat. Zmizelo, i s tím tvrzení o chatbotech bez nástrojů jako historické.
+- `@anthropic2024tooluse` na `21:63` nesl pořadí „nejprve zdůvodní, pak žádá o nástroj". To je
+  pořadí ReActu a patří `@yao2022`, citované o dva řádky výš. Přesunuto. Na autorův pokyn zůstala
+  položka na odbourávacím bodě o nástrojích, kde *„Building effective agents"* tvrzení nese.
+- `@langchain-harness` na `21:83` nesl „harness vstup ověří proti předepsanému schématu". Blog
+  to nepopisuje. Věta vyřazena.
+**Zbývá nerozhodnuto a je to autorova volba, ne fakt:** `@willison-agentic-engineering` na `22:4`
+nesl čtyři přívlastky (*účinný, kontrolovaný, opakovatelný, škálovatelný*) a formulaci *„jeho
+předmětem není agent ani model, ale systém"*. Willison píše *„the practice of developing software
+with the assistance of coding agents"*; přívlastky i formulace jsou autorovy. **Autor rozhodl:
+citaci odhodit, slova nechat.** Položka smazána, protože neměla co podporovat. Stejná otázka
+platí pro `21:100`: `.agents/` šlo z `@agents-md` na `@agentskills-spec`, která strukturu složky
+skutečně popisuje.
 
 **Kontrola, která selhala a má se opakovat správně.** Subagentovi bylo zadáno „praktická
 část nesmí tvrdit, co kapitola 3 nedodává" — to je kruhové, protože **kapitola 3 je ta
