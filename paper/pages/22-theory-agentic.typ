@@ -17,7 +17,7 @@ U coding agentů může specifikace přímo vymezit cíl a hranice implementace,
   caption: [Plán před implementací v Claude Code @gallardo2025beyond.],
 ) <fig-claude-code-plan>
 
-Prompt engineering se soustředí na jeden inferenční krok, zatímco context engineering pracuje s širším průběžným stavem a informacemi dostupnými modelu @openai-prompt-engineering @anthropic-context-engineering.
+Inženýrství promptů se soustředí na jeden inferenční krok, zatímco kontextové inženýrství pracuje s širším průběžným stavem a informacemi dostupnými modelu @openai-prompt-engineering @anthropic-context-engineering.
 
 #heading(level: 3)[#term-name("Orchestration", cs: "orchestrace")]
 
@@ -30,11 +30,11 @@ Prompt engineering se soustředí na jeden inferenční krok, zatímco context e
   caption: [Paralelní subagenti v Google Antigravity CLI @antigravity-cli.],
 ) <fig-antigravity-subagents>
 
-- #term("Workflow Graph", cs: "graf workflow", definition: "Graf, který předem určuje závislosti, pořadí a větvení kroků.") drží strukturu procesu mimo kontext modelu @openai-agent-orchestration. Claude Code může u dynamických workflow vytvořit skript, který tento proces vykonává @anthropic-dynamic-workflows @fig-dynamic-workflows
+- #term("Workflow Graph", cs: "graf workflow", definition: "Graf, který předem určuje závislosti, pořadí a větvení kroků.") drží strukturu procesu mimo kontext modelu @openai-agent-orchestration. Claude Code může u dynamických pracovních postupů vytvořit skript, který tento proces vykonává @anthropic-dynamic-workflows @fig-dynamic-workflows
 
 #figure(
   image("/components/img/claude-code-dynamic-workflows.png", width: 100%),
-  caption: [Dynamické workflow v Claude Code @anthropic-dynamic-workflows.],
+  caption: [Dynamický pracovní postup v Claude Code @anthropic-dynamic-workflows.],
 ) <fig-dynamic-workflows>
 
 - #term("Goal Loop", cs: "cílová smyčka", definition: "Nadřazená smyčka, která po dílčím běhu porovná stav s cílem a rozhodne, zda práce skončí nebo pokračuje.") opakovaně spouští práci proti stejnému cíli. Vzor navazuje na #term("Ralph Loop", cs: "Ralphova smyčka", definition: "Jednoduchý vzor opakovaného spouštění coding agenta, který drží stav v pracovním stromu místo v přepisu konverzace.") popsaný Geoffreyem Huntleym @huntley2025ralph. Podobné cílové smyčky dnes podporují Claude Code i Codex @claude-goal @openai-goals @fig-codex-goal
@@ -44,4 +44,4 @@ Prompt engineering se soustředí na jeden inferenční krok, zatímco context e
   caption: [Cílová smyčka v Codexu @openai-goals.],
 ) <fig-codex-goal>
 
-- #term("Human-in-the-loop", cs: "člověk v rozhodovací smyčce", definition: "Zapojení explicitního lidského rozhodnutí do jinak automatizovaného procesu.") ponechává člověku kontrolní brány, například schválení specifikace, plánu nebo výsledného diffu
+- #term("Human-in-the-loop", cs: "člověk v rozhodovací smyčce", definition: "Zapojení explicitního lidského rozhodnutí do jinak automatizovaného procesu.") ponechává člověku kontrolní brány, například schválení specifikace, plánu nebo výsledné změny
