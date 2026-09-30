@@ -12,7 +12,7 @@
 
 #heading(level: 2)[Motivace: Vývoj a adopce generativní AI] <motivace>
 
-Nástroje založené na jazykových modelech prošli v krátké době velkým rozvojem. Nejprve doplňovaly kód v editoru @github-copilot-completion.
+Od svého vzniku se nástroje založené na jazykových modelech neustále zlepšují a roste také jejich adopce. Jednou z prvních široce používaných forem ve vývoji softwaru bylo doplňování kódu přímo v editoru @github-copilot-completion.
 
 #figure(
   image("/components/img/vscode-copilot-inline-suggestions.png", width: 100%),
@@ -30,16 +30,15 @@ nástroje mu zpravidla nebyly k dispozici, takže i nadále všechno provedl už
   ChatGPT, převzato z @khurana2023chatgpt.],
 ) <fig-chatgpt-cannot-see>
 
-Až třetí stupeň, #emph[agenti] @github-copilot-agent @openai-codex-2025 @openai-codex-app-2026,
-dostal přístup k souborům, příkazům a běhovému prostředí — a tím se poprvé změnilo kdo pracuje.
+Další posun představují #emph[agenti] @github-copilot-agent @openai-codex-2025 @openai-codex-app-2026,
+kteří mohou získat přístup k souborům, příkazům a běhovému prostředí. Model tak už pouze nenavrhuje výsledek, ale může prostřednictvím nástrojů sám provádět jednotlivé kroky práce.
 
 #figure(
   image("/components/img/gradually-ai-usage-2026.svg", width: 100%),
   caption: [Odhad rozdělení uživatelů generativní AI podle typu @gradually-ai-usage-2026.]
 ) <fig-gradually-usage>
 
-S rozvojem nástrojů roste i jejich adopce. Rozsah veřejného použití samotných agentů je přitom stále úzký. Jeden ze zveřejněných odhadů klade počet uživatelů chatbotů na 28~% populace a pravidelné užití #emph[agentů] na
-0,36~% světové populace @gradually-ai-usage-2026 @fig-gradually-usage. Přesto je zřejmé, že se jedná o technologii, která se rychle šíří a mění způsob práce, proto v této práci chci ukázat, čeho jsou plnohodnotné systémy schopné.
+Podle jednoho zveřejněného odhadu používá bezplatné AI chatboty přibližně 28~% světové populace, zatímco pravidelní uživatelé coding agentů tvoří přibližně 0,36~% @gradually-ai-usage-2026 @fig-gradually-usage. Agentické nástroje jsou tedy stále výrazně méně rozšířené než běžné konverzační použití generativní AI. Motivací této práce je proto ukázat, čeho lze s těmito nástroji dosáhnout při použití současných postupů agentického inženýrství.
 
 #heading(level: 2)[Cíl, výzkumná otázka, hypotéza a vymezení] <intro-goal>
 
