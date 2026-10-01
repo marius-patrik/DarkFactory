@@ -49,8 +49,8 @@ Zadání určuje, co má agent udělat, zatímco harness určuje, co skutečně 
 
 - #term("Tools", cs: "nástroje", definition: "Funkce zpřístupněné modelu pro práci s prostředím, například čtení souborů, vyhledávání nebo spouštění příkazů.") jsou přímým kanálem mezi modelem a prostředím @anthropic2024tooluse
 - #term("Skills", cs: "dovednosti", definition: "Opakovaně použitelné balíčky instrukcí, skriptů a zdrojů pro určitý typ úlohy.") sjednocují opakovanou práci do znovu použitelných schopností @agentskills-spec
-- #term("Hooks", cs: "háčky", definition: "Programové reakce na události životního cyklu, které mohou před akcí nebo po ní vynutit další krok.") přesouvají vybrané kontroly z úsudku modelu do programu @openai-agents-lifecycle
-- #term("Model Context Protocol", cs: "protokol modelového kontextu", definition: "Standard klient–server pro připojování externích nástrojů a datových zdrojů k agentním systémům.") sjednocuje způsob, jakým se tyto externí schopnosti připojují @mcp-specification
+- #term("Hooks", definition: "Programové reakce na události životního cyklu, které mohou před akcí nebo po ní vynutit další krok.") přesouvají vybrané kontroly z úsudku modelu do programu @openai-agents-lifecycle
+- #term("MCP (Model Context Protocol)", definition: "Standard klient–server pro připojování externích nástrojů a datových zdrojů k agentním systémům.") sjednocuje způsob, jakým se tyto externí schopnosti připojují @mcp-specification
 
 Každá akce může být navíc řízena oprávněním, které ji povolí automaticky, vyžádá souhlas člověka nebo ji zakáže.
 
