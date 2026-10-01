@@ -106,4 +106,21 @@ describe("repository evidence and capability actions", () => {
 		expect(action.source).toBe("unsupported");
 		expect(action.command).toBeUndefined();
 	});
+
+	test("detection does not descend into agent worktrees", async () => {
+		const root = await fixture();
+		// A worktree is a full checkout, so it carries real manifests. Detection that walks into it
+		// reports every package twice and gives CI a second copy of every quality row.
+		const worktree = join(root, ".worktrees", "agent", "packages", "core");
+		await mkdir(join(worktree, "src"), { recursive: true });
+		await writeFile(
+			join(worktree, "package.json"),
+			JSON.stringify({ name: "@darkfactory/core", packageManager: "bun@1.3.0", exports: { ".": "./src/index.ts" } }),
+		);
+		await writeFile(join(worktree, "src", "index.ts"), "export const value = 1;\n");
+
+		const evidence = await detectRepositoryEvidence(root);
+		expect(evidence.packages.some((pkg) => pkg.path.includes(".worktrees"))).toBe(false);
+		expect(evidence.packages.map((pkg) => pkg.id)).not.toContain("node:.worktrees/agent/packages/core");
+	});
 });
