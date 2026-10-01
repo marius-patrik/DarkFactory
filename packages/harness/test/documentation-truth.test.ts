@@ -89,7 +89,7 @@ const missing = (document: string, claims: string[]): string =>
 describe("canonical documentation truth", () => {
 	test("the canonical document set is discovered rather than empty", () => {
 		expect(DOCUMENTS.length).toBeGreaterThan(20);
-		expect(DOCUMENTS).toContain(".agents/PRD.md");
+		expect(DOCUMENTS).toContain("README.md");
 		expect(DOCUMENTS).toContain(".agents/rules/001-unit-tests.md");
 		expect(DOCUMENTS).toContain("packages/harness/assets/skills/darkfactory-auth/SKILL.md");
 	});

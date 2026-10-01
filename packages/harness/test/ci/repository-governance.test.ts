@@ -584,9 +584,12 @@ describe("the pipeline's GitHub identity", () => {
 	});
 
 	it("test_repository_documents_name_the_native_docs_contract: normative text points at the current owners", () => {
-		const agents = readFileSync(join(repoRoot, ".agents", "AGENTS.md"), "utf8");
-		const prd = readFileSync(join(repoRoot, ".agents", "PRD.md"), "utf8");
-		expect(agents).toContain("`docs` block");
+		// `.agents/AGENTS.md` was a generated projection and `.agents/PRD.md` its product document; both are
+		// gone. README.md is the normative product document and ADRs.md the canonical note set, so the
+		// contract is asserted against those two files that still exist.
+		const adrs = readFileSync(join(repoRoot, "ADRs.md"), "utf8");
+		const prd = readFileSync(join(repoRoot, "README.md"), "utf8");
+		expect(adrs).toContain("`docs` block");
 		expect(prd).toContain("`docs` block");
 		expect(prd).toContain("@darkfactory/docs");
 		expect(prd).toContain("@darkfactory/web");

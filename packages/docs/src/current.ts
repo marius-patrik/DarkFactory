@@ -1,6 +1,5 @@
-import { lstatSync, readFileSync, readlinkSync, realpathSync } from "node:fs";
+import { lstatSync, readlinkSync, realpathSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
-import { renderAgentsMarkdown } from "./agents.ts";
 import type { DocsContentGraph } from "./content.ts";
 import { analyzeRuleNoteRelations } from "./relations.ts";
 
@@ -10,13 +9,14 @@ interface DocumentationTruthFinding {
 	message: string;
 }
 
-const CURRENT_ALIASES = [
-	{ path: "README.md", target: ".agents/PRD.md" },
-	{ path: "CONTRIBUTING.md", target: ".agents/AGENTS.md" },
-	{ path: join(".agents", "notes", "README.md"), target: "../../README.md" },
-] as const;
-
+// README.md is the normative product document and ADRs.md the canonical note set, both authored once
+// and symlinked. Nothing here is a projection any more, so there is no alias to re-point and no
+// generated file to compare against a re-render.
 const RETIRED_DOCUMENTATION_PATHS = [
+	join(".agents", "AGENTS.md"),
+	join(".agents", "PRD.md"),
+	join(".agents", "adr"),
+	join(".agents", "notes"),
 	"AGENTS.md",
 	"CLAUDE.md",
 	"PLAN.md",
@@ -34,7 +34,6 @@ const RETIRED_DOCUMENTATION_PATHS = [
 	"harness/README.md",
 	join(".agents", "notes", "bootstrap.md"),
 	join(".agents", "notes", "vision_capture.md"),
-	join(".agents", "notes", "adr"),
 	join(".agents", "notes", "rules"),
 	"_notes",
 	"_rules",
@@ -63,7 +62,12 @@ export function currentDocumentationFindings(
 		}
 	}
 
-	for (const alias of CURRENT_ALIASES) {
+	// `ADRs.md` and `CONTRIBUTING.md` are authored once and symlinked, so the symlink must resolve
+	// to its declared target rather than be a copied document that drifts from the original.
+	for (const alias of [
+		{ path: "ADRs.md", target: ".darkfactory/ADRs.md" },
+		{ path: "CONTRIBUTING.md", target: "README.md" },
+	]) {
 		const absolute = join(repoRoot, alias.path);
 		let stat: ReturnType<typeof lstatSync>;
 		try {
@@ -115,31 +119,10 @@ export function currentDocumentationFindings(
 
 	const relations = analyzeRuleNoteRelations(graph);
 	for (const message of relations.findings) findings.push({ path: ".agents", message });
-	if (relations.findings.length > 0) return findings;
 
-	const agentsPath = join(repoRoot, ".agents", "AGENTS.md");
-	let agentsStat: ReturnType<typeof lstatSync>;
-	try {
-		agentsStat = lstatSync(agentsPath);
-	} catch (error) {
-		if ((error as NodeJS.ErrnoException).code === "ENOENT") {
-			findings.push({ path: ".agents/AGENTS.md", message: "generated AGENTS projection is missing" });
-			return findings;
-		}
-		throw error;
-	}
-	if (!agentsStat.isFile()) {
-		findings.push({ path: ".agents/AGENTS.md", message: "generated AGENTS projection must be a regular file" });
-		return findings;
-	}
-	const actual = readFileSync(agentsPath, "utf8").replaceAll("\r\n", "\n");
-	const expected = renderAgentsMarkdown(graph);
-	if (actual !== expected) {
-		findings.push({
-			path: ".agents/AGENTS.md",
-			message: "committed AGENTS differs from the canonical repository-rules projection",
-		});
-	}
+	// The generated `AGENTS.md` projection is gone. It was a second rendering of the rule set that
+	// nobody read, which is the drift DF-RULE-015 exists to prevent, and comparing a committed
+	// projection against a re-render only proves the generator is deterministic.
 
 	return findings;
 }
