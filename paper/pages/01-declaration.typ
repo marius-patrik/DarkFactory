@@ -7,12 +7,20 @@ Prohlašuji, že jsem tuto studentskou odbornou práci vypracoval samostatně po
 
 #v(1.5cm)
 #grid(
-  columns: (auto, 4.5cm, 1fr, auto, 4.5cm),
+  columns: (auto, 4.5cm),
   column-gutter: 0.35em,
-  align: (left + horizon, left + horizon, center + horizon, left + horizon, left + horizon),
+  align: (left + horizon, left + horizon),
   [V #meta.city dne],
   [#box(width: 100%, height: 1em, stroke: (bottom: 0.5pt))[]],
-  [],
-  [Podpis autora práce —],
-  [#box(width: 100%, height: 1em, stroke: (bottom: 0.5pt))[]],
 )
+
+#v(0.8cm)
+#align(right)[
+  #grid(
+    columns: (auto, 4.5cm),
+    column-gutter: 0.35em,
+    align: (right + horizon, left + horizon),
+    [Podpis autora práce —],
+    [#box(width: 100%, height: 1em, stroke: (bottom: 0.5pt))[]],
+  )
+]
