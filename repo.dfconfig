@@ -41,7 +41,6 @@
       "initial": "3a.1.0"
     },
     "environment": {
-      "$comment": "No packages are declared. The repository is a TypeScript workspace and its packages are resolved from the workspace layout; #1148 removed the last Python, so there is no Python manifest to declare or detect.",
       "packages": [],
       "testing": {},
       "formatting": {},

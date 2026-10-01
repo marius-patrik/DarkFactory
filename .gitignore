@@ -65,3 +65,6 @@ packages/harness/.*-test-*/
 /harness/
 .licence-test-*/
 .cli-test-*/
+
+# Agent tooling local state (opencode goal/session bookkeeping)
+.opencode/
