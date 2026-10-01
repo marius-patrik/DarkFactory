@@ -8,4 +8,4 @@ Tradiční automatizace funguje nejlépe tam, kde lze postup předem přesně po
 
 Takové uspořádání se již používá v produkčním softwarovém inženýrství. Stripe uvádí, že jeho interní agenti Minions pravidelně vytvářejí požadavky na sloučení určené k lidské revizi @stripe-minions-2026. Meta popisuje vlastní agentní platformu, která automatizuje hledání a opravu výkonnostních problémů a dovádí proces až k požadavku na sloučení připravenému pro člověka @meta-capacity-efficiency-2026.
 
-DarkFactory představuje záměrně jednoduchý #term("Bootstrap", cs: "počáteční základ", definition: "Minimální funkční verze systému, která už dokáže podporovat nebo řídit svůj další vývoj.") tohoto přístupu. Počáteční implementace už dokáže agenty spouštět a řídit v repozitářovém procesu a současně vytváří základ pro další rozvoj stejným způsobem.
+DarkFactory představuje záměrně jednoduchý počáteční základ tohoto přístupu. První implementace už dokáže agenty spouštět a řídit v repozitářovém procesu a současně vytváří základ pro další rozvoj stejným způsobem.
