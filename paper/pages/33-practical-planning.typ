@@ -1,6 +1,6 @@
 #heading(level: 2)[Architektura systému] <darkfactory-architecture>
 
-Architektura rozděluje odpovědnost mezi GitHub, GitHub Actions, izolované pracovní prostředí a produkční harness. GitHub uchovává stav, Actions spouštějí jednotlivé fáze, Docker odděluje agentní běh a řídicí skript převádí stav procesu na konkrétní agentní krok. Samotnou agentní smyčku, model a nástroje zajišťuje zvolený harness @darkfactory-d576ec8f. Přehled ukazuje @fig-darkfactory-architecture.
+Pipeline je tvořena GitHub Actions workflow a pythonovskými skripty, které řídí jednotlivé fáze a předávají práci produkčnímu harnessu. Architektura tak rozděluje odpovědnost mezi GitHub, GitHub Actions, izolované pracovní prostředí a harness. GitHub uchovává stav, Actions spouštějí jednotlivé fáze, Docker odděluje agentní běh a řídicí skript převádí stav procesu na konkrétní agentní krok. Samotnou agentní smyčku, model a nástroje zajišťuje zvolený harness @darkfactory-d576ec8f. Přehled ukazuje @fig-darkfactory-architecture.
 
 #figure(
   image("/components/img/darkfactory-architecture.svg", width: 100%),
