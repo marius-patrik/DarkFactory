@@ -36,6 +36,11 @@ site/
 .antigravity_checkpoint.json
 .darkfactory/generated/
 
+# Agent worktrees. The folder is tracked so it exists in a fresh clone; every
+# checkout below it is local working state that must never be committed.
+.worktrees/*
+!.worktrees/.gitkeep
+
 # IDE / Editor / OS
 .vscode/
 .idea/
