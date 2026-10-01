@@ -1,5 +1,3 @@
-#import "../components/terms.typ": term-name
-
 #heading(level: 2)[Architektura systému] <darkfactory-architecture>
 
 Architektura rozděluje odpovědnost mezi GitHub, GitHub Actions, izolované pracovní prostředí a produkční agentní vrstvu. GitHub uchovává stav, Actions spouštějí jednotlivé fáze, Docker odděluje agentní běh a řídicí skript převádí stav procesu na konkrétní agentní krok. Samotnou agentní smyčku, model a nástroje zajišťuje zvolená agentní vrstva @darkfactory-d576ec8f. Přehled ukazuje @fig-darkfactory-architecture.
@@ -9,7 +7,7 @@ Architektura rozděluje odpovědnost mezi GitHub, GitHub Actions, izolované pra
   caption: [Architektura DarkFactory @darkfactory-d576ec8f.],
 ) <fig-darkfactory-architecture>
 
-GitHub uchovává uživatelský požadavek, interpretaci a diskusi. Pracovní větev a commity nesou implementaci a #term-name("Pull Request", cs: "požadavek na sloučení") slouží k automatické i lidské revizi. Stav proto není závislý na jednom kontextovém okně modelu @darkfactory-d576ec8f.
+GitHub uchovává uživatelský požadavek, interpretaci a diskusi. Pracovní větev a commity nesou implementaci a požadavek na sloučení slouží k automatické i lidské revizi. Stav proto není závislý na jednom kontextovém okně modelu @darkfactory-d576ec8f.
 
 GitHub Actions reagují na otevření požadavku, nový komentář, komentář k revizi, interní událost nebo ruční spuštění. Každý běh připraví repozitář a spustí agenta v kontejneru. DarkFactory tak používá Actions jako událostní mechanismus i krátkodobé výpočetní prostředí bez vlastní trvale běžící služby @darkfactory-d576ec8f.
 
