@@ -4,11 +4,12 @@
 
 #let term-name(en, cs: none) = {
   let label = if cs == none { en } else { en + " (" + cs + ")" }
-  [#text("*")#strong[#emph[#label]]]
+  [#strong[#emph[#label]]]
 }
 
 #let term(en, cs: none, definition: none) = {
-  term-name(en, cs: cs)
+  let label = if cs == none { en } else { en + " (" + cs + ")" }
+  [#text("*")#strong[#emph[#label]]]
   if definition != none {
     footnote([#strong[#emph[#en]] — #definition])
   }
