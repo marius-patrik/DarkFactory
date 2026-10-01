@@ -41,31 +41,10 @@
       "initial": "3a.1.0"
     },
     "environment": {
-      "$comment": "Detection handles the rest. pyproject.toml here carries only tooling configuration, so the package identity is declared rather than parsed.",
-      "packages": [
-        {
-          "path": ".",
-          "ecosystem": "python",
-          "manifest": "pyproject.toml",
-          "name": "darkfactory"
-        }
-      ],
-      "testing": {
-        "python": {
-          "command": "pytest",
-          "versions": [
-            "3.10",
-            "3.11",
-            "3.12",
-            "3.13"
-          ]
-        }
-      },
-      "formatting": {
-        "python": {
-          "command": "black --check --line-length 100 ."
-        }
-      },
+      "$comment": "No packages are declared. The repository is a TypeScript workspace and its packages are resolved from the workspace layout; #1148 removed the last Python, so there is no Python manifest to declare or detect.",
+      "packages": [],
+      "testing": {},
+      "formatting": {},
       "not_applicable": {
         "$comment": "DF-RULE-006 exempts an action only from the canonical repository contract, with a reason, before matrix construction. Each entry below is a tool that does not exist in that ecosystem, not a check that was skipped. An exemption for an ecosystem no detected package belongs to, for an unknown action, or without a reason is rejected when the contract loads.",
         "test": {
@@ -86,20 +65,12 @@
       },
       "release": {
         "$comment": "Release actions are declared per ecosystem. #360 enables the final first-party package/native/web release artifacts.",
-        "python": {
-          "enabled": false,
-          "$comment": "pyproject.toml is tooling-only; DarkFactory does not publish a Python package."
-        },
         "node": {
           "$comment": "Node package/native/web publishing is enabled by #360 when the final release surface is complete.",
           "enabled": false
         }
       },
-      "setup": {
-        "python": {
-          "command": "python -m pip install -r requirements-dev.txt"
-        }
-      }
+      "setup": {}
     },
     "areas": {
       "$comment": "Area labels, commit scopes and agent routing all read this one list, so they cannot drift apart. Declaration order is match order - the first area whose keywords hit wins - so specific areas come before general ones. A consumer repository replaces this block wholesale with its own domains.",

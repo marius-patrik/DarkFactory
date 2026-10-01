@@ -92,10 +92,10 @@ body:
       description: >
         Detection reads the repository and is usually right; declare only what it cannot see. A
         vendored toolchain means the build command is not the ecosystem default, and a repository
-        whose pyproject.toml carries only tooling configuration packages nothing.
+        whose manifest carries only tooling configuration packages nothing.
       placeholder: |
         testing.typst.command  = typst compile --font-path fonts main.typ out/prace.pdf
-        release.python.enabled = false
+        release.node.enabled = false
     validations:
       required: false
 

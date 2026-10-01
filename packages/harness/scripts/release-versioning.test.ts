@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, test } from "bun:test";
-import { mkdtemp, rm, writeFile } from "node:fs/promises";
+import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import {
@@ -187,28 +187,42 @@ describe("release version source", () => {
 		expect(resolve(root)).toMatchObject({ next: null, tag: null, bump: null });
 	});
 
-	test("agrees with the Python resolver it replaces on this repository", async () => {
-		// The two implementations run side by side until the Python pipeline is removed, and
-		// release.yml asserts the same agreement in CI. Pinning it here means a divergence is a
-		// failing test rather than a release named one thing and tagged another.
-		const expected = JSON.parse(
-			Bun.spawnSync(
-				[
-					"python3",
-					"-c",
-					"import sys,json;sys.path.insert(0,'.github/scripts');import versioning;print(json.dumps(versioning.resolve('.'),sort_keys=True))",
-				],
-				{
-					cwd: join(import.meta.dir, "..", "..", ".."),
-				},
-			).stdout.toString(),
-		) as Record<string, unknown>;
-		const actual = resolve(join(import.meta.dir, "..", "..", ".."));
-		// `null` is dropped from both sides because the Python prints JSON null for an absent
-		// decision and the TypeScript uses `null` for the same thing, but the Python also omits
-		// nothing; comparing only the decided fields is what both actually promise.
-		const decided = (record: object) =>
-			Object.fromEntries(Object.entries(record).filter(([, value]) => value !== null));
-		expect(decided({ ...actual })).toEqual(decided(expected));
+	test("agrees with the version source this repository actually declares", async () => {
+		// This used to run `.github/scripts/versioning.py` beside `scripts/versioning.ts` and
+		// compare the two decisions, which is how a divergence became a failing test rather than a
+		// release named one thing and tagged another. #1148 removed the Python, so there is no
+		// second implementation left to disagree with, and the agreement that still matters is with
+		// the declarations themselves: the resolver has to read `repo.dfconfig` for the mode, the
+		// tag prefix and the initial version, and the `VERSION` file for the version under manual
+		// versioning. A resolver that quietly sourced either from somewhere else - a manifest, a
+		// hardcoded literal, the latest tag - would resolve this repository differently, and that is
+		// the drift the old comparison was standing in for.
+		const root = join(import.meta.dir, "..", "..", "..");
+		// Read as the document's own loose shape and compared to what the resolver returns, so a
+		// resolver that read a different block, or invented a default, fails rather than satisfying
+		// the assertion with a value cast into agreeing with itself.
+		const document = JSON.parse(await readFile(join(root, "repo.dfconfig"), "utf8")) as {
+			repo: { versioning: { mode: VersioningMode; tag_prefix: string; initial: string } };
+		};
+		const declared = document.repo.versioning;
+		const version = (await readFile(join(root, "VERSION"), "utf8")).trim();
+		const config = loadConfig(root);
+
+		expect(config.mode, "the mode comes from the document").toBe(declared.mode);
+		expect(config.tag_prefix, "the tag prefix comes from the document").toBe(declared.tag_prefix);
+		expect(config.initial, "the initial version comes from the document").toBe(declared.initial);
+		expect(Object.keys(config).sort(), "the resolver reads nothing else from the block").toEqual(
+			Object.keys(declared).sort(),
+		);
+		expect(readManualVersion(root)).toBe(version);
+		// The declared version has to be one this scheme can read, and the decision has to follow
+		// from it rather than from the tag alone.
+		expect(parseVersion(version), `${version} is not a version this scheme can read`).not.toBeNull();
+		const decision = resolve(root);
+		expect(decision.mode).toBe(config.mode);
+		if (decision.next !== null) expect(parseVersion(decision.next)).not.toBeNull();
+		expect(decision.tag, "a decided version is tagged with the declared prefix").toBe(
+			decision.next === null ? null : `${config.tag_prefix}${decision.next}`,
+		);
 	});
 });
