@@ -15,7 +15,7 @@
 
 Jejím základem je #term("Attention", cs: "pozornost", definition: "Mechanismus, který při výpočtu reprezentace tokenu váží informace z dalších tokenů v kontextu."). Každý token tak může při své reprezentaci využít informace z ostatních pozic. U standardní plné pozornosti rostou výpočetní náklady přibližně s druhou mocninou délky kontextu.
 
-Model sám mezi jednotlivými voláními neudržuje pracovní stav a bez okolního systému nemá přístup k souborům, příkazům ani nástrojům. Při #term("Inference", cs: "inference", definition: "Použití natrénovaného modelu k vytvoření výstupu z aktuálního vstupu.") zpracuje aktuální kontext a vytváří výstupní tokeny. Trvalý stav, nástroje a oprávnění proto musí dodat okolní agentní vrstva.
+Model sám mezi jednotlivými voláními neudržuje pracovní stav a bez okolního systému nemá přístup k souborům, příkazům ani nástrojům. Při inferenci zpracuje aktuální kontext a vytváří výstupní tokeny. Trvalý stav, nástroje a oprávnění proto musí dodat okolní agentní vrstva.
 
 #term("Embedding", cs: "vektorová reprezentace", definition: "Číselný vektor, který zachycuje vlastnosti nebo význam objektu tak, aby podobné objekty ležely v prostoru blízko sebe.") umožňuje reprezentovat sémantické vztahy ve vektorovém prostoru. Známým příkladem je vztah mezi slovy král, královna, muž a žena @mikolov2013linguistic @fig-embedding-queen.
 
@@ -54,9 +54,9 @@ Zadání určuje, co má agent udělat, zatímco agentní vrstva určuje, co sku
 
 Každá akce může být navíc řízena oprávněním, které ji povolí automaticky, vyžádá souhlas člověka nebo ji zakáže.
 
-Projektové instrukce lze verzovat přímo s repozitářem. #term("AGENTS.md", definition: "Standardní soubor s projektovými instrukcemi určenými agentům.") poskytuje společné místo pro příkazy sestavení, testy a konvence @agents-md. #term("Agent Skills", cs: "dovednosti agentů", definition: "Otevřený formát pro adresáře opakovaně použitelných schopností agenta.") používají soubor #term("SKILL.md", definition: "Vstupní soubor jedné dovednosti agenta, který popisuje její použití a dostupné zdroje.") @agentskills-spec.
+Projektové instrukce lze verzovat přímo s repozitářem. Soubor `AGENTS.md` poskytuje společné místo pro příkazy sestavení, testy a konvence @agents-md. #term("Agent Skills", cs: "dovednosti agentů", definition: "Otevřený formát pro adresáře opakovaně použitelných schopností agenta.") používají jako vstupní soubor `SKILL.md` @agentskills-spec.
 
-#heading(level: 3)[#term-name("Context", cs: "kontext")]
+#heading(level: 3)[Kontext]
 
 #term("Context Window", cs: "kontextové okno", definition: "Množství vstupních a průběžných informací, které může model zpracovat v jednom běhu.") obsahuje instrukce, části repozitáře, historii nástrojů i výsledky předchozích kroků. Samotná velikost okna nezaručuje správné využití všech informací. Výkon modelů může klesat například tehdy, když se důležitá informace nachází uprostřed dlouhého vstupu @liu2024.
 
