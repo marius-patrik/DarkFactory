@@ -2,7 +2,7 @@
 
 #heading(level: 2)[Agent – co to je a jak funguje] <theory-first>
 
-U #term("Agent", definition: "Systém, v němž model prostřednictvím nástrojů jedná nad prostředím.") se rozhodování a provedení dělí mezi model a #term("Harness", cs: "agentní harness", definition: "Vrstva kolem modelu, která mu předává kontext, nástroje, oprávnění, stav a pravidla běhu.") @langchain-harness. Model navrhuje další krok, zatímco agentní vrstva jej převádí na akci a vrací výsledek zpět do dalšího kroku. Rozvrstvení shrnuje @fig-harness-layers.
+U #term("Agent", definition: "Systém, v němž model prostřednictvím nástrojů jedná nad prostředím.") se rozhodování a provedení dělí mezi model a #term("Harness", definition: "Vrstva kolem modelu, která mu předává kontext, nástroje, oprávnění, stav a pravidla běhu.") @langchain-harness. Model navrhuje další krok, zatímco harness jej převádí na akci a vrací výsledek zpět do dalšího kroku. Rozvrstvení shrnuje @fig-harness-layers.
 
 #figure(
   image("/components/img/harness-layers.svg", width: 100%),
@@ -15,7 +15,7 @@ U #term("Agent", definition: "Systém, v němž model prostřednictvím nástroj
 
 U #term("Attention", cs: "pozornost", definition: "Mechanismus, který při výpočtu reprezentace tokenu váží informace z dalších tokenů v kontextu.") je prakticky důležité, že každý token může využít informace z ostatních pozic. U standardní plné pozornosti proto rostou výpočetní náklady přibližně s druhou mocninou délky kontextu.
 
-Model sám mezi jednotlivými voláními neudržuje pracovní stav a bez okolního systému nemá přístup k souborům, příkazům ani nástrojům. Při inferenci zpracuje aktuální kontext a vytváří výstupní tokeny. Trvalý stav, nástroje a oprávnění proto musí dodat okolní agentní vrstva.
+Model sám mezi jednotlivými voláními neudržuje pracovní stav a bez okolního systému nemá přístup k souborům, příkazům ani nástrojům. Při inferenci zpracuje aktuální kontext a vytváří výstupní tokeny. Trvalý stav, nástroje a oprávnění proto musí dodat okolní harness.
 
 U #term("Embedding", cs: "vektorová reprezentace", definition: "Číselný vektor, který zachycuje vlastnosti nebo význam objektu tak, aby podobné objekty ležely v prostoru blízko sebe.") lze sémantické vztahy ukázat geometricky. Známým příkladem je vztah mezi slovy král, královna, muž a žena @mikolov2013linguistic @fig-embedding-queen.
 
@@ -26,7 +26,7 @@ U #term("Embedding", cs: "vektorová reprezentace", definition: "Číselný vekt
 
 #heading(level: 3)[Agentní smyčka]
 
-#term("Agent Loop", cs: "agentní smyčka", definition: "Opakovaný cyklus, v němž model vyhodnotí stav, zvolí další akci, obdrží její výsledek a pokračuje.") může využívat vzor #term("ReAct", cs: "Reasoning and Acting", definition: "Vzor střídající uvažování modelu, akci nad prostředím a pozorování výsledku.") @yao2022.
+#term("Agent Loop", cs: "agentní smyčka", definition: "Opakovaný cyklus, v němž model vyhodnotí stav, zvolí další akci, obdrží její výsledek a pokračuje.") se zpravidla řídí vzorem #term("ReAct", cs: "Reasoning and Acting", definition: "Vzor střídající uvažování modelu, akci nad prostředím a pozorování výsledku.") @yao2022.
 
 Jeden cyklus lze zjednodušit do pěti kroků
 
@@ -36,7 +36,7 @@ Jeden cyklus lze zjednodušit do pěti kroků
 - zapsat výsledek jako pozorování
 - vrátit se k dalšímu kroku
 
-Agentní vrstva provádí akci mimo model a výsledek vrací zpět do kontextu. Smyčka pokračuje, dokud model nevydá závěrečnou odpověď místo dalšího požadavku na nástroj. Průběh shrnuje @fig-react-loop.
+Harness provádí akci mimo model a výsledek vrací zpět do kontextu. Smyčka pokračuje, dokud model nevydá závěrečnou odpověď místo dalšího požadavku na nástroj. Průběh shrnuje @fig-react-loop.
 
 #figure(
   image("/components/img/react-loop.svg", width: 100%),
@@ -45,7 +45,7 @@ Agentní vrstva provádí akci mimo model a výsledek vrací zpět do kontextu. 
 
 #heading(level: 3)[Nástroje a rozšíření]
 
-Zadání určuje, co má agent udělat, zatímco agentní vrstva určuje, co skutečně může provést @langchain-harness.
+Zadání určuje, co má agent udělat, zatímco harness určuje, co skutečně může provést @langchain-harness.
 
 - #term("Tools", cs: "nástroje", definition: "Funkce zpřístupněné modelu pro práci s prostředím, například čtení souborů, vyhledávání nebo spouštění příkazů.") jsou přímým kanálem mezi modelem a prostředím @anthropic2024tooluse
 - #term("Skills", cs: "dovednosti", definition: "Opakovaně použitelné balíčky instrukcí, skriptů a zdrojů pro určitý typ úlohy.") sjednocují opakovanou práci do znovu použitelných schopností @agentskills-spec
