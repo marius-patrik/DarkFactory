@@ -73,7 +73,7 @@
       "testing": {},
       "formatting": {},
       "not_applicable": {
-        "$comment": "DF-RULE-006 exempts an action only from the canonical repository contract, with a reason, before matrix construction. Each entry below is a tool that does not exist in that ecosystem, not a check that was skipped. An exemption for an ecosystem no detected package belongs to, for an unknown action, or without a reason is rejected when the contract loads.",
+        "$comment": "The `ci-readiness` skill exempts an action only from the canonical repository contract, with a reason, before matrix construction. Each entry below is a tool that does not exist in that ecosystem, not a check that was skipped. An exemption for an ecosystem no detected package belongs to, for an unknown action, or without a reason is rejected when the contract loads.",
         "test": {
           "typst": {
             "reason": "Typst 0.15.1 ships compile, watch, init, eval, fonts, completions and info; it has no test runner. The paper's own tests are a Node package (paper/package.json test script) and the manuscript is proven by typst compile, which is the typst typecheck action."
