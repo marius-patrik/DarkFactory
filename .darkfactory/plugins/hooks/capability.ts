@@ -30,7 +30,7 @@ export function testsTouched(input: CapabilityHookContext): CapabilityHookResult
 }
 
 /**
- * Conventional-commit base types this hook accepts, in the order DF-RULE-015 declares them.
+ * Conventional-commit base types this hook accepts, in the order the `commits-and-repository-taxonomy` skill declares them.
  *
  * This is the hook's only type list. `commitTypes` must stay equal to the "Allowed base types"
  * sentence in `.agents/rules/015-repository-taxonomy.md`; `capability.test.ts` fails closed when the
@@ -54,7 +54,7 @@ const commitTypeAlternation = commitTypes.map(escapeRegExp).join("|");
  */
 const commitPattern = new RegExp(`^(${commitTypeAlternation})(\\([a-z0-9][a-z0-9-]*\\))?!?: \\s*\\S.*$`, "u");
 
-/** Validates the first line of a commit against the DF-RULE-015 conventional-commit contract. */
+/** Validates the first line of a commit against the the `commits-and-repository-taxonomy` skill conventional-commit contract. */
 export function conventionalCommit(input: CapabilityHookContext): CapabilityHookResult {
 	const message = input.commitMessage;
 	if (!message) return fail("commit message is missing");

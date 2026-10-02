@@ -8,7 +8,7 @@ license: MIT
 
 Plugins live in `.agents/plugins/<name>/`. Content and scripts stay here; nothing in a plugin is
 wired into the `packages/` build, and no plugin text is duplicated into the workspace. The
-directory itself is the single declaration of the skill (DF-RULE-015) - `.agents/skills/` is
+directory itself is the single declaration of the skill (the `commits-and-repository-taxonomy` skill) - `.agents/skills/` is
 untracked install output written by `df ci install`, so a tracked copy there is a second
 declaration and a test fails on it.
 

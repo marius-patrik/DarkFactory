@@ -41,7 +41,7 @@ interface DfAccountState {
  *
  * The Python shelled out to `gh secret set` with the value on stdin and a human's project token,
  * because writing a secret is repository administration the App token cannot do. That is credential
- * custody, which DF-RULE-016 gives to `@darkfactory/keychain` rather than to the pipeline, so it
+ * custody, which the `security-and-secrets` skill gives to `@darkfactory/keychain` rather than to the pipeline, so it
  * arrives here as a port. A caller that does not supply one gets {@link reportingTokenPersistence},
  * which says so out loud rather than discarding the value silently: the next run fails to
  * authenticate, and this run is the only place that can say it.

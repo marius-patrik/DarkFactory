@@ -8,7 +8,7 @@
  *
  * What bounds it here is the identity of the *failing run* - the workflow that failed plus that
  * run's own id - which the failure reporter records in the issue body. One repair is in flight per
- * failing run, elected rather than check-then-act, so DF-RULE-018's "concurrent duplicates cannot
+ * failing run, elected rather than check-then-act, so the `concurrency-atomicity-and-idempotency` skill's "concurrent duplicates cannot
  * both enter the mutation" holds without a new store. The workflow half of the identity lives in
  * the body rather than the title so retitling an issue cannot fork it.
  *

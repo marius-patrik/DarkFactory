@@ -84,12 +84,12 @@ describe("official hooks capability", () => {
 	});
 
 	// `style`, `perf`, `build` and `revert` were accepted by the previous eleven-type pattern while
-	// DF-RULE-015 allows seven. They must now be rejected, or the hook contradicts the rule again.
+	// the `commits-and-repository-taxonomy` skill allows seven. They must now be rejected, or the hook contradicts the rule again.
 	test.each(["style", "perf", "build", "revert"])("conventional-commit rejects the undeclared type %s", (type) => {
 		expect(conventionalCommit(context({ commitMessage: `${type}: description` })).status).toBe("fail");
 	});
 
-	test("the hook's commit-type taxonomy is the taxonomy DF-RULE-015 declares", () => {
+	test("the hook's commit-type taxonomy is the taxonomy the `commits-and-repository-taxonomy` skill declares", () => {
 		const rule = readFileSync(
 			join(import.meta.dir, "..", "..", ".agents", "rules", "015-repository-taxonomy.md"),
 			"utf8",

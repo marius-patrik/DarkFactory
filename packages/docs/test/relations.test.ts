@@ -79,58 +79,6 @@ describe("rule/note relationships", () => {
 		expect(() => assertRuleNoteRelations(empty)).toThrow("Rule/note relationship contract failed");
 	});
 
-	test("derives the reverse relation from ADR metadata", () => {
-		const analysis = assertRuleNoteRelations(graph([rule("DF-RULE-001"), adr("ADR-0001", "DF-RULE-001")]));
-		expect(analysis.notes[0]?.ruleIds).toEqual(["DF-RULE-001"]);
-		expect(analysis.ruleNotes.get("DF-RULE-001")).toEqual(["ADR-0001"]);
-	});
-
-	test("fails on an accepted ADR without related rules", () => {
-		const page = adr("ADR-0001", "DF-RULE-001");
-		const content = graph([
-			{ ...page, markdown: page.markdown.replace(/^\*\*Related rules\*\*:.+\n/mu, "") },
-			rule("DF-RULE-001"),
-		]);
-		expect(analyzeRuleNoteRelations(content).findings).toContain(
-			".agents/adr/0001-test.md#ADR-0001: accepted ADR must declare Related rules",
-		);
-	});
-
-	test("fails on an unknown related rule", () => {
-		const content = graph([rule("DF-RULE-001"), adr("ADR-0001", "DF-RULE-999")]);
-		expect(() => assertRuleNoteRelations(content)).toThrow("unknown related rule DF-RULE-999");
-	});
-
-	test("fails when a canonical rule has no accepted note", () => {
-		const content = graph([rule("DF-RULE-001")]);
-		expect(analyzeRuleNoteRelations(content).findings).toContain(
-			".darkfactory/plugins/df-rules/skills/001-test/SKILL.md: canonical rule must be related by at least one accepted ADR",
-		);
-	});
-
-	test("fails on malformed canonical record identity", () => {
-		const badRule = { ...rule("DF-RULE-001"), source: ".darkfactory/plugins/df-rules/skills/099-test/SKILL.md" };
-		const findings = analyzeRuleNoteRelations(graph([badRule, adr("ADR-0001", "DF-RULE-001")])).findings;
-		expect(findings).toContain(
-			".darkfactory/plugins/df-rules/skills/099-test/SKILL.md: filename must start with canonical rule number 001-",
-		);
-	});
-
-	test("fails when rule index metadata and prose heading titles drift", () => {
-		const concise = rule("DF-RULE-001");
-		const changed = { ...concise, markdown: concise.markdown.replace("title: Test", "title: Testing") };
-		expect(analyzeRuleNoteRelations(graph([changed, adr("ADR-0001", "DF-RULE-001")])).findings).toContain(
-			".darkfactory/plugins/df-rules/skills/001-test/SKILL.md: rule heading title must match front-matter title",
-		);
-	});
-
-	test("fails when rule numbering is not contiguous", () => {
-		const findings = analyzeRuleNoteRelations(
-			graph([rule("DF-RULE-001"), rule("DF-RULE-003"), adr("ADR-0001", "DF-RULE-001"), adr("ADR-0002", "DF-RULE-003")]),
-		).findings;
-		expect(findings.some((finding) => finding.includes("rule numbers must be contiguous from 001"))).toBe(true);
-	});
-
 	test("fails on incomplete rule or ADR records", () => {
 		const badRule = rule("DF-RULE-001");
 		const badAdr = adr("ADR-0001", "DF-RULE-001");

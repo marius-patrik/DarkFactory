@@ -1,4 +1,3 @@
-import { basename, dirname } from "node:path";
 import { adrDocumentSource, type DocsContentGraph, type DocsPage } from "./content.ts";
 
 /** Parsed metadata for one canonical repository rule. */
@@ -38,13 +37,6 @@ function noteIdentity(page: DocsPage): { id: string; title: string } {
 	return { id: page.id, title: page.title };
 }
 
-function relatedRuleIds(page: DocsPage): readonly string[] {
-	const match = page.markdown.match(/^\*\*Related rules\*\*:\s*(.+)$/mu);
-	if (!match?.[1]) return [];
-	const ids = [...match[1].matchAll(/DF-RULE-\d{3}/gu)].map((item) => item[0]);
-	return [...new Set(ids)];
-}
-
 /**
  * Whether a section is present and non-empty.
  *
@@ -54,10 +46,6 @@ function relatedRuleIds(page: DocsPage): readonly string[] {
  */
 function hasSection(markdown: string, heading: string): boolean {
 	return new RegExp(`^(#{2,6}) ${heading}\\s*$\\n\\s*\\S`, "mu").test(markdown);
-}
-
-function ruleNumber(id: string): string | undefined {
-	return id.match(/^DF-RULE-(\d{3})$/u)?.[1];
 }
 
 function adrNumber(id: string): string | undefined {
@@ -73,11 +61,9 @@ export function analyzeRuleNoteRelations(graph: DocsContentGraph): RuleNoteRelat
 	for (const page of graph.pages
 		.filter((candidate) => candidate.kind === "rule")
 		.sort((a, b) => a.source.localeCompare(b.source))) {
-		let id = "";
 		let title = "";
 		let status = "";
 		try {
-			id = ruleFrontMatterField(page.markdown, "id");
 			title = ruleFrontMatterField(page.markdown, "title");
 			status = ruleFrontMatterField(page.markdown, "status");
 			for (const field of ["applies_to", "activation", "owners"]) ruleFrontMatterField(page.markdown, field);
@@ -85,35 +71,20 @@ export function analyzeRuleNoteRelations(graph: DocsContentGraph): RuleNoteRelat
 			findings.push(`${page.source}: ${error instanceof Error ? error.message : String(error)}`);
 			continue;
 		}
-		const number = ruleNumber(id);
-		if (!number) findings.push(`${page.source}: invalid rule id ${id}`);
 		if (status !== "normative") findings.push(`${page.source}: canonical rule status must be normative`);
-		if (number && !basename(dirname(page.source)).startsWith(`${number}-`)) {
-			findings.push(`${page.source}: filename must start with canonical rule number ${number}-`);
-		}
-		const heading = page.markdown.match(/^# Rule\s+(\d+)\s+—\s+(.+)$/mu);
-		if (!heading?.[1] || Number(heading[1]) !== Number(number)) {
-			findings.push(`${page.source}: rule heading number must match ${id}`);
-		}
-		if (heading?.[2]?.trim() !== title) {
-			findings.push(`${page.source}: rule heading title must match front-matter title`);
-		}
 		for (const section of ["Requirement", "Rationale", "Enforcement", "Exceptions", "Change control"]) {
 			if (!hasSection(page.markdown, section))
 				findings.push(`${page.source}: canonical rule is missing non-empty ${section} section`);
 		}
+		// The skill's directory name is its identity, which the four hosts already require to equal
+		// the front-matter `name`. There is no separate rule number to keep in step with it.
+		const id = page.id;
 		if (ruleIds.has(id)) findings.push(`${page.source}: duplicate rule id ${id}`);
 		ruleIds.add(id);
 		rules.push({ id, title, page });
 	}
 
 	if (rules.length === 0) findings.push("rules: at least one canonical rule is required");
-
-	const ruleNumbers = rules.map((rule) => Number(ruleNumber(rule.id))).filter((number) => Number.isFinite(number));
-	const expectedRuleNumbers = Array.from({ length: ruleNumbers.length }, (_, index) => index + 1);
-	if (ruleNumbers.some((number, index) => number !== expectedRuleNumbers[index])) {
-		findings.push(`rules: rule numbers must be contiguous from 001; found ${ruleNumbers.join(", ")}`);
-	}
 
 	const notes: DocsNoteRelationEntry[] = [];
 	const noteIds = new Set<string>();
@@ -135,12 +106,9 @@ export function analyzeRuleNoteRelations(graph: DocsContentGraph): RuleNoteRelat
 		}
 		if (noteIds.has(note.id)) findings.push(`${where}: duplicate ADR id ${note.id}`);
 		noteIds.add(note.id);
-		const ruleIdsForNote = relatedRuleIds(page);
-		if (ruleIdsForNote.length === 0) findings.push(`${where}: accepted ADR must declare Related rules`);
-		for (const relatedRuleId of ruleIdsForNote) {
-			if (!ruleIds.has(relatedRuleId)) findings.push(`${where}: unknown related rule ${relatedRuleId}`);
-		}
-		notes.push({ ...note, page, ruleIds: ruleIdsForNote });
+		// An ADR no longer declares related rules: the rules are situation-scoped skills now, and a
+		// numbered cross-reference is exactly the second declaration this repository removed.
+		notes.push({ ...note, page, ruleIds: [] });
 	}
 
 	for (const page of graph.pages.filter((candidate) => candidate.kind === "note")) {
@@ -157,11 +125,6 @@ export function analyzeRuleNoteRelations(graph: DocsContentGraph): RuleNoteRelat
 	const ruleNotes = new Map<string, readonly string[]>(
 		[...reverse.entries()].map(([ruleId, ids]) => [ruleId, [...ids].sort((a, b) => a.localeCompare(b))]),
 	);
-	for (const rule of rules) {
-		if ((ruleNotes.get(rule.id) ?? []).length === 0) {
-			findings.push(`${rule.page.source}: canonical rule must be related by at least one accepted ADR`);
-		}
-	}
 	return { rules, notes, ruleNotes, findings };
 }
 
