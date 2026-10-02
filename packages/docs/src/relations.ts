@@ -1,6 +1,17 @@
 import { basename } from "node:path";
 import type { DocsContentGraph, DocsPage } from "./content.ts";
 
+/**
+ * The one document every accepted decision lives in. It is authored once and symlinked as `ADRs.md`,
+ * so a decision is superseded by editing the decision it replaces rather than by adding a second
+ * file. A finding about the note set therefore names the document rather than a directory.
+ */
+const ADR_DOCUMENT = ".darkfactory/ADRs.md";
+
+function adrDocumentSource(): string {
+	return ADR_DOCUMENT;
+}
+
 /** Parsed metadata for one canonical repository rule. */
 interface DocsRuleRelationEntry {
 	id: string;
@@ -116,9 +127,6 @@ export function analyzeRuleNoteRelations(graph: DocsContentGraph): RuleNoteRelat
 		const note = noteIdentity(page);
 		const number = adrNumber(note.id);
 		if (!number) findings.push(`${page.source}: invalid ADR id ${note.id}`);
-		if (number && !basename(page.source).startsWith(`${number}-`)) {
-			findings.push(`${page.source}: filename must start with canonical ADR number ${number}-`);
-		}
 		if (!/^\*\*Status\*\*:\s*Accepted\s*$/mu.test(page.markdown)) {
 			findings.push(`${page.source}: current ADR status must be Accepted`);
 		}
@@ -137,10 +145,10 @@ export function analyzeRuleNoteRelations(graph: DocsContentGraph): RuleNoteRelat
 	}
 
 	for (const page of graph.pages.filter((candidate) => candidate.kind === "note")) {
-		findings.push(`${page.source}: current long-term notes must be accepted numbered ADRs under .agents/adr/`);
+		findings.push(`${page.source}: current long-term notes must be accepted numbered ADRs in ${adrDocumentSource()}`);
 	}
 
-	if (notes.length === 0) findings.push(".agents/adr: at least one accepted ADR is required");
+	if (notes.length === 0) findings.push(`${adrDocumentSource()}: at least one accepted ADR is required`);
 
 	const reverse = new Map<string, string[]>();
 	for (const rule of rules) reverse.set(rule.id, []);
