@@ -582,15 +582,6 @@ describe("the pipeline's GitHub identity", () => {
 		expect(app.installation_id).toBe(159771550);
 		expect(app.installed_on).toContain("marius-patrik/omnis");
 	});
-
-	it("test_repository_documents_name_the_native_docs_contract: normative text points at the current owners", () => {
-		const agents = readFileSync(join(repoRoot, ".agents", "AGENTS.md"), "utf8");
-		const prd = readFileSync(join(repoRoot, ".agents", "PRD.md"), "utf8");
-		expect(agents).toContain("`docs` block");
-		expect(prd).toContain("`docs` block");
-		expect(prd).toContain("@darkfactory/docs");
-		expect(prd).toContain("@darkfactory/web");
-	});
 });
 
 describe("token preference", () => {

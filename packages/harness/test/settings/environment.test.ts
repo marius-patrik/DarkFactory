@@ -370,7 +370,7 @@ describe("plans", () => {
 		};
 		expect(document.repo.environment).not.toHaveProperty("documentation");
 		expect(document.docs.version).toBe(1);
-		expect(document.docs.home).toBe(".agents/PRD.md");
+		expect(document.docs.home).toBe("README.md");
 		expect(document.docs).not.toHaveProperty("api");
 		// The repository config no longer pins a provider chain. The chain is a ceiling the router
 		// receives as an argument, and `df ask` routes against the live catalogue, so a chain written

@@ -75,7 +75,7 @@ describe("rule/note relationships", () => {
 		const empty = graph([]);
 		const findings = analyzeRuleNoteRelations(empty).findings;
 		expect(findings).toContain(".agents/rules: at least one canonical rule is required");
-		expect(findings).toContain(".agents/adr: at least one accepted ADR is required");
+		expect(findings).toContain(".darkfactory/ADRs.md: at least one accepted ADR is required");
 		expect(() => assertRuleNoteRelations(empty)).toThrow("Rule/note relationship contract failed");
 	});
 
@@ -151,6 +151,8 @@ describe("rule/note relationships", () => {
 		};
 		expect(
 			analyzeRuleNoteRelations(graph([rule("DF-RULE-001"), adr("ADR-0001", "DF-RULE-001"), note])).findings,
-		).toContain(".agents/notes/loose.md: current long-term notes must be accepted numbered ADRs under .agents/adr/");
+		).toContain(
+			".agents/notes/loose.md: current long-term notes must be accepted numbered ADRs in .darkfactory/ADRs.md",
+		);
 	});
 });
