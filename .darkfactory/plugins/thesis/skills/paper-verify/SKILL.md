@@ -57,10 +57,10 @@ v `school-rules`, ale jak ji změřit je tady:
 
 ```sh
 # jen reportuje
-bun .darkfactory/plugins/thesis/scripts/measure-paragraph-gap.ts ../PAPER.pdf
+bun .darkfactory/plugins/thesis/scripts/measure-paragraph-gap.ts ../THESIS_CASE_STUDY.pdf
 
 # nebo tvrdí: skončí 1, když nesouhlasí (0.5pt tolerance)
-bun .darkfactory/plugins/thesis/scripts/measure-paragraph-gap.ts ../PAPER.pdf --want 8
+bun .darkfactory/plugins/thesis/scripts/measure-paragraph-gap.ts ../THESIS_CASE_STUDY.pdf --want 8
 ```
 
 `typst-safe-editing` vysvětluje, proč je číslo ve stylu jiné než mezera na stránce.

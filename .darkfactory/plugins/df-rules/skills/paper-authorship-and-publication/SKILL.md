@@ -1,6 +1,6 @@
 ---
 name: paper-authorship-and-publication
-description: Use when changing the thesis manuscript, its bibliography, fonts or images, or the paper build and release: treat paper/index.typ as the sole authored manuscript, generate the repository-root PAPER.pdf with the canonical publication command, include it in release assets, and change prose only on explicit author request with author review before staging.
+description: Use when changing the thesis manuscript, its bibliography, fonts or images, or the paper build and release: treat paper/main.typ as the sole authored manuscript, generate the repository-root THESIS_CASE_STUDY.pdf with the canonical publication command, include it in release assets, and change prose only on explicit author request with author review before staging.
 title: Paper authorship and publication
 status: normative
 applies_to: [paper, authors, contributors]
@@ -13,9 +13,9 @@ license: MIT
 
 ## Requirement
 
-`paper/index.typ` is the sole authored thesis manuscript. `paper/bib/`, `paper/fonts/`, and `paper/img/` contain its supporting bibliography, font, and image resources.
+`paper/main.typ` is the sole authored thesis manuscript, and `paper/typst.toml` names it as the entrypoint. `paper/components/bib/`, `paper/components/fonts/`, and `paper/components/img/` contain its supporting bibliography, font, and image resources.
 
-The canonical publication command generates the repository-root `PAPER.pdf` artifact. The Paper does not generate or own repository Markdown; the repository README is the canonical product document at `README.md`, and the rules are skills rather than a generated projection. `PAPER.pdf` is included in the release assets.
+The canonical publication command generates the repository-root `THESIS_CASE_STUDY.pdf` artifact. The Paper does not generate or own repository Markdown; the repository README is the canonical product document at `README.md`, and the rules are skills rather than a generated projection. `THESIS_CASE_STUDY.pdf` is included in the release assets.
 
 The Paper uses the shared documentation, capability, CI, and release contracts. Manuscript prose and supporting assets change only on explicit author request. The author reviews thesis changes before they are staged or delivered.
 

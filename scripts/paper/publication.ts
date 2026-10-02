@@ -12,7 +12,7 @@ const declared = /^\s*entrypoint\s*=\s*"([^"]+)"/mu.exec(manifest)?.[1];
 if (!declared) throw new Error("paper/typst.toml declares no entrypoint");
 const SOURCE = join(PAPER_ROOT, declared);
 const FONT_PATH = join(PAPER_ROOT, "fonts");
-const PDF = join(REPOSITORY_ROOT, "PAPER.pdf");
+const PDF = join(REPOSITORY_ROOT, "THESIS_CASE_STUDY.pdf");
 const CHECK = process.argv.includes("--check");
 
 async function run(command: string[]) {
@@ -56,7 +56,9 @@ async function main() {
 		await rm(temporaryDirectory, { recursive: true, force: true });
 	}
 	console.log(
-		CHECK ? "ok: checked PAPER.pdf without mutating the tracked output" : "ok: built repository-root PAPER.pdf",
+		CHECK
+			? "ok: checked THESIS_CASE_STUDY.pdf without mutating the tracked output"
+			: "ok: built repository-root THESIS_CASE_STUDY.pdf",
 	);
 }
 

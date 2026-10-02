@@ -30,10 +30,10 @@ export const capability = defineCapability({
 		{
 			kind: "release",
 			description:
-				"Publish the repository-root PAPER.pdf from the manuscript source, with fonts and bibliography wired.",
+				"Publish the repository-root THESIS_CASE_STUDY.pdf from the manuscript source, with fonts and bibliography wired.",
 			ecosystems: ["typst"],
 			command: "bun ../scripts/paper/publication.ts",
-			metadata: { artifacts: ["../../PAPER.pdf"] },
+			metadata: { artifacts: ["../../THESIS_CASE_STUDY.pdf"] },
 		},
 		{
 			kind: "release",

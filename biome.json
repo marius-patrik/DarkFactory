@@ -6,7 +6,7 @@
     "useIgnoreFile": true
   },
   "files": {
-    "includes": ["**", "!**/node_modules", "!**/dist", "!**/.harness-test-*", "!**/.*-test-*/", "!.ast-reachability.*"]
+    "includes": ["**", "!**/node_modules", "!**/dist", "!**/.harness-test-*", "!**/.*-test-*/"]
   },
   "formatter": {
     "indentStyle": "tab",
@@ -34,7 +34,7 @@
   },
   "overrides": [
     {
-      "includes": ["paper/img/**/*.svg"],
+      "includes": ["paper/components/img/**/*.svg"],
       "linter": {
         "rules": {
           "a11y": {

@@ -20,7 +20,7 @@ async function runBuild() {
 	building = true;
 	do {
 		rebuildRequested = false;
-		console.log("[dev] building PAPER.pdf...");
+		console.log("[dev] building THESIS_CASE_STUDY.pdf...");
 		const child = Bun.spawn(["bun", "run", "publication"], {
 			cwd: PAPER_ROOT,
 			stdout: "inherit",
@@ -28,9 +28,9 @@ async function runBuild() {
 		});
 		const exitCode = await child.exited;
 		if (exitCode === 0) {
-			console.log("[dev] PAPER.pdf build complete");
+			console.log("[dev] THESIS_CASE_STUDY.pdf build complete");
 		} else {
-			console.error(`[dev] PAPER.pdf build failed (${exitCode}); continuing to watch paper sources`);
+			console.error(`[dev] THESIS_CASE_STUDY.pdf build failed (${exitCode}); continuing to watch paper sources`);
 		}
 	} while (rebuildRequested);
 	building = false;
