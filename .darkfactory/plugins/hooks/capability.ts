@@ -4,7 +4,7 @@ import {
 	type CapabilityHookDefinition,
 	type CapabilityHookResult,
 	defineCapability,
-} from "../../packages/capability/src/index.ts";
+} from "../../../packages/capability/src/index.ts";
 
 function pass(): CapabilityHookResult {
 	return { status: "pass" };
@@ -33,7 +33,7 @@ export function testsTouched(input: CapabilityHookContext): CapabilityHookResult
  * Conventional-commit base types this hook accepts, in the order the `commits-and-repository-taxonomy` skill declares them.
  *
  * This is the hook's only type list. `commitTypes` must stay equal to the "Allowed base types"
- * sentence in `.agents/rules/015-repository-taxonomy.md`; `capability.test.ts` fails closed when the
+ * sentence in the `commits-and-repository-taxonomy` skill; `capability.test.ts` fails closed when the
  * two diverge in either direction. Do not add a type here without changing that declaration.
  */
 export const commitTypes: readonly string[] = ["feat", "fix", "chore", "docs", "refactor", "test", "ci"];

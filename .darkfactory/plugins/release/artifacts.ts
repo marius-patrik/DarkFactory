@@ -1,7 +1,7 @@
 import { createHash } from "node:crypto";
 import { readFile, realpath, stat } from "node:fs/promises";
 import { isAbsolute, relative, resolve, sep } from "node:path";
-import { CAPABILITY_ABI_VERSION } from "../../packages/capability/src/index.ts";
+import { CAPABILITY_ABI_VERSION } from "../../../packages/capability/src/index.ts";
 
 /** Integrity record for one file included in a DarkFactory release artifact set. */
 interface ReleaseArtifactRecord {

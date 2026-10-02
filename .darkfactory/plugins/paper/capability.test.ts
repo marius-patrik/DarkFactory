@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
-import { qualityMatrix, resolveRepositoryActions } from "../../packages/capability/src/actions.ts";
-import type { CapabilityPackageContext } from "../../packages/capability/src/index.ts";
-import { resolveCapabilities } from "../../packages/capability/src/loader.ts";
+import { qualityMatrix, resolveRepositoryActions } from "../../../packages/capability/src/actions.ts";
+import type { CapabilityPackageContext } from "../../../packages/capability/src/index.ts";
+import { resolveCapabilities } from "../../../packages/capability/src/loader.ts";
 import capability from "./capability.ts";
 
 /** Detected evidence for one document package in the given engine. */
