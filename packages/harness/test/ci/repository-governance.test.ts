@@ -1,8 +1,8 @@
 import { describe, expect, it } from "bun:test";
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
-import { REQUEST_BINDING_REQUIRED_CHECK, requiredChecksForDetectedQuality } from "@darkfactory/capability/actions";
-import { CANONICAL_STATUSES } from "@darkfactory/protocol/workflow";
+import { REQUEST_BINDING_REQUIRED_CHECK, requiredChecksForDetectedQuality } from "../../../capability/src/actions.ts";
+import { CANONICAL_STATUSES } from "../../../protocol/src/workflow.ts";
 import type { Workflow } from "./pipeline-source.ts";
 import {
 	allSteps,
@@ -504,7 +504,9 @@ describe("release.yml", () => {
 	it("test_release_workflow_blocks_on_metadata_disagreement: a contradicting tag is worse than none", () => {
 		const scripts = workflowScripts(release);
 		expect(scripts).toContain("metadata_problems");
-		expect(scripts).toContain("sys.exit(1)");
+		// The step used to be a Python heredoc and this read for its `sys.exit(1)`. It is a shell
+		// `exit 1` beside the same field now; the claim is unchanged and only the language moved.
+		expect(scripts).toContain("exit 1");
 	});
 
 	it("test_release_workflow_offers_an_explicit_bump: PrideVer's PROUD cannot be derived", () => {

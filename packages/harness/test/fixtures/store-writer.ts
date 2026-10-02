@@ -1,4 +1,4 @@
-import { FileCredentialStore } from "@darkfactory/keychain";
+import { FileCredentialStore } from "../../../keychain/src/index.ts";
 import { QuotaStore } from "../../src/harness/quota-store.ts";
 
 const [mode, home, id] = process.argv.slice(2);

@@ -1,26 +1,44 @@
 {
-  "name": "darkfactory-workspace",
+  "name": "@darkfactory/darkfactory",
   "version": "0.0.0",
   "private": true,
   "type": "module",
-  "workspaces": [
-    "packages/*",
-    "capabilities/*",
-    "paper"
-  ],
   "scripts": {
-    "test": "bun run --cwd packages/harness test",
-    "typecheck": "bun run --cwd packages/harness typecheck",
-    "check": "bun run --cwd packages/harness check",
-    "docs": "bun scripts/build-docs.ts",
-    "release:version": "bun scripts/versioning.ts",
-    "release:targets": "bun packages/harness/scripts/release-targets.ts",
+    "test": "bun test --timeout=30000",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "build": "bun packages/harness/scripts/build.ts",
+    "install:df": "bun packages/harness/scripts/install.ts",
+    "format": "biome format --write .",
     "format:check": "biome format .",
-    "lint": "biome lint ."
+    "lint": "biome lint .",
+    "check": "biome ci .",
+    "docs": "bun scripts/build-docs.ts",
+    "release:version": "bun packages/harness/src/release/versioning.ts",
+    "release:targets": "bun packages/harness/scripts/release-targets.ts"
   },
   "devDependencies": {
     "@biomejs/biome": "2.5.13",
     "@types/bun": "1.3.14",
+    "@types/react": "^18.2.0",
+    "@types/react-dom": "^18.2.0",
     "typescript": "5.9.2"
+  },
+  "bin": {
+    "df": "packages/harness/src/cli.ts"
+  },
+  "dependencies": {
+    "@earendil-works/pi-agent-core": "0.85.1",
+    "@earendil-works/pi-ai": "0.85.1",
+    "@earendil-works/pi-coding-agent": "0.85.1",
+    "@earendil-works/pi-tui": "0.85.1",
+    "@silvia-odwyer/photon-node": "0.3.4",
+    "commander": "^15.0.0",
+    "jose": "6.1.0",
+    "libsodium-wrappers": "0.8.2",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "typedoc": "0.28.20",
+    "wouter": "^3.3.5",
+    "zod": "4.1.5"
   }
 }

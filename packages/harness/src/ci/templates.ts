@@ -2,11 +2,10 @@ import { createHash } from "node:crypto";
 import { existsSync, readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 
-export const DARKFACTORY_WORKFLOW_VERSION = "0.2.0";
+const DARKFACTORY_WORKFLOW_VERSION = "0.2.0";
 
 export const STANDARD_WORKFLOW_TEMPLATES = ["ci.yml", "verify-bound-issue.yml", "df-dispatch.yml"] as const;
-
-export type StandardWorkflowName = (typeof STANDARD_WORKFLOW_TEMPLATES)[number];
+type StandardWorkflowName = (typeof STANDARD_WORKFLOW_TEMPLATES)[number];
 
 const BUILTIN_TEMPLATES: Partial<Record<StandardWorkflowName, string>> = {
 	"df-dispatch.yml": `name: DarkFactory Dispatch
@@ -49,12 +48,10 @@ export interface TemplateContext {
 	default_branch?: string;
 	[key: string]: string | undefined;
 }
-
-export function normalizeLineEndings(content: string): string {
+function normalizeLineEndings(content: string): string {
 	return content.replace(/\r\n/g, "\n");
 }
-
-export function computeContentHash(content: string): string {
+function computeContentHash(content: string): string {
 	const normalized = normalizeLineEndings(content);
 	return createHash("sha256").update(normalized, "utf-8").digest("hex");
 }
@@ -82,8 +79,7 @@ export function getWorkflowTemplateContent(templateName: string): string {
 
 	throw new Error(`Workflow template not found: ${templateName}`);
 }
-
-export function interpolateTemplate(rawTemplate: string, context: TemplateContext = {}): string {
+function interpolateTemplate(rawTemplate: string, context: TemplateContext = {}): string {
 	const fullContext: Record<string, string> = {
 		pipeline_repo: context.pipeline_repo || "marius-patrik/DarkFactory",
 		pipeline_ref: context.pipeline_ref || "darkfactory",
@@ -93,8 +89,7 @@ export function interpolateTemplate(rawTemplate: string, context: TemplateContex
 
 	return rawTemplate.replace(/\{\{\s*(\w+)\s*\}\}/g, (_, key) => fullContext[key] ?? "");
 }
-
-export interface ManagedHeader {
+interface ManagedHeader {
 	template: string;
 	version: string;
 	hash: string;
@@ -127,8 +122,7 @@ export function parseManagedHeader(content: string): (ManagedHeader & { headerLi
 		body,
 	};
 }
-
-export function buildManagedHeader(template: string, version: string, hash: string): string {
+function buildManagedHeader(template: string, version: string, hash: string): string {
 	return `# managed-by: darkfactory ${template}@${version} sha256:${hash}\n`;
 }
 
@@ -144,8 +138,7 @@ export function renderWorkflowTemplate(
 	const header = buildManagedHeader(cleanName, version, hash);
 	return `${header}${renderedBody}`;
 }
-
-export interface WorkflowVerification {
+interface WorkflowVerification {
 	status: "valid" | "modified" | "unmanaged";
 	hashMatches: boolean;
 	header?: ManagedHeader;

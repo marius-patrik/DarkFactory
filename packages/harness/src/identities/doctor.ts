@@ -1,15 +1,14 @@
 import { readFile } from "node:fs/promises";
-import { configBlock, parseConfigDocument, resolveConfigDocumentPath } from "@darkfactory/protocol/config-document";
+import { configBlock, parseConfigDocument, resolveConfigDocumentPath } from "../../../protocol/src/config-document.ts";
 import { parseChain } from "../harness/routing.ts";
 import { loadIdentities } from "./loader.ts";
 
-export interface DoctorIdentitiesOptions {
+interface DoctorIdentitiesOptions {
 	configPath?: string;
 	manifestPath?: string;
 	reader?: (path: string) => Promise<string>;
 }
-
-export interface DoctorIdentitiesResult {
+interface DoctorIdentitiesResult {
 	ok: boolean;
 	chainProviders: string[];
 	missingProviders: string[];

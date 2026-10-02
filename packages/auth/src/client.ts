@@ -11,7 +11,7 @@ const STATE_KEY = "df-auth-state";
 const SESSION_KEY = "df-auth-session";
 
 /** Validated one-time PKCE callback material sent to the confidential broker. */
-export interface AuthCallbackCompletion {
+interface AuthCallbackCompletion {
 	code: string;
 	codeVerifier: string;
 }

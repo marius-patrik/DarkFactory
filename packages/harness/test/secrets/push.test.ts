@@ -2,7 +2,7 @@ import { describe, expect, test } from "bun:test";
 
 const sodium: typeof import("libsodium-wrappers") = require("libsodium-wrappers");
 
-import type { PushMap, Vault } from "@darkfactory/keychain";
+import type { PushMap, Vault } from "../../../keychain/src/index.ts";
 import { GitHubClient } from "../../src/github/client.ts";
 import { GitHubRepository } from "../../src/github/repository.ts";
 import { pushSecrets } from "../../src/secrets/push.ts";

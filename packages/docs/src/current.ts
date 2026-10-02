@@ -5,7 +5,7 @@ import type { DocsContentGraph } from "./content.ts";
 import { analyzeRuleNoteRelations } from "./relations.ts";
 
 /** One deterministic violation of the repository's current-only documentation contract. */
-export interface DocumentationTruthFinding {
+interface DocumentationTruthFinding {
 	path: string;
 	message: string;
 }

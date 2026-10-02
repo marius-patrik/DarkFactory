@@ -1,13 +1,13 @@
 import { existsSync, readFileSync } from "node:fs";
 import { readFile } from "node:fs/promises";
 import { join, resolve } from "node:path";
-import { configBlock, parseConfigDocument, resolveConfigDocumentPath } from "@darkfactory/protocol/config-document";
+import { configBlock, parseConfigDocument, resolveConfigDocumentPath } from "../../../protocol/src/config-document.ts";
 import { GitError, runGit } from "./git.ts";
 
 /**
  * Structured Git Conflict State.
  */
-export interface GitConflictState {
+interface GitConflictState {
 	/** The current conflict-bearing operation. */
 	operation: "rebase" | "merge" | "cherry-pick" | "none";
 	/** The base ref or SHA of the operation. */
@@ -26,7 +26,7 @@ export interface GitConflictState {
 /**
  * Structured Git Status.
  */
-export interface GitStatusResult {
+interface GitStatusResult {
 	/** Current branch name. */
 	branch: string;
 	/** Whether there are uncommitted changes. */
@@ -136,7 +136,7 @@ export function isWorktreeDirty(worktree: string): boolean {
  * @param worktree - Path to the git worktree.
  * @throws {Error} If the worktree is dirty.
  */
-export function assertCleanWorktree(worktree: string): void {
+function assertCleanWorktree(worktree: string): void {
 	if (isWorktreeDirty(worktree)) {
 		throw new Error(`Operation refused: worktree at ${worktree} has uncommitted dirty changes.`);
 	}
@@ -472,4 +472,21 @@ export function pushWithLease(worktree: string, remote: string, branch: string, 
 		throw new Error(`Push verification failed for ${remote}/${branch}: expected ${localSha}, observed ${remoteSha}`);
 	}
 	return remoteSha;
+}
+
+/**
+ * Rejects a ref that is not a plain Git reference, so a caller-supplied branch or remote name can
+ * never be read as an option or a second argument.
+ */
+function validateRef(ref: string, name = "ref"): void {
+	if (!ref || typeof ref !== "string" || !/^[a-zA-Z0-9_\-./~^@{}+]+$/.test(ref) || ref.startsWith("-")) {
+		throw new Error(`Invalid ${name}: ${ref}`);
+	}
+}
+
+/** Creates a branch at a start point and checks it out. */
+export function createBranch(worktree: string, branch: string, startPoint: string): void {
+	validateRef(branch, "branch");
+	validateRef(startPoint, "startPoint");
+	runGit(worktree, ["checkout", "-b", branch, startPoint]);
 }

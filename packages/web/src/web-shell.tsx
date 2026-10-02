@@ -1,14 +1,26 @@
 import type { FC, ReactNode } from "react";
-import { Link, Switch, useLocation, Route as WouterRoute, Router as WouterRouter } from "wouter";
+import { type BaseLocationHook, Link, Switch, useLocation, Route as WouterRoute, Router as WouterRouter } from "wouter";
 import { type QuotaDashboardState, QuotaDashboardView } from "./quota";
 
-export interface RouterProps {
+interface RouterProps {
 	basename?: string;
+	/**
+	 * Location source, forwarded to wouter. Wouter defaults to the browser location, which does not
+	 * exist outside a browser, so an embedder serving this shell from a server or a frame has to
+	 * supply its own — as does a test asserting that `/` and `/status` render different views.
+	 * Forwarding wouter's own hook is not a test seam; it is the capability a component library owes
+	 * the code that embeds it.
+	 */
+	hook?: BaseLocationHook;
 	children: ReactNode;
 }
 
-export const Router: FC<RouterProps> = ({ basename, children }) => {
-	return <WouterRouter base={basename}>{children}</WouterRouter>;
+export const Router: FC<RouterProps> = ({ basename, hook, children }) => {
+	return (
+		<WouterRouter base={basename} hook={hook}>
+			{children}
+		</WouterRouter>
+	);
 };
 
 export const useRouter = () => {
@@ -18,8 +30,7 @@ export const useRouter = () => {
 		navigate: (to: string) => setLocation(to),
 	};
 };
-
-export interface RouteProps {
+interface RouteProps {
 	path?: string;
 	component?: FC<{ params: Record<string, string | undefined> }>;
 	children?: ReactNode;
@@ -83,22 +94,24 @@ const RouteAnnouncer: FC = () => {
 		</div>
 	);
 };
-
-export interface DarkFactoryShellProps {
+interface DarkFactoryShellProps {
 	basename?: string;
 	routes?: RouteConfig[];
 	/** Browser-safe quota data state. Defaults to disconnected for public/static builds. */
 	quota?: QuotaDashboardState;
+	/** Location source for the embedded router. See {@link RouterProps.hook}. */
+	hook?: BaseLocationHook;
 }
 
 export const DarkFactoryShell: FC<DarkFactoryShellProps> = ({
 	basename,
 	routes,
 	quota = { status: "disconnected" },
+	hook,
 }) => {
 	const activeRoutes = routes ?? defaultRoutes(quota);
 	return (
-		<Router basename={basename}>
+		<Router basename={basename} hook={hook}>
 			<RouteAnnouncer />
 			<div className="darkfactory-shell">
 				<header>

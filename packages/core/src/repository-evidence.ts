@@ -5,11 +5,10 @@
 import type { Dirent } from "node:fs";
 import { access, readdir, readFile } from "node:fs/promises";
 import { basename, dirname, join, relative, resolve } from "node:path";
-import { configBlock, parseConfigDocument, resolveConfigDocumentPath } from "@darkfactory/protocol/config-document";
+import { configBlock, parseConfigDocument, resolveConfigDocumentPath } from "../../protocol/src/config-document.ts";
 
-export type RepositoryEcosystem = "node" | "python" | "rust" | "go" | "deno" | "typst" | "latex" | "lean";
-
-export type PackageManager =
+type RepositoryEcosystem = "node" | "python" | "rust" | "go" | "deno" | "typst" | "latex" | "lean";
+type PackageManager =
 	| "bun"
 	| "npm"
 	| "pnpm"
@@ -37,7 +36,7 @@ const ECOSYSTEM_DOMAIN: Readonly<Record<RepositoryEcosystem, string>> = {
 };
 
 /** One package discovered in repository evidence. */
-export interface RepositoryPackageEvidence {
+interface RepositoryPackageEvidence {
 	id: string;
 	path: string;
 	name: string;
@@ -52,7 +51,7 @@ export interface RepositoryPackageEvidence {
 }
 
 /** Explicit deterministic-action override declared in the combined configuration's repo block. */
-export interface RepositoryActionOverride {
+interface RepositoryActionOverride {
 	command?: string;
 	enabled?: boolean;
 	versions?: readonly string[];
@@ -60,7 +59,7 @@ export interface RepositoryActionOverride {
 }
 
 /** Minimal repository fields used by evidence. Unknown product fields remain opaque. */
-export interface RepositoryDfEvidence {
+interface RepositoryDfEvidence {
 	identity?: { default_branch?: string; [key: string]: unknown };
 	upstream?: { repo?: string | null; ref?: string | null; [key: string]: unknown };
 	environment?: {

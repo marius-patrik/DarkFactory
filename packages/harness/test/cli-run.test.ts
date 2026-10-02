@@ -1,10 +1,40 @@
-import { afterEach, describe, expect, test } from "bun:test";
+import { afterEach, describe, expect, setDefaultTimeout, test } from "bun:test";
 import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { join } from "node:path";
-import { FileCredentialStore } from "@darkfactory/keychain";
+import { FileCredentialStore } from "../../keychain/src/index.ts";
 import { redactToolInput } from "../src/cli.ts";
 
+/**
+ * The suite's per-test bound is declared in `package.json` as `bun test --timeout=30000`, and this
+ * file is the reason it exists.
+ *
+ * Every test here drives the real CLI: a nested `bun` launch, a credential store, and in some cases a
+ * network round trip. Their wall time is dominated by process startup and by whatever else the machine
+ * is doing, not by the assertion. Bun's 5000ms default is not a bound they can rely on — the suite
+ * passed on an idle machine and failed on a loaded one, with a *different* test failing each run on
+ * identical code. A timeout that names a different victim every time carries no information, and a gate
+ * that cries wolf is worse than no gate.
+ *
+ * The trade is explicit: a genuinely hung test now takes 30 seconds to report instead of 5. No assertion
+ * is weakened — a test that would fail at 5s still fails at 30s, and one that passes does so on the work
+ * rather than on the clock.
+ *
+ * This is the same defect fixed once already, in `tests/paper/publication.test.ts`, where a nested bun
+ * launch failed CI at 5005ms with no change to the code. It was fixed in that one file and left here,
+ * which is how the same flake kept reappearing in a different file. The bound belongs to the suite, and
+ * `setDefaultTimeout` from a `bunfig.toml` preload does not reach other files — verified: a 7s test in a
+ * second file still failed at 5000ms.
+ */
 const temporary: string[] = [];
+
+// Applies to this file only. Every test here spawns the real `df` entry point, so its wall time is
+// process startup plus whatever the run does. Bun's 5000ms default is not a bound these can rely on:
+// the file passes on its own in 17s, and under the full suite a test that took 1.2s in isolation has
+// failed at 5007ms with no change to the code. The bound is generous because what these assert — that
+// `df` chooses a route, that it fails a run, that it records an outcome — is worth more than a tight
+// bound on how fast a subprocess starts. A `bunfig.toml` preload does not reach other files, so the
+// bound has to be declared where the tests are.
+setDefaultTimeout(60_000);
 
 afterEach(async () => {
 	for (const path of temporary.splice(0)) {

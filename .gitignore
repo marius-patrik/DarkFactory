@@ -61,7 +61,12 @@ packages/harness/.*-test-*/
 .agents/skills/
 
 # Relocated to packages/harness in #1227. Nothing belongs at this path any more;
-# tracked entries here were test debris swept in by an over-broad `git add`.
+# Root-anchored. A bare `harness/` matches any directory of that name at any depth, which silently
+# gitignored packages/harness/ too — and biome honours .gitignore, so the largest source tree in the
+# repository became invisible to `biome ci .`.
 /harness/
 .licence-test-*/
 .cli-test-*/
+# The reachability analyser is a working tool, not a deliverable: it is rewritten on every run, so
+# its generated JSON can never satisfy a format check.
+.ast-reachability.*

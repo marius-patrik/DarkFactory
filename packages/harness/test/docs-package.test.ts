@@ -103,12 +103,18 @@ describe("@darkfactory/docs", () => {
 		expect(() => compileDocsContentGraph(root)).toThrow("ADR must have Status: Accepted");
 	});
 
+	/**
+	 * Declares its own bound: this is the only test here that runs a real TypeScript compiler over a
+	 * fixture and parses the result, so its wall time is compiler startup rather than the assertion. It
+	 * tipped over bun's 5000ms default on a loaded machine, which made an unrelated docs suite look
+	 * broken.
+	 */
 	test("integrates strict TypeScript API extraction into the content graph", async () => {
 		const root = await fixture(true);
 		const graph = await compileDocsContentGraphWithApi(root);
 		expect(graph.api?.name).toBe("Fixture API");
 		expect(JSON.stringify(graph.api)).toContain("FixtureApi");
-	});
+	}, 30_000);
 
 	test("renders the content graph through @darkfactory/web", async () => {
 		const root = await fixture(true);

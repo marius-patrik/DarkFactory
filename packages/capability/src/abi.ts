@@ -1,15 +1,13 @@
-import type { TaskKind } from "@darkfactory/protocol/model";
+import type { TaskKind } from "../../protocol/src/model.ts";
 
 /** Current capability ABI compatibility version. */
 export const CAPABILITY_ABI_VERSION = "1" as const;
-/** Literal type of the supported capability ABI version. */
-export type CapabilityAbiVersion = typeof CAPABILITY_ABI_VERSION;
 
 /** JSON Schema object used to describe capability tool inputs. */
 export type JsonSchema = Readonly<Record<string, unknown>>;
 
 /** Declares a scoped credential requirement for a capability. */
-export interface CapabilityCredentialRequirement {
+interface CapabilityCredentialRequirement {
 	id: string;
 	purpose: string;
 	provider?: string;
@@ -18,19 +16,19 @@ export interface CapabilityCredentialRequirement {
 }
 
 /** Credential values resolved for one declared requirement. */
-export interface CapabilityCredentialHandle {
+interface CapabilityCredentialHandle {
 	requirementId: string;
 	account?: string;
 	values: Readonly<Record<string, string>>;
 }
 
 /** Runtime interface that resolves scoped credential handles. */
-export interface CapabilityCredentialBroker {
+interface CapabilityCredentialBroker {
 	get(requirementId: string): Promise<CapabilityCredentialHandle | undefined>;
 }
 
 /** Structured audit event emitted by a capability. */
-export interface CapabilityAuditEvent {
+interface CapabilityAuditEvent {
 	capability: string;
 	action: string;
 	details?: Readonly<Record<string, unknown>>;
@@ -64,20 +62,20 @@ export interface CapabilityCommandDefinition {
 }
 
 /** Defines evidence used to activate a capability. */
-export interface CapabilityDetectorDefinition {
+interface CapabilityDetectorDefinition {
 	id: string;
 	description: string;
 	domains?: readonly string[];
 }
 
 /** Declares graph-node kinds contributed by a capability. */
-export interface CapabilityGraphContribution {
+interface CapabilityGraphContribution {
 	id: string;
 	nodeKinds: readonly string[];
 }
 
 /** Declares a deterministic verification action. */
-export interface CapabilityVerificationDefinition {
+interface CapabilityVerificationDefinition {
 	id: string;
 	description: string;
 }
@@ -166,7 +164,7 @@ export interface CapabilityActionDefinition {
 }
 
 /** Metadata for documentation, web, release, and audit surfaces. */
-export interface CapabilitySurfaceMetadata {
+interface CapabilitySurfaceMetadata {
 	docs?: readonly string[];
 	web?: readonly string[];
 	release?: readonly string[];

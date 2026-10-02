@@ -3,12 +3,11 @@ import type { Candidate } from "../failover.ts";
 import type { DeclaredLimitConfig, FreeTierConfig, ProviderConfig } from "../providers/schema.ts";
 import type { CandidateQuota, QuotaEngine, QuotaState } from "./quota-engine.ts";
 
-export interface QuotaReportAccount {
+interface QuotaReportAccount {
 	label: string;
 	models: CandidateQuota[];
 }
-
-export interface QuotaReportProvider {
+interface QuotaReportProvider {
 	id: string;
 	name: string;
 	dialect: string;
@@ -35,8 +34,7 @@ export interface QuotaReport {
 	generatedAt: string;
 	providers: QuotaReportProvider[];
 }
-
-export interface QuotaReportInput {
+interface QuotaReportInput {
 	providers: readonly ProviderConfig[];
 	accounts: ReadonlyArray<{ provider: string; label: string }>;
 	/** Candidates named in df's configured chains; their models are reported even when not in the static catalog. */
@@ -150,9 +148,4 @@ export function operatorQuotaSnapshot(report: QuotaReport): OperatorQuotaSnapsho
 			})),
 		})),
 	};
-}
-
-/** Builds the canonical runtime quota report and immediately projects its redacted operator snapshot. */
-export async function buildOperatorQuotaSnapshot(input: QuotaReportInput): Promise<OperatorQuotaSnapshot> {
-	return operatorQuotaSnapshot(await buildQuotaReport(input));
 }

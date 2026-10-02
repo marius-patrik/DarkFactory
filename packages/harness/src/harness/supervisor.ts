@@ -1,13 +1,13 @@
-import { captureContext, forceCaptureTool, readCapture } from "@darkfactory/core/result-capture";
+import type { AssistantMessage, StopReason, Usage } from "@earendil-works/pi-ai";
+import type { AgentSessionEvent } from "@earendil-works/pi-coding-agent";
+import type { z } from "zod";
+import { captureContext, forceCaptureTool, readCapture } from "../../../core/src/result-capture.ts";
 import {
 	type CaptureAttempt,
 	CaptureError,
 	captureJsonSchema,
 	type ExtractedJudgement,
-} from "@darkfactory/protocol/result-capture";
-import type { AssistantMessage, StopReason, Usage } from "@earendil-works/pi-ai";
-import type { AgentSessionEvent } from "@earendil-works/pi-coding-agent";
-import type { z } from "zod";
+} from "../../../protocol/src/result-capture.ts";
 import type { Candidate } from "../failover.ts";
 import { LimitLedger } from "../limits/ledger.ts";
 import { defaultLimit, observeAnswer, observeLimits } from "../limits/observe.ts";
@@ -36,7 +36,7 @@ import { createHarnessRuntime, type HarnessRuntime, type HarnessRuntimeOptions }
  * @property failoverReason Failure kind of the failover reason, or `null` if no failover occurred.
  * @property resetAt Timestamp (ms) when the rate/limit resets, if applicable.
  */
-export interface HarnessStepEvent {
+interface HarnessStepEvent {
 	type: "step";
 	provider: string;
 	account: string;
@@ -142,7 +142,7 @@ export class ChainExhaustedError extends Error {
  * Thrown when the maximum number of turns is reached for a prompt.
  * @param limit Maximum turn count that was reached.
  */
-export class MaxTurnsError extends Error {
+class MaxTurnsError extends Error {
 	constructor(limit: number) {
 		super(`Maximum turn count reached (${limit})`);
 		this.name = "MaxTurnsError";
@@ -183,7 +183,7 @@ export class RunTimeoutError extends Error {
  * @property taskKind Kind of task being run, used for outcome recording and quota tracking.
  * @property quota Admission control: asked before every model call; every call is recorded as usage.
  */
-export interface SupervisorOptions {
+interface SupervisorOptions {
 	chain: readonly Candidate[];
 	runtime: HarnessRuntime;
 	ledger: LimitLedger;
@@ -215,7 +215,7 @@ export interface SupervisorOptions {
  * @property taskKind Kind of task being run, used for outcome recording and quota tracking.
  * @property quota Admission control: asked before every model call; every call is recorded as usage.
  */
-export interface CreateSupervisorOptions extends Omit<HarnessRuntimeOptions, "candidate"> {
+interface CreateSupervisorOptions extends Omit<HarnessRuntimeOptions, "candidate"> {
 	chain: readonly Candidate[];
 	onEvent?: (event: HarnessEvent) => void;
 	now?: () => number;

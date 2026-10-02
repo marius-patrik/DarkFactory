@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import type { RecoveryIntakeRecord, RecoverySourceIdentity } from "@darkfactory/protocol/recovery";
+import type { RecoveryIntakeRecord, RecoverySourceIdentity } from "../../protocol/src/recovery.ts";
 import {
 	assertRecoveryCleanupTruth,
 	assertRecoveryPublicationAllowed,

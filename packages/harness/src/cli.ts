@@ -7,25 +7,28 @@ import { homedir } from "node:os";
 import { dirname, join } from "node:path";
 import { stdin, stdout } from "node:process";
 import { createInterface } from "node:readline/promises";
-import { formatCaptureSchema } from "@darkfactory/cli/capture-schema";
+import type { AuthEvent, AuthPrompt, Provider } from "@earendil-works/pi-ai";
+import { fauxAssistantMessage, fauxProvider } from "@earendil-works/pi-ai";
+import { formatCaptureSchema } from "../../cli/src/capture-schema.ts";
+import { importAntigravityAccount, OsKeyringAdapter } from "../../keychain/src/import/antigravity.ts";
+import { importClaudeAccount } from "../../keychain/src/import/claude.ts";
+import { importCodexAccount } from "../../keychain/src/import/codex.ts";
+import { importGrokAccount } from "../../keychain/src/import/grok.ts";
+import { OsClaudeKeyringAdapter } from "../../keychain/src/import/keyring.ts";
+import { importKimiAccount } from "../../keychain/src/import/kimi.ts";
+import { OsHomeReader } from "../../keychain/src/import/reader.ts";
+import type { ExternalCredentialSourceConfig, ExternalExpiryFormat } from "../../keychain/src/index.ts";
 import {
+	ConfiguredBorrowedCredentialCoordinator,
 	defaultDfHome,
 	exportCredentialAccount,
 	FileCredentialStore,
 	importCredentialAccount,
 	loadVaultKey,
+	OsExternalKeyring,
 	parseAccountId,
-} from "@darkfactory/keychain";
-import { importAntigravityAccount, OsKeyringAdapter } from "@darkfactory/keychain/import/antigravity";
-import { importClaudeAccount } from "@darkfactory/keychain/import/claude";
-import { importCodexAccount } from "@darkfactory/keychain/import/codex";
-import { importGrokAccount } from "@darkfactory/keychain/import/grok";
-import { OsClaudeKeyringAdapter } from "@darkfactory/keychain/import/keyring";
-import { importKimiAccount } from "@darkfactory/keychain/import/kimi";
-import { OsHomeReader } from "@darkfactory/keychain/import/reader";
-import { loginProviderAccount } from "@darkfactory/keychain/login";
-import type { AuthEvent, AuthPrompt, Provider } from "@earendil-works/pi-ai";
-import { fauxAssistantMessage, fauxProvider } from "@earendil-works/pi-ai";
+} from "../../keychain/src/index.ts";
+import { loginProviderAccount } from "../../keychain/src/login.ts";
 import { runCiCli } from "./ci/cli.ts";
 import { applyLicence } from "./ci/licensing.ts";
 import { reportFailure, resolveFailure } from "./ci/report-failure.ts";
@@ -53,6 +56,7 @@ import { sweepQuotaResumes } from "./limits/resume-sweep.ts";
 import { estimateTask } from "./limits/routing.ts";
 import { type CatalogResult, isRunnableCatalogModel, ModelCatalog } from "./models/catalog.ts";
 import { ModelPoller } from "./models/poller.ts";
+import { RUNNER_COMMANDS, type RunnerCommand, runnerMain } from "./pipeline/main.ts";
 import { ProviderRegistry } from "./providers/runtime.ts";
 import { loadProviderConfig } from "./providers/schema.ts";
 import { classifyFailure } from "./quota.ts";
@@ -91,6 +95,7 @@ function usage(): string {
 		"  df accounts",
 		"  df account set <account-id> <slot> --type <api_key|header|cookie|other> [--from-vault NAME]  # value from stdin or the vault",
 		"  df account import <antigravity|claude|codex|grok|kimi> --account <label>",
+		"  df account borrow <claude|...> --account <label>   re-read the source CLI's credential",
 		"  df account export <provider:label>",
 		"  df account load <provider:label> --from-env <VAR>",
 		"  df login <provider> [--account <label>]",
@@ -421,6 +426,49 @@ async function accountImportCommand(
 	console.log(`Imported ${source}/${label}.`);
 }
 
+/**
+ * Registers an account that keeps re-reading the source CLI's credential instead of holding a copy.
+ *
+ * `df account import` copies: the token is written into df's own store and `ownership` is
+ * `df-owned`, so a token the source CLI later refreshes is invisible here. Borrowing registers the
+ * account with `ownership: "borrowed"` and the importer id, and `BorrowedCredentialCoordinator` then
+ * re-reads the declared path or keyring entry on every use. df never writes the source.
+ */
+async function accountBorrowCommand(
+	registry: ProviderRegistry,
+	store: FileCredentialStore,
+	args: string[],
+): Promise<void> {
+	const source = args[0];
+	const label = option(args, "--account");
+	if (!label) throw new Error("account borrow requires --account <label>");
+	const declaration = registry.entries.flatMap((entry) => entry.importers ?? []).find((entry) => entry.id === source);
+	if (!declaration) throw new Error(`Unknown account borrow source: ${source ?? ""}`);
+	const id = `${declaration.targetProvider}:${label}`;
+	await store.modifyAccount(id, async (current) =>
+		current
+			? {
+					...current,
+					metadata: {
+						...(current.metadata ?? {}),
+						importedFrom: declaration.id,
+						ownership: "borrowed",
+						sync: "machine-only",
+					},
+				}
+			: undefined,
+	);
+	console.log(
+		`Borrowing ${declaration.targetProvider}/${label} from ${declaration.id} ` +
+			`(${declaration.keyring ? `keyring ${declaration.keyring.service}` : (declaration.path ?? "declared path")}).`,
+	);
+}
+
+/** The expiry field's declared name, mapped onto what the coordinator parses. */
+function expiryFormat(declared: "epoch_seconds" | "epoch_milliseconds" | "iso"): ExternalExpiryFormat {
+	return declared === "epoch_milliseconds" ? "epoch_ms" : declared;
+}
+
 async function markImportedAccount(
 	store: FileCredentialStore,
 	provider: string,
@@ -583,23 +631,49 @@ async function logoutCommand(
 	console.log(`Logged out ${providerId}/${label}.`);
 }
 
+/**
+ * Resolves the models a one-off question may be answered by.
+ *
+ * The same routing a full run uses, so `ask` and `run` agree on which model would serve a prompt:
+ * asking a question must not silently pick a worse model than running the same prompt would.
+ *
+ * @param registry Provider registry.
+ * @param config Loaded configuration, carrying the routing preferences.
+ * @param prompt The question, which is routed on.
+ * @returns Candidates in preference order; empty when nothing is usable.
+ */
+async function routeForPrompt(registry: ProviderRegistry, config: DfConfig, prompt: string): Promise<Candidate[]> {
+	const models = buildRouterCatalog({
+		providers: registry.entries,
+		capabilityTiers: config.router?.capabilityTiers,
+		defaultTier: config.router?.defaultTier,
+	});
+	if (models.length === 0) return [];
+	const route = await routeTask({ prompt }, { config: config.router ?? DEFAULT_ROUTER_CONFIG, models });
+	return route.chain;
+}
+
 async function askCommand(
 	registry: ProviderRegistry,
 	store: FileCredentialStore,
 	config: DfConfig,
 	args: string[],
 ): Promise<void> {
+	// `--chain` is optional: an ad-hoc question should not require knowing the chain, and the
+	// router already resolves the whole live catalogue when no chain is pinned. Naming one still
+	// works, for when a question should only ever be answered by a particular model.
 	const chainValue = option(args, "--chain");
-	if (!chainValue) throw new Error("ask requires --chain");
 	const prompt = removeOptions(args, ["--chain"]).join(" ").trim();
 	if (!prompt) throw new Error("ask requires a prompt");
 	const json = args.includes("--json");
+	const chain = chainValue ? parseChain(chainValue) : await routeForPrompt(registry, config, prompt);
+	if (chain.length === 0) throw new Error("ask could not resolve a model: add an account, or pass --chain");
 	const supervisor = await createCliSupervisor(
 		registry,
 		store,
 		config,
 		["run", ...args],
-		parseChain(chainValue),
+		chain,
 		json,
 		estimateTask(prompt),
 	);
@@ -1577,8 +1651,23 @@ async function secretsCli(home: string, args: string[]): Promise<void> {
  * @throws {ChainExhaustedError} If all candidates in the chain are unavailable during a run
  * @throws {Error} If an unknown command is provided or a command handler fails
  */
+
 export async function main(args = process.argv.slice(2)): Promise<void> {
 	if (args[0] === "graph") return graphCommand(args.slice(1));
+	// The nine runner commands are reached through `df` itself, not through a second executable.
+	//
+	// The agent image installs `df` and runs it, so a command only this binary can run is a command
+	// the image cannot reach. Pointing ENTRYPOINT at a file inside the source tree instead would work
+	// and would be wrong twice over: it bypasses the CLI that owns the command surface, and it makes
+	// the image's entrypoint depend on the source layout, so a file move breaks the container.
+	//
+	// `nix/entrypoint.sh` refused to shim `dispatch` into `graph dispatch` for the same reason it gave:
+	// a shim that makes the image look compatible turns a loud failure into a silent one. The fix was
+	// never a better shim. It was a real `df dispatch`, which is what this is.
+	if (RUNNER_COMMANDS.includes(args[0] as RunnerCommand)) {
+		process.exitCode = await runnerMain(args);
+		return;
+	}
 	const home = defaultDfHome();
 	const config = await loadDfConfig(process.cwd());
 	const providerConfig = await loadProviderConfig(home);
@@ -1587,10 +1676,28 @@ export async function main(args = process.argv.slice(2)): Promise<void> {
 		fallbackTtlMs: config.cooldownTtlMs,
 		persist: (candidate) => candidate.provider !== "faux",
 	});
+	// Borrowed accounts re-read the source CLI's credential through this coordinator. Constructed
+	// here, beside the store, because the store is what consults it: without a coordinator here every
+	// borrowed account falls through to its stored copy, and nothing could ever be borrowed.
+	const borrowedSources: ExternalCredentialSourceConfig[] = registry.entries.flatMap((entry) =>
+		(entry.importers ?? []).map((importer) => ({
+			id: importer.id,
+			...(importer.path ? { path: importer.path } : {}),
+			...(importer.keyring ? { keyring: importer.keyring } : {}),
+			fields: {
+				access: importer.fieldMapping.access ?? "accessToken",
+				refresh: importer.fieldMapping.refresh ?? "refreshToken",
+				expires: importer.fieldMapping.expires ?? "expiresAt",
+				...(importer.fieldMapping.accountId ? { accountId: importer.fieldMapping.accountId } : {}),
+			},
+			...(importer.formats?.expires ? { expires: expiryFormat(importer.formats.expires) } : {}),
+		})),
+	);
 	const store = new FileCredentialStore(
 		home,
 		localCredentialFallback(home, config, providerConfig),
 		(provider, label) => ledger.clearAccount(provider, label),
+		new ConfiguredBorrowedCredentialCoordinator(homedir(), borrowedSources, new OsExternalKeyring()),
 	);
 	const command = args[0];
 	switch (command) {
@@ -1619,6 +1726,7 @@ export async function main(args = process.argv.slice(2)): Promise<void> {
 		case "account":
 			if (args[1] === "set") return accountSetCommand(store, args.slice(2));
 			if (args[1] === "import") return accountImportCommand(registry, store, args.slice(2));
+			if (args[1] === "borrow") return accountBorrowCommand(registry, store, args.slice(2));
 			if (args[1] === "export") return accountExportCommand(store, args.slice(2));
 			if (args[1] === "load") return accountLoadCommand(store, args.slice(2));
 			throw new Error(`Unknown account command: ${args[1] ?? ""}`);

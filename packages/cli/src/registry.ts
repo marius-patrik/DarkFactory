@@ -2,13 +2,13 @@ import type {
 	CapabilityCommandDefinition,
 	CapabilityDefinition,
 	CapabilityRuntimeContext,
-} from "@darkfactory/capability";
+} from "../../capability/src/index.ts";
 
 /** Origin of one command in the composed DarkFactory operator surface. */
-export type CliCommandSource = "core" | "capability";
+type CliCommandSource = "core" | "capability";
 
 /** Browser/headless-safe metadata shared by CLI help, TUI and operator surfaces. */
-export interface CliCommandMetadata {
+interface CliCommandMetadata {
 	name: string;
 	description: string;
 	taskKind?: CapabilityCommandDefinition["taskKind"];
@@ -18,7 +18,7 @@ export interface CliCommandMetadata {
 }
 
 /** Executable command registered in the final @darkfactory/cli command model. */
-export interface CliCommandDefinition extends CliCommandMetadata {
+interface CliCommandDefinition extends CliCommandMetadata {
 	execute(args: readonly string[], context: CapabilityRuntimeContext): Promise<unknown> | unknown;
 }
 

@@ -10,8 +10,7 @@ export const FAILURE_LABEL = "pipeline-failure";
  * rewording it — does not spawn a second issue for the same failing workflow.
  */
 export const failureMarker = (workflow: string): string => `<!-- pipeline-failure: ${workflow} -->`;
-
-export interface ReportFailureOptions {
+interface ReportFailureOptions {
 	/** Repository the issue is opened in. */
 	repo: GitHubRepository;
 	/** Workflow that failed. */
@@ -25,7 +24,7 @@ export interface ReportFailureOptions {
 }
 
 /** What one report or resolve did. */
-export interface FailureOutcome {
+interface FailureOutcome {
 	/** The issue now tracking this workflow, or `null` when one could not be filed. */
 	number: number | null;
 	/** Duplicates closed because two runs raced to file. */

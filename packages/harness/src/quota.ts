@@ -4,14 +4,13 @@ import type { FailureRuleConfig } from "./providers/schema.ts";
 
 export type { FailureKind } from "../../protocol/src/model.ts";
 
-export interface FailureInput {
+interface FailureInput {
 	error?: unknown;
 	message?: AssistantMessage;
 	response?: ProviderResponse;
 	now?: number;
 }
-
-export interface FailurePolicy {
+interface FailurePolicy {
 	rules: readonly FailureRuleConfig[];
 	model?: string;
 }
@@ -158,8 +157,7 @@ function jsonBody(message: string): unknown {
 	}
 	return undefined;
 }
-
-export function unwrapNestedJson(value: unknown, maxDepth = 5): unknown {
+function unwrapNestedJson(value: unknown, maxDepth = 5): unknown {
 	let current = value;
 	for (let depth = 0; depth < maxDepth; depth++) {
 		if (typeof current === "string") {
@@ -342,7 +340,7 @@ function configuredClassification(
 }
 
 /** Ported from dsh-stack: distinguishes exhausted plans from bad credentials. */
-export function isExhaustedQuota(detail: string | undefined): boolean {
+function isExhaustedQuota(detail: string | undefined): boolean {
 	return (
 		detail !== undefined &&
 		(QUOTA.test(detail) ||

@@ -2,7 +2,7 @@ import type { Candidate } from "../failover.ts";
 import { LimitLedger } from "../limits/ledger.ts";
 import type { FailureKind } from "../quota.ts";
 
-export interface CooldownEntry {
+interface CooldownEntry {
 	provider: string;
 	model: string;
 	account: string;

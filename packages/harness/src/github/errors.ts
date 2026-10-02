@@ -23,7 +23,7 @@ export type GitHubErrorKind =
  * @property requestId - Optional GitHub request identifier.
  * @property retryAt - Optional date indicating when a retry should be attempted.
  */
-export interface GitHubErrorOptions {
+interface GitHubErrorOptions {
 	kind: GitHubErrorKind;
 	message: string;
 	method: string;

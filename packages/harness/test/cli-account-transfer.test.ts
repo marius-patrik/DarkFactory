@@ -2,7 +2,7 @@ import { afterEach, describe, expect, test } from "bun:test";
 import { mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { FileCredentialStore, generateVaultKey } from "@darkfactory/keychain";
+import { FileCredentialStore, generateVaultKey } from "../../keychain/src/index.ts";
 
 const roots: string[] = [];
 afterEach(async () => {

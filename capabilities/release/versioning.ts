@@ -1,18 +1,18 @@
 /** One first-party package/capability version participating in a lockstep release. */
-export interface ReleasePackageVersion {
+interface ReleasePackageVersion {
 	name: string;
 	version: string;
 }
 
 /** One deterministic lockstep-version validation finding. */
-export interface LockstepVersionFinding {
+interface LockstepVersionFinding {
 	code: "invalid-canonical-version" | "invalid-package-version" | "version-mismatch" | "duplicate-package";
 	packageName?: string;
 	message: string;
 }
 
 /** Result of checking a first-party package set against one canonical version. */
-export interface LockstepVersionValidation {
+interface LockstepVersionValidation {
 	valid: boolean;
 	canonicalVersion: string;
 	findings: readonly LockstepVersionFinding[];

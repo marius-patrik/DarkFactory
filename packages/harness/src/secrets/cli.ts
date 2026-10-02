@@ -5,7 +5,7 @@ import {
 	type KeychainOptions,
 	loadVaultKey,
 	storeVaultKey,
-} from "@darkfactory/keychain";
+} from "../../../keychain/src/index.ts";
 import {
 	loadPushMap,
 	loadVault,
@@ -16,14 +16,14 @@ import {
 	vaultList,
 	vaultRm,
 	vaultSet,
-} from "@darkfactory/keychain/vault-store";
+} from "../../../keychain/src/vault-store.ts";
 import type { GitHubClient } from "../github/client.ts";
 import type { GitHubRepository } from "../github/repository.ts";
 import { detectDrift } from "./drift.ts";
 import { pushSecrets } from "./push.ts";
 import { isGitRepo, syncDataRepo } from "./sync.ts";
 
-export interface SecretsCommandDeps {
+interface SecretsCommandDeps {
 	dfHome: string;
 	repositoryRoot?: string;
 	allowFileKey?: boolean;

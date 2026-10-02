@@ -1,9 +1,9 @@
 import { stat } from "node:fs/promises";
 import { join } from "node:path";
-import type { Vault } from "@darkfactory/keychain";
-import { loadVault, mergeVaults, saveVault } from "@darkfactory/keychain/vault-store";
+import type { Vault } from "../../../keychain/src/index.ts";
+import { loadVault, mergeVaults, saveVault } from "../../../keychain/src/vault-store.ts";
 
-export interface SyncOptions {
+interface SyncOptions {
 	dataRepoPath: string;
 	remote?: string;
 	branch?: string;
@@ -25,37 +25,7 @@ export async function isGitRepo(path: string): Promise<boolean> {
 		return false;
 	}
 }
-
-export async function initDataRepo(dataRepoPath: string): Promise<void> {
-	const result = await git(dataRepoPath, "init");
-	if (result.exitCode !== 0) throw new Error(`git init failed: ${result.stderr}`);
-}
-
-export async function cloneDataRepo(repoUrl: string, targetPath: string): Promise<void> {
-	const proc = Bun.spawn(["git", "clone", repoUrl, targetPath], { stdout: "pipe", stderr: "pipe" });
-	const stderr = await new Response(proc.stderr).text();
-	const exitCode = await proc.exited;
-	if (exitCode !== 0) throw new Error(`git clone failed: ${stderr.trim()}`);
-}
-
-export async function pull(options: SyncOptions): Promise<{ updated: boolean; output: string }> {
-	const remote = options.remote ?? "origin";
-	const branch = options.branch ?? "main";
-	const hasRemote = await git(options.dataRepoPath, "remote");
-	if (!hasRemote.stdout.includes(remote)) {
-		return { updated: false, output: "No remote configured" };
-	}
-	const result = await git(options.dataRepoPath, "pull", "--rebase", remote, branch);
-	if (result.exitCode !== 0) {
-		return { updated: false, output: result.stderr || result.stdout };
-	}
-	return { updated: !result.stdout.includes("Already up to date"), output: result.stdout };
-}
-
-export async function commitAndPush(
-	options: SyncOptions,
-	message: string,
-): Promise<{ pushed: boolean; output: string }> {
+async function commitAndPush(options: SyncOptions, message: string): Promise<{ pushed: boolean; output: string }> {
 	const { dataRepoPath } = options;
 	const remote = options.remote ?? "origin";
 	const branch = options.branch ?? "main";
@@ -111,7 +81,7 @@ async function readRemoteVault(options: SyncOptions, keyBase64: string): Promise
 	if (show.exitCode !== 0) return undefined;
 	try {
 		const envelope = JSON.parse(show.stdout);
-		const { decryptVault } = await import("@darkfactory/keychain");
+		const { decryptVault } = await import("../../../keychain/src/index.ts");
 		return decryptVault(envelope, keyBase64);
 	} catch {
 		return undefined;

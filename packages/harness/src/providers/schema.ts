@@ -1,20 +1,20 @@
-import type { LoginHydrationConfig, OAuthAuthConfig } from "@darkfactory/keychain";
+import type { LoginHydrationConfig, OAuthAuthConfig } from "../../../keychain/src/index.ts";
 
-export type { LoginHydrationConfig, OAuthAuthConfig, ValueReference } from "@darkfactory/keychain";
+export type { LoginHydrationConfig, OAuthAuthConfig, ValueReference } from "../../../keychain/src/index.ts";
 
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import defaults from "../../assets/providers.defaults.json";
 import freeProviders from "../../assets/providers.free.json";
 
-export type ProviderDialect =
+type ProviderDialect =
 	| "openai-completions"
 	| "openai-responses"
 	| "openai-codex-responses"
 	| "anthropic-messages"
 	| "google-generative-ai"
 	| "cloudcode-agent";
-export type FailureRuleKind = "quota_exhausted" | "rate_limited" | "auth" | "transient" | "fatal";
+type FailureRuleKind = "quota_exhausted" | "rate_limited" | "auth" | "transient" | "fatal";
 export type ModelTier = "tight" | "standard" | "bulk";
 export type ConfiguredLimitType =
 	| "rate"
@@ -36,9 +36,8 @@ export interface ApiKeyAuthConfig {
 	optional?: boolean;
 	anonymousValue?: string;
 }
-export type ProviderAuthConfig = ApiKeyAuthConfig | OAuthAuthConfig;
-
-export interface StaticModelConfig {
+type ProviderAuthConfig = ApiKeyAuthConfig | OAuthAuthConfig;
+interface StaticModelConfig {
 	id: string;
 	name?: string;
 	reasoning?: boolean;
@@ -47,7 +46,7 @@ export interface StaticModelConfig {
 	maxTokens?: number;
 	tier?: ModelTier;
 }
-export interface LimitDefaultConfig {
+interface LimitDefaultConfig {
 	type: ConfiguredLimitType;
 	dimension?: "requests" | "tokens" | "usage";
 	limit: number;
@@ -57,7 +56,7 @@ export interface LimitDefaultConfig {
 	reset?: "rolling" | "fixed";
 	model?: string;
 }
-export type LimitNumberSource = "docs" | "community" | "observed" | "default";
+type LimitNumberSource = "docs" | "community" | "observed" | "default";
 export interface DeclaredLimitConfig {
 	/** Model id or glob ("*", "*:free"); absent means every model. */
 	model?: string;
@@ -126,7 +125,7 @@ export interface ModelListConfig {
 	pageTokenParam?: string;
 	body?: Record<string, unknown>;
 }
-export interface ResetSourceConfig {
+interface ResetSourceConfig {
 	kind: "retry_info" | "header" | "next_pacific_midnight" | "cooldown";
 	path?: string;
 	header?: string;
@@ -143,7 +142,7 @@ export interface FailureRuleConfig {
 	pool?: string;
 }
 /** Optional data‑collection configuration for a provider. */
-export interface DataConfig {
+interface DataConfig {
 	/** How the provider's data is used. */
 	collection: "none" | "logging" | "training" | "unknown";
 	/** Optional retention period in days. */
@@ -157,7 +156,7 @@ export interface DataConfig {
 	/** Optional free‑form note. */
 	note?: string;
 }
-export interface ImporterConfig {
+interface ImporterConfig {
 	id: string;
 	parser: "claude-code" | "codex" | "grok-cli" | "antigravity-keyring" | "kimi-code";
 	path?: string;
@@ -167,7 +166,7 @@ export interface ImporterConfig {
 	fieldMapping: Record<string, string>;
 	formats?: { expires?: "epoch_seconds" | "epoch_milliseconds" | "iso" };
 }
-export interface GeneratedHeaderConfig {
+interface GeneratedHeaderConfig {
 	kind: "session-id" | "request-id" | "random";
 	scope?: "session" | "request";
 	group?: string;

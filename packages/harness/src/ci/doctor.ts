@@ -1,16 +1,15 @@
-import { requiredChecksForDetectedQuality } from "@darkfactory/capability/actions";
+import { requiredChecksForDetectedQuality } from "../../../capability/src/actions.ts";
 import type { GitHubRepository } from "../github/repository.ts";
 import { type DetectedQualityState, resolveDetectedQuality } from "./detected.ts";
 import { checkWorkflowsDrift } from "./installer.ts";
 import { computeRequiredChecks, verifyBranchProtection } from "./protection.ts";
 
-export interface DoctorCheckResult {
+interface DoctorCheckResult {
 	status: "pass" | "warn" | "fail" | "skipped";
 	message: string;
 	details?: unknown;
 }
-
-export interface DoctorReport {
+interface DoctorReport {
 	ok: boolean;
 	checks: {
 		repository: DoctorCheckResult;

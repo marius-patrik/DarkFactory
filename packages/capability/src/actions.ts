@@ -11,12 +11,12 @@ import { discoverCapabilities, resolveCapabilities } from "./loader.ts";
 type ActionOverride = { command?: string; enabled?: boolean; versions?: readonly string[] };
 
 /** Canonical exception declaring that one action has no implementation for one ecosystem. */
-export interface NotApplicableDeclaration {
+interface NotApplicableDeclaration {
 	reason: string;
 }
 
 /** Structural repository evidence consumed by capability action resolution. */
-export interface RepositoryActionEvidence {
+interface RepositoryActionEvidence {
 	root: string;
 	domains: readonly string[];
 	packages: readonly CapabilityPackageContext[];
@@ -58,7 +58,7 @@ export interface ResolvedRepositoryAction {
 }
 
 /** All deterministic actions for one detected package. */
-export interface ResolvedPackageActions {
+interface ResolvedPackageActions {
 	package: CapabilityPackageContext;
 	actions: Readonly<Record<CapabilityActionKind, ResolvedRepositoryAction>>;
 }
@@ -317,7 +317,7 @@ export function actionsForTouchedFiles(
 }
 
 /** One executable CI quality matrix entry. */
-export interface QualityMatrixEntry {
+interface QualityMatrixEntry {
 	id: string;
 	packageId: string;
 	kind: QualityActionKind;
@@ -373,7 +373,7 @@ export async function resolveDetectedRepositoryActions(
 }
 
 /** Stable aggregate GitHub status-check contract for detector-driven quality execution. */
-export const QUALITY_REQUIRED_CHECK = "quality" as const;
+const QUALITY_REQUIRED_CHECK = "quality" as const;
 
 /** Governance check that remains independent from language/package quality detection. */
 export const REQUEST_BINDING_REQUIRED_CHECK = "verify-bound-issue" as const;

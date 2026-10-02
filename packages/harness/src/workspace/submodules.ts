@@ -3,7 +3,7 @@ import { join } from "node:path";
 import { runGit } from "../workspace/git.ts";
 
 /** One submodule as declared in `.gitmodules`. */
-export interface Submodule {
+interface Submodule {
 	/** Section name, which is the path unless it was renamed. */
 	name: string;
 	/** Working-tree path. */
@@ -15,7 +15,7 @@ export interface Submodule {
 }
 
 /** A submodule pointer that moved. */
-export interface SubmoduleMovement {
+interface SubmoduleMovement {
 	/** Working-tree path. */
 	path: string;
 	/** Branch that was followed. */
@@ -69,7 +69,7 @@ export function readSubmodules(root: string): Submodule[] {
  * @param root Directory to run the lookup from.
  * @returns The branch name, or `undefined` when the remote could not be read.
  */
-export function remoteDefaultBranch(url: string, root: string): string | undefined {
+function remoteDefaultBranch(url: string, root: string): string | undefined {
 	try {
 		const output = runGit(root, ["ls-remote", "--symref", url, "HEAD"]);
 		return /^ref:\s+refs\/heads\/(\S+)\s+HEAD$/m.exec(output)?.[1];

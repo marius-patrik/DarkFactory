@@ -4,7 +4,7 @@ import type { DocsConfig } from "./config.ts";
 import { loadDocsConfig } from "./config.ts";
 
 /** Semantic kind assigned to a documentation page. */
-export type DocsPageKind = "home" | "product" | "plan" | "rules" | "rule" | "note" | "adr" | "capability";
+type DocsPageKind = "home" | "product" | "plan" | "rules" | "rule" | "note" | "adr" | "capability";
 
 /** One canonical Markdown page in the DarkFactory content graph. */
 export interface DocsPage {
@@ -30,14 +30,14 @@ export interface DocsApiReference {
 }
 
 /** Deterministic summary of one GitHub Actions workflow. */
-export interface DocsWorkflowSummary {
+interface DocsWorkflowSummary {
 	source: string;
 	name: string;
 	jobs: readonly string[];
 }
 
 /** Browser-safe summary of one detected repository package. */
-export interface DocsRepositoryPackageSummary {
+interface DocsRepositoryPackageSummary {
 	id: string;
 	path: string;
 	name: string;
@@ -57,7 +57,7 @@ export interface DocsRepositorySummary {
 }
 
 /** Graph-node contribution declared by one capability. */
-export interface DocsCapabilityGraphSummary {
+interface DocsCapabilityGraphSummary {
 	id: string;
 	nodeKinds: readonly string[];
 }

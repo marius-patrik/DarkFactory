@@ -12,7 +12,7 @@ import { validateGraph } from "./validator.ts";
  * Options for the dispatch command.
  * Controls input paths, output behavior, and overrides.
  */
-export interface DispatchOptions {
+interface DispatchOptions {
 	eventName: string;
 	eventPath: string;
 	graphPath?: string;

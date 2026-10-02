@@ -24,6 +24,33 @@
         "workspace"
       ]
     },
+    "protection": {
+      "$comment": "Branch protection is declared here, not in the code that applies it. Every field the reconcile sends to GitHub is in this block, so the policy a reviewer reads is the policy that runs. A lane names its own branch rather than being a role, because which branch is the integration lane and which is the release lane is a fact about this repository and not about the pipeline.",
+      "lanes": [
+        {
+          "branch": "develop",
+          "required_checks": [
+            "quality",
+            "verify-bound-issue"
+          ],
+          "approvals": 1,
+          "enforce_admins": false,
+          "strict": true,
+          "resolve_conversations": true
+        },
+        {
+          "$comment": "The release lane. It accepts work from the integration lane and nothing merges to it, so it requires the lane's own signal rather than the full gate, and it asks for no review because the integration lane is where review happens.",
+          "branch": "main",
+          "required_checks": [
+            "main-source"
+          ],
+          "approvals": 0,
+          "enforce_admins": true,
+          "strict": false,
+          "resolve_conversations": false
+        }
+      ]
+    },
     "license": {
       "$comment": "The licence is declared here and the file is written from GitHub's canonical text, so it cannot drift from the wording it claims to be. `spdx` must be one of the identifiers licensing.OFFERED lists; NONE means deliberately not licensed for reuse, which is different from having forgotten to choose.",
       "spdx": "GPL-3.0",
@@ -41,31 +68,10 @@
       "initial": "3a.1.0"
     },
     "environment": {
-      "$comment": "Detection handles the rest. pyproject.toml here carries only tooling configuration, so the package identity is declared rather than parsed.",
-      "packages": [
-        {
-          "path": ".",
-          "ecosystem": "python",
-          "manifest": "pyproject.toml",
-          "name": "darkfactory"
-        }
-      ],
-      "testing": {
-        "python": {
-          "command": "pytest",
-          "versions": [
-            "3.10",
-            "3.11",
-            "3.12",
-            "3.13"
-          ]
-        }
-      },
-      "formatting": {
-        "python": {
-          "command": "black --check --line-length 100 ."
-        }
-      },
+      "$comment": "No packages are declared. The repository is a TypeScript workspace, and its packages are resolved from the workspace layout rather than asserted here.",
+      "packages": [],
+      "testing": {},
+      "formatting": {},
       "not_applicable": {
         "$comment": "DF-RULE-006 exempts an action only from the canonical repository contract, with a reason, before matrix construction. Each entry below is a tool that does not exist in that ecosystem, not a check that was skipped. An exemption for an ecosystem no detected package belongs to, for an unknown action, or without a reason is rejected when the contract loads.",
         "test": {
@@ -95,11 +101,7 @@
           "enabled": false
         }
       },
-      "setup": {
-        "python": {
-          "command": "python -m pip install -r requirements-dev.txt"
-        }
-      }
+      "setup": {}
     },
     "areas": {
       "$comment": "Area labels, commit scopes and agent routing all read this one list, so they cannot drift apart. Declaration order is match order - the first area whose keywords hit wins - so specific areas come before general ones. A consumer repository replaces this block wholesale with its own domains.",
@@ -171,10 +173,87 @@
         ]
       }
     },
+    "accounts": {
+      "$comment": "The `df` accounts this repository provisions. `set` rows are [variable, account, slot] for a credential handed to df with `df account set`; `load` rows are [variable, account] for a subscription record df loads itself. Which providers are used, what the accounts are called and which slot each holds are facts about this repository, so they are declared here rather than listed in the code that applies them.",
+      "set": [
+        [
+          "GEMINI_API_KEY",
+          "google:default",
+          "api_key"
+        ],
+        [
+          "GEMINI_API_KEY_2",
+          "google:key2",
+          "api_key"
+        ],
+        [
+          "GEMINI_API_KEY_3",
+          "google:key3",
+          "api_key"
+        ],
+        [
+          "OPENROUTER_API_KEY",
+          "openrouter:default",
+          "api_key"
+        ],
+        [
+          "OPENROUTER_API_KEY_2",
+          "openrouter:acct2",
+          "api_key"
+        ],
+        [
+          "GROQ_API_KEY",
+          "groq:default",
+          "api_key"
+        ]
+      ],
+      "load": [
+        [
+          "DF_ACCOUNT_OPENAI_CODEX",
+          "openai-codex:pipeline"
+        ],
+        [
+          "DF_ACCOUNT_GROK_SUB",
+          "grok-sub:pipeline"
+        ]
+      ]
+    },
+    "labels": {
+      "$comment": "Label vocabularies. Each is data about this repository — which statuses exist, which conventional-commit types are permitted, which colours area labels take — so it is declared here rather than as a constant in the code that applies it. The code holds the mechanism, not the list.",
+      "area_colours": [
+        "5319e7",
+        "1f883d",
+        "0052cc",
+        "a2eeef",
+        "f9d0c4",
+        "c2e0c6",
+        "e99695",
+        "006b75",
+        "0075ca"
+      ],
+      "types": [
+        "feat",
+        "bug",
+        "chore",
+        "refactor",
+        "test",
+        "ci",
+        "docs"
+      ],
+      "statuses": [
+        "Backlog",
+        "ToDo",
+        "In Progress",
+        "Blocked",
+        "Done",
+        "Superseded",
+        "Dropped"
+      ]
+    },
     "board": {
-      "$comment": "Boards are owned by the account, not by a repository. Every board listed here is linked to this repository so it appears in its Projects tab; the global board aggregates issues from every repository using this pipeline.",
-      "global_title": "Global",
-      "link_boards": [
+      "$comment": "Boards are owned by the account, not by a repository, and there is no fixed number of them. `boards` names every board this repository participates in; the pipeline creates each one that does not exist and links each to the repository. `global` names the one that aggregates every repository, by reference, so it cannot disagree with the list.",
+      "global": "Global",
+      "boards": [
         "Global",
         "DarkFactory",
         "Omnis",
@@ -321,11 +400,45 @@
     "home": ".agents/PRD.md"
   },
   "providers": {
-    "defaultChain": "google/gemini-3.8-flash@default,google/gemini-3.8-flash@key2,google/gemini-3.8-flash@key3,google/gemini-3.7-flash@default,google/gemini-3.7-flash@key2,google/gemini-3.7-flash@key3,google/gemini-3.6-flash@default,google/gemini-3.6-flash@key2,google/gemini-3.6-flash@key3,google/gemini-3.5-flash@default,google/gemini-3.5-flash@key2,google/gemini-3.5-flash@key3,google/gemini-3-flash-preview@default,google/gemini-3-flash-preview@key2,google/gemini-3-flash-preview@key3,google/gemini-3.5-flash-lite@default,google/gemini-3.5-flash-lite@key2,google/gemini-3.5-flash-lite@key3,google/gemini-3.1-flash-lite@default,google/gemini-3.1-flash-lite@key2,google/gemini-3.1-flash-lite@key3,openrouter/nvidia/nemotron-3-ultra-550b-a55b:free@default,openrouter/nvidia/nemotron-3-ultra-550b-a55b:free@acct2,groq/openai/gpt-oss-120b@default,openai-codex/gpt-5.6-luna@pipeline,grok-sub/grok-4.6@pipeline",
     "cooldownTtlMs": 120000,
     "sensitiveChain": "groq/openai/gpt-oss-120b@default,openai-codex/gpt-5.6-luna@pipeline,grok-sub/grok-4.6@pipeline",
     "router": {
-      "policies": [],
+      "policies": [
+        {
+          "id": "prefer-free-and-space-bunny",
+          "match": {
+            "sensitivity": [
+              "normal"
+            ]
+          },
+          "prefer": {
+            "preferModels": [
+              "space-bunny"
+            ],
+            "preferProviders": [
+              "opencode-zen",
+              "kilo-gateway",
+              "groq",
+              "openrouter",
+              "google",
+              "grok-sub",
+              "openai-codex"
+            ],
+            "preferFree": true
+          }
+        },
+        {
+          "id": "sensitive",
+          "match": {
+            "sensitivity": [
+              "sensitive"
+            ]
+          },
+          "prefer": {
+            "preferFree": false
+          }
+        }
+      ],
       "dataCollection": {
         "sensitive": [
           "none",

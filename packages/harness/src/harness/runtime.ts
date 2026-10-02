@@ -1,7 +1,6 @@
 import { randomBytes, randomUUID } from "node:crypto";
 import { readdir } from "node:fs/promises";
 import { join } from "node:path";
-import { defaultDfHome, FileCredentialStore } from "@darkfactory/keychain";
 import type {
 	AuthContext,
 	AuthOperationOptions,
@@ -20,6 +19,7 @@ import {
 	SessionManager,
 	SettingsManager,
 } from "@earendil-works/pi-coding-agent";
+import { defaultDfHome, FileCredentialStore } from "../../../keychain/src/index.ts";
 import type { Candidate } from "../failover.ts";
 import { type CatalogResult, materializeCatalogModels } from "../models/catalog.ts";
 import type { ProviderConfig } from "../providers/schema.ts";
@@ -128,8 +128,7 @@ async function sessionFileForId(sessionDir: string, id: string): Promise<string>
 		throw new Error(matches.length === 0 ? `Session not found: ${id}` : `Ambiguous session id: ${id}`);
 	return join(sessionDir, matches[0]!);
 }
-
-export interface ResponseSnapshot {
+interface ResponseSnapshot {
 	status: number;
 	headers: Record<string, string>;
 }

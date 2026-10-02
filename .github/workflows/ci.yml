@@ -137,10 +137,16 @@ jobs:
           deno-version: v2.x
 
       - name: Set up Typst
-        # The paper package's own test compiles the manuscript, so its job needs typst even
-        # though it is a node job.
-        if: matrix.ecosystem == 'typst' || matrix.cwd == 'paper'
+        # Only the test row needs it: `tests/paper` compiles the manuscript, and no other command in
+        # the tree does. It used to run only in the paper package's own job, selected by
+        # `matrix.cwd == 'paper'`, which stopped matching once the node job's cwd became the repository
+        # root. Widening it to every node row put a third-party action in front of typecheck and lint
+        # for no reason, and its occasional 500 then failed a job that had nothing to do with typst.
+        if: matrix.ecosystem == 'typst' || matrix.kind == 'test'
         uses: typst-community/setup-typst@v5
+        # A flaky download should not fail the whole test row. If typst genuinely cannot be installed,
+        # the paper test fails by name, which says more than an action HTTP error does.
+        continue-on-error: true
 
       - name: Set up Lean
         if: matrix.ecosystem == 'lean'

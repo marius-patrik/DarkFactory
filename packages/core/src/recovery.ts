@@ -4,17 +4,17 @@ import {
 	type RecoveryIntakeRecord,
 	type RecoverySourceIdentity,
 	recoveryIntakeRecordSchema,
-} from "@darkfactory/protocol/recovery";
+} from "../../protocol/src/recovery.ts";
 
 /** Current authoritative context used to decide whether approved Planning remains reusable. */
-export interface RecoveryPlanningContext {
+interface RecoveryPlanningContext {
 	requestVersion: string;
 	baseSha: string;
 	sourceFingerprint: string;
 }
 
 /** Result of checking an imported recovery record against current Planning context. */
-export interface RecoveryPlanningFreshness {
+interface RecoveryPlanningFreshness {
 	valid: boolean;
 	reasons: readonly ("request_changed" | "base_changed" | "source_changed" | "not_approved")[];
 }

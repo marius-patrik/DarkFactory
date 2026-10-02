@@ -7,8 +7,7 @@ export class IdentitiesValidationError extends Error {
 		this.name = "IdentitiesValidationError";
 	}
 }
-
-export const appIdentitySchema = z
+const appIdentitySchema = z
 	.object({
 		slug: z.string().optional(),
 		login: z.string().min(1, "app login must not be empty"),
@@ -17,8 +16,7 @@ export const appIdentitySchema = z
 		name: z.string().optional(),
 	})
 	.passthrough();
-
-export const providerIdentitySchema = z
+const providerIdentitySchema = z
 	.object({
 		name: z.string().min(1, "provider display name must not be empty").optional(),
 		display_name: z.string().min(1).optional(),

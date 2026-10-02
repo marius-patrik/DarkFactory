@@ -5,7 +5,7 @@ import { runGit } from "./git.ts";
 /**
  * Preservation of exact provenance for imported recovery work.
  */
-export interface RecoveryProvenance {
+interface RecoveryProvenance {
 	/** Target Request(s) that this imported work is bound to (e.g. ["#388"]). */
 	targetRequests: string[];
 	/** Path to the original local repository or worktree. */
@@ -27,7 +27,7 @@ export interface RecoveryProvenance {
 /**
  * Holds options for intaking local recovery work.
  */
-export interface IntakeOptions {
+interface IntakeOptions {
 	/** Path to the local repository or worktree to import from. */
 	repo: string;
 	/** Original branch name or reference to import (e.g., "my-feature-branch"). */

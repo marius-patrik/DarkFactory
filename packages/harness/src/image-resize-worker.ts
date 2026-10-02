@@ -1,5 +1,9 @@
 import { parentPort } from "node:worker_threads";
-import { resizeImageInProcess } from "../node_modules/@earendil-works/pi-coding-agent/dist/utils/image-resize-core.js";
+// The upstream package does not export this file through its `exports` map, so it cannot be named
+// as a bare specifier. With one install at the repository root the path is three levels up from
+// `packages/harness/src`; it used to be one, which only worked while each package had its own
+// `node_modules`.
+import { resizeImageInProcess } from "../../../node_modules/@earendil-works/pi-coding-agent/dist/utils/image-resize-core.js";
 
 interface ResizeRequest {
 	inputBytes: Uint8Array;

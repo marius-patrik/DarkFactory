@@ -1,6 +1,5 @@
 export type GitHubFetch = (input: string | URL | Request, init?: RequestInit) => Promise<Response>;
-
-export interface TransportOptions {
+interface TransportOptions {
 	fetch?: GitHubFetch;
 	timeoutMs?: number;
 }

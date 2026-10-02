@@ -31,10 +31,8 @@ const CHAT_HINTS = [
 	"haiku",
 	"opus",
 ];
-
-export type UsableCatalogModel = CatalogModel & { contextWindow?: number; tier?: ModelTier };
-
-export interface ModelPollerOptions {
+type UsableCatalogModel = CatalogModel & { contextWindow?: number; tier?: ModelTier };
+interface ModelPollerOptions {
 	catalog: ModelCatalog;
 	providers: ProviderConfig[];
 	accounts: Map<string, string[]>;
@@ -44,7 +42,7 @@ export interface ModelPollerOptions {
 }
 
 /** A model the live listing offered but the poller did not accept, with the reason. */
-export interface ExcludedModel {
+interface ExcludedModel {
 	/** Model id as listed by the provider. */
 	id: string;
 	/** Why the model is not usable for this account. */
@@ -52,7 +50,7 @@ export interface ExcludedModel {
 }
 
 /** Result of {@link ModelPoller.poll} for one provider account. */
-export interface PollResult {
+interface PollResult {
 	/** Models df may route to. */
 	usable: UsableCatalogModel[];
 	/** Declared (static) model ids the live listing no longer has. */

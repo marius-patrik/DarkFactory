@@ -1,7 +1,7 @@
 import { existsSync } from "node:fs";
 import { readFile, rm, writeFile } from "node:fs/promises";
 import { join } from "node:path";
-import { configBlock, parseConfigDocument, resolveConfigDocumentPath } from "@darkfactory/protocol/config-document";
+import { configBlock, parseConfigDocument, resolveConfigDocumentPath } from "../../../protocol/src/config-document.ts";
 import type { GitHubClient } from "../github/client.ts";
 
 /**
@@ -26,7 +26,7 @@ export const OFFERED_LICENCES = [
 export const NO_LICENCE = "NONE";
 
 /** The licence a repository declares, with the manifest's silence defaulted. */
-export interface DeclaredLicence {
+interface DeclaredLicence {
 	/** SPDX identifier, or {@link NO_LICENCE}. */
 	spdx: string;
 	/** Copyright holder, for licences that name one. */
@@ -88,8 +88,7 @@ export async function licenceBody(
 	if (year) text = text.replaceAll("[year]", year);
 	return text;
 }
-
-export interface ApplyLicenceOptions {
+interface ApplyLicenceOptions {
 	/** Repository root holding the manifest and the LICENSE file. */
 	root: string;
 	/** Client used to fetch canonical licence text. */

@@ -2,11 +2,11 @@ import { afterEach, describe, expect, test } from "bun:test";
 import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { qualityMatrix, resolveRepositoryActions } from "@darkfactory/capability/actions";
-import { detectRepositoryEvidence } from "@darkfactory/core/repository-evidence";
 import codeCapability from "../../../capabilities/code/capability.ts";
 import mathCapability from "../../../capabilities/math/capability.ts";
 import paperCapability from "../../../capabilities/paper/capability.ts";
+import { qualityMatrix, resolveRepositoryActions } from "../../capability/src/actions.ts";
+import { detectRepositoryEvidence } from "../../core/src/repository-evidence.ts";
 
 const roots: string[] = [];
 

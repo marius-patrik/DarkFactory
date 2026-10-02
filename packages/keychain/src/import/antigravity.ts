@@ -2,10 +2,10 @@ import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import { accountId, type FileCredentialStore } from "../credentials.ts";
 
-export interface KeyringAdapter {
+interface KeyringAdapter {
 	read(service: string, account?: string): Promise<string | undefined>;
 }
-export type ImportFetch = (input: string | URL | Request, init?: RequestInit) => Promise<Response>;
+type ImportFetch = (input: string | URL | Request, init?: RequestInit) => Promise<Response>;
 const execFileAsync = promisify(execFile);
 export class OsKeyringAdapter implements KeyringAdapter {
 	async read(service: string, account?: string): Promise<string | undefined> {
@@ -48,8 +48,7 @@ export class OsKeyringAdapter implements KeyringAdapter {
 		}
 	}
 }
-
-export function parseAntigravityKeyring(raw: string): {
+function parseAntigravityKeyring(raw: string): {
 	access: string;
 	refresh: string;
 	expires: number;

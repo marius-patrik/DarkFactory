@@ -1,15 +1,15 @@
 import { afterEach, describe, expect, test } from "bun:test";
 import { mkdtemp, rm } from "node:fs/promises";
 import { join } from "node:path";
-import { FileCredentialStore } from "@darkfactory/keychain";
-import { importAntigravityAccount } from "@darkfactory/keychain/import/antigravity";
-import { importClaudeAccount } from "@darkfactory/keychain/import/claude";
-import { importCodexAccount } from "@darkfactory/keychain/import/codex";
-import { importGrokAccount } from "@darkfactory/keychain/import/grok";
-import { CLAUDE_CREDENTIALS_SERVICE_PREFIX, type ClaudeKeyring } from "@darkfactory/keychain/import/keyring";
-import { importKimiAccount } from "@darkfactory/keychain/import/kimi";
-import type { HomeReader } from "@darkfactory/keychain/import/reader";
 import type { OAuthCredential } from "@earendil-works/pi-ai";
+import { importAntigravityAccount } from "../../keychain/src/import/antigravity.ts";
+import { importClaudeAccount } from "../../keychain/src/import/claude.ts";
+import { importCodexAccount } from "../../keychain/src/import/codex.ts";
+import { importGrokAccount } from "../../keychain/src/import/grok.ts";
+import { CLAUDE_CREDENTIALS_SERVICE_PREFIX, type ClaudeKeyring } from "../../keychain/src/import/keyring.ts";
+import { importKimiAccount } from "../../keychain/src/import/kimi.ts";
+import type { HomeReader } from "../../keychain/src/import/reader.ts";
+import { FileCredentialStore } from "../../keychain/src/index.ts";
 
 const roots: string[] = [];
 

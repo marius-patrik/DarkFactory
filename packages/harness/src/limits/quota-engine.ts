@@ -1,16 +1,16 @@
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
+import { withFileLock } from "../../../keychain/src/storage/file-lock.ts";
+import { replaceFile } from "../../../keychain/src/storage/replace-file.ts";
 import type { Candidate } from "../failover.ts";
 import type { DeclaredLimitConfig, LimitPolicyConfig, ProviderConfig } from "../providers/schema.ts";
 import { nextPacificMidnight } from "../quota.ts";
-import { withFileLock } from "../storage/file-lock.ts";
-import { replaceFile } from "../storage/replace-file.ts";
 import type { LimitLedger } from "./ledger.ts";
 import type { TaskEstimate } from "./routing.ts";
 import type { LimitEntry, LimitType } from "./types.ts";
 
 /** One model request df sent, counted against declared limits. */
-export interface UsageEvent {
+interface UsageEvent {
 	id: string;
 	provider: string;
 	account: string;
@@ -20,8 +20,7 @@ export interface UsageEvent {
 	outputTokens: number;
 	success: boolean;
 }
-
-export interface UsageStoreFile {
+interface UsageStoreFile {
 	version: 1;
 	events: UsageEvent[];
 }
@@ -33,10 +32,10 @@ export interface UsageStoreFile {
 export type QuotaState = "available" | "waiting" | "exhausted" | "unavailable" | "unknown";
 
 /** Learned limit types that make a candidate unavailable rather than temporarily exhausted. */
-export const UNAVAILABLE_LIMIT_TYPES: ReadonlySet<LimitType> = new Set<LimitType>(["billing", "access", "model"]);
+const UNAVAILABLE_LIMIT_TYPES: ReadonlySet<LimitType> = new Set<LimitType>(["billing", "access", "model"]);
 
 /** One limit as df knows it right now: what the provider declares, what df counted, what it learned. */
-export interface QuotaStatusItem {
+interface QuotaStatusItem {
 	provider: string;
 	account: string;
 	model: string;
@@ -67,16 +66,14 @@ export interface CandidateQuota extends Candidate {
 	reason?: string;
 	items: QuotaStatusItem[];
 }
-
-export interface AdmissionVerdict {
+interface AdmissionVerdict {
 	decision: "admit" | "wait" | "skip";
 	waitUntil?: number;
 	reason?: string;
 	/** Blocking limits as ledger-shaped entries, so the supervisor's wait logic can treat them like learned cooldowns. */
 	entries: LimitEntry[];
 }
-
-export interface QuotaEngineOptions {
+interface QuotaEngineOptions {
 	/** A blocked candidate whose limits clear within this time is "wait", otherwise "skip". */
 	maxAdmitWaitMs?: number;
 }

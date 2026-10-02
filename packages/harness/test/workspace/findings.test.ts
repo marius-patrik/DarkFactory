@@ -6,12 +6,12 @@ import { runGit } from "../../src/workspace/git.ts";
 import {
 	abortOperation,
 	createBranch,
-	fetchOrigin,
+	fetch,
 	merge,
 	pushWithLease,
 	rebase,
 	switchBranch,
-} from "../../src/workspace/gitCommands.ts";
+} from "../../src/workspace/gitWorkspace.ts";
 import { createTempRepo, TEST_IDENTITY, type TempRepo } from "./helpers.ts";
 
 let temp: TempRepo | undefined;
@@ -48,9 +48,9 @@ test("runWorkspaceCli accepts valid repo path", async () => {
 	}
 });
 
-test("gitCommands primitives work successfully", () => {
+test("gitWorkspace primitives work successfully", async () => {
 	const repoPath = current().repo;
-	fetchOrigin(repoPath);
+	fetch(repoPath);
 	createBranch(repoPath, "feat-commands", "main");
 	writeFileSync(join(repoPath, "c1.txt"), "content");
 	runGit(repoPath, ["add", "c1.txt"]);
@@ -62,14 +62,14 @@ test("gitCommands primitives work successfully", () => {
 	runGit(repoPath, ["commit", "-m", "commit 2"], { env: TEST_IDENTITY });
 
 	switchBranch(repoPath, "feat-commands");
-	expect(rebase(repoPath, "main")).toBe("clean");
+	expect((await rebase(repoPath, "main")).status).toBe("clean");
 
 	const headSha = runGit(repoPath, ["rev-parse", "HEAD"]);
 	runGit(repoPath, ["push", "-u", "origin", "feat-commands"]);
 	expect(() => pushWithLease(repoPath, "origin", "feat-commands", headSha)).not.toThrow();
 });
 
-test("gitCommands handle conflict and abort", () => {
+test("gitWorkspace handle conflict and abort", async () => {
 	const repoPath = current().repo;
 	createBranch(repoPath, "feat-conflict", "main");
 	writeFileSync(join(repoPath, "conflict.txt"), "branch content");
@@ -82,6 +82,6 @@ test("gitCommands handle conflict and abort", () => {
 	runGit(repoPath, ["commit", "-m", "main commit"], { env: TEST_IDENTITY });
 
 	switchBranch(repoPath, "feat-conflict");
-	expect(merge(repoPath, "main")).toBe("conflict");
+	expect((await merge(repoPath, "main")).status).toBe("conflict");
 	expect(() => abortOperation(repoPath)).not.toThrow();
 });

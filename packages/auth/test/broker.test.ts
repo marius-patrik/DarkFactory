@@ -1,6 +1,17 @@
 import { afterEach, describe, expect, test } from "bun:test";
 import { createBrokerSession, MemoryAuthTokenStore, refreshBrokerSession, revokeBrokerSession } from "../src/broker.ts";
 
+/**
+ * A `fetch` stand-in that returns a fixed status.
+ *
+ * `typeof fetch` in this TypeScript library declares `preconnect`, so a stub that only produces a
+ * Response cannot be cast to it without lying about its shape. The broker only ever calls `fetch` and
+ * reads the status, so the double is typed as the callable it is and installed through the global.
+ */
+function fetchReturning(status: number): typeof fetch {
+	return (async () => new Response(null, { status })) as unknown as typeof fetch;
+}
+
 const originalFetch = globalThis.fetch;
 
 afterEach(() => {
@@ -37,7 +48,7 @@ describe("@darkfactory/auth confidential broker", () => {
 					headers: { "content-type": "application/json" },
 				},
 			);
-		}) as unknown as typeof fetch;
+		}) as typeof fetch;
 
 		const store = new MemoryAuthTokenStore();
 		const config = { clientId: "client", clientSecret: "secret" };
@@ -68,8 +79,20 @@ describe("@darkfactory/auth confidential broker", () => {
 	test("revocation deletes broker state only after GitHub accepts the revocation", async () => {
 		const store = new MemoryAuthTokenStore();
 		await store.set("session", { token: { access_token: "access", token_type: "bearer" } });
+		/**
+		 * A `fetch` stand-in that returns a fixed status.
+		 *
+		 * `typeof fetch` in this TypeScript library declares `preconnect`, so a stub that only produces a
+		 * Response cannot be cast to it without lying about its shape. The broker only ever calls `fetch` and
+		 * reads the status, so the double is typed as the callable it is and installed through the global.
+		 */
+		function fetchReturning(status: number): typeof fetch {
+			const stub = (async () => new Response(null, { status })) as unknown as typeof fetch;
+			return stub;
+		}
+
 		const config = { clientId: "client", clientSecret: "secret" };
-		globalThis.fetch = (async () => new Response(null, { status: 204 })) as unknown as typeof fetch;
+		globalThis.fetch = fetchReturning(204);
 		await revokeBrokerSession(config, "session", store);
 		expect(await store.get("session")).toBeUndefined();
 	});
@@ -78,7 +101,7 @@ describe("@darkfactory/auth confidential broker", () => {
 		const store = new MemoryAuthTokenStore();
 		await store.set("session", { token: { access_token: "access", token_type: "bearer" } });
 		const config = { clientId: "client", clientSecret: "secret" };
-		globalThis.fetch = (async () => new Response(null, { status: 500 })) as unknown as typeof fetch;
+		globalThis.fetch = fetchReturning(500);
 		await expect(revokeBrokerSession(config, "session", store)).rejects.toThrow("revocation failed");
 		expect(await store.get("session")).toBeDefined();
 	});

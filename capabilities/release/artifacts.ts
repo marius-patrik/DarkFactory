@@ -1,17 +1,17 @@
 import { createHash } from "node:crypto";
 import { readFile, realpath, stat } from "node:fs/promises";
 import { isAbsolute, relative, resolve, sep } from "node:path";
-import { CAPABILITY_ABI_VERSION } from "@darkfactory/capability";
+import { CAPABILITY_ABI_VERSION } from "../../packages/capability/src/index.ts";
 
 /** Integrity record for one file included in a DarkFactory release artifact set. */
-export interface ReleaseArtifactRecord {
+interface ReleaseArtifactRecord {
 	path: string;
 	bytes: number;
 	sha256: string;
 }
 
 /** Deterministic source/integrity manifest shipped with one release artifact set. */
-export interface ReleaseArtifactManifest {
+interface ReleaseArtifactManifest {
 	version: 1;
 	releaseVersion: string;
 	sourceCommit: string;
@@ -20,20 +20,20 @@ export interface ReleaseArtifactManifest {
 }
 
 /** Inputs required to derive deterministic release provenance. */
-export interface ReleaseArtifactManifestOptions {
+interface ReleaseArtifactManifestOptions {
 	releaseVersion: string;
 	sourceCommit: string;
 }
 
 /** Optional expected provenance supplied by an installer or fleet-acceptance caller. */
-export interface ReleaseArtifactVerificationOptions {
+interface ReleaseArtifactVerificationOptions {
 	releaseVersion?: string;
 	sourceCommit?: string;
 	capabilityAbi?: string;
 }
 
 /** One fail-closed release artifact verification finding. */
-export interface ReleaseArtifactVerificationFinding {
+interface ReleaseArtifactVerificationFinding {
 	code:
 		| "manifest-version"
 		| "release-version"
@@ -49,7 +49,7 @@ export interface ReleaseArtifactVerificationFinding {
 }
 
 /** Result of validating one release manifest against the bytes on disk. */
-export interface ReleaseArtifactVerificationResult {
+interface ReleaseArtifactVerificationResult {
 	valid: boolean;
 	findings: readonly ReleaseArtifactVerificationFinding[];
 }

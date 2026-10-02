@@ -52,7 +52,7 @@ export function parseGitError(stderr: string, args: readonly string[] = [], exit
 }
 
 /** Options for {@link runGit}. */
-export interface RunGitOptions {
+interface RunGitOptions {
 	/** Extra environment variables for this git call (e.g. `GIT_AUTHOR_NAME`). */
 	env?: Record<string, string>;
 	/** Text written to git's standard input. */

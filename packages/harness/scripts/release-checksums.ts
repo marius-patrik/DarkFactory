@@ -13,7 +13,7 @@ import { join } from "node:path";
  */
 
 /** One file's digest, as it appears in a `sha256sum` line. */
-export interface ReleaseChecksum {
+interface ReleaseChecksum {
 	name: string;
 	sha256: string;
 }
@@ -33,7 +33,7 @@ export async function checksumFile(directory: string, name: string): Promise<Rel
 }
 
 /** Hashes every named file, sorted by name so the record is byte-identical across runs. */
-export async function checksumFiles(directory: string, names: readonly string[]): Promise<ReleaseChecksum[]> {
+async function checksumFiles(directory: string, names: readonly string[]): Promise<ReleaseChecksum[]> {
 	const sorted = [...new Set(names)].sort();
 	return Promise.all(sorted.map((name) => checksumFile(directory, name)));
 }

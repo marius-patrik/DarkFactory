@@ -2,14 +2,14 @@ import type { CapabilityDefinition, CapabilityRuntimeContext, CapabilityToolDefi
 import { assertCapabilityCompatible } from "./compatibility.ts";
 
 /** Serializable tool metadata exposed by generated adapters. */
-export interface CapabilityToolManifest {
+interface CapabilityToolManifest {
 	name: string;
 	description: string;
 	inputSchema: JsonSchema;
 }
 
 /** Serializable metadata shared by all adapter forms. */
-export interface CapabilityAdapterManifest {
+interface CapabilityAdapterManifest {
 	abiVersion: string;
 	id: string;
 	version: string;
@@ -20,7 +20,7 @@ export interface CapabilityAdapterManifest {
 }
 
 /** Builds deterministic adapter metadata from a capability definition. */
-export function capabilityAdapterManifest(definition: CapabilityDefinition): CapabilityAdapterManifest {
+function capabilityAdapterManifest(definition: CapabilityDefinition): CapabilityAdapterManifest {
 	assertCapabilityCompatible(definition);
 	return {
 		abiVersion: definition.abiVersion,
@@ -42,7 +42,7 @@ function tool(definition: CapabilityDefinition, name: string): CapabilityToolDef
 }
 
 /** In-process adapter for invoking capability tools. */
-export interface NativeCapabilityAdapter {
+interface NativeCapabilityAdapter {
 	manifest: CapabilityAdapterManifest;
 	invokeTool(name: string, input: unknown): Promise<unknown>;
 }
@@ -68,12 +68,12 @@ export interface PiToolRegistration {
 }
 
 /** Minimal Pi extension API required by generated capability adapters. */
-export interface PiExtensionApi {
+interface PiExtensionApi {
 	registerTool(tool: PiToolRegistration): void;
 }
 
 /** Adapter that installs capability tools into Pi. */
-export interface PiCapabilityAdapter {
+interface PiCapabilityAdapter {
 	manifest: CapabilityAdapterManifest;
 	install(api: PiExtensionApi): void;
 }
@@ -100,14 +100,14 @@ export function createPiAdapter(
 }
 
 /** MCP-visible tool metadata. */
-export interface McpToolDescriptor {
+interface McpToolDescriptor {
 	name: string;
 	description: string;
 	inputSchema: JsonSchema;
 }
 
 /** MCP adapter surface for listing and invoking capability tools. */
-export interface McpCapabilityAdapter {
+interface McpCapabilityAdapter {
 	manifest: CapabilityAdapterManifest;
 	listTools(): readonly McpToolDescriptor[];
 	callTool(name: string, input: unknown): Promise<unknown>;

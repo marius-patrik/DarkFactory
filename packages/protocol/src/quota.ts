@@ -4,7 +4,7 @@ import type { Candidate } from "./model.ts";
 export type QuotaState = "available" | "waiting" | "exhausted" | "unavailable" | "unknown";
 
 /** One browser-safe limit observation used by CLI, TUI and web operator surfaces. */
-export interface QuotaStatusItem {
+interface QuotaStatusItem {
 	provider: string;
 	account: string;
 	model: string;
@@ -26,7 +26,7 @@ export interface QuotaStatusItem {
 }
 
 /** Canonical browser-safe quota state for one routed model candidate. */
-export interface CandidateQuota extends Candidate {
+interface CandidateQuota extends Candidate {
 	state: QuotaState;
 	until?: number;
 	reason?: string;
@@ -37,13 +37,13 @@ export interface CandidateQuota extends Candidate {
 export type QuotaCredentialState = "configured" | "anonymous" | "missing";
 
 /** Browser-safe quota state for one account label. */
-export interface OperatorQuotaAccount {
+interface OperatorQuotaAccount {
 	label: string;
 	models: readonly CandidateQuota[];
 }
 
 /** Browser-safe provider quota state with no credential material or secret-bearing provider configuration. */
-export interface OperatorQuotaProvider {
+interface OperatorQuotaProvider {
 	id: string;
 	name: string;
 	enabled: boolean;

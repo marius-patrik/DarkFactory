@@ -13,7 +13,7 @@ import {
 } from "./types.ts";
 
 /** Confidential GitHub App OAuth broker credentials. */
-export interface AuthBrokerConfig {
+interface AuthBrokerConfig {
 	clientId: string;
 	clientSecret: string;
 	/** Maximum browser session lifetime independent of GitHub token lifetime. */
@@ -21,14 +21,14 @@ export interface AuthBrokerConfig {
 }
 
 /** One-time browser callback material accepted by the confidential broker. */
-export interface TokenExchangeRequest {
+interface TokenExchangeRequest {
 	code: string;
 	codeVerifier: string;
 	redirectUri: string;
 }
 
 /** Broker-owned secret token storage contract. */
-export interface AuthTokenStore {
+interface AuthTokenStore {
 	get(sessionId: string): Promise<BrokerTokenRecord | undefined>;
 	set(sessionId: string, record: BrokerTokenRecord): Promise<void>;
 	delete(sessionId: string): Promise<void>;
@@ -88,10 +88,7 @@ function sessionFromRecord(
 }
 
 /** Exchanges an authorization code for GitHub user tokens. The returned token must remain broker-side. */
-export function exchangeCodeForToken(
-	config: AuthBrokerConfig,
-	payload: TokenExchangeRequest,
-): Promise<GitHubTokenResponse> {
+function exchangeCodeForToken(config: AuthBrokerConfig, payload: TokenExchangeRequest): Promise<GitHubTokenResponse> {
 	return tokenRequest(
 		new URLSearchParams({
 			client_id: config.clientId,
@@ -104,7 +101,7 @@ export function exchangeCodeForToken(
 }
 
 /** Refreshes a GitHub user token. The returned token must remain broker-side. */
-export function refreshAccessToken(config: AuthBrokerConfig, refreshToken: string): Promise<GitHubTokenResponse> {
+function refreshAccessToken(config: AuthBrokerConfig, refreshToken: string): Promise<GitHubTokenResponse> {
 	return tokenRequest(
 		new URLSearchParams({
 			client_id: config.clientId,
@@ -116,7 +113,7 @@ export function refreshAccessToken(config: AuthBrokerConfig, refreshToken: strin
 }
 
 /** Revokes a GitHub user access token using the confidential application credential. */
-export async function revokeAccessToken(config: AuthBrokerConfig, accessToken: string): Promise<void> {
+async function revokeAccessToken(config: AuthBrokerConfig, accessToken: string): Promise<void> {
 	const response = await fetch(`https://api.github.com/applications/${encodeURIComponent(config.clientId)}/token`, {
 		method: "DELETE",
 		headers: {

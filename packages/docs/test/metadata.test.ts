@@ -2,8 +2,8 @@ import { describe, expect, test } from "bun:test";
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import type { CapabilityDefinition } from "@darkfactory/capability";
-import type { RepositoryEvidence } from "@darkfactory/core/repository-evidence";
+import type { CapabilityDefinition } from "../../capability/src/index.ts";
+import type { RepositoryEvidence } from "../../core/src/repository-evidence.ts";
 import { documentationMetadata } from "../src/api.ts";
 import { type DocsContentGraph, includeCapabilityDocumentation } from "../src/content.ts";
 
@@ -24,7 +24,7 @@ describe("detected documentation metadata", () => {
 					manifest: "package.json",
 					domains: ["code"],
 					scripts: ["test"],
-					apiEntryPoints: ["packages/core/src/index.ts"],
+					apiEntryPoints: ["packages/core/src/result-capture.ts"],
 				},
 			],
 			ecosystems: ["node"],
@@ -60,7 +60,7 @@ describe("detected documentation metadata", () => {
 						ecosystem: "node",
 						packageManager: "bun",
 						domains: ["code"],
-						apiEntryPoints: ["packages/core/src/index.ts"],
+						apiEntryPoints: ["packages/core/src/result-capture.ts"],
 					},
 				],
 			},

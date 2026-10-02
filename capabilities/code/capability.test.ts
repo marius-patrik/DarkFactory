@@ -3,7 +3,7 @@ import type {
 	CapabilityActionDefinition,
 	CapabilityActionKind,
 	CapabilityPackageContext,
-} from "@darkfactory/capability";
+} from "../../packages/capability/src/index.ts";
 import capability from "./capability.ts";
 
 /** Minimal detected package evidence; every field the action functions read is overridable. */

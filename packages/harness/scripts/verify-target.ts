@@ -9,11 +9,13 @@
  */
 import { copyFile, mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
-import { dirname, join } from "node:path";
+import { dirname, join, resolve } from "node:path";
 import { RECORD_SUFFIX, writeReleaseChecksums } from "./release-checksums.ts";
 import { releaseAssetName, requireReleaseTarget } from "./release-targets.ts";
 
 const harnessRoot = dirname(import.meta.dir);
+// The wrapper is a repository-level script, two directories above packages/harness.
+const repositoryRoot = resolve(harnessRoot, "..", "..");
 const dist = join(harnessRoot, "dist");
 const args = process.argv.slice(2);
 const targetName = args[args.indexOf("--target") + 1] ?? `${process.platform}-${process.arch}`;
@@ -47,7 +49,7 @@ if (target.platform === "win32") {
 	// named `df` on PATH with the DarkFactory binary beside it as `df-bin.exe`.
 	const stage = await mkdtemp(join(tmpdir(), "df-wrapper-"));
 	try {
-		await copyFile(join(harnessRoot, "scripts", "df-wrapper.cmd"), join(stage, "df.cmd"));
+		await copyFile(join(repositoryRoot, "scripts", "df-wrapper.cmd"), join(stage, "df.cmd"));
 		await copyFile(binary, join(stage, "df-bin.exe"));
 		const child = Bun.spawn([join(stage, "df.cmd"), "providers"], { cwd: stage, stdout: "pipe", stderr: "pipe" });
 		const [code, err] = await Promise.all([child.exited, new Response(child.stderr).text()]);

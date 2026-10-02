@@ -1,11 +1,11 @@
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
-import { defaultDfHome, FileCredentialStore } from "@darkfactory/keychain";
 import type { Credential, Model, Provider, ProviderHeaders } from "@earendil-works/pi-ai";
+import { defaultDfHome, FileCredentialStore } from "../../../keychain/src/index.ts";
+import { replaceFile } from "../../../keychain/src/storage/replace-file.ts";
 import type { ApiKeyAuthConfig, ModelListConfig, ProviderConfig } from "../providers/schema.ts";
-import { replaceFile } from "../storage/replace-file.ts";
 
-export const DEFAULT_MODEL_CATALOG_TTL_MS = 6 * 60 * 60 * 1000;
+const DEFAULT_MODEL_CATALOG_TTL_MS = 6 * 60 * 60 * 1000;
 const PI_CATALOG_BASE_URL = "https://pi.dev";
 
 const DIALECT_DEFAULTS: Record<string, ModelListConfig> = {
@@ -57,8 +57,7 @@ export interface CatalogResult {
 }
 
 export type CatalogFetch = (input: string | URL | Request, init?: RequestInit) => Promise<Response>;
-
-export interface ModelCatalogOptions {
+interface ModelCatalogOptions {
 	home?: string;
 	providers: readonly Provider[];
 	providerConfigs?: readonly ProviderConfig[];
@@ -174,8 +173,7 @@ function mappedString(value: unknown, path: string | undefined, key?: string): s
 	if (!path) return undefined;
 	return nonEmpty(pathValues(value, path)[0]?.value);
 }
-
-export function normalizeConfiguredCatalog(provider: string, value: unknown, mapping: ModelListConfig): CatalogModel[] {
+function normalizeConfiguredCatalog(provider: string, value: unknown, mapping: ModelListConfig): CatalogModel[] {
 	const raw = pathValues(value, mapping.itemsPath);
 	// A single wrapper object is how every provider nests its list. Narrow `wrapper` once so the
 	// branches below read off a value that is known to exist rather than re-dereferencing `raw[0]`.
@@ -214,7 +212,7 @@ export function normalizeConfiguredCatalog(provider: string, value: unknown, map
 }
 
 /** Backward-compatible loose normalization; configured providers use explicit paths. */
-export function normalizeCatalogResponse(provider: string, value: unknown): CatalogModel[] {
+function normalizeCatalogResponse(provider: string, value: unknown): CatalogModel[] {
 	let entries: Array<[string | undefined, unknown]> | undefined;
 	if (Array.isArray(value)) entries = value.map((entry) => [undefined, entry]);
 	else if (value && typeof value === "object") {

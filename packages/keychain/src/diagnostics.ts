@@ -1,10 +1,10 @@
 import type { AccountAuthMetadata, AccountRecord, FileCredentialStore, OAuthCredentialSlot } from "./credentials.ts";
 
 /** Redacted machine credential health status. */
-export type CredentialHealth = "valid" | "expiring" | "expired" | "rotation_due" | "non_oauth";
+type CredentialHealth = "valid" | "expiring" | "expired" | "rotation_due" | "non_oauth";
 
 /** Secret-free credential diagnostic for one account. */
-export interface CredentialDiagnostic {
+interface CredentialDiagnostic {
 	accountId: string;
 	provider: string;
 	label: string;

@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import type { PushMap, VaultMeta } from "@darkfactory/keychain";
+import type { PushMap, VaultMeta } from "../../../keychain/src/index.ts";
 import { GitHubClient } from "../../src/github/client.ts";
 import { detectDrift } from "../../src/secrets/drift.ts";
 import { json, scripted } from "../github/helpers.ts";

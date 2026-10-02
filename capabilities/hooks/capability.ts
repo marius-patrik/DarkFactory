@@ -4,7 +4,7 @@ import {
 	type CapabilityHookDefinition,
 	type CapabilityHookResult,
 	defineCapability,
-} from "@darkfactory/capability";
+} from "../../packages/capability/src/index.ts";
 
 function pass(): CapabilityHookResult {
 	return { status: "pass" };
@@ -29,15 +29,38 @@ export function testsTouched(input: CapabilityHookContext): CapabilityHookResult
 	return pass();
 }
 
-/** Validates the first line of a commit against the recovered F47 conventional-commit contract. */
+/**
+ * Conventional-commit base types this hook accepts, in the order DF-RULE-015 declares them.
+ *
+ * This is the hook's only type list. `commitTypes` must stay equal to the "Allowed base types"
+ * sentence in `.agents/rules/015-repository-taxonomy.md`; `capability.test.ts` fails closed when the
+ * two diverge in either direction. Do not add a type here without changing that declaration.
+ */
+export const commitTypes: readonly string[] = ["feat", "fix", "chore", "docs", "refactor", "test", "ci"];
+
+function escapeRegExp(value: string): string {
+	return value.replace(/[.*+?^${}()|[\]\\]/gu, "\\$&");
+}
+
+const commitTypeAlternation = commitTypes.map(escapeRegExp).join("|");
+
+/**
+ * Conventional-commit pattern derived from {@link commitTypes}.
+ *
+ * The scope stays a syntactic lowercase segment. It is deliberately not matched against
+ * `repo.dfconfig` `repo.areas`: those declare area labels and agent-routing keywords, and the
+ * repository's real commit scopes are not drawn from them, so validating scopes against the
+ * declared areas would reject conforming commits.
+ */
+const commitPattern = new RegExp(`^(${commitTypeAlternation})(\\([a-z0-9][a-z0-9-]*\\))?!?: \\s*\\S.*$`, "u");
+
+/** Validates the first line of a commit against the DF-RULE-015 conventional-commit contract. */
 export function conventionalCommit(input: CapabilityHookContext): CapabilityHookResult {
 	const message = input.commitMessage;
 	if (!message) return fail("commit message is missing");
 	const firstLine = message.split("\n")[0] ?? "";
 	if (firstLine.startsWith("Merge ") || firstLine.startsWith("Revert ")) return pass();
-	const convention =
-		/^(feat|fix|chore|docs|refactor|test|ci|style|perf|build|revert)(\([a-z0-9][a-z0-9-]*\))?!?: \s*\S.*$/u;
-	return convention.test(firstLine) ? pass() : fail(`commit message is not a conventional commit: ${firstLine}`);
+	return commitPattern.test(firstLine) ? pass() : fail(`commit message is not a conventional commit: ${firstLine}`);
 }
 
 /** Validates the recovered F47 lowercase segmented branch-name contract. */

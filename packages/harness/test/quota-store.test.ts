@@ -1,8 +1,8 @@
 import { afterEach, describe, expect, test } from "bun:test";
 import { mkdtemp, rm, utimes, writeFile } from "node:fs/promises";
 import { join } from "node:path";
+import { withFileLock } from "../../keychain/src/storage/file-lock.ts";
 import { QuotaStore } from "../src/harness/quota-store.ts";
-import { withFileLock } from "../src/storage/file-lock.ts";
 
 const temporary: string[] = [];
 const candidate = { provider: "provider", model: "model", account: "work" };

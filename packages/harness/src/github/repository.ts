@@ -26,21 +26,21 @@ export function isBotLogin(login: string): boolean {
 }
 
 /** Options for creating a new GitHub issue. */
-export interface CreateIssueInput {
+interface CreateIssueInput {
 	title: string;
 	body?: string;
 	labels?: string[];
 	assignees?: string[];
 }
 /** Options for updating an existing GitHub issue. */
-export interface UpdateIssueInput {
+interface UpdateIssueInput {
 	title?: string;
 	body?: string;
 	state?: "open" | "closed";
 	state_reason?: "completed" | "not_planned" | "reopened";
 }
 /** Options for creating a new GitHub pull request. */
-export interface CreatePullRequestInput {
+interface CreatePullRequestInput {
 	title: string;
 	head: string;
 	base: string;
@@ -48,14 +48,26 @@ export interface CreatePullRequestInput {
 	draft?: boolean;
 }
 /** Options for updating an existing GitHub pull request. */
-export interface UpdatePullRequestInput {
+/** The `closingIssuesReferences` selection this class asks for. */
+interface ClosingIssueReferences {
+	readonly repository: {
+		readonly pullRequest: {
+			readonly closingIssuesReferences: {
+				readonly nodes: { readonly number: number }[];
+				readonly pageInfo: { readonly hasNextPage: boolean; readonly endCursor: string | null };
+			};
+		};
+	};
+}
+
+interface UpdatePullRequestInput {
 	title?: string;
 	body?: string;
 	state?: "open" | "closed";
 	base?: string;
 	draft?: boolean;
 }
-export interface CreateCheckRunInput {
+interface CreateCheckRunInput {
 	name: string;
 	head_sha: string;
 	status: "queued" | "in_progress" | "completed";
@@ -268,7 +280,10 @@ export class GitHubRepository {
 		const nodes = await this.#client.collectGraphQL<{ number: number }>(
 			query,
 			{ owner: this.#owner, repo: this.#repo, number },
-			(data) => (data as any).repository.pullRequest.closingIssuesReferences,
+			// The shape is the query's own: `closingIssuesReferences(first:100,after:$cursor){nodes{number}
+			// pageInfo{hasNextPage endCursor}}`. Un-exporting the input interfaces below made this
+			// visible to the linter, and it was an `any` standing in for a shape the query states.
+			(data) => (data as ClosingIssueReferences).repository.pullRequest.closingIssuesReferences,
 		);
 		return [...new Set(nodes.map((node) => node.number))].sort((a, b) => a - b);
 	}

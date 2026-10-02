@@ -1,21 +1,19 @@
-import type { PushMap, VaultMeta } from "@darkfactory/keychain";
+import type { PushMap, VaultMeta } from "../../../keychain/src/index.ts";
 import type { GitHubClient } from "../github/client.ts";
 
-export interface GitHubSecretInfo {
+interface GitHubSecretInfo {
 	name: string;
 	created_at: string;
 	updated_at: string;
 }
-
-export interface DriftEntry {
+interface DriftEntry {
 	name: string;
 	ghName: string;
 	status: "match" | "vault-only" | "github-only" | "stale";
 	vaultUpdated?: string;
 	githubUpdated?: string;
 }
-
-export interface DriftReport {
+interface DriftReport {
 	repo: string;
 	entries: DriftEntry[];
 	healthy: boolean;

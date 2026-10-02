@@ -6,3 +6,4 @@ export * from "./abi.ts";
 export * from "./actions.ts";
 export * from "./adapters.ts";
 export * from "./compatibility.ts";
+export * from "./hooks.ts";

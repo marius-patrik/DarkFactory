@@ -14,7 +14,7 @@ import { redactErrorMessage } from "./redaction.ts";
 
 export type { Candidate } from "../../protocol/src/model.ts";
 
-export interface StepEvent {
+interface StepEvent {
 	type: "attempt";
 	provider: string;
 	account: string;
@@ -28,8 +28,7 @@ export interface StepEvent {
 	resetAt?: number;
 	pool?: string;
 }
-
-export interface RunTurnOptions {
+interface RunTurnOptions {
 	candidates: readonly Candidate[];
 	context: Context;
 	modelsFor(candidate: Candidate): Models;
@@ -41,8 +40,7 @@ export interface RunTurnOptions {
 	exhaustion?: CandidateExhaustion;
 	providerConfigs?: ReadonlyMap<string, ProviderConfig>;
 }
-
-export interface TurnResult {
+interface TurnResult {
 	message: AssistantMessage;
 	candidate: Candidate;
 	steps: StepEvent[];

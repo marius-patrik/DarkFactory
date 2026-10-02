@@ -21,7 +21,7 @@ export function mergeReset(rule: number | undefined, observed: number | undefine
 }
 
 /** Next daily roll-over for a provider: UTC midnight unless its config says otherwise. */
-export function nextDailyReset(now: number, policy?: Pick<LimitPolicyConfig, "dailyReset">): number {
+function nextDailyReset(now: number, policy?: Pick<LimitPolicyConfig, "dailyReset">): number {
 	if (policy?.dailyReset === "pacific-midnight") return nextPacificMidnight(now);
 	const date = new Date(now);
 	return Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate() + 1);
@@ -60,8 +60,7 @@ function numeric(value: string | undefined): number | undefined {
 	const result = Number(value);
 	return Number.isFinite(result) && result >= 0 ? result : undefined;
 }
-
-export function parseDuration(value: string): number | undefined {
+function parseDuration(value: string): number | undefined {
 	const plain = Number(value);
 	if (Number.isFinite(plain) && plain >= 0) return plain * 1_000;
 	let total = 0;
@@ -82,8 +81,7 @@ export function parseDuration(value: string): number | undefined {
 	}
 	return found ? total : undefined;
 }
-
-export function parseReset(value: string | undefined, now: number): number | undefined {
+function parseReset(value: string | undefined, now: number): number | undefined {
 	if (!value) return undefined;
 	const duration = parseDuration(value);
 	if (/[a-z]/iu.test(value) && duration !== undefined) return now + duration;
