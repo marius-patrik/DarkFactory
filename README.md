@@ -10,7 +10,7 @@ DarkFactory is a self-hosting autonomous software-delivery system built around a
 2. Current active Request/Planning records define approved feature-specific behavior and executable delivery scope.
 3. Accepted ADRs in `ADRs.md`, authored once at `.darkfactory/ADRs.md` and symlinked at the root, record durable decisions and rationale.
 4. The combined `repo.dfconfig` document (or accepted root `config.dfconfig` or `.dfconfig` alias) and the workflow graph are executable declarations.
-5. `.agents/plugins/df-rules/skills/` define mandatory contribution/governance behavior, one skill per rule.
+5. `.darkfactory/plugins/df-rules/skills/` define mandatory contribution/governance behavior, one skill per rule.
 6. Generated docs/web views are projections, not independent sources of truth.
 
 A material deviation from this document requires owner approval and an accepted ADR.
@@ -289,7 +289,7 @@ TypeDoc may be used internally as the TypeScript/TSDoc extractor.
 
 Documentation builds are deterministic, strict and zero-warning for required API surfaces.
 
-`README.md` **is** the canonical product-documentation homepage: a regular file at the repository root, not a symlink. The binding rules are skills in `.agents/plugins/df-rules/skills/`, one per rule, and ADR links derive from the records in `.darkfactory/ADRs.md`. CI fails when a rule is missing a required front-matter field, when a rule number is not contiguous from 001, or when rule↔note relations are incomplete or contradictory.
+`README.md` **is** the canonical product-documentation homepage: a regular file at the repository root, not a symlink. The binding rules are skills in `.darkfactory/plugins/df-rules/skills/`, one per rule, and the architecture decisions live in `.darkfactory/ADRs.md`, symlinked here as `ADRs.md`. CI fails when a rule is missing a required front-matter field, when a skill's `name` does not match its directory, or when an accepted ADR lacks a required section.
 
 ## 14. DarkFactory Web
 
@@ -407,7 +407,7 @@ DarkFactory is final only when the exact pre-merge candidate has passed the decl
 - official capabilities and representative generated adapters are proven;
 - keychain/auth security boundaries are proven;
 - real TypeScript API docs are published;
-- the rules are skills under `.agents/plugins/df-rules/skills/`, each declaring its own `name` and `description`; root `README.md` is the canonical product document itself, not a projection;
+- the rules are skills under `.darkfactory/plugins/df-rules/skills/`, each declaring its own `name` and `description`; root `README.md` is the canonical product document itself, not a projection;
 - shared web UI is deployed across the fleet without consumer frontend rebuild;
 - the source-free pre-merge candidate installs/updates cleanly, and the canonical publication reproduces that behavior;
 - all six repositories pass governance, detection, capability, docs/web, release-candidate and drift checks before the integration merge;
