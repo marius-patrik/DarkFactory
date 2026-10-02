@@ -66,7 +66,33 @@ describe("the agent image's entrypoint", () => {
 		expect(dockerfile).not.toContain("darkfactory-agent-runner");
 	});
 
-	it("still copies the pipeline scripts, which the delivery workflows run in the runner context", () => {
-		expect(dockerfile).toContain("COPY .github/scripts/ /usr/local/share/darkfactory-scripts/");
+	it("copies nothing that no longer exists", () => {
+		// Each of these was deleted by the merged stack, and a `COPY` naming a missing path fails the
+		// build rather than degrading: the agent image did not build at all until this was fixed.
+		//   capabilities/               -> .darkfactory/plugins/            (#1297)
+		//   pyproject.toml, requirements-dev.txt, .github/scripts/           (#1311)
+		//   packages/harness/package.json  gone with the per-package manifests (#1271)
+		for (const removed of [
+			"capabilities/",
+			"pyproject.toml",
+			"requirements-dev.txt",
+			".github/scripts/",
+			"packages/harness/package.json",
+		]) {
+			expect(dockerfile, `the image must not copy ${removed}`).not.toContain(`COPY ${removed}`);
+		}
+	});
+
+	it("copies the plugin tree the capabilities moved into, and installs the root workspace", () => {
+		// `bun install` had no manifest to read in the old form; the root workspace is the install
+		// target now, and `.darkfactory/plugins/` holds the capability sources the image resolves.
+		expect(dockerfile).toContain("COPY .darkfactory/ /opt/darkfactory/.darkfactory/");
+		expect(dockerfile).toContain("bun install --frozen-lockfile");
+		expect(dockerfile).not.toContain("--cwd /opt/darkfactory/packages/harness");
+	});
+
+	it("keeps the wrapper the PATH contract resolves through", () => {
+		expect(dockerfile).toContain("scripts/df-wrapper.sh");
+		expect(dockerfile).toContain("ENV DF_SOURCE=/opt/darkfactory/packages/harness/src/cli.ts");
 	});
 });
