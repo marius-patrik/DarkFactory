@@ -6,7 +6,7 @@ body:
   - type: markdown
     attributes:
       value: |
-        This repository runs an autonomous agent pipeline (see the binding rules in `.agents/plugins/df-rules/skills/`).
+        This repository runs an autonomous agent pipeline (see the binding rules in `.darkfactory/plugins/df-rules/skills/`).
 
         What happens after you submit: DarkFactory preserves the verbatim request, resolves its
         Request/Epic/dependency context, and creates one unified **Planning** artifact. Planning is
@@ -30,7 +30,7 @@ body:
     id: area
     attributes:
       label: "Area / Component"
-      description: "Primary area affected. See .agents/plugins/df-rules/skills/015-repository-taxonomy/SKILL.md` for the full taxonomy."
+      description: "Primary area affected. See `.darkfactory/plugins/df-rules/skills/commits-and-repository-taxonomy/SKILL.md` for the full taxonomy."
       options:
         - "agents - Agent runtime, routing, providers, planning/review orchestration and model execution (area:agents)"
         - "governance - Agent rules, branch protection, required checks, project board taxonomy (area:governance)"
