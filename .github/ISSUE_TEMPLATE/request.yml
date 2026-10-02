@@ -19,8 +19,9 @@ body:
     attributes:
       label: "Verbatim User Request"
       description: >
-        The exact, unedited wording of the request. Do not summarize or clean it up - DF-RULE-012
-        the binding rules in `.agents/plugins/df-rules/skills/` requires the verbatim text so intent is never lost in paraphrase.
+        The exact, unedited wording of the request. Do not summarize or clean it up - the
+        `request-capture-and-approved-planning` skill requires the verbatim text so intent is never
+        lost in paraphrase.
       placeholder: "e.g. the input bar should be switchable between a global HUD and one per pane"
     validations:
       required: true
