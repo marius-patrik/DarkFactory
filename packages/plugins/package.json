@@ -13,7 +13,7 @@
   ],
   "license": "GPL-3.0",
   "scripts": {
-    "test": "bun test test",
+    "test": "bun test test ../../.darkfactory/plugins",
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "lint": "biome lint .",
     "format:check": "biome format ."
