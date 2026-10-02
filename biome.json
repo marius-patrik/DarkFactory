@@ -6,7 +6,7 @@
     "useIgnoreFile": true
   },
   "files": {
-    "includes": ["**", "!**/node_modules", "!**/dist", "!**/.harness-test-*", "!**/.*-test-*/"]
+    "includes": ["**", "!**/node_modules", "!**/dist", "!**/.harness-test-*", "!**/.*-test-*/", "!**/.worktrees"]
   },
   "formatter": {
     "indentStyle": "tab",
