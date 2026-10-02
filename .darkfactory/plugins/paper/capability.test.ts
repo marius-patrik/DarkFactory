@@ -89,7 +89,7 @@ describe("paper capability declaration", () => {
 		// Typst 0.15.1 has no test runner, linter or formatter, and LaTeX has none either, so a
 		// command here could not fail. This capability must therefore contribute nothing for those
 		// kinds; the repository contract is what declares them not applicable, and it can only be
-		// honest while the capability agrees (DF-RULE-006).
+		// honest while the capability agrees (the `ci-readiness` skill).
 		const actions = resolution([document("typst")]).packages[0]?.actions;
 		for (const kind of ["test", "lint", "format_check", "docs_extract", "setup"] as const) {
 			expect(actions?.[kind].supported).toBe(false);

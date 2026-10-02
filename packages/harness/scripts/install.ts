@@ -35,7 +35,7 @@ interface StageResult {
 /**
  * Stages a complete, self-contained `df` runtime into `<prefix>/bin`.
  *
- * DF-RULE-017 gives every concern one final owner, and `scripts/df-wrapper.sh` is that
+ * the `final-architecture-dry-and-deletion` skill gives every concern one final owner, and `scripts/df-wrapper.sh` is that
  * owner for the `PATH` contract. This is the only supported way to put it on `PATH`: it stages the
  * wrapper, the compiled binary, and the resource trees together, because a partial copy is a
  * runtime that fails later rather than one that fails now.

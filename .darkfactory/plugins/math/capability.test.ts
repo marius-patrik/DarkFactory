@@ -74,7 +74,7 @@ describe("math capability declaration", () => {
 	test("invents no action for a Lean toolchain it does not own", () => {
 		const actions = resolution([lean()]).packages[0]?.actions;
 		// Lean ships no linter and no formatter, so a lint or format command here could not fail
-		// and would be invented enforcement (DF-RULE-006).
+		// and would be invented enforcement (the `ci-readiness` skill).
 		for (const kind of ["lint", "format_check", "typecheck", "setup", "docs_extract", "release"] as const) {
 			expect(actions?.[kind].supported).toBe(false);
 			expect(actions?.[kind].source).toBe("unsupported");

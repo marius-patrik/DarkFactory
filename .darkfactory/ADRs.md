@@ -2,9 +2,8 @@
 
 Every accepted architectural decision, in one document. A decision is superseded by editing the
 decision it replaces rather than by adding a second one, so this file is the current architecture
-rather than a log. Each record declares the canonical rules it explains or constrains, and every
-rule is backed by at least one of these; the bidirectional link is checked, so an orphaned or
-unknown reference fails the governance gate.
+rather than a log. Each record stands on its own: it does not declare the governance skills it
+explains, and no check requires one.
 
 ## Contents
 
@@ -31,7 +30,6 @@ unknown reference fails the governance gate.
 ## ADR-0006 — The pipeline runs only df
 
 **Status**: Accepted
-**Related rules**: `DF-RULE-014`, `DF-RULE-017`
 ### Decision
 All model-backed pipeline execution goes through the `df` runtime.
 - External coding-agent CLIs are not invoked directly by the production pipeline.
@@ -43,7 +41,6 @@ The production pipeline has one execution owner and one routing/credential/quota
 ## ADR-0008 — Providers are configuration-driven
 
 **Status**: Accepted
-**Related rules**: `DF-RULE-014`, `DF-RULE-017`
 ### Decision
 Provider behavior is declared through configuration and generic dialect/runtime mechanisms.
 Provider declarations cover endpoints, API dialect, authentication, credential slots, headers, model discovery and quota/error mapping. Provider-specific behavior does not get its own independent orchestration subsystem.
@@ -53,7 +50,6 @@ Adding or changing a provider is primarily a configuration/data change. Shared r
 ## ADR-0009 — Accounts have named credential slots
 
 **Status**: Accepted
-**Related rules**: `DF-RULE-014`, `DF-RULE-016`
 ### Decision
 DarkFactory models credentials as:
 `provider → accounts[] → named credential slots`.
@@ -64,7 +60,6 @@ Routing and quota state can address accounts independently. Runtime adapters rec
 ## ADR-0011 — The quota engine is the availability authority
 
 **Status**: Accepted
-**Related rules**: `DF-RULE-014`, `DF-RULE-018`
 ### Decision
 Provider/model/account availability is determined by DarkFactory's quota engine.
 The engine combines declared limits with observed response headers, usage data, errors and provider usage endpoints. Routing does not spend requests merely to probe availability.
@@ -75,7 +70,6 @@ All routing and operator status surfaces consume one availability model. Quota a
 ## ADR-0012 — Routing is limit-aware and capability-tiered
 
 **Status**: Accepted
-**Related rules**: `DF-RULE-014`
 ### Decision
 The router selects candidates using task kind, required capabilities, context, sensitivity/data policy, live quota and configured capability tiers.
 - Provider eligibility is evaluated before model strength.
@@ -89,7 +83,6 @@ Lightweight models can serve appropriate work without consuming scarce high-capa
 ## ADR-0013 — df runs the workflow graph
 
 **Status**: Accepted
-**Related rules**: `DF-RULE-010`, `DF-RULE-011`, `DF-RULE-012`, `DF-RULE-013`, `DF-RULE-014`, `DF-RULE-018`
 ### Decision
 DarkFactory executes delivery as a declarative graph of agent, gate, automation and check-reference nodes with explicit edges and loop semantics.
 Planning, implementation, review/fix, alignment and deterministic effects are orchestrated by the graph/runtime. Static CI checks may remain external and are observed through check-reference nodes.
@@ -101,7 +94,6 @@ Execution state is durable and resumable. Workflow topology has one declarative 
 ## ADR-0015 — The engine owns deterministic steps
 
 **Status**: Accepted
-**Related rules**: `DF-RULE-007`, `DF-RULE-018`
 ### Decision
 DarkFactory owns deterministic workspace and delivery effects, including repository state inspection, checkout/update operations, scope verification, commits, pushes, pull-request operations and deterministic verification.
 Models perform judgement and file edits. Natural model stop is valid completion. Code-result truth is derived from observed workspace/effect state; judgement results may be structurally extracted after the model stops.
@@ -112,7 +104,6 @@ Models are not required to print control JSON, perform git operations or submit 
 ## ADR-0016 — Model resolution is live
 
 **Status**: Accepted
-**Related rules**: `DF-RULE-014`
 ### Decision
 DarkFactory discovers usable models from configured provider catalogs/accounts at runtime.
 Provider configuration contains the minimum information required to reach and authenticate to the provider. Routing uses live/cached catalog state plus quota/runtime outcomes to decide which models are usable. A declared default chain is an ordered preference list, not an inventory of what exists: each entry is still resolved against the live catalog and quota, and an entry whose model is absent or unavailable falls out of eligibility rather than being routed to.
@@ -122,7 +113,6 @@ Model availability can change without editing routing source. Invalid or unavail
 ## ADR-0017 — Modular packages and first-class capabilities
 
 **Status**: Accepted
-**Related rules**: `DF-RULE-014`, `DF-RULE-017`
 ### Decision
 DarkFactory is a root Bun workspace with stable first-party package boundaries:
 - `@darkfactory/protocol`
@@ -142,7 +132,6 @@ Package dependencies remain acyclic and browser-safe boundaries are explicit. Of
 ## ADR-0019 — GitHub backs the web control plane
 
 **Status**: Accepted
-**Related rules**: `DF-RULE-009`, `DF-RULE-011`, `DF-RULE-016`, `DF-RULE-018`
 ### Decision
 DarkFactory Web uses GitHub as the durable issue/PR/check/project/event/authorization control plane.
 The browser application reads live GitHub state through browser-safe GitHub/auth interfaces. That read path is declared but not yet wired: `@darkfactory/web` currently depends only on `@darkfactory/protocol`, `@darkfactory/docs` and its renderer, and imports no GitHub or auth package. Human-attributed actions use the authenticated GitHub user; privileged automation uses the DarkFactory GitHub App identity.
@@ -153,7 +142,6 @@ The web application does not maintain a second project database or privileged mu
 ## ADR-0020 — Browser auth and machine keychain are separate trust boundaries
 
 **Status**: Accepted
-**Related rules**: `DF-RULE-016`, `DF-RULE-018`
 ### Decision
 `@darkfactory/keychain` owns machine credentials, provider accounts, token refresh, secure storage and GitHub App machine identity.
 `@darkfactory/auth` owns human/browser GitHub authentication and session management.
@@ -165,7 +153,6 @@ Human authorization and machine automation authority remain distinct. Secret-bea
 ## ADR-0021 — Repository declarations, runtime detection and capability-resolved actions
 
 **Status**: Accepted
-**Related rules**: `DF-RULE-003`, `DF-RULE-006`, `DF-RULE-015`
 ### Decision
 - Canonical root `repo.dfconfig` owns one combined configuration document; root `config.dfconfig` and root `.dfconfig` are accepted aliases for that same document.
 - The `repo` block is the repository/product declaration, `providers` is runtime/user/provider configuration, and `docs` is documentation configuration.
@@ -185,7 +172,6 @@ Repository behavior is determined by current declarations plus detected evidence
 ## ADR-0022 — Complete the final system directly
 
 **Status**: Accepted
-**Related rules**: `DF-RULE-003`, `DF-RULE-013`, `DF-RULE-017`, `DF-RULE-019`
 ### Decision
 DarkFactory implementation targets the final architecture directly.
 - Missing behavior is implemented in its final TypeScript package/capability owner.
@@ -207,14 +193,13 @@ Completion sequencing is optimized for the shortest safe path to one final, prov
 ## ADR-0023 — First-party docs use the combined docs block and one renderer
 
 **Status**: Accepted
-**Related rules**: `DF-RULE-002`, `DF-RULE-003`
 ### Decision
 - `@darkfactory/docs` is the headless documentation compiler/content-graph owner.
 - The `docs` block of the combined DarkFactory configuration is the only documentation configuration contract.
 - The compiler builds one typed content graph from canonical Markdown, ADRs/rules, TypeScript/TSDoc API extraction, capability-contributed documentation and repository/graph/workflow metadata.
 - TypeDoc may be used internally as the TypeScript/TSDoc extractor.
 - `@darkfactory/web` is the only first-party web renderer.
-- `README.md` is the product homepage. `.agents/plugins/df-rules/skills/**` and `.agents/adr/**` are canonical. Root `README.md` is the canonical product document itself, not a symlink or a projection; `.agents/AGENTS.md` is the deterministic generated projection of canonical rules. Supported discovery aliases may point to canonical documents or generated projections, but internal legacy aliases are not retained.
+- `README.md` is the product homepage. `.agents/plugins/df-rules/skills/**` and `.agents/ADRs.md` are canonical. Root `README.md` is the canonical product document itself, not a symlink or a projection; `.agents/AGENTS.md` is the deterministic generated projection of canonical rules. Supported discovery aliases may point to canonical documents or generated projections, but internal legacy aliases are not retained.
 - Consumer repositories use the released web bundle plus repository-specific compiled content/data; generated sites and JSON content graphs remain CI outputs rather than committed sources.
 ### Consequences
 Documentation has one compiler/configuration contract and one first-party renderer while product docs, rules and long-term notes retain distinct canonical sources and generated discovery projections.
@@ -222,7 +207,6 @@ Documentation has one compiler/configuration contract and one first-party render
 ## ADR-0024 — Effects are serializable and authoritative state is crash-consistent
 
 **Status**: Accepted
-**Related rules**: `DF-RULE-018`
 ### Decision
 DarkFactory correctness is defined across duplicate delivery, concurrent execution, interruption and ambiguous external-write outcomes.
 - Authoritative transitions serialize at the identity they mutate: run, effect, account, branch/worktree, quota reservation, release and other durable state.
@@ -239,7 +223,6 @@ Crash recovery and concurrency safety are one protocol rather than separate best
 ## ADR-0025 — Each delivery branch has one integration authority
 
 **Status**: Accepted
-**Related rules**: `DF-RULE-005`, `DF-RULE-007`, `DF-RULE-019`
 ### Decision
 Parallel implementation uses one authoritative remote delivery branch writer.
 - The orchestrator alone advances the authoritative delivery branch and owns integration.
@@ -256,7 +239,6 @@ Parallelism improves throughput without introducing lost updates, shared-file ra
 ## ADR-0026 — Verification proves invariants and fails closed
 
 **Status**: Accepted
-**Related rules**: `DF-RULE-001`, `DF-RULE-006`, `DF-RULE-008`
 ### Decision
 Tests and CI prove product/architecture invariants rather than freezing incidental repository shape.
 - Behavioral tests live at the owning package/capability boundary and survive valid refactors.
@@ -275,7 +257,6 @@ A green head means the declared invariants were actually evaluated. The suite re
 ## ADR-0027 — Repository-authored artifacts use English
 
 **Status**: Accepted
-**Related rules**: `DF-RULE-004`
 ### Decision
 Repository-authored code, identifiers, comments, docstrings, commit messages, issues, pull-request text and documentation use English as the common written language.
 Quoted verbatim user input and fixtures/content whose meaning depends on another language are explicit exceptions.
@@ -286,7 +267,6 @@ Human and agent contributors share one review language across source, GitHub and
 ## ADR-0028 — Integrate Paper as a repository domain
 
 **Status**: Accepted
-**Related rules**: `DF-RULE-020`
 ### Decision
 - DarkFactory has one first-party Paper domain for the thesis manuscript and its publication.
 - The Paper has one authored manuscript source and one publication owner.

@@ -3,7 +3,7 @@
  *
  * The `df` entrypoint itself (`main`, `exitCodeFor`, `executableChainFor`, `parseDurationMs`,
  * `redactToolInput`) is implemented in `@darkfactory/harness` (`src/cli.ts`) and forwarded from
- * here. That is a DF-RULE-017 violation — a final package forwarding implementation to the
+ * here. That is a the `final-architecture-dry-and-deletion` skill violation — a final package forwarding implementation to the
  * deletion-bound tree — and it is the one remaining package-to-harness edge in the repository.
  *
  * It is recorded rather than fixed because the implementation cannot move into this package:

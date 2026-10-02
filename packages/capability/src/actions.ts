@@ -31,7 +31,7 @@ interface RepositoryActionEvidence {
 			release?: Readonly<Record<string, ActionOverride>>;
 			/**
 			 * Action kinds the repository explicitly exempts per ecosystem, with a reason. This is the
-			 * only escape from a required gap: DF-RULE-006 permits a not-applicable exception solely
+			 * only escape from a required gap: the `ci-readiness` skill permits a not-applicable exception solely
 			 * from the canonical repository contract, and forbids inferring it from a missing tool.
 			 */
 			not_applicable?: Readonly<

@@ -7,7 +7,7 @@
  *
  * Two rules keep the gate from doing damage:
  *
- * - Tests are never out of scope. Tests accompany every change (DF-RULE-001), so a plan that named
+ * - Tests are never out of scope. Tests accompany every change (the `unit-tests` skill), so a plan that named
  *   `tests/test_commands.py` and an implementation that added `tests/test_footers.py` are both
  *   in scope.
  * - A plan that names no files defines no scope. Reverting everything against a behavioral plan

@@ -2,7 +2,7 @@
 <!-- What changed and why. -->
 
 ## Bound Request(s)
-<!-- Required by DF-RULE-009. Bind every active Request this PR satisfies.
+<!-- Required by the `issue-binding-and-board-status` skill. Bind every active Request this PR satisfies.
      Use Closes/Fixes/Resolves for terminal delivery and Advances for partial delivery. -->
 - Closes #
 

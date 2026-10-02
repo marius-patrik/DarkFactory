@@ -108,29 +108,6 @@ describe("rule/note relationships", () => {
 		);
 	});
 
-	test("fails on malformed canonical record identity", () => {
-		const badRule = { ...rule("DF-RULE-001"), source: ".darkfactory/plugins/df-rules/skills/099-test/SKILL.md" };
-		const findings = analyzeRuleNoteRelations(graph([badRule, adr("ADR-0001", "DF-RULE-001")])).findings;
-		expect(findings).toContain(
-			".darkfactory/plugins/df-rules/skills/099-test/SKILL.md: filename must start with canonical rule number 001-",
-		);
-	});
-
-	test("fails when rule index metadata and prose heading titles drift", () => {
-		const concise = rule("DF-RULE-001");
-		const changed = { ...concise, markdown: concise.markdown.replace("title: Test", "title: Testing") };
-		expect(analyzeRuleNoteRelations(graph([changed, adr("ADR-0001", "DF-RULE-001")])).findings).toContain(
-			".darkfactory/plugins/df-rules/skills/001-test/SKILL.md: rule heading title must match front-matter title",
-		);
-	});
-
-	test("fails when rule numbering is not contiguous", () => {
-		const findings = analyzeRuleNoteRelations(
-			graph([rule("DF-RULE-001"), rule("DF-RULE-003"), adr("ADR-0001", "DF-RULE-001"), adr("ADR-0002", "DF-RULE-003")]),
-		).findings;
-		expect(findings.some((finding) => finding.includes("rule numbers must be contiguous from 001"))).toBe(true);
-	});
-
 	test("fails on incomplete rule or ADR records", () => {
 		const badRule = rule("DF-RULE-001");
 		const badAdr = adr("ADR-0001", "DF-RULE-001");

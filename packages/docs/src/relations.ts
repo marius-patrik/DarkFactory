@@ -1,4 +1,3 @@
-import { basename, dirname } from "node:path";
 import { adrDocumentSource, type DocsContentGraph, type DocsPage } from "./content.ts";
 
 /** Parsed metadata for one canonical repository rule. */
@@ -56,10 +55,6 @@ function hasSection(markdown: string, heading: string): boolean {
 	return new RegExp(`^(#{2,6}) ${heading}\\s*$\\n\\s*\\S`, "mu").test(markdown);
 }
 
-function ruleNumber(id: string): string | undefined {
-	return id.match(/^DF-RULE-(\d{3})$/u)?.[1];
-}
-
 function adrNumber(id: string): string | undefined {
 	return id.match(/^ADR-(\d{4})$/u)?.[1];
 }
@@ -85,19 +80,8 @@ export function analyzeRuleNoteRelations(graph: DocsContentGraph): RuleNoteRelat
 			findings.push(`${page.source}: ${error instanceof Error ? error.message : String(error)}`);
 			continue;
 		}
-		const number = ruleNumber(id);
-		if (!number) findings.push(`${page.source}: invalid rule id ${id}`);
+		if (!id) findings.push(`${page.source}: rule is missing a name`);
 		if (status !== "normative") findings.push(`${page.source}: canonical rule status must be normative`);
-		if (number && !basename(dirname(page.source)).startsWith(`${number}-`)) {
-			findings.push(`${page.source}: filename must start with canonical rule number ${number}-`);
-		}
-		const heading = page.markdown.match(/^# Rule\s+(\d+)\s+—\s+(.+)$/mu);
-		if (!heading?.[1] || Number(heading[1]) !== Number(number)) {
-			findings.push(`${page.source}: rule heading number must match ${id}`);
-		}
-		if (heading?.[2]?.trim() !== title) {
-			findings.push(`${page.source}: rule heading title must match front-matter title`);
-		}
 		for (const section of ["Requirement", "Rationale", "Enforcement", "Exceptions", "Change control"]) {
 			if (!hasSection(page.markdown, section))
 				findings.push(`${page.source}: canonical rule is missing non-empty ${section} section`);
@@ -108,12 +92,6 @@ export function analyzeRuleNoteRelations(graph: DocsContentGraph): RuleNoteRelat
 	}
 
 	if (rules.length === 0) findings.push("rules: at least one canonical rule is required");
-
-	const ruleNumbers = rules.map((rule) => Number(ruleNumber(rule.id))).filter((number) => Number.isFinite(number));
-	const expectedRuleNumbers = Array.from({ length: ruleNumbers.length }, (_, index) => index + 1);
-	if (ruleNumbers.some((number, index) => number !== expectedRuleNumbers[index])) {
-		findings.push(`rules: rule numbers must be contiguous from 001; found ${ruleNumbers.join(", ")}`);
-	}
 
 	const notes: DocsNoteRelationEntry[] = [];
 	const noteIds = new Set<string>();

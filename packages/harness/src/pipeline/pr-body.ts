@@ -52,7 +52,7 @@ export function formatConventionalCommit(typeLabel: string, scope: string, descr
  * Build a branch name from a plan or request title.
  *
  * Lowercase, hyphenated, prefixed with `feature/`. Issue references are stripped, because
- * DF-RULE-007 forbids an issue number in a branch name.
+ * the `branches-and-pull-requests` skill forbids an issue number in a branch name.
  *
  * @param title - The plan or request issue title.
  * @returns The branch name.
