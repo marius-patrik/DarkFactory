@@ -12,7 +12,7 @@ const repoRoot = resolve(option("--repo-root") ?? process.cwd());
 const outputDir = resolve(option("--out") ?? join(repoRoot, "site"));
 const check = process.argv.includes("--check");
 const graph = await compileDocsContentGraphWithDetectedApi(repoRoot, {
-	capabilitiesRoot: resolve(import.meta.dir, "..", "capabilities"),
+	capabilitiesRoot: resolve(import.meta.dir, "..", ".darkfactory", "plugins"),
 });
 
 if (check) {

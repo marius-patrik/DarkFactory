@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, test } from "bun:test";
 import { mkdtemp, rm, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
 import { join } from "node:path";
 import {
 	bumpVersion,
@@ -26,7 +27,7 @@ afterEach(async () => {
 
 /** Builds a throwaway git repository carrying a manifest and a commit log. */
 async function initRepo(mode: string, commits: string[], version?: string): Promise<string> {
-	const path = await mkdtemp(join(process.cwd(), ".versioning-test-"));
+	const path = await mkdtemp(join(tmpdir(), "df-versioning-test-"));
 	roots.push(path);
 	runGit(path, ["init", "-q", "-b", "main", "."]);
 	runGit(path, ["config", "user.email", "t@example.com"]);

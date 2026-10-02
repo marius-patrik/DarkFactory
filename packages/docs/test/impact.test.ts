@@ -36,11 +36,14 @@ describe("documentation impact policy", () => {
 
 	test("classifies product and governance contracts deterministically", () => {
 		const result = classifyDocumentationImpact(
-			["repo.dfconfig", ".github/workflows/ci.yml", ".agents/rules/001-current.md"],
+			["repo.dfconfig", ".github/workflows/ci.yml", ".darkfactory/plugins/df-rules/skills/001-current/SKILL.md"],
 			evidence,
 		);
 		expect(result.impactKinds).toEqual(["governance", "product"]);
-		expect(result.documentationFiles).toEqual([".agents/rules/001-current.md", "repo.dfconfig"]);
+		expect(result.documentationFiles).toEqual([
+			".darkfactory/plugins/df-rules/skills/001-current/SKILL.md",
+			"repo.dfconfig",
+		]);
 	});
 
 	test("does not invent docs impact for an internal implementation helper", () => {
@@ -81,7 +84,7 @@ describe("documentation impact policy", () => {
 	});
 
 	test("accepts an actual docs update for classified product impact", () => {
-		const result = evaluateDocumentationImpact(["repo.dfconfig", ".agents/PRD.md"], evidence);
+		const result = evaluateDocumentationImpact(["repo.dfconfig", "README.md"], evidence);
 		expect(result.findings).toEqual([]);
 	});
 

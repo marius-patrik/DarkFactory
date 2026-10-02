@@ -22,7 +22,7 @@ export async function resolveDetectedQuality(
 	const evidence = await detectRepositoryEvidence(repoDir);
 	const root = capabilitiesRoot
 		? resolve(capabilitiesRoot)
-		: resolve(import.meta.dir, "..", "..", "..", "..", "capabilities");
+		: resolve(import.meta.dir, "..", "..", "..", "..", ".darkfactory", "plugins");
 	const resolution = await resolveDetectedRepositoryActions(evidence, root);
 	return { evidence, resolution, matrix: qualityMatrix(resolution) };
 }

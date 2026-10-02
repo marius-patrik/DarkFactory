@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, test } from "bun:test";
 import { mkdtemp, rm } from "node:fs/promises";
+import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type { Candidate } from "../src/failover.ts";
 import { LimitLedger } from "../src/limits/ledger.ts";
@@ -14,7 +15,7 @@ import type { ModelCapability, RouterConfig } from "../src/router/types.ts";
 const temporary: string[] = [];
 afterEach(async () => {
 	for (const path of temporary.splice(0)) {
-		if (!path.startsWith(process.cwd())) throw new Error(`Refusing cleanup outside workspace: ${path}`);
+		if (!path.startsWith(tmpdir())) throw new Error(`Refusing cleanup outside workspace: ${path}`);
 		await rm(path, { recursive: true, force: true });
 	}
 });
@@ -187,7 +188,7 @@ describe("capability-tier routing", () => {
 
 describe("policy routing", () => {
 	test("orders by policy and quality, then explains capability and ledger skips", async () => {
-		const home = await mkdtemp(join(process.cwd(), ".router-test-"));
+		const home = await mkdtemp(join(tmpdir(), "df-router-test-"));
 		temporary.push(home);
 		const ledger = new LimitLedger(home);
 		await ledger.record([
@@ -325,7 +326,7 @@ describe("policy routing", () => {
 
 describe("router learning", () => {
 	test("persists outcomes and applies a bounded decaying failure penalty per task kind", async () => {
-		const home = await mkdtemp(join(process.cwd(), ".router-test-"));
+		const home = await mkdtemp(join(tmpdir(), "df-router-test-"));
 		temporary.push(home);
 		const store = new OutcomeStore(home, { windowMs: 1_000, maxPenalty: 20 });
 		const target: Candidate = { provider: "tight", model: "reviewer", account: "default" };
@@ -344,7 +345,7 @@ describe("router learning", () => {
 	});
 
 	test("down-ranks a recently failing model only within the matching task kind", async () => {
-		const home = await mkdtemp(join(process.cwd(), ".router-test-"));
+		const home = await mkdtemp(join(tmpdir(), "df-router-test-"));
 		temporary.push(home);
 		const store = new OutcomeStore(home, { windowMs: 10_000, maxPenalty: 20 });
 		const first = candidate("one", "same-tier", "standard");
@@ -389,7 +390,7 @@ describe("quota-aware ranking", () => {
 	const now = Date.UTC(2026, 8, 15, 12);
 
 	async function engine(configs: ProviderConfig[]): Promise<QuotaEngine> {
-		const home = await mkdtemp(join(process.cwd(), ".harness-test-router-"));
+		const home = await mkdtemp(join(tmpdir(), "df-harness-test-router-"));
 		temporary.push(home);
 		return new QuotaEngine(home, new LimitLedger(home), new Map(configs.map((config) => [config.id, config])));
 	}
@@ -446,7 +447,7 @@ describe("quota-aware ranking", () => {
 	});
 
 	test("a candidate with learned unavailability is skipped with its reason, however soon it recovers", async () => {
-		const home = await mkdtemp(join(process.cwd(), ".harness-test-router-"));
+		const home = await mkdtemp(join(tmpdir(), "df-harness-test-router-"));
 		temporary.push(home);
 		const ledger = new LimitLedger(home);
 		const quota = new QuotaEngine(

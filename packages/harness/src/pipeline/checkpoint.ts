@@ -17,7 +17,7 @@ import { existsSync, mkdirSync, readFileSync, renameSync, rmSync, statSync, writ
 import { dirname, join } from "node:path";
 
 /** The checkpoint's filename, inside the workspace directory. */
-export const CHECKPOINT_FILENAME = ".antigravity_checkpoint.json";
+export const CHECKPOINT_FILENAME = ".df-checkpoint.json";
 
 /** What a checkpoint records about a stopped run. */
 export interface Checkpoint {

@@ -1,5 +1,6 @@
 import { lstatSync, readlinkSync, realpathSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
+import { darkFactoryDirectory } from "../../protocol/src/config-document.ts";
 import type { DocsContentGraph } from "./content.ts";
 import { analyzeRuleNoteRelations } from "./relations.ts";
 
@@ -9,14 +10,13 @@ interface DocumentationTruthFinding {
 	message: string;
 }
 
-// README.md is the normative product document and ADRs.md the canonical note set, both authored once
-// and symlinked. Nothing here is a projection any more, so there is no alias to re-point and no
-// generated file to compare against a re-render.
+const CURRENT_ALIASES = [
+	// The ADRs are authored once under the DarkFactory directory and discovered at the root by symlink,
+	// the same arrangement as `.agents` itself. Copied rather than linked would let the two drift.
+	{ path: "ADRs.md", target: join(darkFactoryDirectory(), "ADRs.md") },
+] as const;
+
 const RETIRED_DOCUMENTATION_PATHS = [
-	join(".agents", "AGENTS.md"),
-	join(".agents", "PRD.md"),
-	join(".agents", "adr"),
-	join(".agents", "notes"),
 	"AGENTS.md",
 	"CLAUDE.md",
 	"PLAN.md",
@@ -32,9 +32,12 @@ const RETIRED_DOCUMENTATION_PATHS = [
 	"properdocs.yml",
 	"mkdocs.yml",
 	"harness/README.md",
-	join(".agents", "notes", "bootstrap.md"),
-	join(".agents", "notes", "vision_capture.md"),
-	join(".agents", "notes", "rules"),
+	// The notes tree is retired. It held a symlink to the README, which is what the root already is,
+	// so a file reintroduced there is content nothing reads.
+	join(".agents", "notes"),
+	join(darkFactoryDirectory(), "notes"),
+	// The records live in one document now, so the per-decision directory is a retired surface too.
+	join(darkFactoryDirectory(), "adr"),
 	"_notes",
 	"_rules",
 ] as const;
@@ -62,12 +65,7 @@ export function currentDocumentationFindings(
 		}
 	}
 
-	// `ADRs.md` and `CONTRIBUTING.md` are authored once and symlinked, so the symlink must resolve
-	// to its declared target rather than be a copied document that drifts from the original.
-	for (const alias of [
-		{ path: "ADRs.md", target: ".darkfactory/ADRs.md" },
-		{ path: "CONTRIBUTING.md", target: "README.md" },
-	]) {
+	for (const alias of CURRENT_ALIASES) {
 		const absolute = join(repoRoot, alias.path);
 		let stat: ReturnType<typeof lstatSync>;
 		try {
@@ -119,10 +117,7 @@ export function currentDocumentationFindings(
 
 	const relations = analyzeRuleNoteRelations(graph);
 	for (const message of relations.findings) findings.push({ path: ".agents", message });
-
-	// The generated `AGENTS.md` projection is gone. It was a second rendering of the rule set that
-	// nobody read, which is the drift DF-RULE-015 exists to prevent, and comparing a committed
-	// projection against a re-render only proves the generator is deterministic.
+	if (relations.findings.length > 0) return findings;
 
 	return findings;
 }

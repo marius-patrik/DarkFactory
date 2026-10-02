@@ -68,6 +68,7 @@
       "initial": "3a.1.0"
     },
     "environment": {
+      "$comment": "No packages are declared. The repository is a TypeScript workspace, and its packages are resolved from the workspace layout rather than asserted here.",
       "packages": [],
       "testing": {},
       "formatting": {},
@@ -91,6 +92,10 @@
       },
       "release": {
         "$comment": "Release actions are declared per ecosystem. #360 enables the final first-party package/native/web release artifacts.",
+        "python": {
+          "enabled": false,
+          "$comment": "pyproject.toml is tooling-only; DarkFactory does not publish a Python package."
+        },
         "node": {
           "$comment": "Node package/native/web publishing is enabled by #360 when the final release surface is complete.",
           "enabled": false

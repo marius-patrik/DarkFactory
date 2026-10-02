@@ -365,7 +365,7 @@ export function qualityMatrix(resolution: ResolvedRepositoryActions): readonly Q
 /** Loads applicable capability definitions and resolves the canonical repository action result. */
 export async function resolveDetectedRepositoryActions(
 	evidence: RepositoryActionEvidence,
-	capabilitiesRoot = join(evidence.root, "capabilities"),
+	capabilitiesRoot = join(evidence.root, ".darkfactory", "plugins"),
 ): Promise<ResolvedRepositoryActions> {
 	const definitions = await discoverCapabilities(capabilitiesRoot);
 	const applicable = resolveCapabilities(definitions, evidence.domains).capabilities;

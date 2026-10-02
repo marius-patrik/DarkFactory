@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, test } from "bun:test";
 import { mkdtemp, rm, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describeSubmoduleMovement, readSubmodules } from "../src/workspace/submodules.ts";
 
@@ -10,7 +11,7 @@ afterEach(async () => {
 
 /** Writes a `.gitmodules` with the given body and returns the root holding it. */
 async function withGitmodules(body: string): Promise<string> {
-	const root = await mkdtemp(join(process.cwd(), ".submodule-test-"));
+	const root = await mkdtemp(join(tmpdir(), "df-submodule-test-"));
 	roots.push(root);
 	await writeFile(join(root, ".gitmodules"), body);
 	return root;
@@ -18,7 +19,7 @@ async function withGitmodules(body: string): Promise<string> {
 
 describe("reading .gitmodules", () => {
 	test("returns nothing when the repository has no submodules", async () => {
-		const root = await mkdtemp(join(process.cwd(), ".submodule-test-"));
+		const root = await mkdtemp(join(tmpdir(), "df-submodule-test-"));
 		roots.push(root);
 		expect(readSubmodules(root)).toEqual([]);
 	});

@@ -29,6 +29,7 @@ import {
 	parseAccountId,
 } from "../../keychain/src/index.ts";
 import { loginProviderAccount } from "../../keychain/src/login.ts";
+import { runPluginCli } from "../../plugins/src/index.ts";
 import { runCiCli } from "./ci/cli.ts";
 import { applyLicence } from "./ci/licensing.ts";
 import { reportFailure, resolveFailure } from "./ci/report-failure.ts";
@@ -102,6 +103,7 @@ function usage(): string {
 		"  df logout <provider> --account <label>",
 		"  df ask --chain <provider/model[@account]>,... [--json] <prompt>",
 		"  df doctor [identities] [--config <path>] [--manifest <path>] [--repo <path>]",
+		"  df plugin <list|describe|validate> [options]   # agent plugins in .darkfactory/plugins/",
 		"  df ci <install|update|status|runs|logs|rerun|protect|doctor> [options]",
 		"  df graph validate [path]",
 		"  df graph plan --event <file> --state <file> [--graph <path>]",
@@ -1740,6 +1742,11 @@ export async function main(args = process.argv.slice(2)): Promise<void> {
 			return runCommand(registry, store, config, args.slice(1));
 		case "chat":
 			return chatCommand(registry, store, config, args.slice(1));
+		case "plugin": {
+			const exitCode = runPluginCli(args.slice(1));
+			if (exitCode !== 0) process.exitCode = exitCode;
+			return;
+		}
 		case "ci": {
 			const exitCode = await runCiCli(args.slice(1));
 			if (exitCode !== 0) process.exitCode = exitCode;

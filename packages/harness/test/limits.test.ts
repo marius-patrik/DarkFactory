@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, test } from "bun:test";
 import { mkdtemp, rm, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { LimitLedger } from "../src/limits/ledger.ts";
 import { defaultLimit, mergeReset, observeLimits } from "../src/limits/observe.ts";
@@ -20,7 +21,7 @@ const policy: LimitPolicyConfig = {
 };
 
 async function home(): Promise<string> {
-	const path = await mkdtemp(join(process.cwd(), ".limits-"));
+	const path = await mkdtemp(join(tmpdir(), "df-limits-"));
 	temporary.push(path);
 	return path;
 }

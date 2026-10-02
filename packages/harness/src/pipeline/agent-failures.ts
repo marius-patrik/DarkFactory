@@ -180,7 +180,7 @@ function exhaustionComment(options: {
 		"#### Checkpoint Information\n" +
 		`- **Branch**: \`${options.branchName || "N/A"}\`\n` +
 		`- **Automatic Resume**: ${options.resetAtUtc}\n` +
-		"- **Checkpoint**: Progress preserved in `.antigravity_checkpoint.json`\n" +
+		"- **Checkpoint**: Progress preserved in `.df-checkpoint.json`\n" +
 		"- **Project Status**: Updated to `Blocked`\n\n" +
 		`#### Instructions to Resume\n${RESUME_INSTRUCTIONS}\n`;
 	if (!options.errorDetail) return body;

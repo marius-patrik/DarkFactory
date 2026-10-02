@@ -169,7 +169,7 @@ export async function compileDocsContentGraphWithDetectedApi(
 ): Promise<DocsContentGraph> {
 	const config = options.config ?? loadDocsConfig(repoRoot);
 	const evidence = await detectRepositoryEvidence(repoRoot);
-	const capabilitiesRoot = options.capabilitiesRoot ?? resolve(repoRoot, "capabilities");
+	const capabilitiesRoot = options.capabilitiesRoot ?? resolve(repoRoot, ".darkfactory", "plugins");
 	const definitions = await discoverCapabilities(capabilitiesRoot);
 	const applicable = resolveCapabilities(definitions, evidence.domains).capabilities;
 	const resolution = resolveRepositoryActions(evidence, applicable);
