@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, test } from "bun:test";
 import { existsSync } from "node:fs";
 import { chmod, cp, mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { BINARY_NAME, stage, WRAPPER_NAME } from "../scripts/install";
 
@@ -11,7 +12,7 @@ afterEach(async () => {
 
 /** Builds the minimal `dist/` + `scripts/` shape a staged install reads. */
 async function harnessFixture(): Promise<string> {
-	const root = await mkdtemp(join(process.cwd(), ".install-test-"));
+	const root = await mkdtemp(join(tmpdir(), "df-install-test-"));
 	roots.push(root);
 	await mkdir(join(root, "dist", "assets", "skills"), { recursive: true });
 	await mkdir(join(root, "dist", "native", "darwin", "prebuilds"), { recursive: true });
@@ -51,7 +52,7 @@ describe("staging the df runtime", () => {
 	});
 
 	test("an unbuilt harness fails at install rather than staging a broken runtime", async () => {
-		const root = await mkdtemp(join(process.cwd(), ".install-test-"));
+		const root = await mkdtemp(join(tmpdir(), "df-install-test-"));
 		roots.push(root);
 		await expect(stage({ root, prefix: join(root, "prefix") })).rejects.toThrow(/bun run build/);
 	});

@@ -1,4 +1,6 @@
+import { darkFactoryDirectory } from "../../protocol/src/config-document.ts";
 import type { RepositoryEvidence } from "../../core/src/repository-evidence.ts";
+import { adrDocumentSource, RULES_PLUGIN } from "./content.ts";
 
 /** High-level kinds of change that can require canonical documentation updates. */
 type DocumentationImpactKind = "public-api" | "product" | "governance";
@@ -37,10 +39,7 @@ function normalizePath(path: string): string {
 }
 
 function configDocumentPaths(): ReadonlySet<string> {
-	const directory = (process.env.DF_CONFIG_DIR?.trim() || ".darkfactory")
-		.replaceAll("\\", "/")
-		.replace(/^\.\//u, "")
-		.replace(/\/$/u, "");
+	const directory = darkFactoryDirectory();
 	return new Set(
 		[
 			"repo.dfconfig",
@@ -57,11 +56,10 @@ function configDocumentPaths(): ReadonlySet<string> {
 
 function isDocumentationFile(path: string): boolean {
 	return (
-		path === ".agents/PRD.md" ||
-		path === ".agents/AGENTS.md" ||
+		path === "README.md" ||
 		configDocumentPaths().has(path) ||
-		path.startsWith(".agents/rules/") ||
-		path.startsWith(".agents/adr/")
+		path.startsWith(`${RULES_PLUGIN}/skills/`) ||
+		path === adrDocumentSource()
 	);
 }
 
@@ -76,9 +74,8 @@ function isProductContractFile(path: string): boolean {
 
 function isGovernanceFile(path: string): boolean {
 	return (
-		path === ".agents/AGENTS.md" ||
-		path.startsWith(".agents/rules/") ||
-		path.startsWith(".agents/adr/") ||
+		path.startsWith(`${RULES_PLUGIN}/skills/`) ||
+		path === adrDocumentSource() ||
 		path.startsWith(".github/workflows/") ||
 		path.startsWith("packages/harness/assets/workflows/")
 	);
@@ -105,7 +102,7 @@ export function classifyDocumentationImpact(
 
 	for (const path of files) {
 		if (apiEntries.has(path)) impactKinds.add("public-api");
-		if (isProductContractFile(path) || path === ".agents/PRD.md") impactKinds.add("product");
+		if (isProductContractFile(path) || path === "README.md") impactKinds.add("product");
 		if (isGovernanceFile(path)) impactKinds.add("governance");
 	}
 

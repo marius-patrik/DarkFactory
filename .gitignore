@@ -33,13 +33,10 @@ site/
 .properdocs-source/
 
 # Agent pipeline
-.antigravity_checkpoint.json
 .darkfactory/generated/
 
-# Agent worktrees. The folder is tracked so it exists in a fresh clone; every
-# checkout below it is local working state that must never be committed.
-.worktrees/*
-!.worktrees/.gitkeep
+# Agent tooling local state (opencode goal/session bookkeeping)
+.opencode/
 
 # IDE / Editor / OS
 .vscode/
@@ -52,29 +49,11 @@ Thumbs.db
 # The runner mounts the webhook payload into the workspace; it is not repository content.
 event.json
 
-# Harness test workspaces created when tests run from the repository root
-.harness-test-*/
-
 # uv writes this when Python tooling is invoked; the manifest is pyproject.toml
 uv.lock
 
-# Test fixtures create temporary trees beside the suite; they are not repository content.
-packages/harness/.*-test-*/
-
-# Installed by `df ci install` from packages/harness/assets/skills/. Tracked copies would be a
-# second source of truth for the same content (DF-RULE-015 single-declaration).
-.agents/skills/
-
-# Relocated to packages/harness in #1227. Nothing belongs at this path any more;
-# Root-anchored. A bare `harness/` matches any directory of that name at any depth, which silently
-# gitignored packages/harness/ too — and biome honours .gitignore, so the largest source tree in the
-# repository became invisible to `biome ci .`.
-/harness/
 .licence-test-*/
 .cli-test-*/
 # The reachability analyser is a working tool, not a deliverable: it is rewritten on every run, so
 # its generated JSON can never satisfy a format check.
 .ast-reachability.*
-
-# Agent tooling local state (opencode goal/session bookkeeping)
-.opencode/

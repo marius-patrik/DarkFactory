@@ -2,7 +2,7 @@ import { existsSync } from "node:fs";
 import { copyFile, cp, mkdir } from "node:fs/promises";
 import { dirname, join } from "node:path";
 
-interface NativeAssetCandidate {
+export interface NativeAssetCandidate {
 	platform: string;
 	arch: string;
 	file: string;

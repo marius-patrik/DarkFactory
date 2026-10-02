@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, test } from "bun:test";
-import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, rm, symlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import {
@@ -16,10 +16,10 @@ const roots: string[] = [];
 async function fixture(withApi = false): Promise<string> {
 	const root = await mkdtemp(join(tmpdir(), "darkfactory-docs-"));
 	roots.push(root);
-	await mkdir(join(root, ".agents", "rules"), { recursive: true });
-	await mkdir(join(root, ".agents", "adr"), { recursive: true });
+	await mkdir(join(root, ".darkfactory", "plugins", "df-rules", "skills", "001-test"), { recursive: true });
+	await mkdir(join(root, ".darkfactory"), { recursive: true });
 	await mkdir(join(root, ".github", "workflows"), { recursive: true });
-	const config: any = { version: 1, site: { name: "Fixture", description: "Fixture docs" }, home: ".agents/PRD.md" };
+	const config: any = { version: 1, site: { name: "Fixture", description: "Fixture docs" }, home: "README.md" };
 	if (withApi) {
 		config.api = { typescript: { name: "Fixture API", entryPoints: ["api.ts"], tsconfig: "tsconfig.json" } };
 		await writeFile(
@@ -34,20 +34,20 @@ async function fixture(withApi = false): Promise<string> {
 			}),
 		);
 	}
+	// The root README is the canonical product document, not a projection of another file.
+	await writeFile(join(root, "README.md"), "# Home\n\nSee the sections below.\n");
 	await writeFile(join(root, "repo.dfconfig"), JSON.stringify({ repo: {}, docs: config }));
-	await writeFile(join(root, ".agents", "PRD.md"), "# Home\n\nSee [the PRD](./PRD.md).\n");
-	await writeFile(join(root, ".agents", "AGENTS.md"), "# Rules projection\n");
-	await writeFile(join(root, "PRD.md"), "# Product\n");
 	await writeFile(join(root, "PLAN.md"), "# Plan\n");
-	await writeFile(join(root, "AGENTS.md"), "# Rules projection\n");
 	await writeFile(
-		join(root, ".agents", "rules", "001-test.md"),
-		"---\nid: DF-RULE-001\ntitle: Fixture rule\nstatus: normative\napplies_to: [agents]\nactivation: always\nowners: [docs]\n---\n# Rule 1 — Fixture rule\n\n## Requirement\n\nFixture requirement.\n\n## Rationale\n\nFixture rationale.\n\n## Enforcement\n\nFixture enforcement.\n\n## Exceptions\n\nNone.\n\n## Change control\n\nDeliberate.\n",
+		join(root, ".darkfactory", "plugins", "df-rules", "skills", "001-test", "SKILL.md"),
+		"---\nname: 001-test\ndescription: Use when a change must satisfy DF-RULE-001, Fixture rule.\nid: DF-RULE-001\ntitle: Fixture rule\nstatus: normative\napplies_to: [agents]\nactivation: always\nowners: [docs]\n---\n# Rule 1 — Fixture rule\n\n## Requirement\n\nFixture requirement.\n\n## Rationale\n\nFixture rationale.\n\n## Enforcement\n\nFixture enforcement.\n\n## Exceptions\n\nNone.\n\n## Change control\n\nDeliberate.\n",
 	);
+	// One document of decisions, split into records by heading, symlinked at the root.
 	await writeFile(
-		join(root, ".agents", "adr", "0001-test.md"),
-		"# ADR-0001 — Test\n\n**Status**: Accepted\n\n**Related rules**: `DF-RULE-001`\n\n## Decision\n\nFixture decision.\n\n## Consequences\n\nFixture consequence.\n",
+		join(root, ".darkfactory", "ADRs.md"),
+		"# Architecture decision records\n\n## ADR-0001 — Test\n\n**Status**: Accepted\n\n**Related rules**: `DF-RULE-001`\n\n### Decision\n\nFixture decision.\n\n### Consequences\n\nFixture consequence.\n",
 	);
+	await symlink(join(".darkfactory", "ADRs.md"), join(root, "ADRs.md"));
 	await writeFile(
 		join(root, ".github", "workflows", "ci.yml"),
 		"name: CI\n\njobs:\n  test:\n    runs-on: ubuntu-latest\n",
@@ -63,12 +63,12 @@ describe("@darkfactory/docs", () => {
 	test("parses the combined docs block including TypeScript API ownership", () => {
 		expect(
 			parseDocsConfig(
-				'{"version":1,"site":{"name":"Docs"},"home":".agents/PRD.md","api":{"typescript":{"entryPoints":["src/index.ts"],"tsconfig":"tsconfig.json"}}}',
+				'{"version":1,"site":{"name":"Docs"},"home":"README.md","api":{"typescript":{"entryPoints":["src/index.ts"],"tsconfig":"tsconfig.json"}}}',
 			),
 		).toEqual({
 			version: 1,
 			site: { name: "Docs" },
-			home: ".agents/PRD.md",
+			home: "README.md",
 			api: { typescript: { entryPoints: ["src/index.ts"], tsconfig: "tsconfig.json" } },
 		});
 	});
@@ -88,17 +88,20 @@ describe("@darkfactory/docs", () => {
 	test("compiles only current canonical pages and workflow metadata", async () => {
 		const root = await fixture();
 		const graph = compileDocsContentGraph(root, loadDocsConfig(root));
-		expect(graph.pages.map((page) => page.id)).toEqual(["home", "agents-rules-001-test", "agents-adr-0001-test"]);
-		expect(graph.pages[0]?.source).toBe(".agents/PRD.md");
-		expect(graph.pages.some((page) => page.source === "AGENTS.md" || page.source === ".agents/AGENTS.md")).toBe(false);
+		expect(graph.pages.map((page) => page.id)).toEqual([
+			"home",
+			"darkfactory-plugins-df-rules-skills-001-test",
+			"darkfactory-adrs-md-adr-0001-test",
+		]);
+		expect(graph.pages[0]?.source).toBe("README.md");
 		expect(graph.workflows).toEqual([{ source: ".github/workflows/ci.yml", name: "CI", jobs: ["test"] }]);
 	});
 
 	test("rejects non-current ADRs", async () => {
 		const root = await fixture();
 		await writeFile(
-			join(root, ".agents", "adr", "0002-not-current.md"),
-			"# ADR-0002 — Not current\n\n**Status**: Proposed\n",
+			join(root, ".darkfactory", "ADRs.md"),
+			"# Architecture decision records\n\n## ADR-0002 — Not current\n\n**Status**: Proposed\n",
 		);
 		expect(() => compileDocsContentGraph(root)).toThrow("ADR must have Status: Accepted");
 	});
@@ -124,7 +127,7 @@ describe("@darkfactory/docs", () => {
 		expect(await readFile(join(site, "index.html"), "utf8")).toContain("See");
 		const apiPage = await readFile(join(site, "api", "index.html"), "utf8");
 		expect(apiPage).toContain("FixtureApi");
-		expect(apiPage).toContain('href="../agents-rules-001-test/"');
+		expect(apiPage).toContain('href="../darkfactory-plugins-df-rules-skills-001-test/"');
 		expect(JSON.parse(await readFile(join(site, "content.json"), "utf8")).api.name).toBe("Fixture API");
 	});
 });

@@ -358,7 +358,6 @@ async function scan(
 			[
 				".git",
 				".darkfactory",
-				".worktrees",
 				"node_modules",
 				"target",
 				"dist",

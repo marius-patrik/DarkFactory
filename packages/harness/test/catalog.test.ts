@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, test } from "bun:test";
 import { mkdtemp, rm } from "node:fs/promises";
+import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fauxProvider, type Provider } from "@earendil-works/pi-ai";
 import { FileCredentialStore } from "../../keychain/src/index.ts";
@@ -10,14 +11,14 @@ import { BUILTIN_PROVIDER_CONFIG, type ProviderConfig } from "../src/providers/s
 const temporary: string[] = [];
 
 async function home(): Promise<string> {
-	const path = await mkdtemp(join(process.cwd(), ".catalog-test-"));
+	const path = await mkdtemp(join(tmpdir(), "df-catalog-test-"));
 	temporary.push(path);
 	return path;
 }
 
 afterEach(async () => {
 	for (const path of temporary.splice(0)) {
-		if (!path.startsWith(process.cwd())) throw new Error(`Refusing cleanup outside workspace: ${path}`);
+		if (!path.startsWith(tmpdir())) throw new Error(`Refusing cleanup outside workspace: ${path}`);
 		await rm(path, { recursive: true, force: true });
 	}
 });

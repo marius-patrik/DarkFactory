@@ -367,7 +367,7 @@ export async function handleImplement(context: ImplementContext, request: Implem
 			? "Git commit/push rejected due to missing GitHub Actions workflow permissions:\n\n" +
 				`\`\`\`\n${rawError}\n\`\`\`\n\n` +
 				"**Resolution**: The GitHub Actions runner token requires `workflows: write` permissions " +
-				"in `.github/workflows/antigravity-ci-agent.yml` to modify workflows under `.github/workflows/`."
+				"in `.github/workflows/agent.yml` to modify workflows under `.github/workflows/`."
 			: `Git commit/push failed: ${rawError}`;
 		context.warn(notice);
 		await postAgentError(context, repo, planNumber, notice);

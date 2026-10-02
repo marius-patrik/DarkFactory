@@ -79,7 +79,7 @@ describe("combined DarkFactory configuration", () => {
 	test("resolves the same combined document for every supported filename", async () => {
 		const blocks = {
 			repo: { identity: { repo: "example" } },
-			docs: { version: 1, home: ".agents/PRD.md" },
+			docs: { version: 1, home: "README.md" },
 			providers: { defaultChain: "example/model@default" },
 		};
 		for (const filename of ["repo.dfconfig", "config.dfconfig", ".dfconfig"]) {
@@ -97,13 +97,13 @@ describe("combined DarkFactory configuration", () => {
 		const document = parseConfigDocument(
 			JSON.stringify({
 				repo: { identity: { repo: "example" } },
-				docs: { version: 1, home: ".agents/PRD.md" },
+				docs: { version: 1, home: "README.md" },
 				providers: { defaultChain: "example/model@default" },
 			}),
 			"repo.dfconfig",
 		);
 		expect(configBlock(document, "repo", "repo.dfconfig")).toEqual({ identity: { repo: "example" } });
-		expect(configBlock(document, "docs", "repo.dfconfig")).toEqual({ version: 1, home: ".agents/PRD.md" });
+		expect(configBlock(document, "docs", "repo.dfconfig")).toEqual({ version: 1, home: "README.md" });
 		expect(configBlock(document, "providers", "repo.dfconfig")).toEqual({
 			defaultChain: "example/model@default",
 		});

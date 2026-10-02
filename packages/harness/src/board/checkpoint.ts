@@ -16,8 +16,13 @@ import { isAbsolute, join, resolve } from "node:path";
  * follows the repository instead of the artefact.
  */
 
-/** The file the agent runner writes on exhaustion, in the same state directory. */
-export const CHECKPOINT_FILENAME = ".antigravity_checkpoint.json";
+/**
+ * The file the agent runner writes on exhaustion, in the same state directory.
+ *
+ * Named for df rather than the CLI it replaced: the checkpoint belongs to the runner, not to the
+ * agent it used to shell out to.
+ */
+export const CHECKPOINT_FILENAME = ".df-checkpoint.json";
 
 /** How long a checkpoint keeps an issue `Blocked` before it is treated as abandoned. */
 export const DEFAULT_CHECKPOINT_MAX_AGE_SECONDS = 86_400;

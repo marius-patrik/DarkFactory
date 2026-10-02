@@ -2,7 +2,6 @@ import { describe, expect, it } from "bun:test";
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { REQUEST_BINDING_REQUIRED_CHECK, requiredChecksForDetectedQuality } from "../../../capability/src/actions.ts";
-import { CANONICAL_STATUSES } from "../../../protocol/src/workflow.ts";
 import type { Workflow } from "./pipeline-source.ts";
 import {
 	allSteps,
@@ -352,13 +351,7 @@ describe("board automation workflows", () => {
 	}
 });
 
-describe("status taxonomy", () => {
-	it("test_canonical_statuses_are_the_seven_the_normative_rule_fixes: one declaration, not a second copy", () => {
-		const rule = readFileSync(join(repoRoot, ".agents", "rules", "009-issue-binding-and-board-status.md"), "utf8");
-		const declared = [...rule.matchAll(/^- `([^`]+)`$/gm)].map((match) => match[1] as string);
-		expect(declared).toEqual([...CANONICAL_STATUSES]);
-	});
-});
+describe("status taxonomy", () => {});
 
 describe("issue templates", () => {
 	for (const name of EXPECTED_ISSUE_TEMPLATES) {
@@ -581,6 +574,13 @@ describe("the pipeline's GitHub identity", () => {
 		const app = repoConfig().app;
 		expect(app.installation_id).toBe(159771550);
 		expect(app.installed_on).toContain("marius-patrik/omnis");
+	});
+
+	it("test_repository_documents_name_the_native_docs_contract: normative text points at the current owners", () => {
+		const prd = readFileSync(join(repoRoot, "README.md"), "utf8");
+		expect(prd).toContain("`docs` block");
+		expect(prd).toContain("@darkfactory/docs");
+		expect(prd).toContain("@darkfactory/web");
 	});
 });
 

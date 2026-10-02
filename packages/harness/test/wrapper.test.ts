@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, test } from "bun:test";
 import { chmod, mkdir, mkdtemp, rm } from "node:fs/promises";
+import { tmpdir } from "node:os";
 import { join } from "node:path";
 
 const roots: string[] = [];
@@ -15,7 +16,7 @@ const shellPath = (path: string) =>
 describe("Unix df wrapper", () => {
 	test("uses DF_BIN for DarkFactory subcommands and a later PATH df for flags and non-interactive bare calls", async () => {
 		if (process.platform === "win32" && !Bun.which("sh")) return;
-		const root = await mkdtemp(join(process.cwd(), ".wrapper-test-"));
+		const root = await mkdtemp(join(tmpdir(), "df-wrapper-test-"));
 		roots.push(root);
 		const wrapperDir = join(root, "wrapper");
 		const systemDir = join(root, "system");
@@ -54,7 +55,7 @@ describe("Unix df wrapper", () => {
 
 	/** Stages the wrapper plus a fake system df, and returns a spawn helper. */
 	const stage = async (options: { binary?: boolean; source?: boolean; bun?: boolean }) => {
-		const root = await mkdtemp(join(process.cwd(), ".wrapper-test-"));
+		const root = await mkdtemp(join(tmpdir(), "df-wrapper-test-"));
 		roots.push(root);
 		const wrapperDir = join(root, "wrapper");
 		const systemDir = join(root, "system");

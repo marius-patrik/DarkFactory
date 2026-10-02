@@ -63,7 +63,7 @@ jobs:
           if [ -d "$GITHUB_WORKSPACE/.darkfactory-runtime" ]; then
             ROOT="$GITHUB_WORKSPACE/.darkfactory-runtime"
           fi
-          bun "$ROOT/packages/cli/src/bin.ts" ci matrix             --repo "$GITHUB_WORKSPACE"             --capabilities-root "$ROOT/capabilities" > "$RUNNER_TEMP/darkfactory-quality.json"
+          bun "$ROOT/packages/cli/src/bin.ts" ci matrix             --repo "$GITHUB_WORKSPACE"             --capabilities-root "$GITHUB_WORKSPACE/.darkfactory/plugins" > "$RUNNER_TEMP/darkfactory-quality.json"
           jq -c '.matrix' "$RUNNER_TEMP/darkfactory-quality.json"             | sed 's/^/matrix=/' >> "$GITHUB_OUTPUT"
           if [ "$(jq '.matrix | length' "$RUNNER_TEMP/darkfactory-quality.json")" -gt 0 ]; then
             echo "has-actions=true" >> "$GITHUB_OUTPUT"
