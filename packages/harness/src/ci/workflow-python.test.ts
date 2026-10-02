@@ -114,6 +114,28 @@ describe("steps that no longer need an interpreter", () => {
 		expect(workflowSource("report-failure.yml")).not.toContain("PIPELINE_SCRIPTS");
 		expect(workflowSource("report-failure.yml")).toContain("packages/cli/src/bin.ts");
 	});
+
+	it("no workflow exports a script path into the directory Python removal deleted", () => {
+		// `PIPELINE_SCRIPTS` and `PYTHONPATH` existed only to locate a `.github/scripts/*.py` file.
+		// Every workflow now runs its subagent through Bun, so an exported path into a deleted
+		// directory has no reader and reads as live configuration. `report-failure.yml` and
+		// `project-automation.yml` each carried one for several merges after the removal.
+		// Matched against shell lines rather than the whole file: `ci.yml` explains in a comment
+		// that this rule is the one `.github/scripts/resolver.py` enforced, and that sentence is
+		// history worth keeping.
+		for (const name of workflowNames()) {
+			const exported = workflowSource(name)
+				.split("\n")
+				.filter((line) => /^\s*(echo|export)\s/.test(line));
+			for (const line of exported) {
+				expect(line, `${name} must not export a script path into a deleted directory`).not.toContain(
+					"PIPELINE_SCRIPTS",
+				);
+				expect(line, `${name} must not export PYTHONPATH`).not.toContain("PYTHONPATH");
+				expect(line, `${name} must not name .github/scripts`).not.toContain(".github/scripts");
+			}
+		}
+	});
 });
 
 describe("the Python the pipeline still runs", () => {
