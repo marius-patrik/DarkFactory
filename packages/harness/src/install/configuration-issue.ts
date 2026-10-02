@@ -34,9 +34,10 @@ export function configurationIssue(repo: string, pipelineRepo: string, needsSubm
 
 The pipeline is installed and everything derivable has been generated. Four things need you.
 
-If this repository keeps notes - runbooks, captures, or a decision log - the canonical location is
-\`.agents/notes/\`, with one ADR per decision under \`.agents/adr/\`, exactly as DarkFactory does
-it. The convention is what is shared; the notes themselves stay yours.
+If this repository keeps notes - runbooks, captures, or a decision log - give them one document per
+kind and say so in its configuration. DarkFactory keeps its accepted decisions in a single
+\`ADRs.md\`, superseded by editing the decision they replace rather than by adding a second file.
+The convention is what is shared; the notes themselves stay yours.
 
 ### 1. Areas — the one thing that cannot be derived
 

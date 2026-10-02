@@ -199,7 +199,7 @@ Completion sequencing is optimized for the shortest safe path to one final, prov
 - The compiler builds one typed content graph from canonical Markdown, ADRs/rules, TypeScript/TSDoc API extraction, capability-contributed documentation and repository/graph/workflow metadata.
 - TypeDoc may be used internally as the TypeScript/TSDoc extractor.
 - `@darkfactory/web` is the only first-party web renderer.
-- `README.md` is the product homepage. `.agents/plugins/df-rules/skills/**` and `.agents/ADRs.md` are canonical. Root `README.md` is the canonical product document itself, not a symlink or a projection; `.agents/AGENTS.md` is the deterministic generated projection of canonical rules. Supported discovery aliases may point to canonical documents or generated projections, but internal legacy aliases are not retained.
+- `README.md` is the product homepage. `.darkfactory/plugins/df-rules/skills/**` and `.darkfactory/ADRs.md` are canonical. Root `README.md` is the canonical product document itself, not a symlink or a projection. Nothing is projected from them; a generated rendering would be a second declaration of the same content. Supported discovery aliases may point to the canonical documents, but internal legacy aliases are not retained.
 - Consumer repositories use the released web bundle plus repository-specific compiled content/data; generated sites and JSON content graphs remain CI outputs rather than committed sources.
 ### Consequences
 Documentation has one compiler/configuration contract and one first-party renderer while product docs, rules and long-term notes retain distinct canonical sources and generated discovery projections.

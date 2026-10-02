@@ -6,7 +6,7 @@ license: MIT
 
 # Build and port a plugin
 
-Plugins live in `.agents/plugins/<name>/`. Content and scripts stay here; nothing in a plugin is
+Plugins live in `.darkfactory/plugins/<name>/`. Content and scripts stay here; nothing in a plugin is
 wired into the `packages/` build, and no plugin text is duplicated into the workspace. The
 directory itself is the single declaration of the skill (the `commits-and-repository-taxonomy` skill) - `.agents/skills/` is
 untracked install output written by `df ci install`, so a tracked copy there is a second
@@ -42,7 +42,7 @@ one symlink per skill, because it follows a `<skill-name>` entry but not anythin
 
 ```sh
 mkdir -p .claude/skills
-for skill in .agents/plugins/<name>/skills/*/; do
+for skill in .darkfactory/plugins/<name>/skills/*/; do
 	ln -sfn "../../$skill" ".claude/skills/$(basename "$skill")"
 done
 ```

@@ -20,7 +20,7 @@ Public source APIs MUST be documented inline.
 
 Documentation MUST be generated from canonical source and architecture records. DarkFactory's documentation engine is `@darkfactory/docs`; TypeDoc may be used internally for TypeScript extraction. The `docs` block of the combined DarkFactory configuration is the only documentation configuration contract. Generated sites and JSON content graphs are CI outputs and MUST NOT be committed.
 
-`README.md` is the product-documentation homepage: a regular file at the repository root, not a symlink or a projection. `.agents/plugins/df-rules/skills/**` is the canonical governance skill set, one skill per governed concern, and `ADRs.md` is the canonical current long-term note set. These discovery surfaces are never a second declaration of the same content.
+`README.md` is the product-documentation homepage: a regular file at the repository root, not a symlink or a projection. `.darkfactory/plugins/df-rules/skills/**` is the canonical governance skill set, one skill per governed concern, and `ADRs.md` is the canonical current long-term note set. These discovery surfaces are never a second declaration of the same content.
 
 The final web rendering layer is `@darkfactory/web`; docs must not maintain a second frontend or theme runtime.
 

@@ -4,5 +4,5 @@ contact_links:
     url: https://github.com/marius-patrik/DarkFactory/blob/darkfactory/README.md
     about: Product outcomes, constraints, actors, architecture, and final acceptance.
   - name: Contribution rules
-    url: https://github.com/marius-patrik/DarkFactory/tree/darkfactory/.agents/plugins/df-rules/skills
+    url: https://github.com/marius-patrik/DarkFactory/tree/darkfactory/.darkfactory/plugins/df-rules/skills
     about: The binding rules for humans and agents - branches, PRs, plans, approvals, taxonomy.
