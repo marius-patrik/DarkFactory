@@ -48,10 +48,15 @@ RUN curl -fsSL https://bun.sh/install | BUN_INSTALL=/usr/local bash -s -- "bun-v
 # staged layouts, so the image installs that wrapper rather than its own dispatcher and points
 # DF_SOURCE at the source entrypoint. A staged local install puts a compiled `df-bin` beside the
 # same wrapper instead, and needs no Bun at runtime.
-COPY package.json /opt/darkfactory/
+# `capabilities/` moved to `.darkfactory/plugins/` in #1297 and `packages/harness/package.json`
+# was deleted with the per-package manifests, so there is no directory and no sub-manifest left to
+# copy or install into. `bun.lock` is copied because the root workspace is the install target now.
+COPY package.json bun.lock /opt/darkfactory/
 COPY packages/ /opt/darkfactory/packages/
-COPY capabilities/ /opt/darkfactory/capabilities/
-RUN bun install --frozen-lockfile --cwd /opt/darkfactory/packages/harness
+COPY .darkfactory/ /opt/darkfactory/.darkfactory/
+COPY tsconfig.base.json tsconfig.json /opt/darkfactory/
+COPY scripts/ /opt/darkfactory/scripts/
+RUN cd /opt/darkfactory && bun install --frozen-lockfile
 # ENV, not a profile script: the runner invokes `df` from a constructed environment, so a value
 # only a login shell reads would leave every agent call without a runtime to dispatch to.
 ENV DF_SOURCE=/opt/darkfactory/packages/harness/src/cli.ts
@@ -68,12 +73,12 @@ RUN set -eux; \
       echo "  ABSENT:  df"; \
     fi
 
-# 4. Setup project workspace and install Python test / build dependencies
+# 4. Project workspace
+#
+# `pyproject.toml` and `requirements-dev.txt` were deleted with the Python removal, so there is
+# nothing to pip install. A consumer repository that brings its own Python ecosystem installs into
+# this workspace at container start; the image itself no longer carries one.
 WORKDIR /workspace
-
-COPY pyproject.toml requirements-dev.txt /workspace/
-RUN pip install --no-cache-dir --upgrade pip \
-    && pip install --no-cache-dir -r requirements-dev.txt
 
 # 5. Create the unprivileged user the agent runs as
 #
@@ -91,15 +96,9 @@ RUN groupadd --gid ${AGENT_GID} agent \
 
 ENV HOME=/home/agent
 
-# 6. Copy the pipeline scripts
-#
-# The entrypoint is TypeScript and lives in the harness source already copied above, so nothing is
-# installed as a runner binary any more. The scripts are still copied because the delivery workflows
-# run them in the runner context, and the image is meant to reproduce that environment; the ENTRYPOINT
-# itself no longer reaches any of them.
-COPY .github/scripts/ /usr/local/share/darkfactory-scripts/
-
-ENV PYTHONPATH="/usr/local/share/darkfactory-scripts:/workspace/.github/scripts:${PYTHONPATH}"
+# 6. The delivery workflows run in the runner context, not in this container, so the pipeline
+# scripts that used to be copied here are not. `.github/scripts/` was deleted with the Python
+# removal; the subagents are reached through `df` and `packages/harness/src/cli.ts` instead.
 
 # Everything below runs unprivileged. Placed after the installs so package managers still have
 # the root they need at build time.

@@ -1,0 +1,11 @@
+# Agent worktrees and local tooling state are never part of the image.
+.worktrees/
+.opencode/
+site/
+.darkfactory/generated/
+
+# Installed dependency trees, at any depth. The stale per-package ones matter here:
+# `packages/*/node_modules` holds symlinks into the root store, and the root store is not in the
+# image, so copying the leaves without the store yields a runtime ENOENT rather than a build error.
+node_modules/
+**/node_modules/
