@@ -4,6 +4,8 @@ import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { checkWorkflowsDrift, installWorkflows, updateWorkflows } from "../../src/ci/installer.ts";
+import { renderWorkflowTemplate } from "../../src/ci/templates.ts";
+import { repoRoot } from "./pipeline-source.ts";
 
 async function writeUpstream(temp: string, repo: string, ref: string): Promise<void> {
 	await writeFile(join(temp, "repo.dfconfig"), JSON.stringify({ repo: { upstream: { repo, ref } } }));
@@ -149,5 +151,40 @@ describe("shipped workflow templates", () => {
 	it("carries the environment the check reads", () => {
 		expect(template).toContain("PR_BODY");
 		expect(template).toContain("GITHUB_EVENT_NAME");
+	});
+});
+
+describe("the shipped CI template agrees with this repository's own", () => {
+	// `df ci install` writes `ci.yml.tmpl` into a consuming repository, and this repository runs
+	// the same gate through `.github/workflows/ci.yml`. When the two diverge, consumers get a gate
+	// that is not the one being fixed here — which is how `$ROOT/capabilities` survived #1297: the
+	// template still pointed at the directory the plugins moved out of, and a missing capabilities
+	// root resolves to zero rows rather than an error, so a consumer's quality gate reported
+	// nothing to check instead of failing.
+	it("resolves the capabilities root where the plugins now live", () => {
+		const template = readFileSync(join(import.meta.dir, "..", "..", "assets", "workflows", "ci.yml.tmpl"), "utf-8");
+		expect(template).toContain('--capabilities-root "$ROOT/.darkfactory/plugins"');
+		expect(template).not.toContain("$ROOT/capabilities");
+	});
+
+	it("declares the same jobs and steps as the workflow this repository runs", () => {
+		const rendered = renderWorkflowTemplate("ci.yml", {
+			pipeline_repo: "marius-patrik/DarkFactory",
+			pipeline_ref: "main",
+		});
+		const shape = (document: unknown): string =>
+			JSON.stringify(
+				Object.fromEntries(
+					Object.entries((document as { jobs: Record<string, { steps?: unknown[] }> }).jobs).map(([job, value]) => [
+						job,
+						(value.steps ?? []).map((step) => {
+							const entry = step as { name?: string; uses?: string };
+							return entry.name ?? entry.uses ?? "";
+						}),
+					]),
+				),
+			);
+		const own = readFileSync(join(repoRoot, ".github", "workflows", "ci.yml"), "utf-8");
+		expect(shape(Bun.YAML.parse(rendered))).toBe(shape(Bun.YAML.parse(own)));
 	});
 });
