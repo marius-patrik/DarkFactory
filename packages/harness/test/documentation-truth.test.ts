@@ -38,6 +38,14 @@ function canonicalDocuments(): string[] {
 	return documents.map((path) => path.slice(repoDir.length + 1).replaceAll("\\", "/")).sort();
 }
 
+/**
+ * Directory names the skills name as a convention *inside another skill's own directory*, not as
+ * a path in this repository. `author-skill` tells an author to put long material in
+ * `references/`, which is relative to whatever skill is being written; it is not a claim about
+ * the repository root, so the directory claim below must not report it.
+ */
+const SKILL_LOCAL_DIRECTORIES = new Set(["references/"]);
+
 /** Repository-root-relative top-level entry names, which is what makes a code span a path claim. */
 function topLevelNames(): Set<string> {
 	return new Set(
@@ -58,7 +66,14 @@ function pathClaims(markdown: string): string[] {
 	return codeSpans(markdown).filter((span) => {
 		if (NOT_A_PATH.test(span) || span.includes(" ")) return false;
 		if (span.startsWith(".") || !span.includes("/")) return false;
-		return top.has((span.split("/") as string[])[0] as string);
+		if (top.has((span.split("/") as string[])[0] as string)) return true;
+		// A directory-shaped span naming a first segment that is not a current top-level entry
+		// is still a claim about this repository. Without this, a document could name a
+		// top-level directory that no longer exists and the scan would discard it as not-a-path
+		// rather than report it -- which is how `capabilities/` survived #1297 in README.md and
+		// in accepted ADR-0018.
+		if (!span.endsWith("/")) return false;
+		return !SKILL_LOCAL_DIRECTORIES.has(span);
 	});
 }
 
@@ -124,6 +139,19 @@ describe("canonical documentation truth", () => {
 	test("the path scan ignores globs, placeholders and non-path code spans", () => {
 		const spans = ["packages/*/biome.json", "df ci logs <run-id>", "`df`", ".agents/rules", "https://x.dev/a"];
 		expect(pathClaims(spans.map((span) => `text \`${span}\` text`).join("\n"))).toEqual([]);
+	});
+
+	test("the path scan reports a directory claim naming a top-level that no longer exists", () => {
+		// `capabilities/` is not a top-level entry, so the known-top-level filter used to discard
+		// it instead of reporting it. That is how it survived #1297 in README.md and ADR-0018.
+		expect(topLevelNames().has("capabilities")).toBe(false);
+		expect(pathClaims("behavior belongs under `capabilities/` today")).toEqual(["capabilities/"]);
+	});
+
+	test("the path scan still ignores a skill-local directory convention", () => {
+		// `author-skill` names `references/` as a convention inside the skill being authored,
+		// which is not a path in this repository.
+		expect(pathClaims("Put anything long in `references/` and link it.")).toEqual([]);
 	});
 
 	test("the subcommand scan recognises a command the CLI does not have", () => {
