@@ -67,9 +67,10 @@ Left off deliberately. Turn it on once CI has reported green at least once, so t
 are contexts that actually exist — protection requiring a check nothing reports blocks every merge
 forever.
 
-\`\`\`bash
-python .github/scripts/repo_settings.py --apply
-\`\`\`
+Protection has to be applied by the pipeline, not from this repository: the repository has no
+\`packages/\` to run it from. There is no consumer-facing way to do that yet, so it is tracked in
+the pipeline's issue tracker rather than described by a command that does not exist. Everything
+above is yours to finish without it.
 
 ---
 
