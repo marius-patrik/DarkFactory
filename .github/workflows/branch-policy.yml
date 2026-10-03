@@ -43,9 +43,14 @@ jobs:
     runs-on: ubuntu-latest
     env:
       GH_PROJECT_TOKEN: ${{ secrets.GH_PROJECT_TOKEN }}
+      # `repo-settings.ts` reads `GH_TOKEN` (or `GITHUB_TOKEN`) and throws
+      # "no token: set GH_TOKEN or GITHUB_TOKEN" without one. This job set only
+      # `GH_PROJECT_TOKEN`, so it failed on every run that reached it. `install.yml` has always
+      # exported `GH_TOKEN` for the same command.
+      GH_TOKEN: ${{ secrets.GH_PROJECT_TOKEN }}
     steps:
       - name: Require repository-administration credentials
-        run: test -n "$GH_PROJECT_TOKEN"
+        run: test -n "$GH_TOKEN"
 
       - name: Checkout repository
         uses: actions/checkout@v4
