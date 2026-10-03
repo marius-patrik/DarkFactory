@@ -42,15 +42,34 @@ jobs:
     if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     env:
+      # The secrets context cannot be read from a step-level `if`, so the test is hoisted to the
+      # job, where it can. Same shape as `install.yml`.
+      HAS_APP_KEY: ${{ secrets.DARKFACTORY_APP_PRIVATE_KEY != '' }}
       GH_PROJECT_TOKEN: ${{ secrets.GH_PROJECT_TOKEN }}
-      # `repo-settings.ts` reads `GH_TOKEN` (or `GITHUB_TOKEN`) and throws
-      # "no token: set GH_TOKEN or GITHUB_TOKEN" without one. This job set only
-      # `GH_PROJECT_TOKEN`, so it failed on every run that reached it. `install.yml` has always
-      # exported `GH_TOKEN` for the same command.
-      GH_TOKEN: ${{ secrets.GH_PROJECT_TOKEN }}
     steps:
+      - name: Mint an installation token when the App key is available
+        # Applying branch protection needs repository administration. `GH_PROJECT_TOKEN` answers
+        # `GET /repos/{slug}/rulesets` with 404, which GitHub returns for a resource the token
+        # cannot see rather than one that does not exist -- so the reconcile reported
+        # "failed: Not Found" on both declared lanes. The App is the credential `install.yml`
+        # already prefers for this same command; `continue-on-error` so a missing key falls back
+        # rather than failing the run before the fallback is tried.
+        id: app-token
+        if: env.HAS_APP_KEY == 'true'
+        uses: actions/create-github-app-token@v1
+        continue-on-error: true
+        with:
+          app-id: ${{ vars.DARKFACTORY_APP_ID || '4861004' }}
+          private-key: ${{ secrets.DARKFACTORY_APP_PRIVATE_KEY }}
+          owner: ${{ github.repository_owner }}
+          repositories: ${{ github.event.repository.name }}
+
       - name: Require repository-administration credentials
-        run: test -n "$GH_TOKEN"
+        # Through `env`, never interpolated into the script: a secret pasted into a `run:` block is
+        # a script-injection surface, which the repository's own governance test enforces.
+        env:
+          CREDENTIAL: ${{ steps.app-token.outputs.token || secrets.GH_PROJECT_TOKEN }}
+        run: test -n "$CREDENTIAL"
 
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -72,4 +91,9 @@ jobs:
         # them. A flag that parses and does nothing is how a workflow comes to believe it applied
         # protection it never touched. The other four are ported: `install.yml` runs the full path
         # with `--skip-protection` and no Python.
+        env:
+          # `repo-settings.ts` reads `GH_TOKEN` (or `GITHUB_TOKEN`) and throws
+          # "no token: set GH_TOKEN or GITHUB_TOKEN" without one. Set here rather than on the job
+          # because the `steps` context is not available in `jobs.<id>.env`.
+          GH_TOKEN: ${{ steps.app-token.outputs.token || secrets.GH_PROJECT_TOKEN || secrets.GITHUB_TOKEN }}
         run: bun packages/harness/src/ci/repo-settings.ts --apply --branches-only
