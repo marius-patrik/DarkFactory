@@ -38,6 +38,17 @@ site/
 # Agent tooling local state (opencode goal/session bookkeeping)
 .opencode/
 
+# Paper build output. `paper/out/` is what the typst quality row and the release job write; the
+# published artifact is `THESIS_CASE_STUDY.pdf`, built by `scripts/paper/publication.ts`. Committing
+# the intermediate meant a green matrix run rewrote a tracked binary.
+paper/out/
+
+# Agent worktrees. The folder is tracked through a .gitkeep so it exists in a fresh clone, and
+# everything below it is ignored: a checkout is local working state, and there is no path by which
+# one should reach a commit.
+.worktrees/*
+!.worktrees/.gitkeep
+
 # IDE / Editor / OS
 .vscode/
 .idea/
