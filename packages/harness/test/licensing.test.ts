@@ -1,8 +1,8 @@
 import { afterAll, describe, expect, test } from "bun:test";
-import { existsSync } from "node:fs";
+import { existsSync, readdirSync } from "node:fs";
 import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { join, resolve, sep } from "node:path";
 import { applyLicence, declaredLicence, licenceBody, NO_LICENCE, OFFERED_LICENCES } from "../src/ci/licensing.ts";
 import type { GitHubClient } from "../src/github/client.ts";
 
@@ -36,6 +36,28 @@ function clientReturning(body: unknown): GitHubClient {
 }
 
 const GPL = "GNU GENERAL PUBLIC LICENSE\nVersion 3, 29 June 2007\n\nCopyright (C) [year] [fullname]\n";
+
+describe("where the temporary directories go", () => {
+	// Without this, the old behaviour is silent again: the suite used `mkdtemp` relative to the
+	// process working directory and cleaned up in a `process.on("exit")` handler that voided its own
+	// promise, so a passing run left 17 `.licence-test-*` directories in the checkout for the next
+	// `git add -A` to commit. The path assertions here are what notice.
+	test("roots are created under the OS temp directory, never inside the checkout", async () => {
+		const dir = await root();
+		const tmp = resolve(tmpdir());
+		const cwd = resolve(process.cwd());
+		expect(dir.startsWith(tmp + sep)).toBe(true);
+		// Guarded: if the suite is ever run with the checkout inside the temp directory, the
+		// assertion below is vacuous rather than false.
+		if (!cwd.startsWith(tmp + sep)) expect(dir.startsWith(cwd + sep)).toBe(false);
+	});
+
+	test("a run leaves no .licence-test-* directory in the working tree", async () => {
+		await root();
+		await withManifest({ spdx: "MIT" });
+		expect(readdirSync(process.cwd()).filter((name) => name.startsWith(".licence-test-"))).toEqual([]);
+	});
+});
 
 describe("reading the declared licence", () => {
 	test("reads spdx, holder and year", async () => {
