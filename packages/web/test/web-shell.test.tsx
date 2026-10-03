@@ -27,12 +27,23 @@ test("DarkFactoryShell renders shell", () => {
 	expect(renderAt("/")).toContain("DarkFactory Web");
 });
 
+// Each view's heading is also its navigation label, and the navigation renders on every path, so
+// asserting the heading proves nothing about routing: `toContain("System Status")` was true at
+// `/`, `/status` and `/unknown` alike, and stayed true after the view's own heading was changed.
+// These assert the view body, which only the selected view emits, plus the absence of the other
+// view's body, so the path has to be what chose the view.
 test("DarkFactoryShell renders Dashboard at /", () => {
-	expect(renderAt("/")).toContain("Dashboard");
+	const output = renderAt("/");
+	expect(output).toContain("DarkFactory operator UI and runtime shell.");
+	expect(output).not.toContain("Capability tiers, routing policy, and quota health.");
+	expect(output).toContain("<h2>Dashboard</h2>");
 });
 
 test("DarkFactoryShell renders System Status at /status", () => {
-	expect(renderAt("/status")).toContain("System Status");
+	const output = renderAt("/status");
+	expect(output).toContain("Capability tiers, routing policy, and quota health.");
+	expect(output).not.toContain("DarkFactory operator UI and runtime shell.");
+	expect(output).toContain("<h2>System Status</h2>");
 });
 
 test("DarkFactoryShell renders no route view at /unknown", () => {
