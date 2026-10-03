@@ -1,4 +1,7 @@
-import { describe, expect, it } from "bun:test";
+import { afterAll, describe, expect, it } from "bun:test";
+import { mkdtemp, rm, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { parseRepoSettingsArgs, REPO_SETTINGS_FLAGS, runRepoSettings } from "../../src/ci/repo-settings.ts";
 import type { GitHubClient } from "../../src/github/client.ts";
 
@@ -114,5 +117,61 @@ describe("the --branches-only reconciliation", () => {
 		const h = harness(true);
 		const outcome = await runRepoSettings(h.args, h.deps);
 		expect(outcome.defaultBranch).toBe("darkfactory");
+	});
+});
+
+describe("the reconciliation reads the policy the repository declares", () => {
+	// The existing harness injects `defaultBranch` and never points at a configuration document, so
+	// nothing exercised the manifest read. `runRepoSettings` built its manifest with
+	// `new RepositoryManifest(root, {})` — the constructor takes the `repo` block as data and does not
+	// read the document — so the reconcile saw no lanes, printed "No `repo.protection.lanes` are
+	// declared", and exited 0. It reported success having reconciled nothing.
+	const roots: string[] = [];
+	afterAll(async () => {
+		for (const root of roots) await rm(root, { recursive: true, force: true });
+	});
+
+	async function declaring(protection: unknown, identity: Record<string, unknown> = {}) {
+		const root = await mkdtemp(join(tmpdir(), "df-repo-settings-"));
+		roots.push(root);
+		await writeFile(
+			join(root, "repo.dfconfig"),
+			JSON.stringify({ repo: { identity, protection }, docs: {}, providers: {} }),
+		);
+		const log: string[] = [];
+		const outcome = await runRepoSettings(
+			{ apply: false, branchesOnly: true, skipProtection: false },
+			{
+				client: recordingClient().client,
+				log: (message: string) => log.push(message),
+				env: { GITHUB_REPOSITORY: "acme/thing", GH_TOKEN: "test-token", DARKFACTORY_REPO_ROOT: root },
+			},
+		);
+		return { outcome, log: log.join("\n") };
+	}
+
+	it("applies every lane the document declares, in the order it declares them", async () => {
+		const { outcome, log } = await declaring({
+			lanes: [
+				{ branch: "develop", required_checks: ["quality"], approvals: 1 },
+				{ branch: "main", required_checks: ["main-source"], approvals: 0 },
+			],
+		});
+		expect(outcome.exitCode).toBe(0);
+		expect(log).toContain("== Branch protection (develop) ==");
+		expect(log).toContain("== Branch protection (main) ==");
+		expect(log).not.toContain("No `repo.protection.lanes` are declared");
+		expect(log.indexOf("(develop)")).toBeLessThan(log.indexOf("(main)"));
+	});
+
+	it("takes the default branch from the document rather than falling back to main", async () => {
+		const { outcome } = await declaring({ lanes: [] }, { default_branch: "stable" });
+		expect(outcome.defaultBranch).toBe("stable");
+	});
+
+	it("still reports honestly when the document declares no lanes", async () => {
+		const { outcome, log } = await declaring({ lanes: [] });
+		expect(outcome.exitCode).toBe(0);
+		expect(log).toContain("No `repo.protection.lanes` are declared");
 	});
 });

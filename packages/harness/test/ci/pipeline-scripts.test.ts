@@ -165,7 +165,10 @@ describe("shared repository settings", () => {
 	it("test_repo_settings_can_configure_a_consumer_checkout: consumers carry no copy of these scripts", () => {
 		const source = readFileSync(join(repoRoot, "packages/harness/src/ci/repo-settings.ts"), "utf8");
 		expect(source).toContain("DARKFACTORY_REPO_ROOT");
-		expect(source).toContain("new RepositoryManifest(repositoryRoot");
+		// This used to pin `new RepositoryManifest(repositoryRoot, {})`, which never reads the
+		// document — so the reconcile reported no lanes and exited 0. The behaviour is asserted in
+		// `repo-settings.test.ts`; this only guards that the variable is still honoured.
+		expect(source).toContain("loadRepositoryManifest(repositoryRoot");
 	});
 
 	it("test_the_settings_script_honours_that_variable: the workflow and the script agree on the name", () => {
