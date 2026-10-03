@@ -2,7 +2,7 @@ import { BoardGraphqlClient } from "../board/graphql.ts";
 import { BoardRun } from "../board/run.ts";
 import { GitHubClient } from "../github/client.ts";
 import { GitHubRepository } from "../github/repository.ts";
-import { RepositoryManifest } from "../install/manifest.ts";
+import { loadRepositoryManifest, RepositoryManifest } from "../install/manifest.ts";
 import { type ApplyProtectionResult, applyBranchProtection } from "./protection.ts";
 
 /**
@@ -25,18 +25,16 @@ import { type ApplyProtectionResult, applyBranchProtection } from "./protection.
  * change nothing. `--branches-only` selects the default-branch and branch-protection pair and stops
  * before repository settings, labels, the board and Pages.
  *
- * ## What is not here, and why
+ * ## What is here, and what is not
  *
- * The other eight operations `--branches-only` skips are **not ported**. `apply_repository_settings`,
- * `apply_actions_permissions`, `apply_global_board` and `apply_board_links` have no TypeScript
- * counterpart at all, and `apply_labels`, `apply_project_board` and `apply_pages` are spread across
- * modules that were written for a different caller. This command therefore accepts `--branches-only` and
- * nothing else, and **rejects** the other flags rather than accepting and ignoring them. A flag that
- * parses and then does nothing is how a workflow ends up believing it applied protection it never
- * touched.
+ * `--branches-only` stops after the default branch and branch protection. The full run additionally
+ * ports `apply_repository_settings`, `apply_actions_permissions`, `apply_global_board` and
+ * `apply_board_links` as `applyRepositorySettings`, `applyActionsPermissions`, `applyBoards` and
+ * `applyBoardLinks` — which is the invocation `install.yml` makes, with `--skip-protection`.
  *
- * `install.yml`'s `--apply --skip-protection` needs the other eight, so that invocation is not converted
- * by this command and its workflow still runs the Python.
+ * `apply_labels`, `apply_project_board` and `apply_pages` are still unported. The flags that would
+ * select them are therefore **rejected** rather than accepted and ignored: a flag that parses and then
+ * does nothing is how a workflow ends up believing it applied protection it never touched.
  */
 
 /** The four flags `repo_settings.py` declares. All are `store_true`; none take a value. */
@@ -372,7 +370,12 @@ export async function runRepoSettings(
 	// also sets `working-directory: target`, so the cwd agrees today; reading the variable rather
 	// than the cwd is what keeps it correct if either half changes.
 	const repositoryRoot = env.DARKFACTORY_REPO_ROOT ?? process.cwd();
-	const repositoryManifest = deps.manifest ?? new RepositoryManifest(repositoryRoot, {}, env);
+	// `loadRepositoryManifest`, not `new RepositoryManifest(root, {})`. The constructor takes the
+	// `repo` block as data and does not read the document, so passing `{}` gave an empty manifest:
+	// no `protection.lanes`, no `required_checks`, and a development branch that fell back to
+	// `main`. `--branches-only` then reported "No `repo.protection.lanes` are declared" and exited 0,
+	// so the reconcile job reconciled nothing from the policy the repository declares.
+	const repositoryManifest = deps.manifest ?? (await loadRepositoryManifest(repositoryRoot, env));
 	const defaultBranch = deps.defaultBranch ?? repositoryManifest.defaultBranch();
 	const dryRun = !args.apply;
 	log(`Target: ${slug}   mode: ${dryRun ? "PLAN" : "APPLY"}`);

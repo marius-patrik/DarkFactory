@@ -67,8 +67,9 @@ jobs:
         # `repo-settings.ts` implements the `--branches-only` half of `repo_settings.py`: the
         # default branch from the manifest, then branch protection, then exit 1 if either failed.
         #
-        # The other eight operations that script performs are NOT ported, and this command rejects
-        # the flags that would select them rather than accepting and ignoring them. A flag that
-        # parses and does nothing is how a workflow comes to believe it applied protection it never
-        # touched. `install.yml` needs those eight and still runs the Python.
+        # This command rejects the flags that would select the three still-unported operations
+        # (`apply_labels`, `apply_project_board`, `apply_pages`) rather than accepting and ignoring
+        # them. A flag that parses and does nothing is how a workflow comes to believe it applied
+        # protection it never touched. The other four are ported: `install.yml` runs the full path
+        # with `--skip-protection` and no Python.
         run: bun packages/harness/src/ci/repo-settings.ts --apply --branches-only
