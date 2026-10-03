@@ -1,4 +1,5 @@
 import { describe, expect, it } from "bun:test";
+import { readFileSync } from "node:fs";
 import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -121,5 +122,32 @@ describe("Workflow installer & updater", () => {
 		} finally {
 			await rm(temp, { recursive: true, force: true });
 		}
+	});
+});
+
+describe("shipped workflow templates", () => {
+	const template = readFileSync(
+		join(import.meta.dir, "..", "..", "assets", "workflows", "verify-bound-issue.yml.tmpl"),
+		"utf-8",
+	);
+
+	it("delegates the bound-issue check to the runtime instead of reimplementing it", () => {
+		// The template used to carry an inline Python heredoc implementing the same regular
+		// expression as `bound-issue.ts`. That made a consuming repository need a Python interpreter
+		// to run a check this repository stopped needing in #1148, and left two implementations of
+		// one rule that could drift.
+		expect(template).not.toContain("python3");
+		expect(template).toContain("bound-issue.ts");
+	});
+
+	it("resolves the runtime the way the other converted templates do", () => {
+		expect(template).toContain("{{pipeline_repo}}");
+		expect(template).toContain("{{pipeline_ref}}");
+		expect(template).toContain(".darkfactory-runtime");
+	});
+
+	it("carries the environment the check reads", () => {
+		expect(template).toContain("PR_BODY");
+		expect(template).toContain("GITHUB_EVENT_NAME");
 	});
 });
