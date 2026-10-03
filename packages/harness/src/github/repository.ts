@@ -15,10 +15,16 @@ import {
 	variableSchema,
 } from "./types.ts";
 
-const AUTHORIZED = new Set(["OWNER", "MEMBER", "COLLABORATOR"]);
-/** Checks whether a GitHub association value is one of the authorized types (OWNER, MEMBER, COLLABORATOR). */
+const AUTHORIZED = new Set<string>(["OWNER", "MEMBER", "COLLABORATOR"]);
+/**
+ * Checks whether a GitHub association value is one of the authorized types (OWNER, MEMBER, COLLABORATOR).
+ *
+ * `AuthorAssociation` now includes `undefined`, because the payload schema degrades an
+ * unrecognised association rather than rejecting the payload. A degraded value is not a member of the
+ * set, so an association this function has never heard of is denied — the direction that matters.
+ */
 export function isAuthorizedAssociation(value: AuthorAssociation): boolean {
-	return AUTHORIZED.has(value);
+	return AUTHORIZED.has(value as string);
 }
 /** Tests whether a login string ends with "[bot]", identifying a GitHub bot account. */
 export function isBotLogin(login: string): boolean {

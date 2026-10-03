@@ -1,16 +1,59 @@
 import { z } from "zod";
 
+/** The author-association values GitHub documents. */
+const AUTHOR_ASSOCIATIONS = [
+	"NONE",
+	"CONTRIBUTOR",
+	"FIRST_TIMER",
+	"FIRST_TIME_CONTRIBUTOR",
+	"MANNEQUIN",
+	"MEMBER",
+	"OWNER",
+	"COLLABORATOR",
+] as const;
+
 /**
- * Carries a GitHub author-association value without constraining it.
+ * The eight documented values, degrading an unrecognised one to `undefined` rather than rejecting
+ * the payload.
  *
- * GitHub documents a closed set, but narrowing this rejects the whole payload on an
- * unrecognised value, and every consumer already decides membership against its own allow-list,
- * so an unknown value is denied rather than trusted. Tracked in #1233; the doc comment here
- * previously claimed this validated author-association values, and it validates none.
+ * Degrading rather than rejecting is the whole design. A closed enum rejects the enclosing object on
+ * any unfamiliar value, and these schemas wrap single payloads *and* arrays — `listReviews` parses
+ * every review on a pull request — so one new value GitHub introduces would fail a whole call that
+ * used to succeed. Degrading means an unknown association reaches the approval gates as `undefined`,
+ * which their allow-lists already deny: a payload parsed is a payload whose authority was refused,
+ * rather than no payload at all.
+ *
+ * The gates are what make this safe, so the property is pinned rather than assumed: `OWNER` in an
+ * unknown position never approves through `isAllowedApprover` or `isAuthorizedAssociation`, and only
+ * a review whose `state` is exactly `APPROVED` counts. Tracked in #1233.
  */
-export const associationSchema = z.string();
+export const associationSchema = documented(AUTHOR_ASSOCIATIONS);
 /** GitHub author association represented by browser-safe contracts. */
 export type AuthorAssociation = z.infer<typeof associationSchema>;
+
+/** The issue and pull-request states GitHub documents. `merged` appears on pull requests only. */
+const ISSUE_STATES = ["open", "closed"] as const;
+const PULL_REQUEST_STATES = ["open", "closed", "merged"] as const;
+/** The review states GitHub documents. */
+const REVIEW_STATES = ["APPROVED", "CHANGES_REQUESTED", "COMMENTED", "DISMISSED", "PENDING"] as const;
+
+/**
+ * Enumerates a documented value set, degrading an unrecognised one to `undefined`.
+ *
+ * The same trade-off as {@link associationSchema}, and the same reason: an unfamiliar value must not
+ * take down a payload — or an array of payloads — that would otherwise parse. Every consumer of these
+ * fields treats `undefined` as "not the value it is looking for", which is the safe direction:
+ * `state === "APPROVED"` is false, and `issue.state ?? ""` is neither `open` nor `closed`.
+ *
+ * Written as a transform rather than `z.enum(...).catch(undefined)` so the fallback is part of the
+ * inferred type instead of a cast around it.
+ */
+function documented<const T extends readonly [string, ...string[]]>(values: T) {
+	const allowed = new Set<string>(values);
+	return z
+		.string()
+		.transform((value): T[number] | undefined => (allowed.has(value) ? (value as T[number]) : undefined));
+}
 const userSchema = z.object({ login: z.string() }).passthrough();
 const labelSchema = z.union([z.string(), z.object({ name: z.string() }).passthrough()]);
 
@@ -22,7 +65,7 @@ export const issueSchema = z
 		node_id: z.string(),
 		title: z.string(),
 		body: z.string().nullable(),
-		state: z.string(),
+		state: documented(ISSUE_STATES),
 		labels: z.array(labelSchema),
 		user: userSchema,
 		author_association: associationSchema,
@@ -50,7 +93,7 @@ export const pullRequestSchema = z
 		node_id: z.string(),
 		title: z.string(),
 		body: z.string().nullable(),
-		state: z.string(),
+		state: documented(PULL_REQUEST_STATES),
 		draft: z.boolean(),
 		html_url: z.string(),
 		head: z.object({ ref: z.string() }).passthrough(),
@@ -65,7 +108,7 @@ export type GitHubPullRequest = z.infer<typeof pullRequestSchema>;
 export const reviewSchema = z
 	.object({
 		id: z.number(),
-		state: z.string(),
+		state: documented(REVIEW_STATES),
 		body: z.string().nullable().optional(),
 		user: userSchema,
 		author_association: associationSchema,
