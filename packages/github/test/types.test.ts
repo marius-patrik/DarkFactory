@@ -137,7 +137,7 @@ describe("variableSchema", () => {
 });
 
 describe("associationSchema and state are unvalidated strings", () => {
-	// Pinned deliberately. `is_allowed_approver` branches on author_association to decide who may
+	// Pinned deliberately. `isAllowedApprover` branches on author_association to decide who may
 	// approve a plan, and the merge gate branches on a review state, yet both schemas accept any
 	// string. That is a real gap, tracked separately. These tests exist so that tightening either
 	// schema is a visible contract change that breaks a test on purpose, rather than a silent edit.

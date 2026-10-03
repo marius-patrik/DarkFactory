@@ -1,6 +1,13 @@
 import { z } from "zod";
 
-/** Schema for GitHub author-association values. */
+/**
+ * Carries a GitHub author-association value without constraining it.
+ *
+ * GitHub documents a closed set, but narrowing this rejects the whole payload on an
+ * unrecognised value, and every consumer already decides membership against its own allow-list,
+ * so an unknown value is denied rather than trusted. Tracked in #1233; the doc comment here
+ * previously claimed this validated author-association values, and it validates none.
+ */
 export const associationSchema = z.string();
 /** GitHub author association represented by browser-safe contracts. */
 export type AuthorAssociation = z.infer<typeof associationSchema>;

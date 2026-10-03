@@ -1,4 +1,4 @@
-import { expect, test } from "bun:test";
+import { describe, expect, test } from "bun:test";
 import { GitHubClient } from "../../src/github/client.ts";
 import { GitHubRepository, isAuthorizedAssociation, isBotLogin } from "../../src/github/repository.ts";
 import { json, scripted } from "./helpers.ts";
@@ -68,4 +68,52 @@ test("checkStates merges check runs and commit statuses, preferring check runs",
 	expect(states.get("pipeline (3.11)")).toBe("pending");
 	expect(states.get("harness")).toBe("failure");
 	expect(states.get("legacy")).toBe("success");
+});
+
+// #1233 calls this the merge gate: it decides a PR counts as approved from a review `state` and
+// an `author_association`, both of which the payload schemas accept as any string. It had no test
+// of its own. Both inputs are decided by closed comparisons, so an unrecognised value denies the
+// approval rather than granting it — pinned here so that is a guarantee and not an accident.
+describe("hasApprovedReview", () => {
+	const review = (state: string, author_association: string) => ({
+		id: 1,
+		state,
+		user: { login: "u" },
+		author_association,
+	});
+
+	async function approves(state: string, association: string): Promise<boolean> {
+		const mock = scripted([json([review(state, association)])]);
+		const repo = new GitHubRepository(new GitHubClient({ token: "t", fetch: mock.fetch }), "o", "r");
+		return repo.hasApprovedReview(2);
+	}
+
+	test.each(["OWNER", "MEMBER", "COLLABORATOR"])("APPROVED by %s approves", async (association) => {
+		expect(await approves("APPROVED", association)).toBeTrue();
+	});
+
+	test.each(["CONTRIBUTOR", "FIRST_TIMER", "FIRST_TIME_CONTRIBUTOR", "NONE", "MANNEQUIN", ""])(
+		"APPROVED by %s does not approve",
+		async (association) => {
+			expect(await approves("APPROVED", association)).toBeFalse();
+		},
+	);
+
+	test.each(["not-a-real-association", "superuser", "ADMIN", "owner", "OWNER ", "MEMBER\n"])(
+		"an unrecognised association %p does not approve",
+		async (association) => {
+			expect(await approves("APPROVED", association)).toBeFalse();
+		},
+	);
+
+	test.each(["approved", "APPROVED ", " APPROVED", "APPROVED\n", "TOTALLY_BOGUS", "CHANGES_REQUESTED", ""])(
+		"state %p does not approve",
+		async (state) => {
+			expect(await approves(state, "OWNER")).toBeFalse();
+		},
+	);
+
+	test("both must hold: an authorized association on a non-approving state is not approved", async () => {
+		expect(await approves("COMMENTED", "OWNER")).toBeFalse();
+	});
 });

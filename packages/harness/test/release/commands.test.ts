@@ -146,6 +146,22 @@ describe("owner decision 9c: who may approve", () => {
 		expect(isAllowedApprover("stranger", { authorAssociation: association, issueAuthor: "marius-patrik" })).toBe(false);
 	});
 
+	// #1233 asks for the schemas to be narrowed so an unrecognised value cannot reach the gate.
+	// It cannot reach it as an approval either way: the gate is a membership test against a
+	// closed allow-list, so an unknown value is denied rather than trusted. Pinned here so that
+	// property is a tested guarantee rather than an accident of the current value set.
+	test.each([
+		"not-a-real-association",
+		"superuser",
+		"ADMIN",
+		"OWNER; DROP TABLE reviews",
+		"OWNER ",
+		" OWNER",
+		"OWNER\n",
+	])("an unrecognised association %p may not approve", (association) => {
+		expect(isAllowedApprover("mallory", { authorAssociation: association, issueAuthor: "marius-patrik" })).toBe(false);
+	});
+
 	test("a bot never approves, however privileged its association", () => {
 		expect(isAllowedApprover("github-actions[bot]", { authorAssociation: "OWNER", issueAuthor: "x" })).toBe(false);
 		expect(isAllowedApprover("someone", { authorAssociation: "OWNER", userType: "Bot" })).toBe(false);
