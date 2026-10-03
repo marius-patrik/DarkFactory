@@ -154,6 +154,39 @@ describe("canonical documentation truth", () => {
 		expect(pathClaims("Put anything long in `references/` and link it.")).toEqual([]);
 	});
 
+	test("the README capability list is the set of plugins that exist", () => {
+		// The section once named fourteen capabilities, nine of which have never existed, so this
+		// compares the list against the directory rather than trusting the prose. A plugin added
+		// without a README entry, or an entry without a plugin, fails here.
+		const readme = readFileSync(join(repoDir, "README.md"), "utf8");
+		const heading = "The first-party plugins that exist today are:";
+		const start = readme.indexOf(heading);
+		expect(start, "README no longer declares a first-party plugin list").toBeGreaterThan(-1);
+		// Only the list that follows the heading: later sections also use `- name;` bullets, so the
+		// slice stops at the first line that is not one.
+		const declared: string[] = [];
+		let listing = false;
+		for (const line of readme.slice(start + heading.length).split("\n")) {
+			// `;` between items and `.` on the last one, which is how the list is written.
+			const bullet = /^- ([a-z-]+)[;.]$/.exec(line.trim());
+			if (bullet) {
+				listing = true;
+				declared.push(bullet[1] as string);
+				continue;
+			}
+			// Blank lines may separate the heading from the list; a non-blank line that is not a
+			// bullet ends it.
+			if (listing || line.trim() !== "") break;
+		}
+		expect(declared.length).toBeGreaterThan(0);
+		const onDisk = readdirSync(join(repoDir, ".darkfactory", "plugins"), { withFileTypes: true })
+			.filter((entry) => entry.isDirectory())
+			.map((entry) => entry.name);
+		expect([...declared].sort(), "README capability list does not match .darkfactory/plugins").toEqual(
+			[...onDisk].sort(),
+		);
+	});
+
 	test("the subcommand scan recognises a command the CLI does not have", () => {
 		expect(dfCommands("Run `df nosuch` and\n```sh\ndf quota --json\n```\n")).toEqual(["nosuch", "quota"]);
 		expect(usageCommands().has("nosuch")).toBe(false);

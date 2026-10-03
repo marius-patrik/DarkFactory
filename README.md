@@ -67,22 +67,21 @@ Package dependencies must remain acyclic. Browser-safe entrypoints cannot import
 
 Core owns mechanisms. Agentic/product behavior belongs in versioned capabilities under `.darkfactory/plugins/`.
 
-The initial first-party capability set includes at least:
+The first-party plugins that exist today are:
 
 - code;
 - paper;
 - math;
-- docs;
-- git;
-- github;
-- planning;
-- review;
-- ci;
-- release;
-- recovery;
 - hooks;
-- epics;
-- stacks.
+- release;
+- df-operations;
+- plugin-builder;
+- df-rules;
+- thesis.
+
+Capability-owned deterministic actions live separately in the `@darkfactory/capability` package,
+which is what a quality matrix row resolves to. This list is the current set, not a target; an earlier
+version of this section named fourteen capabilities, nine of which do not exist.
 
 A capability may contribute:
 
