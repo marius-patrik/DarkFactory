@@ -5,6 +5,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { checkWorkflowsDrift, installWorkflows, updateWorkflows } from "../../src/ci/installer.ts";
 import { renderWorkflowTemplate } from "../../src/ci/templates.ts";
+import { configurationIssue } from "../../src/install/configuration-issue.ts";
 import { repoRoot } from "./pipeline-source.ts";
 
 async function writeUpstream(temp: string, repo: string, ref: string): Promise<void> {
@@ -186,5 +187,25 @@ describe("the shipped CI template agrees with this repository's own", () => {
 			);
 		const own = readFileSync(join(repoRoot, ".github", "workflows", "ci.yml"), "utf-8");
 		expect(shape(Bun.YAML.parse(rendered))).toBe(shape(Bun.YAML.parse(own)));
+	});
+});
+
+describe("the configuration issue df ci install files", () => {
+	const body = configurationIssue("acme/thing", "marius-patrik/DarkFactory", false);
+
+	it("tells the user to run nothing that was deleted", () => {
+		// It used to say `python .github/scripts/repo_settings.py --apply`. #1311 deleted that
+		// script and the Python with it; the replacement named a path under `packages/` that a
+		// consuming repository does not have, so the instruction was unfollowable either way.
+		expect(body).not.toContain("repo_settings.py");
+		expect(body).not.toContain("python ");
+	});
+
+	it("does not claim a consumer can apply branch protection itself", () => {
+		// A fresh install writes eight workflows and `repo.dfconfig`, none of which touch
+		// protection, and `install.yml` deliberately passes `--skip-protection`. There is no
+		// consumer-facing way to apply it — tracked in #1381 — so the body must not imply one.
+		expect(body).toMatch(/no consumer-facing way/i);
+		expect(body).not.toMatch(/repo-settings\.ts --apply/);
 	});
 });
