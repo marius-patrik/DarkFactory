@@ -21,8 +21,8 @@ export const testsTouched: Hook = {
 };
 
 function getSourceFiles(changedFiles: string[]): string[] {
-	const sourceDirs = ["harness/src/", "harness/scripts/", ".github/scripts/"];
-	const sourceExts = [".ts", ".py"];
+	const sourceDirs = ["packages/harness/src/"];
+	const sourceExts = [".ts"];
 	return changedFiles.filter((path) => {
 		const isSourceDir = sourceDirs.some((dir) => path.startsWith(dir));
 		const isSourceExt = sourceExts.some((ext) => path.endsWith(ext));
@@ -31,7 +31,7 @@ function getSourceFiles(changedFiles: string[]): string[] {
 }
 
 function getTestFiles(changedFiles: string[]): string[] {
-	const testDirs = ["harness/test/", "tests/"];
+	const testDirs = ["packages/harness/test/", "tests/"];
 	return changedFiles.filter((path) => {
 		return testDirs.some((dir) => path.startsWith(dir));
 	});
