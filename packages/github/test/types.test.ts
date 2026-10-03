@@ -136,30 +136,92 @@ describe("variableSchema", () => {
 	});
 });
 
-describe("associationSchema and state are unvalidated strings", () => {
-	// Pinned deliberately. `isAllowedApprover` branches on author_association to decide who may
-	// approve a plan, and the merge gate branches on a review state, yet both schemas accept any
-	// string. That is a real gap, tracked separately. These tests exist so that tightening either
-	// schema is a visible contract change that breaks a test on purpose, rather than a silent edit.
-	test("associationSchema accepts any string, including values GitHub never sends", () => {
-		expect(associationSchema.parse("OWNER")).toBe("OWNER");
-		expect(associationSchema.parse("not-a-real-association")).toBe("not-a-real-association");
-		expect(associationSchema.parse("")).toBe("");
+describe("associationSchema and state narrow to the documented values, degrading the rest", () => {
+	// #1233 asked for closed enums. These tests used to pin the opposite contract -- that any string
+	// passed -- so that narrowing either schema would be a visible, deliberate break. This is that
+	// break, and it is a deviation from the issue's acceptance criteria in one respect: an unrecognised
+	// value is degraded to `undefined` rather than rejected with a message naming the field.
+	//
+	// Rejecting was the alternative and it is worse here. These schemas wrap arrays as well as single
+	// payloads -- `listReviews` parses every review on a pull request -- so a bare enum means one value
+	// GitHub has not documented yet fails a whole call that used to succeed. Degrading keeps the
+	// payload and refuses its authority, which is the property the approval gates already implement.
+	test("every documented association passes through unchanged", () => {
+		for (const value of [
+			"NONE",
+			"CONTRIBUTOR",
+			"FIRST_TIMER",
+			"FIRST_TIME_CONTRIBUTOR",
+			"MANNEQUIN",
+			"MEMBER",
+			"OWNER",
+			"COLLABORATOR",
+		] as const) {
+			expect(associationSchema.parse(value)).toBe(value);
+		}
 	});
 
-	test("issue state is not constrained to open or closed", () => {
-		const parsed = issueSchema.parse({
+	test.each([["not-a-real-association"], [""], ["owner"], ["OWNER "], ["MEMBER\n"]])(
+		"an unrecognised association %p degrades to undefined rather than passing through",
+		(value) => {
+			expect(associationSchema.parse(value)).toBeUndefined();
+		},
+	);
+
+	test("an unknown association degrades to undefined on a whole payload, not a rejected one", () => {
+		const parsed = commentSchema.parse({
+			id: 1,
+			body: "b",
+			user,
+			author_association: "superuser",
+		});
+		expect(parsed.author_association).toBeUndefined();
+		expect(parsed.body).toBe("b");
+	});
+
+	test("issue state accepts open and closed and degrades anything else", () => {
+		const issue = {
 			number: 1,
 			id: 1,
 			node_id: "I_1",
 			title: "t",
 			body: null,
-			state: " triaged ",
 			labels: [],
 			user,
-			author_association: "NONE",
+			author_association: "MEMBER",
 			html_url: "u",
-		});
-		expect(parsed.state).toBe(" triaged ");
+		};
+		expect(issueSchema.parse({ ...issue, state: "open" }).state).toBe("open");
+		expect(issueSchema.parse({ ...issue, state: "closed" }).state).toBe("closed");
+		expect(issueSchema.parse({ ...issue, state: " triaged " }).state).toBeUndefined();
+	});
+
+	test("pull-request state additionally accepts merged", () => {
+		const pr = {
+			number: 1,
+			id: 1,
+			node_id: "I_1",
+			title: "t",
+			body: null,
+			draft: false,
+			html_url: "u",
+			head: { ref: "h" },
+			base: { ref: "b" },
+			user,
+			author_association: "OWNER",
+		};
+		expect(pullRequestSchema.parse({ ...pr, state: "merged" }).state).toBe("merged");
+		expect(pullRequestSchema.parse({ ...pr, state: "open" }).state).toBe("open");
+		expect(pullRequestSchema.parse({ ...pr, state: "MUTATED" }).state).toBeUndefined();
+	});
+
+	test("review state accepts the five documented values and degrades anything else", () => {
+		const review = { id: 1, user, author_association: "MEMBER" };
+		for (const value of ["APPROVED", "CHANGES_REQUESTED", "COMMENTED", "DISMISSED", "PENDING"] as const) {
+			expect(reviewSchema.parse({ ...review, state: value }).state).toBe(value);
+		}
+		// The one that matters: an unrecognised state must not be mistaken for an approval.
+		expect(reviewSchema.parse({ ...review, state: "approved" }).state).toBeUndefined();
+		expect(reviewSchema.parse({ ...review, state: "APPROVED " }).state).toBeUndefined();
 	});
 });
