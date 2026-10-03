@@ -13,22 +13,44 @@ jobs:
     name: verify-bound-issue
     runs-on: ubuntu-latest
     steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check out pinned DarkFactory runtime
+        if: github.repository != '{{pipeline_repo}}'
+        uses: actions/checkout@v4
+        with:
+          repository: "{{pipeline_repo}}"
+          ref: "{{pipeline_ref}}"
+          path: .darkfactory-runtime
+
+      - name: Set up Bun
+        uses: oven-sh/setup-bun@v2
+
+      - name: Install DarkFactory runtime
+        run: |
+          ROOT="$GITHUB_WORKSPACE"
+          if [ -d "$GITHUB_WORKSPACE/.darkfactory-runtime" ]; then
+            ROOT="$GITHUB_WORKSPACE/.darkfactory-runtime"
+          fi
+          bun install --frozen-lockfile --cwd "$ROOT"
+
+      # The check is the runtime's own, not a copy of it. This template carried an inline Python
+      # heredoc implementing the same regular expression, which meant a consuming repository needed a
+      # Python interpreter to run a check this repository stopped needing in #1148, and that two
+      # implementations of one rule could drift — the drift the rule exists to prevent.
+      #
+      # `ROOT` resolves the pinned pipeline the way the other converted workflows do, so a repository
+      # pinned to a pipeline ref runs that ref's code rather than its own.
       - name: Verify PR description binds a tracking issue
         env:
           PR_BODY: ${{ github.event.pull_request.body }}
           GITHUB_EVENT_NAME: ${{ github.event_name }}
         run: |
-          python3 - <<'PY'
-          import os
-          import re
-          import sys
-
-          if os.environ.get("GITHUB_EVENT_NAME", "") != "pull_request":
-              sys.exit(0)
-
-          body = os.environ.get("PR_BODY", "")
-          pattern = r"(?i)\b(?:advance|advances|advanced|close|closes|closed|fix|fixes|fixed|resolve|resolves|resolved)\s+(?:#\d+|https://github\.com/[^/\s]+/[^/\s]+/issues/\d+)\b"
-          if not re.findall(pattern, body):
-              print("Every pull request must explicitly bind a tracking issue (Advances for partial delivery; closing syntax for terminal delivery).", file=sys.stderr)
-              sys.exit(1)
-          PY
+          ROOT="$GITHUB_WORKSPACE"
+          if [ -d "$GITHUB_WORKSPACE/.darkfactory-runtime" ]; then
+            ROOT="$GITHUB_WORKSPACE/.darkfactory-runtime"
+          fi
+          bun "$ROOT/packages/harness/src/ci/bound-issue.ts"

@@ -25,11 +25,15 @@ describe("Workflow templates & managed headers", () => {
 		expect(verifyWorkflowHash(rendered)).toMatchObject({ status: "valid", hashMatches: true });
 	});
 
-	it("generated bound-issue workflow accepts nonterminal Request bindings", () => {
+	it("generated bound-issue workflow reaches the check rather than restating it", () => {
+		// This used to assert the rendered file carried the regular expression itself, which is what
+		// let the Python heredoc in the shipped template drift from `bound-issue.ts` unnoticed: two
+		// copies of one rule, and a test pinning that there were two. The template now runs the
+		// runtime's check, so the claim that a nonterminal binding is accepted belongs there.
 		const rendered = renderWorkflowTemplate("verify-bound-issue.yml");
-		expect(rendered).toContain("advance|advances|advanced");
-		expect(rendered).toContain("Advances for partial delivery");
-		expect(rendered).toContain("closing syntax for terminal delivery");
+		expect(rendered).toContain("bound-issue.ts");
+		expect(rendered).not.toContain("python3");
+		expect(rendered).not.toContain("advance|advances");
 	});
 
 	it("detects user-edited file with hash mismatch", () => {
