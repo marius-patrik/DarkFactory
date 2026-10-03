@@ -680,3 +680,35 @@ describe("install.yml", () => {
 		expect(issueStep?.run).toContain("exit 1");
 	});
 });
+
+describe("a workflow that runs repo-settings.ts supplies the token it demands", () => {
+	// `repo-settings.ts` throws "no token: set GH_TOKEN or GITHUB_TOKEN" when neither is set, and
+	// reads only those two names. `branch-policy.yml` exported `GH_PROJECT_TOKEN` and not `GH_TOKEN`,
+	// so its reconcile job failed on every run that reached it — five merges in a row — and nothing
+	// in the suite noticed, because no test compared a workflow's environment to a command's
+	// requirement. Scoped to this command: a general contract check needs each command to declare
+	// what it needs, which is a larger change than this defect warrants.
+	const invocations = workflowNames().flatMap((name) => {
+		const workflow = parseWorkflow(name);
+		return allSteps(workflow)
+			.filter(({ step }) => step.run?.includes("repo-settings.ts"))
+			.map(({ job, step }) => ({ workflow: name, job, step }));
+	});
+
+	it("finds the invocations, so the guard is not vacuous", () => {
+		expect(invocations.length).toBeGreaterThan(0);
+	});
+
+	it.each(invocations.map((i) => [i.workflow, i.job]))("%s / %s exports GH_TOKEN", (name, jobId) => {
+		const workflow = parseWorkflow(name);
+		const job = workflow.jobs[jobId];
+		if (!job) throw new Error(`no job ${jobId} in ${name}`);
+		const jobEnv = (job.env ?? {}) as Record<string, unknown>;
+		const fromStep = invocations.find((i) => i.workflow === name && i.job === jobId);
+		const stepEnv = (fromStep?.step.env ?? {}) as Record<string, unknown>;
+		expect(
+			jobEnv.GH_TOKEN ?? stepEnv.GH_TOKEN,
+			`${name} / ${jobId} runs repo-settings.ts without GH_TOKEN or GITHUB_TOKEN in scope`,
+		).toBeDefined();
+	});
+});
