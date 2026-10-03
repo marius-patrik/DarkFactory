@@ -65,7 +65,7 @@ Package dependencies must remain acyclic. Browser-safe entrypoints cannot import
 
 ## 5. Capability architecture
 
-Core owns mechanisms. Agentic/product behavior belongs in versioned capabilities under root `capabilities/`.
+Core owns mechanisms. Agentic/product behavior belongs in versioned capabilities under `.darkfactory/plugins/`.
 
 The initial first-party capability set includes at least:
 

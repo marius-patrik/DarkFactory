@@ -124,7 +124,7 @@ DarkFactory is a root Bun workspace with stable first-party package boundaries:
 - `@darkfactory/docs`
 - `@darkfactory/cli`
 - `@darkfactory/web`
-Agentic/product behavior is implemented as versioned capabilities under root `capabilities/`. Core owns execution mechanisms; capabilities own behavior.
+Agentic/product behavior is implemented as versioned capabilities under `.darkfactory/plugins/`. Core owns execution mechanisms; capabilities own behavior.
 Each concern has one final implementation owner. Final packages do not forward implementation to a deletion-bound legacy tree, and duplicate internal registries/state/config/command owners are not maintained for migration convenience.
 ### Consequences
 Package dependencies remain acyclic and browser-safe boundaries are explicit. Official and third-party capabilities use the same ABI/loader. No monolithic harness package is part of the public architecture, and internal historical architecture is not a compatibility surface.
