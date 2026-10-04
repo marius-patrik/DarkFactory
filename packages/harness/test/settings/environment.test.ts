@@ -572,8 +572,11 @@ describe("the paper domain", () => {
 			async (root) => write(root, "typst.toml", '[package]\nname = "thesis"\nversion = "1.0.0"\n'),
 			(root) => {
 				const environment = configure(root);
-				expect(environment.testPlan().typst?.command).toBe("typst compile main.typ out/paper.pdf");
-				expect(environment.buildPlan().typst?.command).toBe("typst compile main.typ out/paper.pdf");
+				// `mkdir -p out` first: typst does not create the directory it writes into and does
+				// not fail when it cannot, so without it the command exits 0 having produced nothing.
+				const expected = "mkdir -p out && typst compile main.typ out/paper.pdf";
+				expect(environment.testPlan().typst?.command).toBe(expected);
+				expect(environment.buildPlan().typst?.command).toBe(expected);
 				expect(environment.buildPlan().typst?.artifacts).toEqual(["out/*.pdf", "*.pdf"]);
 			},
 		);
@@ -591,7 +594,8 @@ describe("the paper domain", () => {
 				expect([...environment.domains].sort()).toEqual(["code", "paper"]);
 				expect(environment.isMultiDomain).toBe(true);
 				const plan = environment.testPlan();
-				expect(plan.typst?.command).toStartWith("typst compile");
+				expect(plan.typst?.command).toContain("typst compile");
+				expect(plan.typst?.command, "the directory typst writes into must exist first").toContain("mkdir -p out");
 				expect(plan.python?.command).toBe("pytest");
 			},
 		);
