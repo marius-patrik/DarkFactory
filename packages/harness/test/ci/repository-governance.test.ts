@@ -582,6 +582,22 @@ describe("release.yml", () => {
 		expect(typed[installAt]?.if).toContain("steps.paper.outputs.typst == 'true'");
 	});
 
+	it("test_both_resolve_steps_receive_the_requested_bump: the gate and the resolver must agree", () => {
+		// The gate step (`versioning.ts`) and the resolve step (`cli.ts`) are two invocations of the
+		// same decision. `cli.ts` reads `REQUESTED_BUMP` to decide what to release, so it needs the
+		// request too — and it did not have it. An explicitly requested version therefore reached the
+		// gate, which reported `warranted=true`, and then nothing was resolved, `notes.md` was never
+		// written, and the run failed on `No files were found with the provided path`.
+		//
+		// `manual` mode hid it, because it resolves from `VERSION` and never consults the request.
+		// Switching this repository to `zerover` made the request matter and the gap visible.
+		const resolveSteps = steps(release, "resolve").filter((s) => /^Resolve /.test(s.name ?? ""));
+		expect(resolveSteps.length).toBeGreaterThanOrEqual(2);
+		for (const step of resolveSteps) {
+			expect(step.env?.REQUESTED_BUMP, `${step.name} must receive REQUESTED_BUMP`).toBeDefined();
+		}
+	});
+
 	it("test_the_publish_job_uses_the_App_token: GITHUB_TOKEN cannot open a pull request", () => {
 		// `Record the released version` opens a pull request to record the release. GitHub withholds
 		// `pull_requests: write` from the token a workflow gets for itself, so with `GITHUB_TOKEN` the
