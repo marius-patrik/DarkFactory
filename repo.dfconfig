@@ -53,9 +53,9 @@
       "ref": null
     },
     "versioning": {
-      "mode": "manual",
+      "mode": "zerover",
       "tag_prefix": "v",
-      "initial": "3a.1.0"
+      "initial": "0.287.0"
     },
     "environment": {
       "$comment": "No packages are declared. The repository is a TypeScript workspace, and its packages are resolved from the workspace layout rather than asserted here. The typst exemptions were removed with the paper: it moved to marius-patrik/DarkFactory-Paper, so this repository detects no typst package and an exemption naming an ecosystem no package belongs to is rejected when the contract loads.",
