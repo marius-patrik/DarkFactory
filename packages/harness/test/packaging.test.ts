@@ -1,7 +1,10 @@
-import { describe, expect, test } from "bun:test";
+import { describe, expect, it, test } from "bun:test";
+import { readFileSync } from "node:fs";
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { nativeAssetCandidates } from "../scripts/package-assets.ts";
+
+const repoRoot = join(import.meta.dir, "..", "..", "..");
 
 describe("standalone packaging", () => {
 	test("selects native pi-tui layouts for Darwin, Linux, and Windows", () => {
@@ -72,5 +75,36 @@ describe("biome configuration", () => {
 		const pkg = JSON.parse(await readFile(new URL("../../../package.json", import.meta.url), "utf8"));
 		expect(pkg.devDependencies["@biomejs/biome"]).toMatch(/^\d+\.\d+\.\d+$/);
 		expect(pkg.scripts).toMatchObject({ format: "biome format --write .", lint: "biome lint .", check: "biome ci ." });
+	});
+});
+
+describe("the build and the verifier agree on where dist is", () => {
+	// The build wrote `./dist/<asset>` (the build runs from the repository root) while
+	// `verify-target.ts`, `packageAssets`, and the packaging smoke all resolved
+	// `packages/harness/dist`. The release then failed on all five targets with
+	// `ENOENT ... posix_spawn '.../packages/harness/dist/df-linux-x64'` — after `bun build`
+	// reported success *and* after the build's own existence guard passed, because the guard
+	// looked in the same wrong place.
+	//
+	// Both scripts are read as text rather than executed: a `bun build --compile` is far too slow
+	// for a unit test, and the defect is precisely that two constants disagree.
+	const build = readFileSync(join(repoRoot, "packages/harness/scripts/build.ts"), "utf8");
+	const verify = readFileSync(join(repoRoot, "packages/harness/scripts/verify-target.ts"), "utf8");
+	const assets = readFileSync(join(repoRoot, "packages/harness/scripts/package-assets.ts"), "utf8");
+
+	it("the build compiles into packages/harness/dist, not the repository root", () => {
+		expect(build).toContain('join(root, "packages", "harness", "dist")');
+		expect(build).not.toContain('join("dist", asset)');
+	});
+
+	it("the verifier reads the directory the build writes", () => {
+		expect(verify).toContain('const dist = join(harnessRoot, "dist")');
+		// harnessRoot is `packages/harness`, so both sides name the same directory.
+		expect(verify).toContain("const harnessRoot = dirname(import.meta.dir)");
+	});
+
+	it("all three derive dist from packages/harness", () => {
+		expect(assets).toContain('const harnessRoot = join(root, "packages", "harness")');
+		expect(assets).toContain('const dist = join(root, "dist")');
 	});
 });
