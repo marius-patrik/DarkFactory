@@ -261,7 +261,19 @@ describe("a paper releases its PDF and versions like any other manifest", () => 
 	test("the PDF is planned as a release asset", async () => {
 		const steps = planAssets(await paper());
 		expect(steps.some((step) => step.globs.includes("out/*.pdf"))).toBe(true);
-		expect(steps.some((step) => step.command?.startsWith("typst compile") === true)).toBe(true);
+		expect(steps.some((step) => step.command?.includes("typst compile") === true)).toBe(true);
+	});
+
+	test("the build creates the directory it writes into: typst does not, and does not fail", async () => {
+		// `typst compile main.typ out/paper.pdf` against a missing `out/` prints
+		// `failed to write PDF file (No such file or directory)` and **exits 0**. So the release
+		// built nothing, attached no PDF, and reported success. The command has to make the
+		// directory itself. Asserted on the plan rather than by running typst, so it holds without
+		// typst installed.
+		const steps = planAssets(await paper());
+		const typst = steps.find((step) => step.command?.includes("typst compile"));
+		expect(typst?.command, "the build must create out/ before typst writes into it").toContain("mkdir -p out");
+		expect(typst?.command?.indexOf("mkdir -p out")).toBeLessThan(typst?.command?.indexOf("typst compile") ?? -1);
 	});
 
 	test("typst.toml takes part in version tagging", async () => {

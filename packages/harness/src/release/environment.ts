@@ -91,8 +91,12 @@ const BUILD_COMMANDS: Readonly<Record<string, Readonly<Record<string, string>>>>
 	deno: { [NO_MANAGER]: "deno compile -A" },
 	rust: { [NO_MANAGER]: "cargo build --release --workspace" },
 	go: { [NO_MANAGER]: "go build ./..." },
-	// Same command as the test: there is no separate release build of a document.
-	typst: { [NO_MANAGER]: "typst compile main.typ out/paper.pdf" },
+	// Same engines as the test: there is no separate release build of a document. The `mkdir -p`
+	// is not decoration -- `typst compile` does not create the directory it writes into, and it does
+	// not fail loudly when it cannot: it prints `failed to write PDF file (No such file or
+	// directory)` and still exits 0. So a missing `out/` produced a release with no PDF attached and
+	// a green build step. Verified against typst directly, with and without the directory present.
+	typst: { [NO_MANAGER]: "mkdir -p out && typst compile main.typ out/paper.pdf" },
 	latex: { [NO_MANAGER]: "latexmk -pdf -interaction=nonstopmode -halt-on-error main.tex" },
 };
 

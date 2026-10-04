@@ -118,7 +118,12 @@ export const TEST_COMMANDS: ManagerCommands = {
 	go: { "*": "go test ./..." },
 	// For a paper, typesetting *is* the test: a document that does not compile is the equivalent of
 	// a program that does not build, and an unresolved reference is its failing assertion.
-	typst: { "*": "typst compile main.typ out/paper.pdf" },
+	//
+	// `mkdir -p out` because typst does not create the directory it writes into and does not fail
+	// when it cannot: it prints `failed to write PDF file (No such file or directory)` and exits 0.
+	// Without it, a paper whose `out/` is absent — which it always is in a clean checkout, since the
+	// directory is build output — "passed" having compiled nothing.
+	typst: { "*": "mkdir -p out && typst compile main.typ out/paper.pdf" },
 	latex: { "*": "latexmk -pdf -interaction=nonstopmode -halt-on-error main.tex" },
 	// Building a Lean project *is* checking its proofs: the compiler is the proof checker, so there
 	// is no separate test step to run afterwards.
@@ -167,8 +172,8 @@ export const BUILD_COMMANDS: ManagerCommands = {
 	deno: { "*": "deno compile -A" },
 	rust: { "*": "cargo build --release --workspace" },
 	go: { "*": "go build ./..." },
-	// Same command as the test: there is no separate release build of a document.
-	typst: { "*": "typst compile main.typ out/paper.pdf" },
+	// Same command as the test, for the same reason, with the same `mkdir -p out`.
+	typst: { "*": "mkdir -p out && typst compile main.typ out/paper.pdf" },
 	latex: { "*": "latexmk -pdf -interaction=nonstopmode -halt-on-error main.tex" },
 };
 
