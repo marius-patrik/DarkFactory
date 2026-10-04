@@ -115,7 +115,9 @@ jobs:
     if: >-
       (vars.AGENT_ENABLED == 'true' || inputs.agent-enabled == 'true')
       && (!endsWith(github.event.comment.user.login, '[bot]') || startsWith(github.event.comment.body, 'Failed again:'))
-      && (github.event_name != 'issues' || !contains(github.event.issue.labels.*.name, 'pipeline-failure'))
+      && (github.event_name != 'issues'
+          || github.event.issue.labels == null
+          || !contains(github.event.issue.labels.*.name, 'pipeline-failure'))
     env:
       # The secrets context cannot be read from a step-level `if`, so the test
       # is hoisted to the job, where it can.

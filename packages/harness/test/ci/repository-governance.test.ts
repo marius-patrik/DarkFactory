@@ -259,6 +259,20 @@ describe("agent.yml", () => {
 		expect(gate).toContain("github.event_name != 'issues'");
 	});
 
+	it("test_the_failure_report_gate_is_null_safe: dereferencing a missing event field fails the job", () => {
+		// The first version of this gate read `github.event.issue.labels.*.name` unguarded. This
+		// workflow also fires on `workflow_call` and `workflow_dispatch`, where there is no `issue`
+		// object at all — and a job-level `if` that throws reports the run as **failure with zero
+		// jobs**, which is exactly the shape of the 16 failures it caused while looking like the
+		// loop it was meant to stop.
+		const gate = String(agent.jobs["run-agent"]?.if ?? "");
+		expect(gate).toContain("github.event.issue.labels == null");
+		// And the guard has to precede the dereference it protects.
+		expect(gate.indexOf("github.event.issue.labels == null")).toBeLessThan(
+			gate.indexOf("contains(github.event.issue.labels.*.name"),
+		);
+	});
+
 	it("test_the_agent_workflow_installs_bun_before_it_uses_it: bun is not on a stock runner", () => {
 		// `Resolve target environment` runs `bun -e` on the host, before the agent container exists.
 		// Without this the step died at `bun: command not found` (exit 127) on every single run.
