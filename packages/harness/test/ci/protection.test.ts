@@ -41,9 +41,13 @@ describe("Branch protection & rulesets synchronizer", () => {
 			strict: true,
 		});
 		expect(result.success).toBe(true);
-		expect(JSON.parse(String(calls[1]?.init?.body))).toEqual({
-			strict: true,
-			contexts: ["quality", "verify-bound-issue"],
+		// The whole policy goes in one call to the full endpoint. It used to be split, starting with
+		// `.../protection/required_status_checks`, which answers `Not Found` until protection has been
+		// enabled once — so the very first run against an unprotected branch failed.
+		expect(calls[1]?.url).toContain("/branches/develop/protection");
+		expect(calls[1]?.url).not.toContain("required_status_checks");
+		expect(JSON.parse(String(calls[1]?.init?.body))).toMatchObject({
+			required_status_checks: { strict: true, contexts: ["quality", "verify-bound-issue"] },
 		});
 	});
 
@@ -54,15 +58,17 @@ describe("Branch protection & rulesets synchronizer", () => {
 		]);
 		const repo = new GitHubRepository(new GitHubClient({ token: "fake-token", fetch }), "owner", "repo");
 		await applyBranchProtection(repo, ["main-source"], { branch: "main", strict: false });
-		expect(JSON.parse(String(calls[1]?.init?.body)).strict).toBe(false);
+		expect(JSON.parse(String(calls[1]?.init?.body)).required_status_checks.strict).toBe(false);
 	});
 
 	it("requests the declared number of approvals on the classic path", async () => {
-		// The classic API splits protection across endpoints, so a lane that requires review needs its
-		// own call. Before the policy was declared this module had no approvals field at all.
+		// Approvals are part of the single full-policy PUT now. They used to be a separate
+		// `POST .../protection/required_pull_request_reviews`, which only works once protection is
+		// enabled — so the split ordering was wrong as well as redundant.
 		const { fetch, calls } = scripted([
 			json({ message: "Not Found" }, 404),
 			json({ strict: true, contexts: ["quality"] }, 200),
+			json({}, 200),
 			json({}, 200),
 		]);
 		const repo = new GitHubRepository(new GitHubClient({ token: "fake-token", fetch }), "owner", "repo");
@@ -72,9 +78,9 @@ describe("Branch protection & rulesets synchronizer", () => {
 			approvals: 1,
 			enforceAdmins: false,
 		});
-		const review = calls.find((call) => call.url.includes("required_pull_request_reviews"));
-		expect(review?.url).toContain("/branches/develop/protection/");
-		expect(JSON.parse(String(review?.init?.body)).required_approving_review_count).toBe(1);
+		expect(JSON.parse(String(calls[1]?.init?.body)).required_pull_request_reviews).toMatchObject({
+			required_approving_review_count: 1,
+		});
 	});
 
 	it("does not ask for a review on a lane that declares none", async () => {
@@ -96,6 +102,42 @@ describe("Branch protection & rulesets synchronizer", () => {
 		expect(result.success).toBe(true);
 		expect(calls[1]?.url).toContain("/rulesets");
 		expect(calls[1]?.init?.method).toBe("POST");
+	});
+
+	// Found by reproducing the reconcile failure against a scratch repository rather than by reading
+	// the code: `GET /rulesets` returns `[]`, so the module POSTs a new ruleset, GitHub rejects it,
+	// the empty `catch {}` swallows that, and the classic path then 404s on a branch whose
+	// protection was never enabled. Two unrelated failures, reported as one `Not Found`.
+	it("sends a fully qualified ref to the ruleset API: a bare branch name is rejected", async () => {
+		const { fetch, calls } = scripted([json([], 200), json({ id: 7, name: "darkfactory-ci" }, 201)]);
+		const repo = new GitHubRepository(new GitHubClient({ token: "fake-token", fetch }), "owner", "repo");
+		await applyBranchProtection(repo, ["quality"], { branch: "main" });
+		const body = JSON.parse(String(calls[1]?.init?.body));
+		expect(body.conditions.ref_name.include).toEqual(["refs/heads/main"]);
+	});
+
+	it("sends the pull_request rule with no parameters: this plan rejects every parameter", async () => {
+		// Verified by creating rulesets on a scratch repository. `{ type: "pull_request" }` is
+		// accepted and defaults to `required_approving_review_count: 0`. Adding *any* parameter —
+		// including the documented `required_approving_review_count` and
+		// `dismiss_stale_reviews_on_push` — fails with
+		// `Invalid property /rules/N: data matches no possible input`.
+		const { fetch, calls } = scripted([json([], 200), json({ id: 8, name: "darkfactory-ci" }, 201)]);
+		const repo = new GitHubRepository(new GitHubClient({ token: "fake-token", fetch }), "owner", "repo");
+		await applyBranchProtection(repo, ["quality"], { branch: "main", approvals: 1 });
+		const rules = JSON.parse(String(calls[1]?.init?.body)).rules;
+		const review = rules.find((r: { type: string }) => r.type === "pull_request");
+		expect(review, "a lane that asks for review must still request review").toBeDefined();
+		expect(review.parameters, "no parameters: the approval count travels on the classic path").toBeUndefined();
+	});
+
+	it("says why it fell back instead of swallowing the ruleset failure", async () => {
+		const { fetch } = scripted([json({ message: "Upgrade to GitHub Pro" }, 403), json({}, 200)]);
+		const repo = new GitHubRepository(new GitHubClient({ token: "fake-token", fetch }), "owner", "repo");
+		const log: string[] = [];
+		await applyBranchProtection(repo, ["quality"], { branch: "main", log: (m) => log.push(m) });
+		expect(log.join("\n")).toContain("Upgrade to GitHub Pro");
+		expect(log.join("\n")).toContain("classic protection");
 	});
 
 	it("verifies branch protection against expected required checks", async () => {
