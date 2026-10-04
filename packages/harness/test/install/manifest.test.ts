@@ -45,7 +45,7 @@ describe("identity", () => {
 		expect(loaded.slug()).toBe("marius-patrik/DarkFactory");
 		expect(loaded.homepage()).toBe("https://marius-patrik.github.io/DarkFactory/");
 		expect(loaded.defaultBranch()).toBe("main");
-		expect(loaded.developmentBranch()).toBe("develop");
+		expect(loaded.developmentBranch()).toBe("main");
 	});
 
 	test("identity is read from the declaration", async () => {

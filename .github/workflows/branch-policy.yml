@@ -1,11 +1,13 @@
 name: Branch Policy
 
 on:
-  pull_request:
-    branches: [main]
-    types: [opened, synchronize, reopened]
+  # The `pull_request` trigger and the `main-source` job it served are both gone. `main-source`
+  # asserted that a pull request into `main` came *from* `develop`, which is unsatisfiable once the
+  # integration branch has been renamed onto `main` -- there is no `develop` left to require. It was
+  # also the weaker of the two gates (one check, no approvals), so collapsing to a single lane loses
+  # nothing: `main` keeps the full gate (`quality` + `verify-bound-issue`, one approval, strict).
   push:
-    branches: [develop]
+    branches: [main]
     # What the reconcile actually reads: the configuration document (default branch, development
     # branch, required checks) and the two scripts that apply it. `repo.df` and `config.df` were
     # named here and are not repository files, so the one file the policy is derived from was not
@@ -24,22 +26,8 @@ permissions:
   contents: read
 
 jobs:
-  main-source:
-    name: main-source
-    if: github.event_name == 'pull_request'
-    runs-on: ubuntu-latest
-    env:
-      HEAD_REPOSITORY: ${{ github.event.pull_request.head.repo.full_name }}
-      HEAD_BRANCH: ${{ github.event.pull_request.head.ref }}
-    steps:
-      - name: Require the repository develop branch
-        run: |
-          test "$HEAD_REPOSITORY" = "$GITHUB_REPOSITORY"
-          test "$HEAD_BRANCH" = "develop"
-
   reconcile:
     name: reconcile-branch-policy
-    if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     env:
       # The secrets context cannot be read from a step-level `if`, so the test is hoisted to the
