@@ -270,7 +270,7 @@ Human and agent contributors share one review language across source, GitHub and
 ### Decision
 - DarkFactory has one first-party Paper domain for the thesis manuscript and its publication.
 - The Paper has one authored manuscript source and one publication owner.
-- Paper publication produces the repository release artifact `THESIS_CASE_STUDY.pdf`; it does not own repository documentation Markdown.
+- Paper publication produces the release artifact of the paper repository (`marius-patrik/DarkFactory-Paper`); it does not own repository documentation Markdown. This repository keeps the paper capability and no manuscript.
 - The Paper uses the shared documentation, capability, CI, and release contracts.
 ### Consequences
 The thesis remains a first-class repository concern without creating a second documentation owner or a second product surface.

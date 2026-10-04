@@ -38,10 +38,10 @@ site/
 # Agent tooling local state (opencode goal/session bookkeeping)
 .opencode/
 
-# Paper build output. `paper/out/` is what the typst quality row and the release job write; the
-# published artifact is `THESIS_CASE_STUDY.pdf`, built by `scripts/paper/publication.ts`. Committing
-# the intermediate meant a green matrix run rewrote a tracked binary.
-paper/out/
+# Paper build output. This repository no longer has a paper — it moved to
+# marius-patrik/DarkFactory-Paper — but the paper capability is generic, so a consumer with a
+# manuscript under `paper/` writes here, and committing the intermediate would make a green matrix
+# run rewrite a tracked binary.
 
 # Agent worktrees. The folder is tracked through a .gitkeep so it exists in a fresh clone, and
 # everything below it is ignored: a checkout is local working state, and there is no path by which
@@ -68,3 +68,5 @@ uv.lock
 # The reachability analyser is a working tool, not a deliverable: it is rewritten on every run, so
 # its generated JSON can never satisfy a format check.
 .ast-reachability.*
+
+paper/out/

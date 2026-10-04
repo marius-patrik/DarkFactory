@@ -26,7 +26,7 @@ události.
 
 ## Sada publikace není zdroj
 
-Citovat test jako důkaz toho, co dělá kód, je chyba. `scripts/paper/publication.ts` ověřuje
+Citovat test jako důkaz toho, co dělá kód, je chyba. publikační skript v paper repozitáři ověřuje
 strukturu PDF a nezná obsah; jedna oprava existovala výhradně v komentáři ve zdroji. Když dohledáváš,
 **co kód dělá**, otevři kód.
 

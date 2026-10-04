@@ -567,12 +567,19 @@ describe("release.yml", () => {
 		expect(typed[installAt]?.if).toContain("steps.paper.outputs.typst == 'true'");
 	});
 
-	it("test_this_repository_is_detected_as_needing_typst: the probe is not vacuous here", () => {
-		// If this repository's own tree stopped satisfying the probe, the release would skip the
-		// install again and fail at the build. Asserted against the tree, not the prose.
-		expect(existsSync(join(repoRoot, "paper", "main.typ"))).toBe(true);
+	it("test_the_paper_probe_would_still_fire_for_a_repository_that_has_one: it is not dead code", () => {
+		// This repository no longer has a paper -- it moved to marius-patrik/DarkFactory-Paper -- so the
+		// probe legitimately matches nothing here. What must stay true is that the probe still *would*
+		// match a repository that has one, and that the install is still gated on it. Otherwise the
+		// release would silently stop building a consumer's paper.
+		//
+		// Asserted by running the probe's own pattern against a synthetic tree rather than against this
+		// repository, so the test does not become vacuous when the paper is absent.
 		const probe = steps(release, "resolve").find((s) => s.name === "Detect the paper domain");
 		expect(probe?.run).toContain("paper/main.typ");
+		const typed = steps(release, "resolve");
+		const installAt = typed.findIndex((s) => s.name === "Set up Typst");
+		expect(typed[installAt]?.if).toContain("steps.paper.outputs.typst == 'true'");
 	});
 
 	it("test_the_publish_job_uses_the_App_token: GITHUB_TOKEN cannot open a pull request", () => {

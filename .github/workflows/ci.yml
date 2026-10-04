@@ -137,11 +137,12 @@ jobs:
           deno-version: v2.x
 
       - name: Set up Typst
-        # Only the test row needs it: `tests/paper` compiles the manuscript, and no other command in
-        # the tree does. It used to run only in the paper package's own job, selected by
-        # `matrix.cwd == 'paper'`, which stopped matching once the node job's cwd became the repository
-        # root. Widening it to every node row put a third-party action in front of typecheck and lint
-        # for no reason, and its occasional 500 then failed a job that had nothing to do with typst.
+        # No row in this repository needs typst: the paper moved to marius-patrik/DarkFactory-Paper
+        # and `paper/` is gone, so the matrix derives no typst ecosystem and these conditions never
+        # match. They are kept because a consumer repository's own matrix can still declare one — the
+        # workflow is generated for other repositories too. Widening this to every node row put a
+        # third-party action in front of typecheck and lint for no reason, and its occasional 500 then
+        # failed a job that had nothing to do with typst.
         if: matrix.ecosystem == 'typst' || matrix.kind == 'test'
         uses: typst-community/setup-typst@v5
         # A flaky download should not fail the whole test row. If typst genuinely cannot be installed,

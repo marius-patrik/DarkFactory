@@ -53,33 +53,15 @@
       "ref": null
     },
     "versioning": {
-      "mode": "manual",
+      "mode": "zerover",
       "tag_prefix": "v",
-      "initial": "3a.1.0"
+      "initial": "0.287.0"
     },
     "environment": {
-      "$comment": "No packages are declared. The repository is a TypeScript workspace, and its packages are resolved from the workspace layout rather than asserted here.",
+      "$comment": "No packages are declared. The repository is a TypeScript workspace, and its packages are resolved from the workspace layout rather than asserted here. The typst exemptions were removed with the paper: it moved to marius-patrik/DarkFactory-Paper, so this repository detects no typst package and an exemption naming an ecosystem no package belongs to is rejected when the contract loads.",
       "packages": [],
       "testing": {},
       "formatting": {},
-      "not_applicable": {
-        "$comment": "The `ci-readiness` skill exempts an action only from the canonical repository contract, with a reason, before matrix construction. Each entry below is a tool that does not exist in that ecosystem, not a check that was skipped. An exemption for an ecosystem no detected package belongs to, for an unknown action, or without a reason is rejected when the contract loads.",
-        "test": {
-          "typst": {
-            "reason": "Typst 0.15.1 ships compile, watch, init, eval, fonts, completions and info; it has no test runner. The paper's own tests are a Node package (paper/package.json test script) and the manuscript is proven by typst compile, which is the typst typecheck action."
-          }
-        },
-        "lint": {
-          "typst": {
-            "reason": "There is no Typst linter. Typst 0.15.1 has no lint subcommand, so a lint command could not fail and would be invented enforcement."
-          }
-        },
-        "format_check": {
-          "typst": {
-            "reason": "There is no `typst fmt`. Typst 0.15.1 has no formatting subcommand, so a format check could not fail and would be invented enforcement."
-          }
-        }
-      },
       "release": {
         "$comment": "Release actions are declared per ecosystem. #360 enables the final first-party package/native/web release artifacts.",
         "python": {
