@@ -357,7 +357,7 @@ function recordIssue(root: string): number | null {
  *
  * Recording the same version twice is a no-op, so a re-run after a completed release neither commits
  * again nor asks for a second review. The pull request binds `release.record_issue`, because every
- * pull request to `develop` has to name a tracking issue to pass its required check; without one the
+ * pull request to the trunk has to name a tracking issue to pass `verify-bound-issue`; without one the
  * version is still committed and the omission is reported rather than opening a request that can
  * only sit at `REVIEW_REQUIRED`.
  *

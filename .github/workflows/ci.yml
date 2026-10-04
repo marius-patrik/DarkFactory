@@ -2,7 +2,7 @@ name: CI
 
 on:
   push:
-    branches: [develop]
+    branches: [main]
   # No `branches` filter on `pull_request`. That filter matches the pull request's *base* ref, so
   # scoping it to `develop` left every stacked pull request in the delivery chain with zero
   # check-runs: no `detect`, no `quality`, and a `CLEAN` mergeStateStatus computed from nothing
@@ -10,11 +10,11 @@ on:
   # in that state showed a `success` that had been computed against a different base.
   # `edited` is in `types` because a base-only change is the one pull request edit that invalidates
   # the previous base's results; GitHub emits no `synchronize` for it. `push` and `merge_group`
-  # stay scoped to the integration branch, so a stack branch's own pushes do not fan out.
+  # stay scoped to the trunk, so a stack branch's own pushes do not fan out.
   pull_request:
     types: [opened, edited, synchronize, reopened, ready_for_review]
   merge_group:
-    branches: [develop]
+    branches: [main]
   workflow_dispatch:
 
 permissions:

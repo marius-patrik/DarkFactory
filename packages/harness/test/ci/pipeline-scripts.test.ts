@@ -133,22 +133,23 @@ describe("shared repository settings", () => {
 		expect(source).toContain("resolveConversations?: boolean;");
 	});
 
-	it("test_this_repository_declares_both_lanes: a lane is a fact about the repository", () => {
-		// Which branch is the integration lane and which is the release lane is not a property of the
-		// pipeline, so it is asserted against this repository's document rather than in a test double.
+	it("test_this_repository_declares_one_lane: a lane is a fact about the repository", () => {
+		// Which branch is protected, and how hard, is not a property of the pipeline, so it is asserted
+		// against this repository's document rather than in a test double. It was two lanes --
+		// `develop` carrying the full gate and `main` a weaker release lane -- until the integration
+		// branch was renamed onto `main`, which left one lane carrying the full gate.
 		const document = JSON.parse(readFileSync(join(repoRoot, "repo.dfconfig"), "utf8"));
 		const lanes = document.repo.protection.lanes as Array<Record<string, unknown>>;
-		expect(lanes.length, "both the integration and the release lane are declared").toBe(2);
-		const develop = lanes.find((lane) => lane.branch === "develop");
-		const main = lanes.find((lane) => lane.branch === "main");
-		expect(develop?.approvals, "the integration lane asks for a review").toBe(1);
-		expect(develop?.strict).toBe(true);
-		expect(develop?.resolve_conversations).toBe(true);
-		expect(main?.approvals, "the release lane does not").toBe(0);
-		expect(main?.enforce_admins).toBe(true);
-		// The two lanes genuinely differ, which is the property the hardcoded version had to assert
-		// against the Python's source text.
-		expect(develop?.required_checks).not.toEqual(main?.required_checks);
+		expect(lanes.length, "the single lane is declared").toBe(1);
+		const trunk = lanes[0];
+		expect(trunk?.branch).toBe("main");
+		expect(trunk?.required_checks, "the surviving lane is the full gate, not the weaker one").toEqual([
+			"quality",
+			"verify-bound-issue",
+		]);
+		expect(trunk?.approvals).toBe(1);
+		expect(trunk?.strict).toBe(true);
+		expect(trunk?.resolve_conversations).toBe(true);
 	});
 
 	it("test_an_unparseable_body_is_reported_rather_than_thrown: a lost response is retried, not fatal", () => {

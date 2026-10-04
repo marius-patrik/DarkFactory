@@ -517,31 +517,35 @@ describe("release.yml", () => {
 });
 
 describe("branch roles", () => {
-	it("test_workflows_separate_development_from_release_pushes: quality on develop, release on main", () => {
+	// There is one branch. The integration branch `develop` was renamed onto `main`, so every
+	// workflow follows the same ref and the promotion gate that asserted "a pull request into main
+	// came from develop" went with it — it was unsatisfiable without a `develop` to require, and it
+	// was the weaker of the two gates, so the surviving lane keeps the full one.
+	it("test_every_workflow_follows_the_one_branch: quality and release share a trunk", () => {
 		const identity = repoConfig().identity;
 		expect(identity.default_branch).toBe("main");
-		expect(identity.development_branch).toBe("develop");
-		for (const name of ["ci.yml", "project-automation.yml"]) {
+		expect(identity.development_branch).toBe("main");
+		for (const name of ["ci.yml", "project-automation.yml", "deploy-docs.yml", "release.yml"]) {
 			const push = triggers(parseWorkflow(name)).push as { branches: string[] };
-			expect(push.branches, `${name} must follow the development branch`).toEqual(["develop"]);
+			expect(push.branches, `${name} must follow the trunk`).toEqual(["main"]);
 		}
-		for (const name of ["deploy-docs.yml", "release.yml"]) {
-			const push = triggers(parseWorkflow(name)).push as { branches: string[] };
-			expect(push.branches, `${name} must follow the stable release branch`).toEqual(["main"]);
-		}
+		const mergeGroup = triggers(parseWorkflow("ci.yml")).merge_group as { branches: string[] };
+		expect(mergeGroup.branches).toEqual(["main"]);
 	});
 
-	it("test_main_source_gate_requires_develop_from_the_same_repository: a PR to main is a promotion", () => {
+	it("test_the_promotion_gate_is_gone: nothing asserts a develop branch exists", () => {
 		const policy = parseWorkflow("branch-policy.yml");
-		const pullRequest = triggers(policy).pull_request as { branches: string[] };
-		expect(pullRequest.branches).toEqual(["main"]);
-		const gate = steps(policy, "main-source").find((step) => step.name === "Require the repository develop branch");
-		expect(policy.jobs["main-source"]?.env?.HEAD_REPOSITORY).toBe(
-			expression("github.event.pull_request.head.repo.full_name"),
-		);
-		expect(policy.jobs["main-source"]?.env?.HEAD_BRANCH).toBe(expression("github.event.pull_request.head.ref"));
-		expect(gate?.run).toContain('test "$HEAD_BRANCH" = "develop"');
-		expect(gate?.run).toContain('test "$HEAD_REPOSITORY" = "$GITHUB_REPOSITORY"');
+		expect(policy.jobs["main-source"], "main-source must not return").toBeUndefined();
+		expect(Object.keys(policy.jobs)).toEqual(["reconcile"]);
+		expect(triggers(policy).pull_request, "the pull_request trigger served only main-source").toBeUndefined();
+		// The assertion that made it unsatisfiable must not survive in any form.
+		expect(workflowSource("branch-policy.yml")).not.toContain('HEAD_BRANCH" = "develop"');
+	});
+
+	it("test_no_workflow_is_scoped_to_a_develop_branch: a dead trigger is a silent no-op", () => {
+		for (const name of workflowNames()) {
+			expect(workflowSource(name), `${name} still references a develop branch`).not.toMatch(/branches: \[develop\]/);
+		}
 	});
 });
 
