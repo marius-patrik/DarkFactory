@@ -575,6 +575,26 @@ describe("release.yml", () => {
 		expect(probe?.run).toContain("paper/main.typ");
 	});
 
+	it("test_the_publish_job_uses_the_App_token: GITHUB_TOKEN cannot open a pull request", () => {
+		// `Record the released version` opens a pull request to record the release. GitHub withholds
+		// `pull_requests: write` from the token a workflow gets for itself, so with `GITHUB_TOKEN` the
+		// step died on every release with `GraphQL: Resource not accessible by integration
+		// (createPullRequest)` — after the tag, the release and every asset were already published.
+		// The App has `Pull requests: Read and write`; its installation token can.
+		const publish = steps(release, "publish");
+		const record = publish.find((s) => s.name === "Record the released version");
+		expect(record?.env?.GH_TOKEN, "the App token must be preferred").toContain("steps.app-token.outputs.token");
+
+		// And the step that mints it has to exist in this job, with the key test hoisted so a
+		// step-level `if` can read it.
+		const mint = publish.findIndex((s) => s.uses?.includes("create-github-app-token"));
+		expect(mint, "the publish job must mint an installation token").toBeGreaterThan(-1);
+		expect(release.jobs["publish"]?.env?.HAS_APP_KEY, "HAS_APP_KEY must be readable from a step `if`").toBeDefined();
+		expect(publish[mint]?.if).toContain("HAS_APP_KEY");
+		// Minting must precede the use.
+		expect(mint).toBeLessThan(publish.indexOf(record as never));
+	});
+
 	it("test_release_workflow_tolerates_a_repository_with_no_build: a tag and notes, not a failure", () => {
 		const scripts = workflowScripts(release);
 		expect(scripts.includes("no assets") || scripts.includes("Nothing to build")).toBe(true);
