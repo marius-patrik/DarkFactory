@@ -108,3 +108,27 @@ describe("the build and the verifier agree on where dist is", () => {
 		expect(assets).toContain('const dist = join(root, "dist")');
 	});
 });
+
+describe("the packaging smoke agrees with the packager about the native module", () => {
+	// `packageAssets` treats the prebuilt native helper as optional and warns when it is missing;
+	// `packagingSmoke` required one. All five release targets failed on
+	// `Packaged pi-tui native module is missing for <platform>-<arch>`, and pi-tui 0.85.1 ships no
+	// `linux/` directory at all, so on Linux there was nothing to find by design.
+	const cli = readFileSync(join(repoRoot, "packages/harness/src/cli.ts"), "utf8");
+	const assets = readFileSync(join(repoRoot, "packages/harness/scripts/package-assets.ts"), "utf8");
+
+	it("the packager treats the native module as optional", () => {
+		expect(assets).toContain("building without it");
+	});
+
+	it("the smoke does not fail a build that legitimately has none", () => {
+		// The error string survives in a comment explaining the fix, so assert on the code: no
+		// `throw` carries it.
+		expect(cli).not.toMatch(/throw new Error\(`Packaged pi-tui native module is missing/);
+	});
+
+	it("the smoke still refuses a native module that is present but broken", () => {
+		// Optional is not unchecked: a module that exists must still load.
+		expect(cli).toContain("Packaged pi-tui native module did not load");
+	});
+});
