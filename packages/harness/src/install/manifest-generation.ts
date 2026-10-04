@@ -13,7 +13,7 @@ import { detectRepositoryEvidence } from "../../../core/src/repository-evidence.
 import { relevantWorkflows, requiredContexts } from "./callers.ts";
 
 /** The repository holding the pipeline when the caller names none. */
-export const DEFAULT_PIPELINE_REPO = "marius-patrik/DarkFactory";
+export const DEFAULT_PIPELINE_REPO = "marius-patrik/agent-DarkFactory";
 
 /**
  * Starter areas, offered to be edited rather than presented as correct.

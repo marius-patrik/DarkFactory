@@ -3,7 +3,7 @@
     "$comment": "Repository-specific declarations that DarkFactory cannot infer reliably.",
     "identity": {
       "owner": "marius-patrik",
-      "repo": "DarkFactory",
+      "repo": "agent-DarkFactory",
       "display_name": "DarkFactory",
       "project_title": "DarkFactory",
       "agent_slug": "darkfactory-agent",
@@ -278,7 +278,7 @@
       },
       "installation_id": 159771550,
       "installed_on": [
-        "marius-patrik/DarkFactory",
+        "marius-patrik/agent-DarkFactory",
         "marius-patrik/omnis",
         "marius-patrik/ChessWithQuests",
         "marius-patrik/OdbornaPrace-paper",

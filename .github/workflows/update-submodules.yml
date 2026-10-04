@@ -20,7 +20,7 @@ on:
         description: "Repository holding the shared scripts."
         required: false
         type: string
-        default: "marius-patrik/DarkFactory"
+        default: "marius-patrik/agent-DarkFactory"
     secrets:
       DARKFACTORY_APP_PRIVATE_KEY: {required: false}
       GH_PROJECT_TOKEN: {required: false}
@@ -59,7 +59,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
-          ref: ${{ github.repository == 'marius-patrik/DarkFactory' && 'develop' || '' }}
+          ref: ${{ github.repository == 'marius-patrik/agent-DarkFactory' && 'main' || '' }}
           submodules: recursive
           fetch-depth: 0
           token: ${{ steps.app-token.outputs.token || secrets.GH_PROJECT_TOKEN || secrets.GITHUB_TOKEN }}

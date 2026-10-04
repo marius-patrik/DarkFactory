@@ -107,3 +107,47 @@ describe("repository evidence and capability actions", () => {
 		expect(action.command).toBeUndefined();
 	});
 });
+
+describe("the pinned runtime checkout is not the consumer's content", () => {
+	// `ci.yml` checks the pipeline out into `.darkfactory-runtime` inside the workspace it is
+	// building, and then detects packages over that same workspace. `.darkfactory-runtime` holds the
+	// pipeline's own sources, including its `packages/*`, so without pruning a consumer's matrix
+	// acquired the pipeline's packages and built them from inside the consumer's run — rows such as
+	// `node:.darkfactory-runtime/packages/plugins:test`.
+	//
+	// Found in this repository rather than in a consumer: the `github.repository != '<pipeline>'`
+	// guard that stops the pipeline checking itself out was keyed on the pipeline's *former* name, so
+	// after the repository was renamed the pipeline started checking out into itself and hit the same
+	// rows. Both halves are fixed; this test covers the detector, which is what a consumer hits.
+	test("detection does not walk into the runtime checkout", async () => {
+		const root = await mkdtemp(join(tmpdir(), "df-runtime-scan-"));
+		try {
+			await writeFile(join(root, "package.json"), JSON.stringify({ name: "consumer", version: "1.0.0" }));
+			// The pipeline, checked out beside the consumer exactly as ci.yml does.
+			await mkdir(join(root, ".darkfactory-runtime"), { recursive: true });
+			await writeFile(
+				join(root, ".darkfactory-runtime/package.json"),
+				JSON.stringify({ name: "pipeline", version: "1.0.0" }),
+			);
+			await mkdir(join(root, ".darkfactory-runtime/packages/plugins"), { recursive: true });
+			await writeFile(
+				join(root, ".darkfactory-runtime/packages/plugins/package.json"),
+				JSON.stringify({ name: "@darkfactory/plugins", version: "1.0.0" }),
+			);
+			await mkdir(join(root, ".darkfactory-runtime/paper"), { recursive: true });
+			await writeFile(
+				join(root, ".darkfactory-runtime/paper/package.json"),
+				JSON.stringify({ name: "paper", version: "1.0.0" }),
+			);
+
+			const evidence = await detectRepositoryEvidence(root);
+			const paths = evidence.packages.map((entry) => entry.path);
+			expect(paths.some((path) => path.includes(".darkfactory-runtime"))).toBe(false);
+			expect(paths.some((path) => path.startsWith("paper"))).toBe(false);
+			// The consumer's own package is still found, so the prune is not over-broad.
+			expect(paths.length).toBeGreaterThan(0);
+		} finally {
+			await rm(root, { recursive: true, force: true });
+		}
+	});
+});

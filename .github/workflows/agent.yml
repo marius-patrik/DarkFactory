@@ -39,7 +39,7 @@ on:
         description: "Repository holding the runner and the container definition."
         required: false
         type: string
-        default: "marius-patrik/DarkFactory"
+        default: "marius-patrik/agent-DarkFactory"
       agent-enabled:
         description: "Whether the agent should run. Mirrors the AGENT_ENABLED repository variable."
         required: false
@@ -145,7 +145,7 @@ jobs:
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token || secrets.GH_PROJECT_TOKEN || secrets.GITHUB_TOKEN }}
         run: |
-          PIPELINE="${{ inputs.pipeline-repo || 'marius-patrik/DarkFactory' }}"
+          PIPELINE="${{ inputs.pipeline-repo || 'marius-patrik/agent-DarkFactory' }}"
           if [ "${{ github.repository }}" != "$PIPELINE" ]; then
             echo "Delegating agent run from ${{ github.repository }} to central pipeline in $PIPELINE..."
             gh api "repos/$PIPELINE/dispatches" \
@@ -245,7 +245,7 @@ jobs:
         if: steps.delegate.outputs.delegated != 'true' && (inputs.pipeline-ref != '' || steps.target-env.outputs.is_external == 'true')
         uses: actions/checkout@v4
         with:
-          repository: ${{ inputs.pipeline-repo || 'marius-patrik/DarkFactory' }}
+          repository: ${{ inputs.pipeline-repo || 'marius-patrik/agent-DarkFactory' }}
           # `main` is the pipeline repository's default branch. The previous `darkfactory` default
           # names a branch that no longer exists, so this checkout failed and the agent container
           # was never built for an external run.
