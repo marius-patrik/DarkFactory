@@ -94,6 +94,15 @@ jobs:
 
       - name: Resolve the release
         if: steps.version.outputs.warranted == 'true'
+        # `REQUESTED_BUMP` again, not only on the gate step above. `cli.ts` reads it to decide what to
+        # release, so without it here an explicitly requested version reached the *gate* — which
+        # reported `warranted=true` — and then nothing was resolved, `notes.md` was never written, and
+        # the run died on `No files were found with the provided path: .../notes.md`.
+        #
+        # `manual` mode hid this: it resolves from `VERSION` and never consults the request. Any mode
+        # that does consult it — `zerover` among them — lost the request on the way through.
+        env:
+          REQUESTED_BUMP: ${{ inputs.bump }}
         # One resolver, not two cross-checked against each other. The TypeScript release CLI is a
         # drop-in for `release.py --repo-root ...`: same version, same tag, same notes file, same
         # JSON on stdout. `release.json` is produced here for the metadata check, the tooling
