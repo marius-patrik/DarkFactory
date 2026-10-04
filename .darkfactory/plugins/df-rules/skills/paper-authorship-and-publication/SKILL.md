@@ -1,6 +1,6 @@
 ---
 name: paper-authorship-and-publication
-description: Use when changing the thesis manuscript, its bibliography, fonts or images, or the paper build and release: treat paper/main.typ as the sole authored manuscript, generate the repository-root THESIS_CASE_STUDY.pdf with the canonical publication command, include it in release assets, and change prose only on explicit author request with author review before staging.
+description: Use when changing the thesis manuscript, its bibliography, fonts or images, or the paper build and release: treat the paper repository's main.typ as the sole authored manuscript, generate its PDF with the canonical publication command, include it in release assets, and change prose only on explicit author request with author review before staging.
 title: Paper authorship and publication
 status: normative
 applies_to: [paper, authors, contributors]
@@ -13,7 +13,7 @@ license: MIT
 
 ## Requirement
 
-`paper/main.typ` is the sole authored thesis manuscript, and `paper/typst.toml` names it as the entrypoint. `paper/components/bib/`, `paper/components/fonts/`, and `paper/components/img/` contain its supporting bibliography, font, and image resources.
+The manuscript lives in the paper repository (`marius-patrik/DarkFactory-Paper`), not in this one: its `main.typ` is the sole authored thesis manuscript, its `typst.toml` names that as the entrypoint, and its components directory holds the bibliography, font and image resources. This repository keeps the *paper capability* — the typesetting behaviour — and no manuscript.
 
 The canonical publication command generates the repository-root `THESIS_CASE_STUDY.pdf` artifact. The Paper does not generate or own repository Markdown; the repository README is the canonical product document at `README.md`, and the rules are skills rather than a generated projection. `THESIS_CASE_STUDY.pdf` is included in the release assets.
 
