@@ -510,6 +510,33 @@ describe("release.yml", () => {
 		expect(carried).toContain("REQUESTED_BUMP");
 	});
 
+	it("test_release_detects_the_paper_engine_from_the_tree: a probe cannot detect what it skips installing", () => {
+		// The probe used to ask `command -v typst`, which is false on a stock runner, so the
+		// conditional `setup-typst` was skipped and the build died at `typst: command not found`
+		// (exit 127) — after the version was resolved. It decided not to install the thing whose
+		// absence it was detecting.
+		const probe = steps(release, "resolve").find((s) => s.name === "Detect the paper domain");
+		expect(probe?.run).not.toContain("command -v");
+		expect(probe?.run).toContain("main.typ");
+
+		// The install must still be gated on the probe, and the build after it.
+		const typed = steps(release, "resolve");
+		const probeAt = typed.findIndex((s) => s.name === "Detect the paper domain");
+		const installAt = typed.findIndex((s) => s.name === "Set up Typst");
+		const buildAt = typed.findIndex((s) => s.name === "Build release assets");
+		expect(installAt, "typst must be installed after detection").toBeGreaterThan(probeAt);
+		expect(buildAt, "the build must come after the install").toBeGreaterThan(installAt);
+		expect(typed[installAt]?.if).toContain("steps.paper.outputs.typst == 'true'");
+	});
+
+	it("test_this_repository_is_detected_as_needing_typst: the probe is not vacuous here", () => {
+		// If this repository's own tree stopped satisfying the probe, the release would skip the
+		// install again and fail at the build. Asserted against the tree, not the prose.
+		expect(existsSync(join(repoRoot, "paper", "main.typ"))).toBe(true);
+		const probe = steps(release, "resolve").find((s) => s.name === "Detect the paper domain");
+		expect(probe?.run).toContain("paper/main.typ");
+	});
+
 	it("test_release_workflow_tolerates_a_repository_with_no_build: a tag and notes, not a failure", () => {
 		const scripts = workflowScripts(release);
 		expect(scripts.includes("no assets") || scripts.includes("Nothing to build")).toBe(true);

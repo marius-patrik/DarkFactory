@@ -66,7 +66,10 @@ const CONVERTED: Array<[workflow: string, step: string, expected: string]> = [
 	["install.yml", "Reconcile labels, board and settings", "bun packages/harness/src/ci/repo-settings.ts"],
 	["release.yml", "Resolve the release", "bun packages/harness/src/release/cli.ts"],
 	["release.yml", "Verify package metadata agrees with the release", "exit 1"],
-	["release.yml", "Detect the paper domain", "command -v"],
+	// Not `command -v`, which was here and was the bug: it is false on a stock runner, so the
+	// conditional `setup-typst` was skipped and the build died at `typst: command not found`.
+	// Detection reads the tree instead. See repository-governance.test.ts for the ordering proof.
+	["release.yml", "Detect the paper domain", "main.typ"],
 	["release.yml", "Collect release assets", "collectAssets"],
 	["release.yml", "Record the released version", "--record-version"],
 ];
