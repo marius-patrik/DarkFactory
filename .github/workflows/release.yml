@@ -122,17 +122,27 @@ jobs:
       - name: Detect the paper domain
         if: steps.version.outputs.warranted == 'true'
         id: paper
-        # The paper is built here, where the typesetting engines are installed. A paper's asset is
-        # its PDF, which cannot be produced without one. The question is simply whether each engine
-        # is on PATH, so it is asked with `command -v` rather than by a resolver.
+        # Which engine this repository *needs*, not which one the runner already has. This asked
+        # `command -v typst`, which is false on a stock `ubuntu-latest`, so the conditional install
+        # below was skipped and the build then died at `typst: command not found` (exit 127) — after
+        # the version had already been resolved. The probe was deciding not to install the very
+        # thing whose absence it was detecting.
+        #
+        # Detection reads the tree instead, which is what the release itself keys off. `main.typ`
+        # means typst; a LaTeX manifest or `.latexmkrc` means latex. `environment.ts` maps the same
+        # filenames to the same engines, so this probe and the release cannot disagree about what the
+        # repository builds with — and a paper's PDF, the asset itself, is never declared optional.
         run: |
-          for engine in typst latex; do
-            if command -v "$engine" > /dev/null 2>&1; then
-              echo "$engine=true" >> "$GITHUB_OUTPUT"
-            else
-              echo "$engine=false" >> "$GITHUB_OUTPUT"
-            fi
-          done
+          if compgen -G "paper/main.typ" > /dev/null || compgen -G "**/*.typ" > /dev/null; then
+            echo "typst=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "typst=false" >> "$GITHUB_OUTPUT"
+          fi
+          if compgen -G "paper/main.tex" > /dev/null || compgen -G "**/*.tex" > /dev/null || compgen -G ".latexmkrc" > /dev/null; then
+            echo "latex=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "latex=false" >> "$GITHUB_OUTPUT"
+          fi
 
       - name: Set up Typst
         if: steps.version.outputs.warranted == 'true' && steps.paper.outputs.typst == 'true'
