@@ -246,6 +246,30 @@ describe("agent.yml", () => {
 	const declaredSecrets = (triggers(agent).workflow_call as { secrets: Record<string, { required?: boolean }> })
 		.secrets;
 
+	// The loop: `report-failure.yml` fires on `workflow_run: completed` and opens a
+	// `pipeline-failure`-labelled issue when a workflow fails. This job triggers on
+	// `issues: [opened]` with no label filter, so it started on each of those, then failed on every
+	// run because it ran `bun` with no `setup-bun` step. Each failure produced another issue. 100
+	// consecutive Autonomous Agent failures and a 1,411-run Actions backlog came from this alone.
+	it("test_the_agent_job_declines_the_pipelines_own_failure_reports: the loop needs one break", () => {
+		const gate = String(agent.jobs["run-agent"]?.if ?? "");
+		expect(gate, "the job must be gated, not a step: a step cannot skip the ones after it").toContain(
+			"pipeline-failure",
+		);
+		expect(gate).toContain("github.event_name != 'issues'");
+	});
+
+	it("test_the_agent_workflow_installs_bun_before_it_uses_it: bun is not on a stock runner", () => {
+		// `Resolve target environment` runs `bun -e` on the host, before the agent container exists.
+		// Without this the step died at `bun: command not found` (exit 127) on every single run.
+		const stepsOfJob = steps(agent, "run-agent");
+		const installs = stepsOfJob.findIndex((step) => step.uses?.includes("setup-bun"));
+		const usesBun = stepsOfJob.findIndex((step) => step.run?.includes("bun "));
+		expect(installs, "the job must install Bun").toBeGreaterThan(-1);
+		expect(usesBun, "the job uses Bun on the host").toBeGreaterThan(-1);
+		expect(installs, "Bun must be installed before the step that calls it").toBeLessThan(usesBun);
+	});
+
 	it("test_agent_workflow_never_leaks_secrets_into_the_log: secrets are container env, never echoed", () => {
 		const run = container?.run ?? "";
 		for (const secret of [

@@ -92,6 +92,30 @@ jobs:
     # the runner claims in agent_runner.py (`claim_failure_dispatch`), not by a label test.
     if: (vars.AGENT_ENABLED == 'true' || inputs.agent-enabled == 'true') && (!endsWith(github.event.comment.user.login, '[bot]') || startsWith(github.event.comment.body, 'Failed again:'))
     runs-on: ubuntu-latest
+    # The pipeline's own failure reports are not work. `report-failure.yml` fires on
+    # `workflow_run: completed` and opens a `pipeline-failure`-labelled issue whenever a workflow
+    # fails. This job triggers on `issues: [opened]` with no label filter, so it started on each of
+    # those; it then failed on every run (no `setup-bun` step — see below), which produced another
+    # failure report, which woke it again. 100 consecutive Autonomous Agent failures and a
+    # 1,411-run Actions backlog came from this alone.
+    #
+    # The graph's entry edge requires the `Request` label, but the workflow is dispatched before the
+    # graph is consulted, so nothing downstream could decline the run. Gating here is what stops it.
+    # A human opening an issue, or labelling any issue `Request`, is unaffected.
+    # Kept the existing clauses intact: the agent stays opt-in via `AGENT_ENABLED`, and bot comments
+    # are still declined except for the pipeline's own `Failed again:` ones, which it wants to see so
+    # a recovered workflow closes its issue.
+    #
+    # Added: `issues: [opened]` has no label filter, so this job started on *every* opened issue —
+    # including each `pipeline-failure` issue `report-failure.yml` opens when a workflow fails. The
+    # graph's entry edge requires the `Request` label, but the workflow is dispatched before the
+    # graph is consulted, so nothing downstream could decline the run. Combined with the job failing
+    # on every run (no `setup-bun` step — below), that was self-sustaining: 100 consecutive Autonomous
+    # Agent failures and a 1,411-run Actions backlog.
+    if: >-
+      (vars.AGENT_ENABLED == 'true' || inputs.agent-enabled == 'true')
+      && (!endsWith(github.event.comment.user.login, '[bot]') || startsWith(github.event.comment.body, 'Failed again:'))
+      && (github.event_name != 'issues' || !contains(github.event.issue.labels.*.name, 'pipeline-failure'))
     env:
       # The secrets context cannot be read from a step-level `if`, so the test
       # is hoisted to the job, where it can.
@@ -131,6 +155,19 @@ jobs:
           else
             echo "delegated=false" >> "$GITHUB_OUTPUT"
           fi
+
+      - name: Set up Bun
+        # `Resolve target environment` below runs `bun -e` on the host, before the agent container
+        # exists. The job had no `setup-bun` step at all, so that step died at
+        # `bun: command not found` (exit 127) on every run. Because this workflow triggers on
+        # `issues: [opened, labeled]`, and `report-failure.yml` opens a labelled issue every time
+        # any workflow fails, that made it a fixed point of its own failure: agent fails -> report
+        # opens an issue -> agent runs on it -> fails -> report opens another. 100 consecutive
+        # Autonomous Agent failures, and a 1,411-run Actions backlog.
+        #
+        # The container (step "Dispatch agent in container") has its own Bun; this is only about
+        # the host-side step that precedes it.
+        uses: oven-sh/setup-bun@v2
 
       - name: Resolve target environment
         id: target-env
