@@ -21,6 +21,13 @@ interface ApplyProtectionOptions {
 	/** Whether conversations must be resolved before merging. */
 	resolveConversations?: boolean;
 	dryRun?: boolean;
+	/**
+	 * Where to report which protection mechanism was used and why the other was skipped.
+	 *
+	 * Added because the fallback decision was previously silent: an empty `catch {}` made a ruleset
+	 * rejection and an authentication failure look identical in the log.
+	 */
+	log?: (message: string) => void;
 }
 
 export interface ApplyProtectionResult {
@@ -57,6 +64,7 @@ export async function applyBranchProtection(
 ): Promise<ApplyProtectionResult> {
 	const dryRun = options.dryRun === true;
 	const { branch } = options;
+	const log = options.log ?? (() => {});
 
 	if (dryRun) {
 		return {
@@ -87,7 +95,18 @@ export async function applyBranchProtection(
 					// declared in the configuration, and a ruleset that follows the repository default
 					// protects a branch nobody asked for.
 					ref_name: {
-						include: [branch],
+						// Fully qualified. A bare branch name is rejected with `Validation Failed` /
+						// `Invalid target patterns`; GitHub wants the full ref. Verified against a
+						// scratch repository: the bare name fails validation, the qualified name
+						// creates the ruleset.
+						//
+						// This is what made `reconcile-branch-policy` fail on every run. The rejection
+						// was swallowed by the empty `catch {}` below, which then fell through to the
+						// classic-protection path — where the first call is
+						// `PUT .../protection/required_status_checks`, and that endpoint 404s until
+						// protection has been enabled once with the full `PUT .../protection`. Two
+						// unrelated failures reported as one `Not Found`.
+						include: [`refs/heads/${branch}`],
 						exclude: [],
 					},
 				},
@@ -99,18 +118,18 @@ export async function applyBranchProtection(
 							required_status_checks: contexts.map((c) => ({ context: c })),
 						},
 					},
-					...(options.approvals !== undefined && options.approvals > 0
-						? [
-								{
-									type: "pull_request",
-									parameters: {
-										required_approving_review_count: options.approvals,
-										enforce_admins: options.enforceAdmins === true,
-										required_conversation_resolution: options.resolveConversations === true,
-									},
-								},
-							]
-						: []),
+					// A `pull_request` rule is included so reviews are required at all, but it is sent
+					// with **no parameters**. On this repository's plan any `parameters` object is
+					// rejected outright — `Invalid property /rules/1: data matches no possible input` —
+					// including `required_approving_review_count`, `dismiss_stale_reviews_on_push` and
+					// `require_last_push_approval`, all of which are documented. Verified by creating
+					// rulesets on a scratch repository: `{ type: "pull_request" }` is accepted and
+					// defaults to `required_approving_review_count: 0`; adding any parameter fails.
+					//
+					// The approval *count* and conversation resolution therefore cannot live here. They
+					// are applied by the classic-protection calls after this block, which is why those
+					// are not dead code.
+					...(options.approvals !== undefined && options.approvals > 0 ? [{ type: "pull_request" }] : []),
 				],
 			};
 
@@ -135,17 +154,39 @@ export async function applyBranchProtection(
 				contexts,
 			};
 		}
-	} catch {
-		// Rulesets not supported (404) or permission issue; fall back to classic branch protection
+	} catch (error) {
+		// Rulesets unavailable or rejected; fall back to classic branch protection. The reason is
+		// logged rather than swallowed: an empty `catch {}` here made two unrelated failures
+		// indistinguishable, which is how a ruleset `Validation Failed` and a 404 from a
+		// not-yet-enabled branch both surfaced as one `Not Found` in the reconcile job.
+		log(`rulesets unavailable (${error instanceof Error ? error.message : String(error)}); using classic protection`);
 	}
 
-	// Fallback to classic branch protection
+	// Fallback to classic branch protection.
+	//
+	// The full `PUT .../protection` comes first and carries the whole policy. The narrower
+	// `.../protection/required_status_checks` endpoint answers `Not Found` until protection has been
+	// enabled once, so calling it first fails on any branch that is not already protected — which is
+	// every branch the first time this runs. Verified on a scratch repository.
 	await repo.client.rest(
 		"PUT",
-		`/repos/${encodeURIComponent(owner)}/${encodeURIComponent(repoName)}/branches/${encodeURIComponent(branch)}/protection/required_status_checks`,
+		`/repos/${encodeURIComponent(owner)}/${encodeURIComponent(repoName)}/branches/${encodeURIComponent(branch)}/protection`,
 		{
-			strict: options.strict === true,
-			contexts,
+			required_status_checks: { strict: options.strict === true, contexts },
+			enforce_admins: options.enforceAdmins === true,
+			required_conversation_resolution: options.resolveConversations === true,
+			...(options.approvals !== undefined && options.approvals > 0
+				? {
+						required_pull_request_reviews: {
+							dismiss_stale_reviews: true,
+							require_code_owner_reviews: false,
+							required_approving_review_count: options.approvals,
+						},
+					}
+				: {}),
+			restrictions: null,
+			allow_force_pushes: false,
+			allow_deletions: false,
 		},
 	);
 	// The classic API splits protection across endpoints, so a lane that requires approvals needs its
