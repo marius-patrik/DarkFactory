@@ -487,7 +487,7 @@ describe("the pipeline is not its own consumer", () => {
 	test("installing into the pipeline is refused", async () => {
 		// Both generated values are wrong for the pipeline repository, in different ways.
 		await expect(
-			plan({ owner: "marius-patrik", repo: "DarkFactory", ref: "abc", root: repoRoot }),
+			plan({ owner: "marius-patrik", repo: "agent-DarkFactory", ref: "abc", root: repoRoot }),
 		).rejects.toBeInstanceOf(SelfInstall);
 	});
 

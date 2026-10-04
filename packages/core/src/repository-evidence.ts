@@ -358,6 +358,14 @@ async function scan(
 			[
 				".git",
 				".darkfactory",
+				// Where `ci.yml` and `install.yml` check the pinned pipeline out beside the repository
+				// being built. It is the pipeline's own source, so a consumer's matrix must not acquire
+				// the pipeline's packages as its own. Unpruned, detection walked into it and emitted
+				// rows such as `node:.darkfactory-runtime/packages/plugins:test`, building the
+				// pipeline from inside a consumer's build against the consumer's working directory.
+				// This is the list `ci matrix` uses; `PRUNED_DIRECTORIES` in
+				// `packages/harness/src/env/tables.ts` is a different one and does not apply here.
+				".darkfactory-runtime",
 				".worktrees",
 				".opencode",
 				"node_modules",

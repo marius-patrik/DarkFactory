@@ -340,11 +340,15 @@ export function routeRepositoryDispatch(payload: AgentDispatchPayload): Route {
 /**
  * No default target repository.
  *
- * This was the literal `"marius-patrik/DarkFactory"`, which is this repository's own slug baked into a
- * pipeline that installs into *other* repositories. A run with `GITHUB_REPOSITORY` unset — a local
- * invocation, a misconfigured step — resolved to DarkFactory and reported success against it, which is
- * the same class of failure as a run that silently reconciles a consumer against the pipeline. An
- * unset target is an error now.
+ * This was a literal slug — this repository's own — baked into a pipeline that installs into *other*
+ * repositories. A run with `GITHUB_REPOSITORY` unset, whether a local invocation or a misconfigured
+ * step, resolved to the pipeline itself and reported success against it, which is the same class of
+ * failure as a run that silently reconciles a consumer against the pipeline. An unset target is an
+ * error now.
+ *
+ * The slug is spelled out nowhere in this file on purpose: `test_no_script_defaults_to_another_repository`
+ * reads every source file and rejects the literal, and it reads comments too. Naming it here to explain
+ * the removal would have re-introduced exactly what the guard forbids.
  */
 export const NO_TARGET_REPOSITORY =
 	"no target repository: set GITHUB_REPOSITORY. The pipeline does not default to its own repository, " +
