@@ -1,6 +1,7 @@
 import { createHash } from "node:crypto";
 import { existsSync, readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
+import { DEFAULT_PIPELINE_REF, DEFAULT_PIPELINE_REPO } from "../install/pipeline-defaults.ts";
 
 const DARKFACTORY_WORKFLOW_VERSION = "0.2.0";
 
@@ -81,9 +82,12 @@ export function getWorkflowTemplateContent(templateName: string): string {
 }
 function interpolateTemplate(rawTemplate: string, context: TemplateContext = {}): string {
 	const fullContext: Record<string, string> = {
-		pipeline_repo: context.pipeline_repo || "marius-patrik/agent-DarkFactory",
-		pipeline_ref: context.pipeline_ref || "darkfactory",
-		default_branch: context.default_branch || "main",
+		// Defaults come from the declared configuration rather than literals. `installer.ts` omits
+		// `pipeline_ref` when `repo.upstream.ref` is null, which it is for this repository, so this
+		// fallback is what a consumer that named no ref actually gets.
+		pipeline_repo: context.pipeline_repo || DEFAULT_PIPELINE_REPO,
+		pipeline_ref: context.pipeline_ref || DEFAULT_PIPELINE_REF,
+		default_branch: context.default_branch || DEFAULT_PIPELINE_REF,
 		...Object.fromEntries(Object.entries(context).filter(([_, v]) => typeof v === "string") as [string, string][]),
 	};
 

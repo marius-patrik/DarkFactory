@@ -17,6 +17,7 @@ import { MANIFEST_PATH, resolveManifestPath } from "../../src/install/manifest.t
 import { declaredPythonPackageName, renderManifest } from "../../src/install/manifest-generation.ts";
 import { plan, refuseSelfInstall, SelfInstall, write } from "../../src/install/plan.ts";
 import { ensureSecretsPass, reconcileManifest, retarget } from "../../src/install/reinstall.ts";
+import { repoConfig } from "../ci/pipeline-source.ts";
 
 /**
  * Repository root.
@@ -242,6 +243,22 @@ describe("the workflow registry", () => {
 		expect(requiredContexts(["verify-pr-issue"])).toEqual(["verify-bound-issue"]);
 		expect(requiredContexts(["ci", "verify-pr-issue"])).toEqual(["quality", "verify-bound-issue"]);
 		expect(requiredContexts([])).toEqual([]);
+	});
+
+	// The declared lane and the checks this function reports are two statements of the same fact.
+	// A lane naming a check nothing reports blocks every merge on that branch, which is what a
+	// re-install did to ChessWithQuests. So the install side is pinned to the declaration here.
+	test("the installed checks satisfy every configured lane", () => {
+		const configured = repoConfig().protection?.lanes ?? [];
+		const reported = requiredContexts(["ci", "verify-pr-issue"]);
+
+		expect(configured.length).toBeGreaterThan(0);
+		for (const lane of configured) {
+			const checks = Array.isArray(lane?.required_checks) ? lane.required_checks.map(String) : [];
+			expect({ lane: lane?.branch, required: checks.sort(), reported: [...reported].sort() }).toMatchObject({
+				required: [...reported].sort(),
+			});
+		}
 	});
 
 	test("the reporter never watches itself", () => {

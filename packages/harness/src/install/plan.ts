@@ -11,7 +11,8 @@ import { mkdir, writeFile } from "node:fs/promises";
 import { dirname, join, relative, resolve } from "node:path";
 import { type RenderCallerOptions, relevantWorkflows, renderCaller } from "./callers.ts";
 import { MANIFEST_PATH, resolveManifestPath } from "./manifest.ts";
-import { DEFAULT_PIPELINE_REPO, renderManifest } from "./manifest-generation.ts";
+import { renderManifest } from "./manifest-generation.ts";
+import { DEFAULT_PIPELINE_REPO } from "./pipeline-defaults.ts";
 
 /**
  * Raised when the pipeline is asked to install itself as though it were a consumer.

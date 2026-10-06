@@ -11,7 +11,7 @@
 
 import { appendFileSync } from "node:fs";
 import { MANIFEST_PATH, resolveManifestPath } from "./manifest";
-import { DEFAULT_PIPELINE_REPO } from "./manifest-generation";
+import { DEFAULT_PIPELINE_REPO } from "./pipeline-defaults";
 import { plan, write } from "./plan";
 import { ensureSecretsPass, reconcileManifest, retarget } from "./reinstall";
 
