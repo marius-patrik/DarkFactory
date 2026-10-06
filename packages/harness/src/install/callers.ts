@@ -10,6 +10,7 @@
  * workflow needs beyond that belongs in the workflow, not here.
  */
 
+import { QUALITY_REQUIRED_CHECK, REQUEST_BINDING_REQUIRED_CHECK } from "../../../capability/src/actions.ts";
 import { getWorkflowTemplateContent } from "../ci/templates.ts";
 
 /**
@@ -160,7 +161,7 @@ export const WORKFLOWS: Readonly<Record<string, WorkflowSpec>> = Object.freeze({
  * the job the previous caller happened to use.
  */
 export const CHECK_SOURCES: Readonly<Record<string, string>> = Object.freeze({
-	"verify-bound-issue": "verify-pr-issue",
+	[REQUEST_BINDING_REQUIRED_CHECK]: "verify-pr-issue",
 });
 
 /** The caller reporting every check not named in {@link CHECK_SOURCES}. */
@@ -174,8 +175,11 @@ export const DEFAULT_CHECK_SOURCE = "ci";
  */
 export function requiredContexts(installed: readonly string[]): string[] {
 	const contexts: string[] = [];
-	if (installed.includes("ci")) contexts.push("quality");
-	if (installed.includes("verify-pr-issue")) contexts.push("verify-bound-issue");
+	// Imported rather than spelled out: these are the same two constants the workflows report and the
+	// protection code matches on. A literal copy here could drift from the reporter and re-apply a
+	// protection rule naming a check nothing produces, which blocks every merge on that branch.
+	if (installed.includes("ci")) contexts.push(QUALITY_REQUIRED_CHECK);
+	if (installed.includes("verify-pr-issue")) contexts.push(REQUEST_BINDING_REQUIRED_CHECK);
 	return contexts;
 }
 

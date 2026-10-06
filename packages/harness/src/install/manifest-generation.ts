@@ -11,9 +11,7 @@ import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { detectRepositoryEvidence } from "../../../core/src/repository-evidence.ts";
 import { relevantWorkflows, requiredContexts } from "./callers.ts";
-
-/** The repository holding the pipeline when the caller names none. */
-export const DEFAULT_PIPELINE_REPO = "marius-patrik/agent-DarkFactory";
+import { DEFAULT_PIPELINE_REPO } from "./pipeline-defaults.ts";
 
 /**
  * Starter areas, offered to be edited rather than presented as correct.

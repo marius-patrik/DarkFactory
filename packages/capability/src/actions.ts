@@ -373,7 +373,7 @@ export async function resolveDetectedRepositoryActions(
 }
 
 /** Stable aggregate GitHub status-check contract for detector-driven quality execution. */
-const QUALITY_REQUIRED_CHECK = "quality" as const;
+export const QUALITY_REQUIRED_CHECK = "quality" as const;
 
 /** Governance check that remains independent from language/package quality detection. */
 export const REQUEST_BINDING_REQUIRED_CHECK = "verify-bound-issue" as const;

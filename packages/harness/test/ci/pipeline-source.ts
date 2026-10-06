@@ -63,6 +63,16 @@ interface RepoConfig {
 	app: { installation_id: number; installed_on: string[]; private_key_secret: string };
 	pages?: Record<string, unknown>;
 	required_checks?: string[];
+	protection?: {
+		lanes?: Array<{
+			branch?: string;
+			required_checks?: unknown;
+			approvals?: number;
+			enforce_admins?: boolean;
+			strict?: boolean;
+			resolve_conversation?: boolean;
+		}>;
+	};
 	[key: string]: unknown;
 }
 
