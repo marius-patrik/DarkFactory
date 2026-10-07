@@ -10,10 +10,20 @@
  */
 
 import { appendFileSync } from "node:fs";
+import { relative } from "node:path";
 import { MANIFEST_PATH, resolveManifestPath } from "./manifest";
 import { DEFAULT_PIPELINE_REPO } from "./pipeline-defaults";
 import { plan, write } from "./plan";
 import { ensureSecretsPass, reconcileManifest, retarget } from "./reinstall";
+
+/**
+ * The heredoc delimiter `paths` is written between.
+ *
+ * `GITHUB_OUTPUT`'s heredoc form ends the value at the first line that is exactly the delimiter, so
+ * the delimiter has to be a line no path can spell. Nothing that ends in `.yml`, `.dfconfig` or
+ * `LICENSE` can, which is why the suffix is not `.yml`.
+ */
+const PATHS_OUTPUT_DELIMITER = "DARKFACTORY_INSTALL_PATHS";
 
 /** Splits `owner/repo`, tolerating the separator-less default the original treated as root. */
 function splitRepository(value: string): { owner: string; repo: string } {
@@ -63,11 +73,24 @@ async function runInstall(env: InstallEnvironment): Promise<string[]> {
 	written.push(...(await retarget(root, ref)));
 	written.push(...(await ensureSecretsPass(root)));
 	if (await reconcileManifest(root, ref, files[MANIFEST_PATH] ?? "")) {
-		written.push(resolveManifestPath(root));
+		// Relative, like everything else reported here: the caller stages these inside the target
+		// worktree, and an absolute path from a different checkout is not a pathspec that means
+		// anything there.
+		written.push(relative(root, resolveManifestPath(root)));
 	}
 
 	if (env.GITHUB_OUTPUT) {
 		appendFileSync(env.GITHUB_OUTPUT, `written=${written.length > 0 ? "true" : "false"}\n`, "utf8");
+		// The paths themselves, in the heredoc form rather than as repeated `paths=` lines, because a
+		// path may contain a space - `git add` splitting one would stage the wrong file or none. The
+		// caller had a hardcoded list here instead, and it named a manifest this module writes as
+		// `repo.dfconfig`: `git add` on a pathspec git has never heard of is fatal, the step ran
+		// under `bash -e`, and the installation pull request could not be opened at all.
+		appendFileSync(
+			env.GITHUB_OUTPUT,
+			`paths<<${PATHS_OUTPUT_DELIMITER}\n${written.join("\n")}\n${PATHS_OUTPUT_DELIMITER}\n`,
+			"utf8",
+		);
 	}
 	return written;
 }

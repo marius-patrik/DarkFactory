@@ -22,7 +22,7 @@ import { MANIFEST_PATH, resolveManifestPath } from "./manifest.ts";
  * so the diff a bump is supposed to show never exists. A pattern that only matched SHAs left those
  * exactly as they were, which is the one case that most needed fixing.
  */
-const PIN_PATTERN = /(\.github\/workflows\/[\w.-]+\.yml@)\S+/gu;
+const PIN_PATTERN = /(\.github\/workflows\/[\w.-]+\.ya?ml@)\S+/gu;
 
 /**
  * Matches a caller's `pipeline-ref:` input, quoted or not.
@@ -49,11 +49,18 @@ function expression(body: string): string {
 /** The step name that marks a workflow as checking the pinned runtime out directly. */
 const DIRECT_CI_MARKER = "Check out pinned DarkFactory runtime";
 
-/** Every workflow file in a directory, sorted, or an empty list when the directory is absent. */
+/**
+ * Every workflow file in a directory, sorted, or an empty list when the directory is absent.
+ *
+ * Both extensions, because both are workflow files to GitHub and the choice of one is a consumer's
+ * rather than the pipeline's: matching only `.yml` meant a repository that writes `ci.yaml` got a
+ * reinstall that silently changed nothing and stayed pinned to a commit sixteen releases old. A
+ * filter that skips files is worse than one that fails - the reinstall reported success.
+ */
 async function workflowFiles(directory: string): Promise<string[]> {
 	if (!existsSync(directory)) return [];
 	const entries = await readdir(directory);
-	return entries.filter((name) => name.endsWith(".yml")).sort();
+	return entries.filter((name) => name.endsWith(".yml") || name.endsWith(".yaml")).sort();
 }
 
 /**
@@ -147,7 +154,11 @@ export async function ensureSecretsPass(root: string): Promise<string[]> {
 			if (line.includes("pipeline-ref:")) lastInput = index;
 		}
 		if (lastInput === -1) continue;
-		const indent = " ".repeat(leadingWidth(lines[lastInput] ?? "") - 2);
+		// One level *less* than the input, because `secrets:` is a sibling of `with:`'s contents.
+		// Clamped at zero: a `pipeline-ref:` at the left margin - a hand-written caller with no job
+		// indentation at all - would otherwise ask `String.repeat` for a negative count and throw
+		// RangeError, turning a repairable caller into a reinstall that fails.
+		const indent = " ".repeat(Math.max(0, leadingWidth(lines[lastInput] ?? "") - 2));
 		lines.splice(lastInput + 1, 0, `${indent}secrets: inherit\n`);
 		await writeFile(path, lines.join(""), "utf8");
 		console.log(`  passed secrets in .github/workflows/${name}`);
@@ -215,8 +226,26 @@ export async function reconcileManifest(root: string, ref: string, planned: stri
 		if (!(key in currentRepo)) currentRepo[key] = value;
 	}
 	if (ref) {
-		const upstream = currentRepo.upstream;
-		currentRepo.upstream = { ...(isRecord(upstream) ? upstream : {}), ref };
+		// `upstream` is filled from the generated document above only when the key is *absent*, so a
+		// key that is present-but-null escaped it. The generated manifest always spells
+		// `upstream.repo` out, and a manifest that has it null is what the pipeline's own repository
+		// looks like: `manifest.upstream()` reads a null `repo` as "this repository is the upstream",
+		// so a consumer whose config came from there - or from any install written before the pin
+		// carried a repository - was left with no pin at all. A reinstall of such a repository moved
+		// `ref` and nothing else, and the callers kept `uses:` lines pointing at nothing.
+		//
+		// A non-null `repo` is a choice, not a gap: it is how a consumer pins a fork of the pipeline
+		// rather than the pipeline itself. It is left exactly as written, because filling it from the
+		// generated document would silently repoint a fork's consumers at this repository - and `ref`
+		// still moves below, which is the reinstall's one job and was already true before this change.
+		// A fork that wants this pipeline's commits asks for them by name.
+		const upstream = isRecord(currentRepo.upstream) ? { ...currentRepo.upstream } : {};
+		if (upstream.repo === undefined || upstream.repo === null) {
+			const declared = generatedRepo.upstream;
+			upstream.repo = isRecord(declared) ? declared.repo : null;
+		}
+		upstream.ref = ref;
+		currentRepo.upstream = upstream;
 	}
 
 	if (stableStringify(current) === before) return false;
