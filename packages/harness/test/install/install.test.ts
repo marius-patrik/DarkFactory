@@ -600,6 +600,46 @@ describe("reinstalling adopts the update", () => {
 		expect(after).toContain("pipeline-ref: bbbbbbb");
 	});
 
+	test("a caller file written .yaml is repinned and passed secrets like a .yml one", async () => {
+		// GitHub serves both extensions and the choice of one is a consumer's, not the pipeline's.
+		// `workflowFiles` matched only `.yml`, so a repository that writes `ci.yaml` was skipped by
+		// both repairs and its reinstall reported success while changing nothing - the caller stayed
+		// pinned to a commit sixteen releases old. A filter that skips files is worse than one that
+		// fails, because the failure here is invisible.
+		const root = await scratch();
+		await mkdir(join(root, ".github", "workflows"), { recursive: true });
+		const path = join(root, ".github", "workflows", "ci.yaml");
+		await writeFile(
+			path,
+			"jobs:\n  ci:\n    uses: o/p/.github/workflows/ci.yml@aaaaaaa\n    with:\n      pipeline-ref: aaaaaaa\n",
+		);
+
+		expect(await retarget(root, "bbbbbbb")).toEqual([".github/workflows/ci.yaml"]);
+		const after = await readFile(path, "utf8");
+		expect(after.split("bbbbbbb").length - 1).toBe(2);
+		expect(await ensureSecretsPass(root)).toEqual([".github/workflows/ci.yaml"]);
+		expect(await readFile(path, "utf8")).toContain("secrets: inherit");
+	});
+
+	test("a pin on a .yaml workflow moves: the pipeline ships .yml, so a caller reaching its own fork does not", async () => {
+		// The other half of the same gap, and a different failure: `PIN_PATTERN` matched only `.yml`, so
+		// a `uses:` line naming a `.yaml` workflow kept its commit while the `pipeline-ref:` beside it
+		// moved. The caller then ran two different pins at once - which is what the pipeline's own drift
+		// check reports on the repository the repin had just "updated".
+		const root = await scratch();
+		await mkdir(join(root, ".github", "workflows"), { recursive: true });
+		const path = join(root, ".github", "workflows", "agent.yml");
+		await writeFile(
+			path,
+			"jobs:\n  run:\n    uses: o/p/.github/workflows/ci.yaml@aaaaaaa\n    with:\n      pipeline-ref: aaaaaaa\n",
+		);
+
+		expect(await retarget(root, "bbbbbbb")).toEqual([".github/workflows/agent.yml"]);
+		const after = await readFile(path, "utf8");
+		expect(after, "no pin is left behind").not.toContain("aaaaaaa");
+		expect(after.split("bbbbbbb").length - 1, "both the uses: line and the input moved").toBe(2);
+	});
+
 	test("a quoted pipeline ref keeps its quotes", async () => {
 		// Rewriting the style as well as the value would put churn in every consumer's diff.
 		const root = await scratch();
@@ -637,6 +677,57 @@ describe("reinstalling adopts the update", () => {
 		expect(after.repo.upstream.ref, "the pin is what a reinstall exists to move").toBe("bbbbbbb");
 		expect(after.docs, "other blocks are preserved").toBeTruthy();
 		expect(after.providers).toEqual({});
+	});
+
+	test("a null upstream repo is given the pipeline that owns the pin", async () => {
+		// `upstream` is filled from the generated document only when the key is *absent*, so a key that
+		// was present-but-null escaped it. This repository's own manifest reads a null `repo` as "this
+		// repository is the upstream" - and so did every installation written before the pin carried a
+		// repository, so a consumer's config arrived with the key and no value. Its reinstall then moved
+		// `ref` and left `repo` null: the callers kept `uses:` lines pointing at a pipeline that nothing
+		// named, and the reinstall reported success.
+		const root = await installed();
+		const path = join(root, MANIFEST_PATH);
+		const config = JSON.parse(await readFile(path, "utf8"));
+		config.repo.upstream = { repo: null, ref: "aaaaaaa" };
+		await writeFile(path, JSON.stringify(config, null, 2));
+
+		const planned = await renderManifest({
+			owner: "o",
+			repo: "r",
+			ref: "bbbbbbb",
+			root,
+			pipelineRepo: "marius-patrik/agent-DarkFactory",
+		});
+		expect(await reconcileManifest(root, "bbbbbbb", planned), "a null repo is a gap, not a choice").toBe(true);
+
+		const after = JSON.parse(await readFile(path, "utf8"));
+		expect(after.repo.upstream.repo).toBe("marius-patrik/agent-DarkFactory");
+		expect(after.repo.upstream.ref, "the pin still moves").toBe("bbbbbbb");
+	});
+
+	test("an upstream repo that names a fork is left where it points", async () => {
+		// A non-null `repo` is a choice: it is how a consumer pins a fork rather than the pipeline.
+		// Overwriting it would repoint their callers at this repository's history, which is a change
+		// nobody asked for and which no reinstall should make.
+		const root = await installed();
+		const path = join(root, MANIFEST_PATH);
+		const config = JSON.parse(await readFile(path, "utf8"));
+		config.repo.upstream = { repo: "acme/agent-darkfactory-fork", ref: "aaaaaaa" };
+		await writeFile(path, JSON.stringify(config, null, 2));
+
+		const planned = await renderManifest({
+			owner: "o",
+			repo: "r",
+			ref: "bbbbbbb",
+			root,
+			pipelineRepo: "marius-patrik/agent-DarkFactory",
+		});
+		expect(await reconcileManifest(root, "bbbbbbb", planned)).toBe(true);
+
+		const after = JSON.parse(await readFile(path, "utf8"));
+		expect(after.repo.upstream.repo, "a fork is a decision, not a gap").toBe("acme/agent-darkfactory-fork");
+		expect(after.repo.upstream.ref).toBe("bbbbbbb");
 	});
 
 	test("an up-to-date manifest is left alone", async () => {
@@ -704,6 +795,21 @@ describe("a caller must pass its secrets", () => {
 		expect(await readFile(path, "utf8")).toBe(body);
 	});
 
+	test("a caller written with no indentation at all is repaired rather than throwing", async () => {
+		// The inserted line's indent is the input's minus two, and the input was at the left margin:
+		// `String.repeat(-2)` throws RangeError, so the repair crashed a reinstall that had a repairable
+		// caller in it. Hand-written YAML at column zero parses, so this is a real caller shape and not
+		// a malformed file. Clamped at zero, the line lands at the margin beside the input, which is
+		// where a zero-indent `with:` block already put it.
+		const { root, path } = await caller(
+			"jobs:\nrun:\nuses: o/p/.github/workflows/agent.yml@aaaaaaa\nwith:\npipeline-ref: aaaaaaa\n",
+		);
+		expect(await ensureSecretsPass(root)).toEqual([".github/workflows/agent.yml"]);
+		const after = await readFile(path, "utf8");
+		expect(after).toContain("\nsecrets: inherit\n");
+		expect(after.indexOf("secrets: inherit")).toBeGreaterThan(after.indexOf("pipeline-ref:"));
+	});
+
 	test("a file that is not a caller is ignored", async () => {
 		// A repository's own workflow is not the pipeline's to edit.
 		const { root } = await caller("jobs:\n  build:\n    runs-on: ubuntu-latest\n");
@@ -712,5 +818,130 @@ describe("a caller must pass its secrets", () => {
 
 	test("a missing workflow directory is not an error", async () => {
 		expect(await ensureSecretsPass(await scratch())).toEqual([]);
+	});
+});
+
+// The generator's second report, `paths`, is what `install.yml` stages. Before it existed the
+// workflow staged `git add .github repo.df`, naming a manifest this pipeline writes as
+// `repo.dfconfig`; an unmatched pathspec is fatal to `git add`, the step runs under `bash -e`, and
+// every installation since 2026-09-25 aborted with no commit, no push and no pull request.
+//
+// Driven through the command line rather than by calling `runInstall`, because the command line is
+// the contract: `install.yml` runs this file, so an environment variable it does not set or an
+// output key it does not read is exactly the defect this is here to catch.
+describe("what the installation reports to the workflow", () => {
+	/** Runs the entry point as `install.yml` does and returns the `GITHUB_OUTPUT` document. */
+	async function generate(root: string, ref = "abc123"): Promise<string> {
+		const output = join(await scratch(), "github-output.txt");
+		const proc = Bun.spawn(["bun", "packages/harness/src/install/main.ts"], {
+			cwd: repoRoot,
+			env: {
+				...process.env,
+				TARGET_ROOT: root,
+				TARGET_REPOSITORY: "acme/widgets",
+				TARGET_BRANCH: "main",
+				TARGET_DESCRIPTION: "a repository",
+				PIPELINE_REPO: "marius-patrik/agent-DarkFactory",
+				PIPELINE_REF: ref,
+				GITHUB_OUTPUT: output,
+			},
+			stdout: "pipe",
+			stderr: "pipe",
+		});
+		const [, stderr, code] = await Promise.all([
+			new Response(proc.stdout).text(),
+			new Response(proc.stderr).text(),
+			proc.exited,
+		]);
+		expect(code, stderr).toBe(0);
+		// Said plainly rather than left to an ENOENT from the read: a generator that writes no outputs at
+		// all is a distinct failure from one that writes the wrong keys, and the workflow's symptom is the
+		// second.
+		expect(await Bun.file(output).exists(), "the entry point wrote no GITHUB_OUTPUT keys at all").toBe(true);
+		return await readFile(output, "utf8");
+	}
+
+	/**
+	 * One heredoc value from a `GITHUB_OUTPUT` document, the way the runner reads one.
+	 *
+	 * The runner ends the value at the first line that is exactly the delimiter, which is the whole
+	 * reason the delimiter has to be a line no path can spell.
+	 */
+	function heredoc(document: string, name: string): { delimiter: string; value: string[] } {
+		const lines = document.split("\n");
+		const start = lines.findIndex((line) => line.startsWith(`${name}<<`));
+		if (start === -1) throw new Error(`no ${name} heredoc in:\n${document}`);
+		const delimiter = (lines[start] ?? "").slice(name.length + 2);
+		const end = lines.indexOf(delimiter, start + 1);
+		expect(end, `the ${name} heredoc is never closed`).toBeGreaterThan(start);
+		return { delimiter, value: lines.slice(start + 1, end) };
+	}
+
+	test("every path written is reported, so the caller stages what happened rather than a list of its own", async () => {
+		const root = await scratch();
+		const document = await generate(root);
+		expect(document).toContain("written=true");
+
+		const { value } = heredoc(document, "paths");
+		const planned = Object.keys(await plan({ owner: "acme", repo: "widgets", ref: "abc123", root }));
+		expect([...value].sort()).toEqual([...planned].sort());
+		expect(value, "the manifest is the path the old hardcoded list got wrong").toContain(MANIFEST_PATH);
+		// Every reported path is one git can resolve from the target worktree. An absolute path from
+		// the generator's own checkout is not a pathspec there, which is what the reconciled-manifest
+		// entry used to be.
+		for (const path of value)
+			expect(await Bun.file(join(root, path)).exists(), `${path} was reported but not written`).toBe(true);
+	});
+
+	test("the delimiter cannot be spelled by a path, which is why it is not a file name", async () => {
+		const root = await scratch();
+		const { delimiter } = heredoc(await generate(root), "paths");
+
+		// Justified from the code rather than asserted as a string: every path the installer reports is
+		// a generated caller or a manifest, so every one carries an extension. A delimiter that carried
+		// one could be spelled by a caller whose name happened to match it, and the runner would end the
+		// value there - dropping every path after it on the floor with no error.
+		const extensions = new Set(
+			Object.keys(await plan({ owner: "acme", repo: "widgets", ref: "abc123", root })).map((path) =>
+				path.slice(path.lastIndexOf(".")),
+			),
+		);
+		expect(extensions.size, "the installer writes paths with extensions").toBeGreaterThan(0);
+		expect([...extensions].some((extension) => delimiter.endsWith(extension))).toBe(false);
+
+		// And the collision is not hypothetical: with a suffix, the delimiter is a path the planner can
+		// emit, and the runner truncates the list at it. Named rather than merely described, because the
+		// truncation is silent - the value simply stops.
+		const collide = `${delimiter}.yml`;
+		const truncated = heredoc(
+			`paths<<${collide}\n.github/workflows/agent.yml\n${collide}\nrepo.dfconfig\n${collide}\n`,
+			"paths",
+		);
+		expect(truncated.value).toEqual([".github/workflows/agent.yml"]);
+		expect(truncated.value, "the manifest after the collision is gone").not.toContain(MANIFEST_PATH);
+	});
+
+	test("a reinstall that writes nothing reports no paths rather than no block", async () => {
+		// The stage step refuses an empty list instead of handing `git add` an empty array, which would
+		// stage the whole worktree, so `written=false` and an empty `paths` have to be distinguishable
+		// from a missing key: `${{ ... }}` on a missing output is the empty string either way, and the
+		// refusal is what stops that.
+		const root = await scratch();
+		await generate(root);
+		// The same ref, because a different one is a real reinstall: `retarget` moves the pins and
+		// `written` is true, which is the whole point of the flag.
+		const second = await generate(root);
+		expect(second).toContain("written=false");
+
+		// The value is one empty line rather than none, because the block is written as
+		// `${paths.join("\n")}` and joining nothing yields nothing between two newlines. That blank line
+		// is why the workflow's read loop skips an empty path: read into the array as-is it would be an
+		// empty pathspec, and `git add -A -- ""` fails exactly as hard as the pathspec that started this.
+		const value = heredoc(second, "paths").value;
+		expect(value).toEqual([""]);
+		expect(
+			value.filter((path) => path.length > 0),
+			"which the workflow's loop drops",
+		).toEqual([]);
 	});
 });

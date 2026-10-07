@@ -2,6 +2,8 @@ import { describe, expect, it } from "bun:test";
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { REQUEST_BINDING_REQUIRED_CHECK, requiredChecksForDetectedQuality } from "../../../capability/src/actions.ts";
+import { MANIFEST_PATH } from "../../src/install/manifest.ts";
+import { plan } from "../../src/install/plan.ts";
 import type { Workflow } from "./pipeline-source.ts";
 import {
 	allSteps,
@@ -758,6 +760,12 @@ describe("install.yml", () => {
 	const issueStep = steps(install, "install").find(
 		(step) => step.name === "File the issue the installation pull request binds",
 	);
+	const stageStep = steps(install, "install").find((step) => step.name === "Stage what the installation wrote");
+
+	// Quoted, the way the shell spells it: every one of the array as pathspecs, quoted so a path with a
+	// space in it stays one pathspec. Assembled from parts because writing `${...}` inside a string
+	// literal reads as a template to a linter and to a person skimming.
+	const arrayExpansion = `"${"$"}{paths[@]}"`;
 
 	it("test_the_installer_tells_the_settings_script_which_repository_to_configure: the failure with no symptom", () => {
 		expect(settingsStep?.env).toHaveProperty("DARKFACTORY_REPO_ROOT");
@@ -790,6 +798,56 @@ describe("install.yml", () => {
 	it("test_the_install_issue_number_is_validated_before_it_is_used: an empty binding is worse than none", () => {
 		expect(issueStep?.run).not.toContain("--json number --jq .number");
 		expect(issueStep?.run).toContain("exit 1");
+	});
+
+	// What the installation *stages* was the one thing nothing asserted. The step said
+	// `git add .github repo.df`, and the manifest this pipeline writes is `repo.dfconfig`: an unmatched
+	// pathspec is fatal to `git add`, the step ran under `bash -e`, and every run since 2026-09-25
+	// aborted with no commit, no push and no pull request. Sixteen days, because a workflow_dispatch
+	// nobody dispatched and no test read the staging step.
+	//
+	// The expected set is derived rather than written down, because a hardcoded copy is the same
+	// defect one level down: `repo.dfconfig` written here would be right until the manifest is
+	// renamed, and this suite's whole subject is artefacts that have drifted from the code that
+	// generates them. So the claim has two halves and both are load-bearing. The generator reports
+	// what it wrote - `install/main.ts` writes the list to `GITHUB_OUTPUT`, and
+	// `test/install/install.test.ts` proves that list is every path `write`, `retarget` and
+	// `reconcileManifest` produced - and the workflow stages that list rather than one of its own.
+	// `MANIFEST_PATH` enters as a value, so renaming the manifest moves this assertion with it.
+	it("test_the_staged_set_is_the_generator_list_rather_than_a_pathspec_written_here: repo.df was not a file", async () => {
+		const planned = Object.keys(await plan({ owner: "o", repo: "r", ref: "abc", root: repoRoot }));
+		expect(planned, "the manifest is planned, so it has to reach the stage").toContain(MANIFEST_PATH);
+		expect(stageStep?.env?.WRITTEN_PATHS).toBe(expression("steps.generate.outputs.paths"));
+		expect(stageStep?.run).toContain(arrayExpansion);
+	});
+
+	it("test_the_licence_is_staged_too_and_by_name: the licence step is a separate step and can delete", () => {
+		// `applyLicence` writes LICENSE from the manifest's declaration rather than the generator
+		// writing it, so the generator's list does not contain it, and its removal - what happens when
+		// the declaration is NONE - is staged by naming the path regardless of whether it is there.
+		expect(stageStep?.env?.LICENSE_SPDX).toBe(expression("steps.licence.outputs.spdx"));
+		expect(stageStep?.run).toContain("LICENSE");
+		expect(stageStep?.run, "a removal has to be staged as well as a write").toContain("git add -A");
+	});
+
+	it("test_no_git_add_names_a_pathspec_by_hand: an unmatched one is fatal and the step runs under -e", () => {
+		// The `run:` scripts rather than the file, because a comment naming the broken pathspec is
+		// worth keeping: it says why the array exists. Only executable text can reintroduce the list,
+		// so that is what the absence is claimed against.
+		const scripts = workflowScripts(install)
+			.split("\n")
+			.filter((line) => !line.trimStart().startsWith("#"))
+			.join("\n");
+		expect(scripts, "the list that broke every install since 2026-09-25").not.toContain("git add .github repo.df");
+		expect(scripts, "the manifest is repo.dfconfig; repo.df is a file that has never existed").not.toMatch(
+			/git add\b[^\n]*\brepo\.df\b/u,
+		);
+		// Every `git add` reads the array, so there is no second list for one to creep back into. An
+		// empty array would stage the whole worktree and a partial one is a silent omission rather than
+		// a failure, which is why the guard is on the shape of every add rather than on one of them.
+		const adds = scripts.match(/git add[^\n]*/gu) ?? [];
+		expect(adds.length, "the install must stage something").toBeGreaterThan(0);
+		for (const add of adds) expect(add).toContain(arrayExpansion);
 	});
 });
 
