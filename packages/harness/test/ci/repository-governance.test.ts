@@ -43,6 +43,7 @@ const EXPECTED_WORKFLOWS = [
 	"install.yml",
 	"verify-pr-issue.yml",
 	"quota-resume.yml",
+	"install-sweep.yml",
 ];
 
 /** Issue chooser and templates. */
@@ -55,12 +56,26 @@ const EXPECTED_ISSUE_TEMPLATES = ["request.yml", "epic.yml", "decision.yml", "co
  * but it stays here too: it is dispatched by hand as well as called, and being callable does not stop
  * it running on its own.
  */
-const NOT_CALLABLE = ["install.yml", "ci.yml", "branch-policy.yml", "deploy-docs.yml", "preview-docs.yml"];
+const NOT_CALLABLE = [
+	"install.yml",
+	"ci.yml",
+	"branch-policy.yml",
+	"deploy-docs.yml",
+	"preview-docs.yml",
+	// `install-sweep.yml` is not callable because it is the one workflow a consumer cannot want: it
+	// enumerates *this* App's installations, which are the pipeline's own. A consumer calling it would
+	// be asking the pipeline to install itself into the pipeline's installations, which it already does
+	// on its own schedule.
+	"install-sweep.yml",
+];
 
 /** Workflows that write to GitHub on the pipeline's behalf and must therefore authenticate as the App. */
 const APP_AUTHENTICATED_WORKFLOWS = [
 	"agent.yml",
 	"install.yml",
+	// Signs its App JWT in Bun rather than with `actions/create-github-app-token`, because that action
+	// cannot enumerate installations. See `appAuthenticationEvidence`.
+	"install-sweep.yml",
 	"open-pr.yml",
 	"pr-approval-automerge.yml",
 	"project-automation.yml",
@@ -102,6 +117,35 @@ function userFirstTokenEntries(workflow: Workflow): Array<[string, string, strin
 		}
 	}
 	return offenders;
+}
+
+/**
+ * How a workflow shows it authenticates as the App.
+ *
+ * Either the minting action, or an in-process App credential: a JWT or an installation token supplied
+ * to `appIdentityFromManifest`. Returns the evidence so a failure names what was found rather than
+ * only reporting a count.
+ *
+ * @param workflow A workflow parsed from `.github/workflows`.
+ * @returns Step names or run-script fragments that evidence App authentication.
+ */
+function appAuthenticationEvidence(workflow: Workflow): string[] {
+	const viaAction = stepsUsing(workflow, "actions/create-github-app-token").map(
+		({ step }) => `action: ${step.name ?? "unnamed"}`,
+	);
+	// In-process, evidenced by the workflow handing a step the App's private key. That is the only way
+	// to authenticate as the App without the action, and the key name is one declared fact rather than
+	// a literal - so a workflow that spells the secret itself is caught here instead of being mistaken
+	// for one that has it. Matching the *script's* contents was tried and is worse: the sweep delegates
+	// to `sweep-main.ts`, so the evidence sat in a file rather than the workflow, and the check could
+	// only pass if that file happened to name a symbol this one also knew about.
+	const secretName = repoConfig().app.private_key_secret;
+	const viaProcess = allSteps(workflow)
+		.filter(({ step }) =>
+			Object.values(step.env ?? {}).some((value) => String(value).includes(`secrets.${secretName}`)),
+		)
+		.map(({ step }) => `in-process: ${step.name ?? "unnamed"}`);
+	return [...viaAction, ...viaProcess];
 }
 
 /** The env entries that authenticate as the user with no App path at all. */
@@ -708,7 +752,16 @@ describe("token preference", () => {
 	for (const name of APP_AUTHENTICATED_WORKFLOWS) {
 		it(`test_github_writes_prefer_the_installation_token: ${name}`, () => {
 			const workflow = parseWorkflow(name);
-			expect(stepsUsing(workflow, "actions/create-github-app-token").length).toBeGreaterThan(0);
+			// How the App token is obtained, not which mechanism. Every workflow but `install-sweep.yml`
+			// mints with `actions/create-github-app-token`, and requiring that action would have made
+			// the sweep impossible: the action resolves *one* installation and exposes no way to
+			// enumerate them, so `GET /app/installations` - which GitHub restricts to a JWT - is
+			// unreachable through it. The sweep signs in Bun instead, using the same key.
+			//
+			// The rule being enforced underneath is that the workflow writes as the App and never
+			// prefers a person's token; the mechanism is an implementation detail of how it gets there.
+			// `USER_TOKEN_EXCEPTIONS` below is still what polices the preference, and it stays empty.
+			expect(appAuthenticationEvidence(workflow), `${name} does not authenticate as the App`).not.toEqual([]);
 			const offenders = userFirstTokenEntries(workflow);
 			const allowed = USER_TOKEN_EXCEPTIONS[name] ?? 0;
 			expect(
@@ -939,5 +992,85 @@ describe("install.yml is callable so the App sweep has one code path", () => {
 		// `github.workflow` would put all of them in one slot and run them serially at best.
 		expect(install.concurrency?.group).toContain("inputs.repository");
 		expect(install.concurrency?.group).not.toContain("github.workflow");
+	});
+});
+
+describe("the App sweep", () => {
+	const sweep = parseWorkflow("install-sweep.yml");
+
+	it("polls on a schedule, because Actions cannot receive installation events", () => {
+		// The premise of the whole workflow. `installation` and `installation_repositories` go to the
+		// App, not to Actions, and there is no webhook receiver here - so without a schedule the sweep
+		// would never run and "installing the App is enough" would be true of nothing.
+		expect(Object.keys(triggers(sweep))).toContain("schedule");
+		expect(Object.keys(triggers(sweep))).toContain("workflow_dispatch");
+	});
+
+	it("is not callable: it enumerates the pipeline's own App installations", () => {
+		// A consumer calling this would be asking the pipeline to install itself into installations it
+		// already sweeps hourly. The exemption is in `NOT_CALLABLE` and the reason is recorded there.
+		expect(Object.keys(triggers(sweep))).not.toContain("workflow_call");
+		expect(NOT_CALLABLE).toContain("install-sweep.yml");
+	});
+
+	// One code path. Two implementations would install differently the moment one changed, and a
+	// consumer repository is where that difference becomes visible.
+	it("calls install.yml rather than installing anything itself", () => {
+		expect(sweep.jobs.install?.uses).toBe("./.github/workflows/install.yml");
+		// The job that calls it cannot have steps, and `env`/`runs-on` are not permitted on such a job
+		// at all - so anything it needs must arrive through `with` or `secrets`.
+		expect(sweep.jobs.install?.steps).toBeUndefined();
+		expect(sweep.jobs.install?.runsOn).toBeUndefined();
+		expect(sweep.jobs.install?.["run-name"]).toBeUndefined();
+	});
+
+	it("passes the App key through to the install it calls", () => {
+		const secrets = sweep.jobs.install?.secrets as Record<string, unknown> | undefined;
+		expect(Object.keys(secrets ?? {})).toContain(repoConfig().app.private_key_secret);
+		expect(Object.keys(secrets ?? {})).toContain("GH_PROJECT_TOKEN");
+	});
+
+	// The failure this prevents: `jobs.<id>.if` is evaluated *before* `strategy.matrix` applies, so it
+	// cannot filter per entry. With no targets the matrix is empty, and an empty matrix on a job whose
+	// `if` is false is the one combination GitHub rejects outright.
+	it("gates the fan-out on has-targets, so an empty matrix never fails the run", () => {
+		expect(sweep.jobs.install?.if).toContain("has-targets");
+		expect(sweep.jobs.sweep?.outputs?.["has-targets"]).toBeDefined();
+	});
+
+	// Two sweeps racing would both see the same gap and both open a pull request for one repository.
+	it("never overlaps itself", () => {
+		expect(sweep.concurrency?.group).toContain("github.repository");
+		expect(sweep.concurrency?.["cancel-in-progress"]).toBe(false);
+	});
+
+	it("is bounded, so a hung enumeration cannot hold the slot forever", () => {
+		// Hyphenated in the workflow and camelCase in the parsed step shape, so it is read by its own name
+		// rather than through a cast that would accept undefined.
+		expect(sweep.jobs.sweep?.["timeout-minutes"]).toBeGreaterThan(0);
+	});
+
+	it("installs one repository at a time", () => {
+		// Each entry opens a pull request in a repository a person owns. Twenty at once looks like an
+		// attack rather than an installation.
+		expect(sweep.jobs.install?.strategy?.["max-parallel"]).toBe(1);
+		// One failure must not abandon the repositories behind it.
+		expect(sweep.jobs.install?.strategy?.["fail-fast"]).toBe(false);
+	});
+
+	it("authenticates as the App without a person's token in the deciding step", () => {
+		// `GH_TOKEN: ${{ secrets.GH_PROJECT_TOKEN }}` on the plan step would be a user token with no App
+		// path at all, which is what `test_only_board_writes_reach_for_the_user_token_alone` forbids. The
+		// App token can read contents, so the sweep needs no person's token to decide anything.
+		const plan = allSteps(sweep).find(({ step }) => step.run?.includes("sweep-main.ts"));
+		expect(plan?.step.env?.GH_TOKEN).toBeUndefined();
+		expect(plan?.step.env?.[repoConfig().app.private_key_secret]).toContain("secrets.");
+	});
+
+	it("reports what it decided even when there was nothing to do", () => {
+		// A sweep that found the App, installed nothing and said nothing is indistinguishable from a
+		// broken one. `always()` because the report is most needed when a later step fails.
+		const report = allSteps(sweep).find(({ step }) => step.name === "Report");
+		expect(report?.step.if).toBe("always()");
 	});
 });

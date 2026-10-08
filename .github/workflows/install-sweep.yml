@@ -1,0 +1,96 @@
+name: Install Sweep
+
+# Installs the pipeline into every repository the App is installed on that does not have it yet.
+#
+# Actions cannot receive `installation` or `installation_repositories` events - those are delivered to
+# the App, and this pipeline runs no webhook receiver - so "installing the App is enough" is built on
+# polling instead. This workflow is that poll: enumerate the App's installations, diff them against
+# what is already installed, and install the gap.
+#
+# The latency is the cron interval and that is a deliberate trade. A webhook receiver would react in
+# seconds but needs a public endpoint, a webhook secret and signature verification - new
+# infrastructure to save minutes on an operation nobody is waiting on. The sweep is idempotent, so a
+# missed tick costs nothing beyond the delay.
+on:
+  schedule:
+    # Hourly, off the hour. Installation is not urgent - a person who installed the App minutes ago
+    # waits an hour, and a person who installed it yesterday is not waiting at all.
+    - cron: "23 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  # Never overlapping itself. Two sweeps racing would both see the same gap and both open a pull
+  # request for one repository; `install.yml` serialises per repository underneath, but the second
+  # sweep's plan would already be stale by the time it ran.
+  group: install-sweep-${{ github.repository }}
+  cancel-in-progress: false
+
+jobs:
+  sweep:
+    name: sweep
+    runs-on: ubuntu-latest
+    # Bounded because this workflow's failure mode is a hung enumeration, and a hung job holds a
+    # concurrency slot that blocks every later sweep.
+    timeout-minutes: 10
+    outputs:
+      matrix: ${{ steps.plan.outputs.matrix }}
+      has-targets: ${{ steps.plan.outputs.has-targets }}
+      report: ${{ steps.plan.outputs.report }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Bun
+        uses: oven-sh/setup-bun@v2
+
+      - name: Install DarkFactory runtime
+        run: bun install --frozen-lockfile
+
+      - name: Decide which repositories need installing
+        # Signs the App JWT in Bun rather than with `actions/create-github-app-token`. That action
+        # resolves *one* installation and exposes no way to enumerate them, and GitHub restricts
+        # `GET /app/installations` to a JWT - so enumeration is unreachable through it. The key is the
+        # same either way.
+        id: plan
+        env:
+          PIPELINE_ROOT: ${{ github.workspace }}
+          PIPELINE_REPO: ${{ github.repository }}
+          DARKFACTORY_APP_PRIVATE_KEY: ${{ secrets.DARKFACTORY_APP_PRIVATE_KEY }}
+        run: bun packages/harness/src/install/sweep-main.ts
+
+      - name: Report
+        if: always()
+        run: echo "${{ steps.plan.outputs.report }}"
+
+  install:
+    # One matrix entry per repository, each calling the same `install.yml` a person would dispatch by
+    # hand. Two code paths would install differently the moment one changed, and a consumer repository
+    # is where that difference becomes visible.
+    #
+    # A job that calls a reusable workflow may carry `uses`, `with`, `secrets`, `strategy`, `needs`,
+    # `if`, `concurrency` and `permissions` - and nothing else. No `env`, no `runs-on`, no `steps`, so
+    # anything this job needs has to come in through `with`.
+    name: install ${{ matrix.repository }}
+    needs: sweep
+    # `jobs.<id>.if` is evaluated *before* `strategy.matrix`, so this cannot filter per entry; it
+    # gates the whole fan-out. An empty matrix plus a job that must run is the one combination GitHub
+    # rejects, so it is guarded here rather than inside the matrix.
+    if: needs.sweep.outputs.has-targets == 'true'
+    strategy:
+      # One at a time. Each entry opens a pull request in a repository a person owns, and a burst of
+      # twenty would look like an attack rather than an installation. The sweep is hourly; the latency
+      # of serialising is cheaper than the trust it costs.
+      max-parallel: 1
+      fail-fast: false
+      matrix:
+        repository: ${{ fromJson(needs.sweep.outputs.matrix) }}
+    uses: ./.github/workflows/install.yml
+    with:
+      repository: ${{ matrix.repository }}
+      apply-settings: true
+    secrets:
+      DARKFACTORY_APP_PRIVATE_KEY: ${{ secrets.DARKFACTORY_APP_PRIVATE_KEY }}
+      GH_PROJECT_TOKEN: ${{ secrets.GH_PROJECT_TOKEN }}

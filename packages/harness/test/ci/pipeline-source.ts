@@ -39,7 +39,20 @@ interface Job {
 	needs?: string | string[];
 	steps?: Step[];
 	env?: Record<string, string>;
+	// A job that calls a reusable workflow carries `uses` and no `steps`, and a fan-out carries
+	// `strategy`. Both are asserted on directly, so they are typed rather than indexed through the
+	// catch-all - a cast would accept `undefined` and quietly turn a missing field into a pass.
+	uses?: string;
+	with?: Record<string, unknown>;
+	secrets?: Record<string, unknown>;
+	// Job outputs are declared with the same hyphenated names the workflow reads them by.
+	outputs?: Record<string, string>;
 	[key: string]: unknown;
+	strategy?: {
+		"max-parallel"?: number;
+		"fail-fast"?: boolean;
+		matrix?: Record<string, unknown>;
+	};
 }
 
 /** One parsed `.github/workflows` document. */
