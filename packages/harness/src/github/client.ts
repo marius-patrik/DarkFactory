@@ -99,7 +99,18 @@ export class GitHubClient {
 		return response.value.data;
 	}
 
-	async collectRest<T>(path: string, limit = 10_000): Promise<T[]> {
+	/**
+	 * Collects every item across a paginated REST collection.
+	 *
+	 * @param path First page, relative or absolute.
+	 * @param limit Maximum items to return.
+	 * @param select Extracts the item array from a page. Needed for the endpoints that wrap their
+	 *   list in an object - `GET /installation/repositories` answers `{total_count, repositories}` -
+	 *   because pagination lives in the `Link` header rather than the body, so an enveloped endpoint
+	 *   cannot be paged by walking the body the way a bare array can.
+	 * @returns Items across every page, in order.
+	 */
+	async collectRest<T>(path: string, limit = 10_000, select?: (page: unknown) => unknown[] | undefined): Promise<T[]> {
 		const items: T[] = [];
 		const seen = new Set<string>();
 		let next: string | undefined = path;
@@ -107,9 +118,10 @@ export class GitHubClient {
 			const url = next.startsWith("http") ? next : `${this.#apiBase}${next.startsWith("/") ? "" : "/"}${next}`;
 			if (seen.has(url)) throw this.#protocol("GET", url, "REST pagination loop");
 			seen.add(url);
-			const response = await this.#request<T[]>("GET", url, undefined, true);
-			if (!Array.isArray(response.value)) throw this.#protocol("GET", url, "expected an array page");
-			items.push(...response.value.slice(0, limit - items.length));
+			const response = await this.#request<unknown>("GET", url, undefined, true);
+			const page = select ? select(response.value) : response.value;
+			if (!Array.isArray(page)) throw this.#protocol("GET", url, "expected an array page");
+			items.push(...(page as T[]).slice(0, limit - items.length));
 			next = parseNextLink(response.headers.get("link"));
 		}
 		return items;
