@@ -25,6 +25,40 @@ interface CachedToken {
 	expiresAt: number;
 }
 
+/**
+ * Puts a PEM into the form `importPKCS8` accepts.
+ *
+ * GitHub's own documentation for storing an App key says to keep the `
+` sequences *escaped* so the
+ * secret survives a copy-paste, and every workflow here reads the key the same way - which is why
+ * `actions/create-github-app-token` works and this did not. That action unescapes before handing the
+ * key to its signer; `jose` does not, and rejects the escaped form with
+ *
+ *   SyntaxError: Uint8Array.fromBase64 requires a valid base64 string
+ *
+ * which names base64 and not the newline, so the cause is not obvious from the message.
+ *
+ * Only the literal two-character sequence `\n` is touched, and only inside the PEM envelope. Real
+ * newlines are left alone, and a key that contains neither shape is returned untouched so the signer
+ * remains the thing that decides whether it is usable.
+ *
+ * @param pem A PEM, possibly with escaped newlines.
+ * @returns A PEM whose newlines are real newlines.
+ */
+export function normalisePrivateKey(pem: string): string {
+	// A literal backslash followed by `n`, which is what an escaped key holds and what a real one does
+	// not. Written as a character class over the backslash so it cannot be confused with a newline by
+	// whoever reads it next.
+	const escapedNewline = /\\n/gu;
+
+	// The whole document is rewritten, not the body between the BEGIN and END lines. Earlier attempts
+	// found the envelope by index arithmetic and rewrote the header too, which broke a key that was
+	// already correct - the failure being invisible, because the key was wrong everywhere it was used.
+	// Only the sequence `\n` is replaced, so a real PEM round-trips byte for byte unless it contains
+	// an escaped one.
+	return escapedNewline.test(pem) ? pem.replace(escapedNewline, "\n") : pem;
+}
+
 /** Mints and refreshes GitHub App installation access tokens. */
 export class AppInstallationTokenProvider {
 	readonly #identity: GitHubAppIdentity;
@@ -53,7 +87,7 @@ export class AppInstallationTokenProvider {
 	}
 	async #mint(): Promise<string> {
 		const now = Math.floor(this.#now().getTime() / 1000);
-		const key = await importPKCS8(this.#identity.privateKey, "RS256");
+		const key = await importPKCS8(normalisePrivateKey(this.#identity.privateKey), "RS256");
 		const jwt = await new SignJWT({})
 			.setProtectedHeader({ alg: "RS256" })
 			.setIssuer(this.#identity.appId)
