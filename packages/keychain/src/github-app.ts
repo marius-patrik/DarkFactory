@@ -84,15 +84,32 @@ export class AppInstallationTokenProvider {
 	evict(): void {
 		this.#cached = undefined;
 	}
-	async #mint(): Promise<string> {
+	/**
+	 * The signed App JWT itself, for the endpoints that accept nothing else.
+	 *
+	 * `GET /app/installations` is JWT-only - GitHub rejects an installation token with "a JSON web
+	 * token could not be decoded" - so enumerating where the App is installed needs this rather than
+	 * {@link getToken}. The two are different credentials for different scopes and neither works in the
+	 * other's place, which is why this exists instead of `getToken` being widened.
+	 *
+	 * Signed fresh each call and never cached: GitHub caps a JWT at ten minutes, and a cached one that
+	 * outlived its window would fail as an opaque authentication error. The signing itself is cheap
+	 * next to the round trip it accompanies.
+	 *
+	 * @returns A JWT asserting the App's identity.
+	 */
+	async getAppJwt(): Promise<string> {
 		const now = Math.floor(this.#now().getTime() / 1000);
 		const key = await importPKCS8(normalisePrivateKey(this.#identity.privateKey), "RS256");
-		const jwt = await new SignJWT({})
+		return new SignJWT({})
 			.setProtectedHeader({ alg: "RS256" })
 			.setIssuer(this.#identity.appId)
 			.setIssuedAt(now - 60)
 			.setExpirationTime(now + 9 * 60)
 			.sign(key);
+	}
+	async #mint(): Promise<string> {
+		const jwt = await this.getAppJwt();
 		const common = {
 			Accept: "application/vnd.github+json",
 			Authorization: `Bearer ${jwt}`,
