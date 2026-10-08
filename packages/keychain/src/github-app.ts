@@ -1,3 +1,4 @@
+import { createPrivateKey } from "node:crypto";
 import { importPKCS8, SignJWT } from "jose";
 /** Fetch-compatible transport used for GitHub App token operations. */
 export type GitHubFetch = (input: string | URL, init?: RequestInit) => Promise<Response>;
@@ -26,37 +27,35 @@ interface CachedToken {
 }
 
 /**
- * Puts a PEM into the form `importPKCS8` accepts.
+ * Puts a private key into the form `importPKCS8` accepts.
  *
- * GitHub's own documentation for storing an App key says to keep the `
-` sequences *escaped* so the
- * secret survives a copy-paste, and every workflow here reads the key the same way - which is why
- * `actions/create-github-app-token` works and this did not. That action unescapes before handing the
- * key to its signer; `jose` does not, and rejects the escaped form with
+ * Two differences between what GitHub issues and what `jose` wants, both of which produced
+ * `"pkcs8" must be PKCS#8 formatted string` - a message that names neither the format nor the escaping.
  *
- *   SyntaxError: Uint8Array.fromBase64 requires a valid base64 string
+ * **Escaped newlines.** GitHub's guidance for storing an App key is to keep the `\n` sequences
+ * *escaped* so the secret survives a copy-paste, and every workflow here reads the key that way - which
+ * is why `actions/create-github-app-token` works and this did not. That action unescapes before signing;
+ * `jose` does not.
  *
- * which names base64 and not the newline, so the cause is not obvious from the message.
+ * **PKCS#1.** GitHub's UI downloads a key in PKCS#1 (`BEGIN RSA PRIVATE KEY`). `jose`'s `importPKCS8`
+ * accepts only PKCS#8 (`BEGIN PRIVATE KEY`) and rejects PKCS#1 outright, whether or not the newlines are
+ * escaped. `node:crypto` reads both, so the key is converted rather than refused.
  *
- * Only the literal two-character sequence `\n` is touched, and only inside the PEM envelope. Real
- * newlines are left alone, and a key that contains neither shape is returned untouched so the signer
- * remains the thing that decides whether it is usable.
+ * Only the escaped sequence `\n` is replaced, so a real PEM round-trips byte for byte unless it contains
+ * an escaped one; and the conversion is attempted only for a PKCS#1 header, so a PKCS#8 key never goes
+ * through `node:crypto` at all. Anything unusable is passed on unchanged for the signer to reject -
+ * deciding what a key *is* is this function's job, deciding whether it works is the signer's.
  *
- * @param pem A PEM, possibly with escaped newlines.
- * @returns A PEM whose newlines are real newlines.
+ * @param pem A private key, in either PEM format, possibly with escaped newlines.
+ * @returns A PKCS#8 PEM with real newlines.
  */
 export function normalisePrivateKey(pem: string): string {
-	// A literal backslash followed by `n`, which is what an escaped key holds and what a real one does
-	// not. Written as a character class over the backslash so it cannot be confused with a newline by
-	// whoever reads it next.
-	const escapedNewline = /\\n/gu;
+	const unescaped = /\\n/u.test(pem) ? pem.replace(/\\n/gu, "\n") : pem;
+	if (!/^-----BEGIN RSA PRIVATE KEY-----/mu.test(unescaped)) return unescaped;
 
-	// The whole document is rewritten, not the body between the BEGIN and END lines. Earlier attempts
-	// found the envelope by index arithmetic and rewrote the header too, which broke a key that was
-	// already correct - the failure being invisible, because the key was wrong everywhere it was used.
-	// Only the sequence `\n` is replaced, so a real PEM round-trips byte for byte unless it contains
-	// an escaped one.
-	return escapedNewline.test(pem) ? pem.replace(escapedNewline, "\n") : pem;
+	// `createPrivateKey` throws on anything it cannot parse, and that throw is the answer: a key this
+	// cannot read is one the signer should be asked about, not something to reshape into looking valid.
+	return createPrivateKey(unescaped).export({ type: "pkcs8", format: "pem" }).toString();
 }
 
 /** Mints and refreshes GitHub App installation access tokens. */
