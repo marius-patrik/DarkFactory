@@ -141,9 +141,7 @@ const PERMISSION_LEVELS = ["repository", "organization", "enterprise", "single_r
  * @param declared Whatever `repo.dfconfig` declares under `app.permissions`.
  * @returns Flat and per-level permissions, or undefined when nothing usable was declared.
  */
-export function permissionsForTokenRequest(
-	declared: Record<string, unknown> | undefined,
-):
+export function permissionsForTokenRequest(declared: Record<string, unknown> | undefined):
 	| {
 			permissions?: Record<string, "read" | "write">;
 			permissionsByLevel?: Record<string, Record<string, "read" | "write">>;
