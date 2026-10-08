@@ -112,7 +112,10 @@ export async function runSweep(
 	const readClient = new GitHubClient({ token: readToken ?? (() => app.getToken()), fetch: globalThis.fetch });
 
 	const plan = await planSweep({
-		jwtClient: new GitHubClient({ token: () => app.getToken(), fetch: globalThis.fetch }),
+		// The App **JWT**, not an installation token. `GET /app/installations` accepts nothing else, and
+		// answers an installation token with "a JSON web token could not be decoded" - which reads like a
+		// malformed key and is not one.
+		jwtClient: new GitHubClient({ token: () => app.getAppJwt(), fetch: globalThis.fetch }),
 		// A JWT and an installation token are both minted by the same provider, because signing one from
 		// the other is what the provider already does; the endpoints differ in what they accept, not in
 		// where the credential comes from.
