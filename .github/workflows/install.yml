@@ -21,10 +21,41 @@ on:
         type: boolean
         default: true
 
+  # The App sweep calls this rather than reimplementing the installation, so there is one code path
+  # and a consumer is installed the same way whoever asked for it.
+  #
+  # `apply-settings` carries its own `default` rather than relying on the caller's, and that is
+  # load-bearing: an input with no default evaluates to the empty string under `workflow_call`, so
+  # `if: inputs.apply-settings` would silently become false and every swept repository would install
+  # its callers and silently skip its labels, board and settings. `workflow_dispatch` defaults a
+  # boolean the same way, so stating it once per trigger is the only way both agree.
+  workflow_call:
+    inputs:
+      repository:
+        description: "Repository to install into, as owner/name."
+        required: true
+        type: string
+      ref:
+        description: "Pipeline commit to pin. Empty means this workflow's own commit."
+        required: false
+        type: string
+        default: ""
+      apply-settings:
+        description: "Also reconcile labels, board and repository settings."
+        required: false
+        type: boolean
+        default: true
+    secrets:
+      DARKFACTORY_APP_PRIVATE_KEY: {required: false}
+      GH_PROJECT_TOKEN: {required: false}
+
 permissions:
   contents: read
 
 concurrency:
+  # Keyed on the repository being installed rather than on `github.workflow`, which is what keeps a
+  # matrix fan-out from cancelling itself: under `workflow_call` every matrix job reports the caller's
+  # workflow name, so a `github.workflow` group would have all of them share one slot and run serially.
   group: install-${{ inputs.repository }}
   cancel-in-progress: false
 
