@@ -12,6 +12,7 @@ interface GitHubAppIdentity {
 	repo: string;
 	installationId?: number;
 	permissions?: Record<string, "read" | "write">;
+	permissionsByLevel?: Record<string, Record<string, "read" | "write">>;
 	botLogin?: string;
 	privateKeySecret?: string;
 }
@@ -80,7 +81,15 @@ export class AppInstallationTokenProvider {
 		const response = await this.#fetch(`https://api.github.com/app/installations/${installationId}/access_tokens`, {
 			method: "POST",
 			headers: common,
-			body: JSON.stringify({ permissions: this.#identity.permissions ?? {} }),
+			// GitHub accepts permissions two ways and this sends both correctly. A flat record is the
+			// narrow form: it applies the same level to every named permission, which is what a caller
+			// that only ever wants repository scope is asking for. `permissions_by_level` is the
+			// explicit form, and it is the only one that can express "issues write, pages read"
+			// because those sit at different levels.
+			body: JSON.stringify({
+				permissions: this.#identity.permissions ?? {},
+				...(this.#identity.permissionsByLevel ? { permissions_by_level: this.#identity.permissionsByLevel } : {}),
+			}),
 		});
 		if (!response.ok) throw new Error(`GitHub App token mint failed (${response.status})`);
 		const payload = (await response.json()) as { token?: unknown; expires_at?: unknown };
@@ -98,9 +107,70 @@ const manifestAppSchema = z
 		bot_login: z.string().optional(),
 		private_key_secret: z.string(),
 		installation_id: z.number().optional(),
-		permissions: z.record(z.string(), z.enum(["read", "write"])).optional(),
+		// Permissions are declared nested, matching the shape of a GitHub App manifest:
+		// {repository: {contents: "write"}, organization: {projects: "write"}}. The flat form is
+		// still accepted, because a caller may narrow deliberately - "issues write" on its own is a
+		// legitimate thing to ask for and rejecting it would leave them with no way to express it.
+		permissions: z
+			.union([
+				z.record(z.string(), z.enum(["read", "write"])),
+				z.record(z.string(), z.record(z.string(), z.enum(["read", "write"]))),
+			])
+			.optional(),
 	})
 	.passthrough();
+
+/**
+ * The levels a token request may name.
+ *
+ * GitHub rejects a request naming a level it does not recognise, so the declaration is filtered to
+ * these rather than passed through. An unknown level is dropped rather than refused, because a
+ * declaration may legitimately carry more than one token can express - the App's own settings list
+ * levels this pipeline has no business asking a token to widen.
+ */
+const PERMISSION_LEVELS = ["repository", "organization", "enterprise", "single_repo"] as const;
+
+/**
+ * Reads a permission declaration into the flat and per-level forms a token request understands.
+ *
+ * A nested declaration becomes both: the flat form carries the `repository` level, which is what the
+ * pipeline's work is scoped to, and the per-level form carries every level so a declaration that
+ * relies on an organisation-level grant is not silently dropped. A flat declaration passes through
+ * unchanged, since it already says what it means.
+ *
+ * @param declared Whatever `repo.dfconfig` declares under `app.permissions`.
+ * @returns Flat and per-level permissions, or undefined when nothing usable was declared.
+ */
+export function permissionsForTokenRequest(
+	declared: Record<string, unknown> | undefined,
+):
+	| {
+			permissions?: Record<string, "read" | "write">;
+			permissionsByLevel?: Record<string, Record<string, "read" | "write">>;
+	  }
+	| undefined {
+	if (!declared) return undefined;
+
+	const level = (value: unknown): value is Record<string, "read" | "write"> =>
+		typeof value === "object" && value !== null && !Array.isArray(value);
+
+	const flat = Object.fromEntries(
+		Object.entries(declared).filter(
+			(entry): entry is [string, "read" | "write"] => entry[1] === "read" || entry[1] === "write",
+		),
+	);
+	const byLevel = Object.fromEntries(
+		Object.entries(declared).filter(
+			(entry): entry is [string, Record<string, "read" | "write">] =>
+				(PERMISSION_LEVELS as readonly string[]).includes(entry[0]) && level(entry[1]),
+		),
+	);
+
+	if (Object.keys(byLevel).length === 0) {
+		return Object.keys(flat).length > 0 ? { permissions: flat } : undefined;
+	}
+	return { permissions: Object.keys(flat).length > 0 ? flat : undefined, permissionsByLevel: byLevel };
+}
 
 /** Resolves a GitHub App machine identity from repository declaration plus secret storage. */
 export async function appIdentityFromManifest(
@@ -108,18 +178,47 @@ export async function appIdentityFromManifest(
 	repository: string,
 	readSecret: (name: string) => string | Promise<string>,
 ): Promise<GitHubAppIdentity> {
-	const root = z.object({ app: manifestAppSchema }).passthrough().parse(manifest);
+	// The App block is reached by walking, not by a union of wrappers. `repo.dfconfig` nests it at
+	// `repo.app`, a caller holding only the `repo` block is one level shallower, and a caller holding
+	// the App block itself is two. A `z.union` of the three shapes looks equivalent and is not: the
+	// schema is `.passthrough()`, so the bare-App branch accepts almost anything and whichever branch
+	// the union reaches first reports a failure that names a path the caller never used. Walking
+	// until an `app` block appears says plainly which depth was found, and names both otherwise.
+	let app: unknown = manifest;
+	for (let depth = 0; depth < 3; depth++) {
+		if (typeof app !== "object" || app === null || Array.isArray(app)) break;
+		const record = app as Record<string, unknown>;
+		if (record.app !== undefined) {
+			app = record.app;
+			break;
+		}
+		// Descend only through the document's own spine, not through arbitrary keys: a caller passing
+		// some unrelated object should be told which key was missing rather than searched exhaustively.
+		const next = record.repo;
+		if (typeof next !== "object" || next === null) break;
+		app = next;
+	}
+	const parsed = manifestAppSchema.safeParse(app);
+	if (!parsed.success) {
+		throw new Error(
+			`no usable repo.app block (looked at ${app === manifest ? "the document" : "repo.app"}): ${parsed.error.issues
+				.map((issue) => `${issue.path.join(".") || "<root>"} ${issue.message}`)
+				.join("; ")}`,
+		);
+	}
 	const slash = repository.indexOf("/");
 	if (slash < 1 || slash === repository.length - 1) throw new Error("repository must be owner/name");
+	const { permissions, permissionsByLevel } = permissionsForTokenRequest(parsed.data.permissions) ?? {};
 	return {
-		appId: String(root.app.app_id),
-		privateKey: await readSecret(root.app.private_key_secret),
-		privateKeySecret: root.app.private_key_secret,
+		appId: String(parsed.data.app_id),
+		privateKey: await readSecret(parsed.data.private_key_secret),
+		privateKeySecret: parsed.data.private_key_secret,
 		owner: repository.slice(0, slash),
 		repo: repository.slice(slash + 1),
-		installationId: root.app.installation_id,
-		permissions: root.app.permissions,
-		botLogin: root.app.bot_login ?? (root.app.slug ? `${root.app.slug}[bot]` : undefined),
+		installationId: parsed.data.installation_id,
+		permissions,
+		permissionsByLevel,
+		botLogin: parsed.data.bot_login ?? (parsed.data.slug ? `${parsed.data.slug}[bot]` : undefined),
 	};
 }
 
