@@ -504,7 +504,7 @@ describe("the pipeline is not its own consumer", () => {
 	test("installing into the pipeline is refused", async () => {
 		// Both generated values are wrong for the pipeline repository, in different ways.
 		await expect(
-			plan({ owner: "marius-patrik", repo: "agent-DarkFactory", ref: "abc", root: repoRoot }),
+			plan({ owner: "marius-patrik", repo: "DarkFactory", ref: "abc", root: repoRoot }),
 		).rejects.toBeInstanceOf(SelfInstall);
 	});
 
@@ -697,12 +697,12 @@ describe("reinstalling adopts the update", () => {
 			repo: "r",
 			ref: "bbbbbbb",
 			root,
-			pipelineRepo: "marius-patrik/agent-DarkFactory",
+			pipelineRepo: "marius-patrik/DarkFactory",
 		});
 		expect(await reconcileManifest(root, "bbbbbbb", planned), "a null repo is a gap, not a choice").toBe(true);
 
 		const after = JSON.parse(await readFile(path, "utf8"));
-		expect(after.repo.upstream.repo).toBe("marius-patrik/agent-DarkFactory");
+		expect(after.repo.upstream.repo).toBe("marius-patrik/DarkFactory");
 		expect(after.repo.upstream.ref, "the pin still moves").toBe("bbbbbbb");
 	});
 
@@ -721,7 +721,7 @@ describe("reinstalling adopts the update", () => {
 			repo: "r",
 			ref: "bbbbbbb",
 			root,
-			pipelineRepo: "marius-patrik/agent-DarkFactory",
+			pipelineRepo: "marius-patrik/DarkFactory",
 		});
 		expect(await reconcileManifest(root, "bbbbbbb", planned)).toBe(true);
 
@@ -841,7 +841,7 @@ describe("what the installation reports to the workflow", () => {
 				TARGET_REPOSITORY: "acme/widgets",
 				TARGET_BRANCH: "main",
 				TARGET_DESCRIPTION: "a repository",
-				PIPELINE_REPO: "marius-patrik/agent-DarkFactory",
+				PIPELINE_REPO: "marius-patrik/DarkFactory",
 				PIPELINE_REF: ref,
 				GITHUB_OUTPUT: output,
 			},

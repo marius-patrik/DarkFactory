@@ -18,7 +18,7 @@ on:
         description: "Repository holding the shared scripts."
         required: false
         type: string
-        default: "marius-patrik/agent-DarkFactory"
+        default: "marius-patrik/DarkFactory"
   workflow_dispatch:
     inputs:
       bump:

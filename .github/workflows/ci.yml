@@ -38,10 +38,10 @@ jobs:
           fetch-depth: 0
 
       - name: Check out pinned DarkFactory runtime
-        if: github.repository != 'marius-patrik/agent-DarkFactory'
+        if: github.repository != 'marius-patrik/DarkFactory'
         uses: actions/checkout@v4
         with:
-          repository: "marius-patrik/agent-DarkFactory"
+          repository: "marius-patrik/DarkFactory"
           ref: "main"
           path: .darkfactory-runtime
 
@@ -251,10 +251,10 @@ jobs:
           fi
 
       - name: Check out pinned DarkFactory runtime
-        if: steps.docs.outputs.present == 'true' && github.repository != 'marius-patrik/agent-DarkFactory'
+        if: steps.docs.outputs.present == 'true' && github.repository != 'marius-patrik/DarkFactory'
         uses: actions/checkout@v4
         with:
-          repository: "marius-patrik/agent-DarkFactory"
+          repository: "marius-patrik/DarkFactory"
           ref: "main"
           path: .darkfactory-runtime
 

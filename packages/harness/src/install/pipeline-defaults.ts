@@ -8,7 +8,7 @@
  */
 
 /** The repository holding the pipeline when the caller names none. */
-export const DEFAULT_PIPELINE_REPO = "marius-patrik/agent-DarkFactory";
+export const DEFAULT_PIPELINE_REPO = "marius-patrik/DarkFactory";
 
 /**
  * The pipeline ref to use when the caller names none.
@@ -20,7 +20,7 @@ export const DEFAULT_PIPELINE_REPO = "marius-patrik/agent-DarkFactory";
  * This used to be the literal `"darkfactory"` — a branch that does not exist. `installer.ts` omits
  * `pipeline_ref` from the template context whenever `repo.upstream.ref` is null, which it is for
  * this repository, so every consumer that installed without naming a ref had its workflows rendered
- * to `uses: marius-patrik/agent-DarkFactory/.github/workflows/agent.yml@darkfactory` and
+ * to `uses: marius-patrik/DarkFactory/.github/workflows/agent.yml@darkfactory` and
  * `ref: "darkfactory"`. Neither resolves: the dispatch job cannot find the workflow and the pinned
  * runtime checkout fails.
  */

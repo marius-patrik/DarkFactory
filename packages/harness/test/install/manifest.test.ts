@@ -42,9 +42,10 @@ const NO_ENV: Record<string, string | undefined> = {};
 describe("identity", () => {
 	test("the real manifest identifies this repository", async () => {
 		const loaded = await loadRepositoryManifest(repoRoot);
-		expect(loaded.slug()).toBe("marius-patrik/agent-DarkFactory");
-		// The Pages URL follows the repository name, which is now `agent-DarkFactory`.
-		expect(loaded.homepage()).toBe("https://marius-patrik.github.io/agent-DarkFactory/");
+		expect(loaded.slug()).toBe("marius-patrik/DarkFactory");
+		// The Pages URL follows the repository name, so it follows the declared slug rather than a
+		// name of its own.
+		expect(loaded.homepage()).toBe("https://marius-patrik.github.io/DarkFactory/");
 		expect(loaded.defaultBranch()).toBe("main");
 		expect(loaded.developmentBranch()).toBe("main");
 	});
