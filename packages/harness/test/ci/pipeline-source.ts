@@ -47,6 +47,9 @@ export interface Workflow {
 	name?: string;
 	on?: Record<string, unknown>;
 	permissions?: Record<string, string>;
+	// Typed because assertions read it: a concurrency group that keys on the wrong context is how a
+	// matrix fan-out cancels itself, and `unknown` would hide that behind a cast.
+	concurrency?: { group?: string; "cancel-in-progress"?: boolean };
 	jobs: Record<string, Job>;
 	[key: string]: unknown;
 }

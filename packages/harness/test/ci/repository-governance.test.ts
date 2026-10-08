@@ -48,7 +48,13 @@ const EXPECTED_WORKFLOWS = [
 /** Issue chooser and templates. */
 const EXPECTED_ISSUE_TEMPLATES = ["request.yml", "epic.yml", "decision.yml", "config.yml", "configure.yml"];
 
-/** Workflows that run *in* this repository rather than being called from another. */
+/**
+ * Workflows that run *in* this repository rather than being called from another.
+ *
+ * `install.yml` is callable so the App sweep reuses it rather than reimplementing the installation,
+ * but it stays here too: it is dispatched by hand as well as called, and being callable does not stop
+ * it running on its own.
+ */
 const NOT_CALLABLE = ["install.yml", "ci.yml", "branch-policy.yml", "deploy-docs.yml", "preview-docs.yml"];
 
 /** Workflows that write to GitHub on the pipeline's behalf and must therefore authenticate as the App. */
@@ -880,5 +886,58 @@ describe("a workflow that runs repo-settings.ts supplies the token it demands", 
 			jobEnv.GH_TOKEN ?? stepEnv.GH_TOKEN,
 			`${name} / ${jobId} runs repo-settings.ts without GH_TOKEN or GITHUB_TOKEN in scope`,
 		).toBeDefined();
+	});
+});
+
+describe("install.yml is callable so the App sweep has one code path", () => {
+	const install = parseWorkflow("install.yml");
+	const calls = triggers(install).workflow_call as
+		| {
+				inputs?: Record<string, { type?: string; default?: unknown; required?: boolean }>;
+				secrets?: Record<string, unknown>;
+		  }
+		| undefined;
+
+	// Not vacuous. Without this the assertions below pass against a workflow that lost `workflow_call`
+	// entirely, which is the failure this whole block exists to prevent.
+	it("finds the workflow_call trigger, so the guard is not vacuous", () => {
+		expect(calls).toBeDefined();
+		expect(Object.keys(calls?.inputs ?? {})).toEqual(["repository", "ref", "apply-settings"]);
+	});
+
+	// The two triggers must agree on names, types and defaults. A sweep calling with `repository` while
+	// the workflow reads `inputs.target` would install into nothing and report success, and the only
+	// evidence would be a missing pull request in a consumer.
+	it.each(["repository", "ref", "apply-settings"])("declares %s to both triggers with one meaning", (name) => {
+		const dispatched = (triggers(install).workflow_dispatch as { inputs?: Record<string, unknown> } | undefined)
+			?.inputs?.[name] as { type?: string; default?: unknown } | undefined;
+		const called = calls?.inputs?.[name];
+
+		expect(called, `${name} is dispatched but not callable`).toBeDefined();
+		expect(called?.type, `${name} changes type between triggers`).toBe(dispatched?.type);
+		expect(called?.default, `${name} changes default between triggers`).toEqual(dispatched?.default);
+	});
+
+	// Load-bearing, and the reason this is asserted rather than left to the caller. Under
+	// `workflow_call` an input with no `default` evaluates to the empty string, so `if:
+	// inputs.apply-settings` silently becomes false and every swept repository installs its callers
+	// and quietly skips its labels, board and settings. Nothing would fail.
+	it("gives apply-settings a default under workflow_call, or the settings step never runs", () => {
+		expect(calls?.inputs?.["apply-settings"]?.default).toBe(true);
+	});
+
+	it("declares the App key secret, which the callable token-preference rule requires", () => {
+		// `test_github_writes_prefer_the_installation_token` also checks that a workflow with a
+		// `workflow_call` block declares `repoConfig().app.private_key_secret`. Without this the
+		// workflow both fails that rule and cannot read the key when called with `secrets: inherit`
+		// from a repository that has not declared it.
+		expect(Object.keys(calls?.secrets ?? {})).toContain(repoConfig().app.private_key_secret);
+	});
+
+	it("keys concurrency on the target repository, so a matrix fan-out does not cancel itself", () => {
+		// Under `workflow_call` every matrix job reports the *caller's* workflow name. A group keyed on
+		// `github.workflow` would put all of them in one slot and run them serially at best.
+		expect(install.concurrency?.group).toContain("inputs.repository");
+		expect(install.concurrency?.group).not.toContain("github.workflow");
 	});
 });
