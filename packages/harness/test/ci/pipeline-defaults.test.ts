@@ -13,9 +13,7 @@ import { repoConfig, repoRoot } from "./pipeline-source.ts";
  * @throws When the remote cannot be read or carries no recognisable `owner/name`.
  */
 function gitRemoteSlug(): string {
-	const url = Bun.spawnSync(["git", "remote", "get-url", "origin"], { cwd: repoRoot })
-		.stdout.toString()
-		.trim();
+	const url = Bun.spawnSync(["git", "remote", "get-url", "origin"], { cwd: repoRoot }).stdout.toString().trim();
 
 	// Split rather than pattern-match, because the two forms disagree about where the owner starts:
 	// `https://github.com/owner/repo` puts it behind a host and a scheme, and
