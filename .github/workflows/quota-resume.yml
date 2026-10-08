@@ -20,7 +20,7 @@ on:
         description: "Repository holding the shared scripts."
         required: false
         type: string
-        default: "marius-patrik/agent-DarkFactory"
+        default: "marius-patrik/DarkFactory"
     secrets:
       DARKFACTORY_APP_PRIVATE_KEY: {required: false}
       GH_PROJECT_TOKEN: {required: false}
