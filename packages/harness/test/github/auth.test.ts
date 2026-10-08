@@ -1,4 +1,5 @@
 import { expect, test } from "bun:test";
+import { generateKeyPairSync } from "node:crypto";
 import { exportPKCS8, generateKeyPair } from "jose";
 import {
 	AppInstallationTokenProvider,
@@ -86,4 +87,75 @@ test("something that is not a PEM is returned untouched, for the signer to rejec
 	// function that reshaped arbitrary input would be the wrong place to find out.
 	expect(normalisePrivateKey("not a key")).toBe("not a key");
 	expect(normalisePrivateKey("")).toBe("");
+});
+
+/**
+ * A PKCS#1 PEM, generated fresh.
+ *
+ * `node:crypto` rather than `jose`, because `jose` cannot emit the format - and a fixture produced by
+ * the library under test would prove nothing about what it accepts. `openssl` was tried first and
+ * produced an empty string on CI while working locally, which is the worst kind of fixture: green on a
+ * laptop and red in the run that matters.
+ */
+function generatePkcs1Key(): string {
+	return generateKeyPairSync("rsa", {
+		modulusLength: 2048,
+		privateKeyEncoding: { type: "pkcs1", format: "pem" },
+		publicKeyEncoding: { type: "spki", format: "pem" },
+	}).privateKey;
+}
+
+/**
+ * The second live failure, same message as the first:
+ *
+ *   "pkcs8" must be PKCS#8 formatted string
+ *
+ * GitHub's App UI downloads a key in PKCS#1 (`BEGIN RSA PRIVATE KEY`) and `jose`'s `importPKCS8` accepts
+ * only PKCS#8. `actions/create-github-app-token` does not mind, which is why every other workflow works.
+ *
+ */
+test("a PKCS#1 private key, as GitHub's UI issues it, mints a token", async () => {
+	// A real key, never a committed fixture: a private key in a repository is a credential in a
+	// repository, and a throwaway generated per run is worth the seconds it costs. 2048 bits, because
+	// that is what GitHub issues and what RS256 requires - a 1024-bit key is refused by the signer
+	// before the format ever matters, which is a different failure from the one being covered.
+	const pkcs1 = generatePkcs1Key();
+	expect(pkcs1).toContain("BEGIN RSA PRIVATE KEY");
+
+	const token = `ghs_${"p".repeat(300)}`;
+	const mock = scripted([json({ token, expires_at: "2030-01-01T00:00:00Z" })]);
+	const provider = new AppInstallationTokenProvider(
+		{ appId: "1", privateKey: pkcs1, owner: "o", repo: "r", installationId: 5 },
+		{ fetch: mock.fetch, now: () => new Date("2029-01-01T00:00:00Z") },
+	);
+
+	expect(await provider.getToken()).toBe(token);
+});
+
+test("a PKCS#1 key with escaped newlines is converted too", async () => {
+	// Both differences at once, which is what the secret actually holds: the format GitHub issued and
+	// the escaping the storage guidance asks for.
+	const escaped = generatePkcs1Key().replace(/\n/gu, "\\n");
+
+	const normalised = normalisePrivateKey(escaped);
+	expect(normalised).toContain("BEGIN PRIVATE KEY");
+	expect(normalised).not.toContain("BEGIN RSA PRIVATE KEY");
+	expect(normalised).not.toContain("\\n");
+});
+
+test("a PKCS#8 key never passes through the converter", async () => {
+	// The converter rewrites the key, so a PKCS#8 key taking that path would be a needless
+	// re-encoding on every mint. Asserted on the round-trip rather than on the implementation.
+	const { privateKey } = await generateKeyPair("RS256", { extractable: true });
+	const pem = await exportPKCS8(privateKey);
+
+	expect(normalisePrivateKey(pem)).toBe(pem);
+});
+
+test("a key node:crypto cannot parse is refused rather than reshaped", async () => {
+	// The failure mode worth ruling out: a function that turns unparseable input into something
+	// that merely looks like a key. The throw is the answer, and it names the shape it choked on.
+	expect(() =>
+		normalisePrivateKey("-----BEGIN RSA PRIVATE KEY-----\nnot base64\n-----END RSA PRIVATE KEY-----\n"),
+	).toThrow();
 });
