@@ -124,7 +124,15 @@ export async function runSweep(
 		pipelineSlug: pipelineRepo,
 	});
 
-	const matrix = plan.targets.map((target) => ({ repository: target.slug }));
+	// An array of **strings**, not of `{repository: slug}` objects. `install.yml` declares its
+	// `repository` input as `type: string`, and GitHub validates a called workflow's inputs when the
+	// fan-out job is *created* - so an object here fails the run before any install job exists, with no
+	// job to click and nothing in the log naming the cause. The first live run produced a green sweep
+	// reporting 25 targets and a failed run containing one job.
+	//
+	// `matrix: {repository: fromJson(...)}` over an array of scalars is what makes `matrix.repository` a
+	// string; over an array of objects it is an object, and the input is rejected.
+	const matrix = plan.targets.map((target) => target.slug);
 	const report = renderReport(
 		plan.installations,
 		plan.targets.map((t) => t.slug),

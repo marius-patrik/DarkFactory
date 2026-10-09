@@ -1074,3 +1074,44 @@ describe("the App sweep", () => {
 		expect(report?.step.if).toBe("always()");
 	});
 });
+
+describe("the sweep's matrix matches what the install it calls accepts", () => {
+	const sweep = parseWorkflow("install-sweep.yml");
+
+	// The fan-out calls `install.yml`, whose `repository` input is declared `type: string`. GitHub
+	// validates a called workflow's inputs when the job is *created*, so a matrix entry that is an
+	// object rather than a slug fails the whole run at a point where the sweep job is already green and
+	// there is no install job to click. The first live run produced exactly that: a successful sweep
+	// reporting 25 targets, a failed run, and one job in it.
+	it("passes matrix entries straight through as the repository string", () => {
+		const with_ = sweep.jobs.install?.with as Record<string, unknown> | undefined;
+		expect(with_?.repository).toBe("${{ matrix }}");
+		// `matrix.repository` is only valid for object entries, which is the shape that gets rejected.
+		expect(String(with_?.repository)).not.toContain("matrix.repository");
+	});
+
+	it("declares the matrix as a single named dimension, matching a scalar entry", () => {
+		const matrix = sweep.jobs.install?.strategy?.matrix as Record<string, unknown> | undefined;
+		expect(Object.keys(matrix ?? {})).toEqual(["repository"]);
+		expect(matrix?.repository).toBe("${{ fromJson(needs.sweep.outputs.matrix) }}");
+	});
+
+	it("names the target in the job name from the same expression the input receives", () => {
+		// Otherwise the log reads `install ${{ matrix.repository }}` - the literal template GitHub shows
+		// for a job whose name could not be resolved, which is how this went undiagnosed for a run.
+		expect(sweep.jobs.install?.name).toBe("install ${{ matrix }}");
+	});
+});
+
+describe("the sweep emits slugs, not objects", () => {
+	it("runSweep writes a JSON array of strings, which fromJson turns into scalars", () => {
+		// Read from the source rather than from a live run: this is the shape `fromJson` will see, and
+		// the contract the workflow above depends on.
+		const source = readFileSync(join(repoRoot, "packages/harness/src/install/sweep-main.ts"), "utf8");
+		const line = source.split("\n").find((l) => l.includes("plan.targets.map"));
+		expect(line, "the matrix is not built with a .map over targets").toBeDefined();
+		// `{ repository: ... }` here is the defect; a bare `target.slug` is the fix.
+		expect(line).toContain("target.slug");
+		expect(line).not.toMatch(/\{\s*repository:/u);
+	});
+});
