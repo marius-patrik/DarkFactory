@@ -122,7 +122,12 @@ jobs:
 
       - name: Set up Deno
         if: matrix.ecosystem == 'deno'
-        uses: denoland/setup-deno@v2
+        # `v2.0.5`, not `v2`. That action publishes no floating `v2` tag - only `v2.0.x` - so `@v2` did not
+        # resolve, and a repository with a Deno project got a step that failed before it could run.
+        # Nothing caught it because nothing resolves an action reference: every pin here had been a tag
+        # that was assumed to exist. Verified against the action's own refs, where `refs/tags/v2` is absent
+        # and `refs/tags/v2.0.5` is `22d081ff2d3a40755e97629de92e3bcbfa7cf2ed`.
+        uses: denoland/setup-deno@v2.0.5 # 22d081ff2d3a40755e97629de92e3bcbfa7cf2ed
         with:
           deno-version: v2.x
 
