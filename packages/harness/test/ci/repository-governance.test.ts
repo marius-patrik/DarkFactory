@@ -1115,3 +1115,34 @@ describe("the sweep emits slugs, not objects", () => {
 		expect(line).not.toMatch(/\{\s*repository:/u);
 	});
 });
+
+describe("the declared sweep scope", () => {
+	// The scope is the only thing standing between an account-wide App installation and a pull request
+	// in every repository the account holds. Asserted here as well as in the sweep's own tests because
+	// this one fails if the key is *renamed or removed from the configuration*, which no unit test on
+	// `sweepScope` can detect - it reads whatever it is handed.
+	it("declares which repositories the sweep may install into", () => {
+		const sweep = repoConfig().app.sweep?.repositories;
+		expect(Array.isArray(sweep), "repo.app.sweep.repositories is missing").toBe(true);
+	});
+
+	it("names every entry as owner/name, or the fan-out fails at job creation", () => {
+		// A bare name reaching `with.repository` is rejected when GitHub creates the install job, which
+		// fails the whole run with no job to click - the failure `planSweep`'s tests exist to prevent.
+		for (const slug of repoConfig().app.sweep?.repositories ?? []) {
+			expect(slug, `${slug} is not owner/name`).toMatch(/^[^/\s]+\/[^/\s]+$/u);
+		}
+	});
+
+	it("keeps the disposable probe in scope, so the fan-out is provable", () => {
+		// The probe is how the sweep gets proved end to end. If it drops out of scope there is no way to
+		// demonstrate the fan-out without opening pull requests in the account's real repositories.
+		expect(repoConfig().app.sweep?.repositories).toContain("marius-patrik/darkfactory-install-probe");
+	});
+
+	it("does not name the pipeline itself in scope", () => {
+		// `planSweep` excludes it regardless; declaring it would contradict the exclusion and make the
+		// guard look necessary when it is not.
+		expect(repoConfig().app.sweep?.repositories).not.toContain(declaredSlug());
+	});
+});

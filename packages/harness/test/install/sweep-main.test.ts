@@ -3,7 +3,7 @@ import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterAll, beforeAll } from "bun:test";
-import { renderReport, runSweep } from "../../src/install/sweep-main.ts";
+import { renderReport, runSweep, sweepScope } from "../../src/install/sweep-main.ts";
 import { MANIFEST_PATH } from "../../src/install/manifest.ts";
 
 const roots: string[] = [];
@@ -85,5 +85,47 @@ describe("the sweep report", () => {
 	it("omits the ellipsis when the examples are the whole set", () => {
 		expect(renderReport(1, [], [{ slug: "a/1", reason: "archived" }])).toContain("skipped archived: a/1");
 		expect(renderReport(1, [], [{ slug: "a/1", reason: "archived" }])).not.toContain("…");
+	});
+});
+
+describe("the declared sweep scope", () => {
+	// `repo.app.sweep.repositories` is what makes an account-wide App safe. The App is installed on an
+	// account, so `GET /installation/repositories` returns all 66 repositories that account can reach,
+	// and a sweep that installed into all of them would open a pull request in repositories nobody asked
+	// for. Being *able* to reach a repository is not a request to install into it.
+	it("reads the declared repositories", () => {
+		expect(sweepScope({ repo: { app: { sweep: { repositories: ["a/b", "c/d"] } } } })).toEqual(["a/b", "c/d"]);
+	});
+
+	it("treats an absent, empty or malformed block as no scope rather than an error", () => {
+		// A repository whose configuration predates this key must produce a sweep that installs nothing
+		// and says why - not a red run. A configuration upgrade becoming an outage for the fleet is worse
+		// than a sweep that does nothing until someone declares a scope.
+		expect(sweepScope({})).toEqual([]);
+		expect(sweepScope({ repo: {} })).toEqual([]);
+		expect(sweepScope({ repo: { app: {} } })).toEqual([]);
+		expect(sweepScope({ repo: { app: { sweep: {} } } })).toEqual([]);
+		expect(sweepScope({ repo: { app: { sweep: { repositories: "a/b" } } } })).toEqual([]);
+	});
+
+	it("drops entries that are not owner/name, rather than passing them to GitHub", () => {
+		// A malformed entry reaching `with.repository` fails the fan-out at job creation, which is the
+		// failure this whole change exists to make impossible.
+		expect(sweepScope({ repo: { app: { sweep: { repositories: ["a/b", "bare", 7, null] } } } })).toEqual(["a/b"]);
+	});
+
+	it("the report says an empty scope is the cause when nothing was targeted", () => {
+		// "Nothing to install" reads as a broken sweep; "nothing in scope" reads as what it is. Both
+		// words are needed, and this is the only place that can tell them apart.
+		const report = renderReport(1, [], [{ slug: "a/b", reason: "out-of-scope" }]);
+
+		expect(report).toContain("targets: none");
+		expect(report).toContain("repo.app.sweep.repositories is empty or lists nothing the App can reach");
+	});
+
+	it("stays quiet about scope when something was targeted", () => {
+		const report = renderReport(1, ["a/b"], []);
+
+		expect(report).not.toContain("repo.app.sweep.repositories");
 	});
 });

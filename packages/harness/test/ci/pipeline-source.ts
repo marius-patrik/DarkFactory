@@ -76,7 +76,12 @@ interface RepoConfig {
 		development_branch: string;
 	};
 	areas?: Record<string, { description: string } | string>;
-	app: { installation_id: number; installed_on: string[]; private_key_secret: string };
+	app: {
+		installation_id: number;
+		installed_on: string[];
+		private_key_secret: string;
+		sweep?: { repositories?: string[] };
+	};
 	pages?: Record<string, unknown>;
 	required_checks?: string[];
 	protection?: {

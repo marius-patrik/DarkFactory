@@ -36,7 +36,7 @@ export interface SweepTarget {
 /** One repository deliberately not installed into, and why. */
 export interface SweepSkip {
 	slug: string;
-	reason: "suspended-installation" | "archived" | "already-installed" | "pipeline-itself";
+	reason: "suspended-installation" | "archived" | "already-installed" | "pipeline-itself" | "out-of-scope";
 	detail?: string;
 }
 
@@ -69,6 +69,22 @@ export interface SweepEnvironment {
 	isInstalled: (slug: string) => Promise<boolean>;
 	/** The pipeline's own `owner/name`, which is never a target. */
 	pipelineSlug?: string;
+	/**
+	 * Repositories the sweep may install into, from `repo.app.sweep.repositories`.
+	 *
+	 * Narrowing to a declared list rather than acting on everything the App can reach is the whole
+	 * point of this parameter. An App installed on an account can see every repository that account
+	 * holds - 66 here - so a sweep that installed into all of them would open a pull request in
+	 * repositories nobody asked for, including archived ones and personal scratch space. Being
+	 * *able* to reach a repository is not a request to install into it.
+	 *
+	 * Compared case-insensitively, because repository names are on GitHub.
+	 *
+	 * An empty or absent list installs into nothing. That is deliberate: a sweep with no declared
+	 * scope has no way to distinguish "nothing selected" from "everything", and treating it as
+	 * everything is the dangerous reading.
+	 */
+	scope?: readonly string[];
 }
 
 /**
@@ -95,6 +111,7 @@ export async function planSweep(environment: SweepEnvironment): Promise<SweepPla
 	const targets = new Map<string, SweepTarget>();
 	const skips: SweepSkip[] = [];
 	const pipeline = environment.pipelineSlug?.toLowerCase();
+	const scope = new Set((environment.scope ?? []).map((slug) => slug.toLowerCase()));
 
 	for (const installation of installations) {
 		// Checked before the repository call: a suspended installation cannot mint a usable token, so
@@ -110,6 +127,13 @@ export async function planSweep(environment: SweepEnvironment): Promise<SweepPla
 
 		const repositories = await api.repositoriesFor(await environment.clientForInstallation(installation.id));
 		for (const repository of repositories) {
+			// Checked before anything else, including the free local checks. A repository outside the
+			// declared scope is reported so the sweep's output accounts for everything the App could
+			// reach, and never probed: probing costs a round trip to learn something already declared.
+			if (!scope.has(repository.fullName.toLowerCase())) {
+				skips.push({ slug: repository.fullName, reason: "out-of-scope" });
+				continue;
+			}
 			const decided = await decide(repository, environment, pipeline);
 			// Two shapes come back and the difference is the whole point of the function, so it is
 			// discriminated on `reason` rather than inferred: `reason` is absent on a target, and a

@@ -45,6 +45,23 @@ interface SweepEnvironment {
 const CONFIG_DOCUMENT_NAMES = [MANIFEST_PATH, "config.dfconfig", ".dfconfig"];
 
 /**
+ * The `repo.app.sweep` block, read for the sweep's declared scope.
+ *
+ * Parsed leniently - an absent or malformed block is no scope rather than an error. A repository whose
+ * configuration predates this key should produce a sweep that installs nothing and says why, not a red
+ * run: the alternative is a configuration upgrade becoming an outage for the fleet.
+ *
+ * @param document The parsed `repo.dfconfig`.
+ * @returns Repositories the sweep may install into; empty when none are declared.
+ */
+export function sweepScope(document: unknown): string[] {
+	const repo = (document as { repo?: { app?: { sweep?: { repositories?: unknown } } } }).repo;
+	const declared = repo?.app?.sweep?.repositories;
+	if (!Array.isArray(declared)) return [];
+	return declared.filter((slug): slug is string => typeof slug === "string" && slug.includes("/"));
+}
+
+/**
  * Whether a repository already holds an installation.
  *
  * Two probes, because either alone is wrong. A caller (`agent.yml` carrying a `uses:` to the
@@ -122,6 +139,7 @@ export async function runSweep(
 		clientForInstallation: async () => new GitHubClient({ token: () => app.getToken(), fetch: globalThis.fetch }),
 		isInstalled: async (slug) => alreadyInstalled(readClient, slug),
 		pipelineSlug: pipelineRepo,
+		scope: sweepScope(document),
 	});
 
 	// An array of **strings**, not of `{repository: slug}` objects. `install.yml` declares its
@@ -172,6 +190,11 @@ export function renderReport(
 				`skipped ${reason}: ${examples.join(", ")}${skips.filter((s) => s.reason === reason).length > examples.length ? ", …" : ""}`,
 		),
 	];
+	// Named separately from the target count, because "nothing to install" reads as a broken sweep and
+	// "nothing in scope" reads as what it is.
+	if (targets.length === 0 && byReason.has("out-of-scope")) {
+		lines.push("repo.app.sweep.repositories is empty or lists nothing the App can reach");
+	}
 	return lines.join("\n");
 }
 
