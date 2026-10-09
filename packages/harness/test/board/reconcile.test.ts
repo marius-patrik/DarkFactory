@@ -53,6 +53,9 @@ function declaration(overrides: Partial<BoardDeclaration> = {}): BoardDeclaratio
 		defaultBranch: "main",
 		developmentBranch: "develop",
 		installedOn: [REPO],
+		// No App block, so the fleet lookup cannot ask GitHub and falls back to `installedOn` -
+		// which is what the repository-scan tests below rely on.
+		app: {},
 		...overrides,
 	};
 }
@@ -747,6 +750,7 @@ describe("which boards a run writes to", () => {
 				projectTitle: "Scoped",
 				linkedBoards: ["Scoped", "Global"],
 				installedOn: ["o/current", "o/other"],
+				app: {},
 			}),
 			env: { GITHUB_REPOSITORY: "o/current" },
 		});
@@ -788,6 +792,7 @@ describe("which boards a run writes to", () => {
 				projectTitle: "Scoped",
 				linkedBoards: ["Scoped", "Global"],
 				installedOn: ["o/current", "o/other-a", "o/other-b"],
+				app: {},
 			}),
 			env: { GITHUB_REPOSITORY: "o/current" },
 		});

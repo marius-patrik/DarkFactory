@@ -27,8 +27,17 @@ export interface BoardDeclaration {
 	readonly defaultBranch: string;
 	/** The integration branch, whose pushes also reconcile the board. */
 	readonly developmentBranch: string;
-	/** Every repository this pipeline is installed on. */
+	/** Every repository this pipeline is installed on, as declared. */
 	readonly installedOn: readonly string[];
+	/**
+	 * The `app` block, kept whole.
+	 *
+	 * Read so the fleet can be asked of GitHub rather than believed. `installed_on` above is a
+	 * hand-maintained list of a fact GitHub already reports, and it drifted: two of six entries were
+	 * deleted repositories and two more had been renamed. Keeping the block means the credentials
+	 * needed to ask are available where the question is asked.
+	 */
+	readonly app: Readonly<Record<string, unknown>>;
 }
 
 /** A record read out of the configuration, with every field optional. */
@@ -88,6 +97,7 @@ function loadBoardDeclaration(root: string): BoardDeclaration {
 		defaultBranch,
 		developmentBranch: text(identity, "development_branch", defaultBranch),
 		installedOn: stringList(app.installed_on),
+		app,
 	};
 }
 
