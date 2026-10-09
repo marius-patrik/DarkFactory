@@ -1138,10 +1138,15 @@ describe("the declared sweep scope", () => {
 		}
 	});
 
-	it("keeps the disposable probe in scope, so the fan-out is provable", () => {
-		// The probe is how the sweep gets proved end to end. If it drops out of scope there is no way to
-		// demonstrate the fan-out without opening pull requests in the account's real repositories.
-		expect(repoConfig().app.sweep?.repositories).toContain("marius-patrik/darkfactory-install-probe");
+	// The sweep was proved end to end against a disposable repository, which has since been deleted. The
+	// assertion that pinned it is replaced rather than left behind: leaving it would fail every run, and
+	// deleting it silently would lose the thing it was protecting - that there is a way to demonstrate the
+	// fan-out without opening pull requests in the account's real repositories.
+	//
+	// What replaced it is the property that actually matters now. An empty scope means the sweep installs
+	// into nothing, which is the safe default while no repository is declared.
+	it("names nothing while the scope is empty, so the sweep cannot reach the account", () => {
+		expect(repoConfig().app.sweep?.repositories).toEqual([]);
 	});
 
 	it("does not name the pipeline itself in scope", () => {

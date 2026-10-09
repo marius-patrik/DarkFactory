@@ -269,9 +269,7 @@
       ],
       "sweep": {
         "$comment": "Which repositories `install-sweep.yml` may install into. The App is installed on an account, so `GET /installation/repositories` returns every repository that account can reach - 66 of them here - and most were never meant to receive a pipeline. An installation is a statement that the App *has access*; it is not a request to install anything. So the sweep installs into this list and nothing else, and reports the rest rather than acting on them.",
-        "repositories": [
-          "marius-patrik/darkfactory-install-probe"
-        ]
+        "repositories": []
       }
     },
     "identities": {
