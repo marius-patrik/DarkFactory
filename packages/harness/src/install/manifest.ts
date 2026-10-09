@@ -494,7 +494,21 @@ export class RepositoryManifest {
 	 */
 	identities(): Record<string, Json> {
 		const declared = withoutComments(this.data.identities);
-		return Object.keys(declared).length > 0 ? declared : structuredClone(DEFAULT_IDENTITIES);
+		if (Object.keys(declared).length === 0) return structuredClone(DEFAULT_IDENTITIES);
+
+		// Merged per identity, not chosen between. This used to return the declaration *or* the defaults,
+		// and the difference is not visible in the common case: a repository declaring `identities.app`
+		// with its own bot login got the defaults back wholesale, so `botCommitAuthor()` returned
+		// `darkfactory-pipeline[bot]` for a repository that had declared something else. Every identity the
+		// repository did not mention was lost the same way.
+		//
+		// Per identity rather than per field, so a repository declaring `app` still inherits the provider
+		// identities it did not mention. Merging fields would let a declaration that sets one field of
+		// `app` inherit the *rest* of the default app - including the default login - which is the bug in
+		// a narrower window.
+		const merged: Record<string, Json> = structuredClone(DEFAULT_IDENTITIES);
+		for (const [key, value] of Object.entries(declared)) merged[key] = value;
+		return merged;
 	}
 
 	/**
