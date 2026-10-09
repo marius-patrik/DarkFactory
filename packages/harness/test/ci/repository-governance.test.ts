@@ -1083,23 +1083,27 @@ describe("the sweep's matrix matches what the install it calls accepts", () => {
 	// object rather than a slug fails the whole run at a point where the sweep job is already green and
 	// there is no install job to click. The first live run produced exactly that: a successful sweep
 	// reporting 25 targets, a failed run, and one job in it.
-	it("passes matrix entries straight through as the repository string", () => {
+	it("passes each matrix entry as the repository string", () => {
+		// The two halves of one contract. `sweep-main.ts` emits an array of **slugs**, so the single
+		// dimension named `repository` makes `matrix.repository` the string. Object entries are rejected
+		// by `install.yml`, whose input is `type: string`; and `${{ matrix }}` is the matrix *context*,
+		// not a string, which renders as `[object Object]`. Both of those were shipped here and neither
+		// failed any test, because the value is produced in a different file from the one that reads it.
 		const with_ = sweep.jobs.install?.with as Record<string, unknown> | undefined;
-		expect(with_?.repository).toBe("${{ matrix }}");
-		// `matrix.repository` is only valid for object entries, which is the shape that gets rejected.
-		expect(String(with_?.repository)).not.toContain("matrix.repository");
+		expect(with_?.repository).toBe("${{ matrix.repository }}");
+		expect(String(with_?.repository)).not.toBe("${{ matrix }}");
 	});
 
-	it("declares the matrix as a single named dimension, matching a scalar entry", () => {
+	it("declares the matrix as one dimension, which is what makes matrix.repository a scalar", () => {
 		const matrix = sweep.jobs.install?.strategy?.matrix as Record<string, unknown> | undefined;
 		expect(Object.keys(matrix ?? {})).toEqual(["repository"]);
 		expect(matrix?.repository).toBe("${{ fromJson(needs.sweep.outputs.matrix) }}");
 	});
 
-	it("names the target in the job name from the same expression the input receives", () => {
-		// Otherwise the log reads `install ${{ matrix.repository }}` - the literal template GitHub shows
-		// for a job whose name could not be resolved, which is how this went undiagnosed for a run.
-		expect(sweep.jobs.install?.name).toBe("install ${{ matrix }}");
+	it("names the job from the same expression the input receives", () => {
+		// A name that cannot be resolved logs the literal template, which is how the original mismatch
+		// went undiagnosed for two runs.
+		expect(sweep.jobs.install?.name).toBe("install ${{ matrix.repository }}");
 	});
 });
 

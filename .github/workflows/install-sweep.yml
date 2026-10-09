@@ -73,7 +73,11 @@ jobs:
     # A job that calls a reusable workflow may carry `uses`, `with`, `secrets`, `strategy`, `needs`,
     # `if`, `concurrency` and `permissions` - and nothing else. No `env`, no `runs-on`, no `steps`, so
     # anything this job needs has to come in through `with`.
-    name: install ${{ matrix }}
+    # `matrix.repository`, not `matrix`. The matrix has one dimension named `repository`, so the string
+    # lives at `matrix.repository`; `${{ matrix }}` is the matrix *context*, which is not a string and
+    # renders as `[object Object]` when interpolated. That was wrong in the first fix and is why the
+    # fan-out still did not appear after it.
+    name: install ${{ matrix.repository }}
     needs: sweep
     # `jobs.<id>.if` is evaluated *before* `strategy.matrix`, so this cannot filter per entry; it
     # gates the whole fan-out. An empty matrix plus a job that must run is the one combination GitHub
@@ -89,11 +93,10 @@ jobs:
         repository: ${{ fromJson(needs.sweep.outputs.matrix) }}
     uses: ./.github/workflows/install.yml
     with:
-      # `matrix` is an array of slugs, so `matrix` itself is the string. Reading `matrix.repository`
-      # works only when the entries are objects, which `install.yml` then rejects because its input is
-      # declared `type: string` - and GitHub validates that when creating the job, so the run fails with
-      # no install job in it.
-      repository: ${{ matrix }}
+      # The array is of slugs, so `matrix.repository` is the string. Object entries were rejected by
+      # `install.yml`, whose `repository` input is declared `type: string` - GitHub validates a called
+      # workflow's inputs when it creates the job, so a bad value fails the run with no install job in it.
+      repository: ${{ matrix.repository }}
       apply-settings: true
     secrets:
       DARKFACTORY_APP_PRIVATE_KEY: ${{ secrets.DARKFACTORY_APP_PRIVATE_KEY }}
