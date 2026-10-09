@@ -68,9 +68,10 @@ are contexts that actually exist — protection requiring a check nothing report
 forever.
 
 Protection has to be applied by the pipeline, not from this repository: the repository has no
-\`packages/\` to run it from. There is no consumer-facing way to do that yet, so it is tracked in
-the pipeline's issue tracker rather than described by a command that does not exist. Everything
-above is yours to finish without it.
+\`packages/\` to run it from. The pipeline decides it from what CI actually reported - it applies a
+declared lane only once that lane's required checks have come back green, and says which checks were
+unmet otherwise - so this needs a decision from you about *when* to ask for it, not a command you
+cannot run.
 
 ---
 

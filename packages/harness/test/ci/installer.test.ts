@@ -201,11 +201,27 @@ describe("the configuration issue df ci install files", () => {
 		expect(body).not.toContain("python ");
 	});
 
-	it("does not claim a consumer can apply branch protection itself", () => {
-		// A fresh install writes eight workflows and `repo.dfconfig`, none of which touch
-		// protection, and `install.yml` deliberately passes `--skip-protection`. There is no
-		// consumer-facing way to apply it — tracked in #1381 — so the body must not imply one.
-		expect(body).toMatch(/no consumer-facing way/i);
+	// Was: "does not claim a consumer can apply branch protection itself", asserting the body says
+	// there is no consumer-facing way — tracked in #1381. That became false when the pipeline gained
+	// `protectLaneWhenGreen`, which applies a declared lane once its checks report green. The test was
+	// correct when written and is now asserting a falsehood, which is the failure mode this whole file
+	// has been guarding against in the other direction.
+	//
+	// What still holds: a fresh install does not apply protection. `install.yml` still passes
+	// `--skip-protection`, because a repository whose CI has never run has no green check to wait for.
+	// So the body must not claim protection is applied *now*, and must not tell the reader to run a
+	// command from a repository that has no `packages/` to run it from.
+	it("does not claim the install applied protection, or that a consumer runs it", () => {
 		expect(body).not.toMatch(/repo-settings\.ts --apply/);
+		expect(body).not.toMatch(/branch protection (is|has been) (applied|protected)/i);
+		// The honest statement: the pipeline decides, from what CI reported, and names the checks it was
+		// waiting on.
+		expect(body).toMatch(/once that lane's required checks have come back green/i);
+	});
+
+	it("no longer tells the reader there is no consumer-facing way", () => {
+		// Asserted so the stale sentence cannot return with the next edit. It was true in #1381 and false
+		// now, and nothing else would notice.
+		expect(body).not.toMatch(/no consumer-facing way/i);
 	});
 });
