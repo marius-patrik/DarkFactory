@@ -81,6 +81,7 @@ interface RepoConfig {
 		installed_on: string[];
 		private_key_secret: string;
 		sweep?: { repositories?: string[] };
+		credentials?: { agent_enabled_variable?: string; project_token_secret?: string };
 	};
 	pages?: Record<string, unknown>;
 	required_checks?: string[];

@@ -267,6 +267,11 @@
         "marius-patrik/template-OdbornaPrace",
         "marius-patrik/OdbornaPrace-mono"
       ],
+      "credentials": {
+        "$comment": "Names of the repository secrets and variables this pipeline reads. These are *names*, not values - the values live in GitHub and this document never sees them. They are declared here because a name is a fact about the repository: the workflow that reads `vars.<name>`, the configuration issue that tells a person to create `<name>`, and the reinstaller that passes it into a caller all have to spell it the same way, and a disagreement is silent. `private_key_secret` above is itself one of these and is read from there rather than repeated.",
+        "agent_enabled_variable": "AGENT_ENABLED",
+        "project_token_secret": "GH_PROJECT_TOKEN"
+      },
       "sweep": {
         "$comment": "Which repositories `install-sweep.yml` may install into. The App is installed on an account, so `GET /installation/repositories` returns every repository that account can reach - 66 of them here - and most were never meant to receive a pipeline. An installation is a statement that the App *has access*; it is not a request to install anything. So the sweep installs into this list and nothing else, and reports the rest rather than acting on them.",
         "repositories": []
