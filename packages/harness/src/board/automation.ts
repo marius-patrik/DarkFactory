@@ -210,14 +210,80 @@ export class BoardAutomation {
 		return this.boardGroup(numbers);
 	}
 
-	/** The repositories this run may reconcile: this one, then every other it is installed on. */
-	repositoriesToScan(): string[] {
+	/**
+	 * The repositories this run may reconcile: this one, then every other the App is installed on.
+	 *
+	 * `app.installed_on` used to be the answer, hand-maintained in `repo.dfconfig`. It drifted, and the
+	 * drift was invisible because a name in a list resolves to nothing rather than failing: at the time
+	 * this was written the list named six repositories, of which **two no longer existed** and **two more
+	 * had been renamed** - so the board automation was reconciling a global board for repositories that
+	 * were gone, and missing the two it had been renamed to.
+	 *
+	 * GitHub already knows the answer. `GET /app/installations` reports where the App is installed, and
+	 * `GET /installation/repositories` reports the repositories each installation covers - which is the
+	 * same fact `install-sweep.yml` reads to decide what to install. Reading it here makes the fleet a
+	 * fact rather than a declaration that has to be remembered.
+	 *
+	 * The declared list is kept as a **fallback**, not as a source. It is what a run reaches when there is
+	 * no credential to ask, and dropping it entirely would make board automation silently scope itself to
+	 * one repository the first time a token is missing - a smaller repair than intended, which is the
+	 * safe direction but not the right one.
+	 */
+	async repositoriesToScan(): Promise<string[]> {
 		const current = this.#env.GITHUB_REPOSITORY ?? "";
 		const repos = current ? [current] : [];
-		for (const repo of this.declaration?.installedOn ?? []) {
+
+		const installed = await this.installedRepositories();
+		for (const repo of installed.length > 0 ? installed : (this.declaration?.installedOn ?? [])) {
 			if (repo && !repos.includes(repo)) repos.push(repo);
 		}
 		return repos;
+	}
+
+	/**
+	 * The repositories the App is installed on, from GitHub.
+	 *
+	 * @returns Slugs, or an empty list when there is no credential or the question fails. An empty list is
+	 *   never an answer that "there are none" - it is "we could not ask", which is why the caller falls
+	 *   back rather than concluding the fleet is empty.
+	 */
+	async installedRepositories(): Promise<string[]> {
+		// The App block is the only source of the credentials needed to ask. Without it - a repository
+		// that declares boards but no App - the caller falls back to the declared list rather than
+		// concluding the fleet is empty.
+		const app = this.declaration?.app;
+		const owner = this.#env.GITHUB_REPOSITORY_OWNER ?? "";
+		const repo = this.#env.GITHUB_REPOSITORY ?? "";
+		const slash = repo.indexOf("/");
+		if (!app || slash < 1 || !owner) return [];
+
+		try {
+			// Imported lazily so a board run that never asks does not load the keychain package.
+			const { AppInstallationTokenProvider, appIdentityFromManifest } = await import("../../../keychain/src/index.ts");
+			const { GitHubClient } = await import("../github/client.ts");
+			const { GitHubAppInstallations } = await import("../github/app-installations.ts");
+
+			// The private key lives in GitHub, never in this document. Board reconciliation runs on a
+			// schedule without it, so the credential is supplied by the caller when it has one.
+			const privateKey = this.#env.DARKFACTORY_APP_PRIVATE_KEY;
+			if (!privateKey) return [];
+
+			const identity = await appIdentityFromManifest({ app }, `${owner}/${repo.slice(slash + 1)}`, () => privateKey);
+			const provider = new AppInstallationTokenProvider(identity);
+			const api = new GitHubAppInstallations(new GitHubClient({ token: () => provider.getAppJwt() }));
+			const slugs: string[] = [];
+			for (const installation of await api.list()) {
+				if (installation.suspendedAt) continue;
+				for (const repository of await api.repositoriesFor(new GitHubClient({ token: () => provider.getToken() }))) {
+					slugs.push(repository.fullName);
+				}
+			}
+			return slugs;
+		} catch {
+			// A failed lookup is not an empty fleet. Reporting the declared list is what the caller does
+			// with an empty result, and inventing "installed nowhere" would stop board automation entirely.
+			return [];
+		}
 	}
 
 	/**
@@ -292,7 +358,7 @@ export class BoardAutomation {
 		let globalClient: BoardGroup | null = null;
 		const own = target ?? (await this.everyDeclaredBoard());
 
-		for (const repo of this.repositoriesToScan()) {
+		for (const repo of await this.repositoriesToScan()) {
 			if (!this.run.canReconcile()) break;
 			if (!repo) continue;
 			let repoClient: ReconcilableBoard = own;
@@ -315,7 +381,7 @@ export class BoardAutomation {
 			run: this.run,
 			rest: this.rest,
 			graphql: this.graphql,
-			repoSlugs: this.repositoriesToScan(),
+			repoSlugs: await this.repositoriesToScan(),
 			titleByNumber: await this.boardTitles(),
 			state: this.#env.PROJECT_RECONCILE_STATE ?? "all",
 			globalTitle: this.declaration?.globalBoardTitle ?? "Global",

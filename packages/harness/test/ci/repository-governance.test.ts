@@ -737,7 +737,19 @@ describe("the pipeline's GitHub identity", () => {
 	it("test_the_app_installation_is_recorded: the installation id is what a token request needs", () => {
 		const app = repoConfig().app;
 		expect(app.installation_id).toBe(159771550);
-		expect(app.installed_on).toContain("marius-patrik/omnis");
+	});
+
+	it("test_installed_on_is_no_longer_the_fleet: GitHub reports where the App is installed", () => {
+		// This test used to assert `installed_on` named `marius-patrik/omnis`. It passed because the list
+		// had once been right, and kept passing through two renames and a deletion: a name in a list
+		// resolves to nothing rather than failing, so nothing ever reported that the repository it named
+		// was gone. Board automation read the same list, so it reconciled boards for repositories that no
+		// longer existed and never reached the two they had been renamed to.
+		//
+		// The list is now empty and deprecated. Empty rather than deleted, because it is still the fallback
+		// for a run with no App credential to ask with, and deleting it would silently change every such
+		// run. Asserted empty so a hand-added entry cannot quietly become a fleet again.
+		expect(repoConfig().app.installed_on).toEqual([]);
 	});
 
 	it("test_repository_documents_name_the_native_docs_contract: normative text points at the current owners", () => {
