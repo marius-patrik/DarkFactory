@@ -128,4 +128,42 @@ describe("the declared sweep scope", () => {
 
 		expect(report).not.toContain("repo.app.sweep.repositories");
 	});
+
+	// Found by reading a live run that was correct and said it was not. The probe was in scope and
+	// already installed, so the sweep had done its job - and the hint blamed the declaration anyway,
+	// because it fired on "no targets" rather than on "nothing was skipped for any other reason".
+	it("stays quiet when the only in-scope repository was already installed", () => {
+		const report = renderReport(
+			1,
+			[],
+			[
+				{ slug: "a/b", reason: "already-installed" },
+				{ slug: "c/d", reason: "out-of-scope" },
+			],
+		);
+
+		expect(report).toContain("targets: none");
+		expect(report).not.toContain("repo.app.sweep.repositories");
+	});
+
+	it("names the scope when every repository was skipped for being out of scope", () => {
+		const report = renderReport(
+			1,
+			[],
+			[
+				{ slug: "a/b", reason: "out-of-scope" },
+				{ slug: "c/d", reason: "out-of-scope" },
+			],
+		);
+
+		expect(report).toContain("repo.app.sweep.repositories is empty");
+	});
+
+	it("names the scope when there was nothing to look at at all", () => {
+		// No installations and no repositories: the sweep found nothing to consider, and the only useful
+		// thing it can say is that the App saw nothing.
+		const report = renderReport(0, [], []);
+
+		expect(report).not.toContain("repo.app.sweep.repositories");
+	});
 });
