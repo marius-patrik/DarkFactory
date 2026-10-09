@@ -472,6 +472,20 @@ export class RepositoryManifest {
 	}
 
 	/**
+	 * The repository secret holding the App's private key, from `app.private_key_secret`.
+	 *
+	 * A *name*, not the key. The App key is the one credential the pipeline reads by name rather than by
+	 * value, so the name is a fact about the repository that callers must agree on: the workflow that
+	 * reads `secrets.<name>` and the reinstaller that passes it in have to spell it the same way.
+	 *
+	 * @returns The declared name, or undefined when the repository declares none.
+	 */
+	appKeySecret(): string | undefined {
+		const declared = text(isRecord(this.data.app) ? this.data.app.private_key_secret : undefined);
+		return declared.length > 0 ? declared : undefined;
+	}
+
+	/**
 	 * The declared provider and pipeline identities.
 	 *
 	 * A consumer that installs the pipeline has this pipeline's App — it is what opens the pull

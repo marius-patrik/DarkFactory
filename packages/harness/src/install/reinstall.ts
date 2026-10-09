@@ -12,7 +12,7 @@
 import { existsSync } from "node:fs";
 import { mkdir, readdir, readFile, writeFile } from "node:fs/promises";
 import { dirname, join, relative } from "node:path";
-import { MANIFEST_PATH, resolveManifestPath } from "./manifest.ts";
+import { loadRepositoryManifest, MANIFEST_PATH, resolveManifestPath } from "./manifest.ts";
 
 /**
  * Matches whatever a caller's `uses:` line pins.
@@ -45,6 +45,15 @@ const DIRECT_CI_REF_PATTERN = /^(\s*ref:\s*")[^"]+("\s*$)/gmu;
 function expression(body: string): string {
 	return `$\{{ ${body} }}`;
 }
+
+/**
+ * The App key's name when a repository declares none.
+ *
+ * The name every installed workflow reads, and therefore the only correct answer for a repository with
+ * no `app.private_key_secret` of its own. A constant rather than a literal at the two use sites below,
+ * because a third copy is what this change is removing.
+ */
+const DEFAULT_APP_KEY_SECRET = "DARKFACTORY_APP_PRIVATE_KEY";
 
 /** The step name that marks a workflow as checking the pinned runtime out directly. */
 const DIRECT_CI_MARKER = "Check out pinned DarkFactory runtime";
@@ -123,6 +132,24 @@ export async function ensureSecretsPass(root: string): Promise<string[]> {
 	const changed: string[] = [];
 	const directory = join(root, ".github", "workflows");
 
+	// The secret's *name* is declared in `repo.dfconfig` as `app.private_key_secret`, and it used to be
+	// written out as a literal here. Two copies of one fact: a repository that renamed the secret kept a
+	// declaration saying one thing and a reinstaller injecting another, and the two disagreed silently -
+	// the "already passed it?" check looked for the old name, so a caller already carrying the *declared*
+	// name was not recognised and the literal was appended beside it. A reinstall therefore grew a second
+	// entry for a secret that does not exist.
+	//
+	// Read from the repository being repaired rather than from this pipeline's own configuration, because
+	// the file being edited belongs to the consumer. Falling back to this pipeline's name is the honest
+	// default for a repository with no declaration: it is the name the installed workflows use.
+	let secretName = DEFAULT_APP_KEY_SECRET;
+	try {
+		secretName = (await loadRepositoryManifest(root)).appKeySecret() ?? DEFAULT_APP_KEY_SECRET;
+	} catch {
+		// A malformed document is reported by the install that reads it; this repair must not refuse to
+		// run because of it.
+	}
+
 	for (const name of await workflowFiles(directory)) {
 		const path = join(directory, name);
 		// Line terminators are kept, so an inserted line inherits the file's own endings rather than
@@ -135,13 +162,9 @@ export async function ensureSecretsPass(root: string): Promise<string[]> {
 		const explicit = lines.findIndex((line) => line.trimStart().startsWith("secrets:"));
 		if (explicit !== -1) {
 			if (lines[explicit]?.trim() !== "secrets:") continue;
-			if (lines.some((line) => line.includes("DARKFACTORY_APP_PRIVATE_KEY"))) continue;
+			if (lines.some((line) => line.includes(secretName))) continue;
 			const indent = " ".repeat(leadingWidth(lines[explicit] ?? "") + 2);
-			lines.splice(
-				explicit + 1,
-				0,
-				`${indent}DARKFACTORY_APP_PRIVATE_KEY: ${expression("secrets.DARKFACTORY_APP_PRIVATE_KEY")}\n`,
-			);
+			lines.splice(explicit + 1, 0, `${indent}${secretName}: ${expression(`secrets.${secretName}`)}\n`);
 			await writeFile(path, lines.join(""), "utf8");
 			console.log(`  passed the App key in .github/workflows/${name}`);
 			changed.push(`.github/workflows/${name}`);
