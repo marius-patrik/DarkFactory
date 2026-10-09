@@ -3,7 +3,7 @@ import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterAll, beforeAll } from "bun:test";
-import { renderReport, runSweep, sweepScope } from "../../src/install/sweep-main.ts";
+import { CONFIG_DOCUMENT_NAMES, renderReport, runSweep, sweepScope } from "../../src/install/sweep-main.ts";
 import { MANIFEST_PATH } from "../../src/install/manifest.ts";
 
 const roots: string[] = [];
@@ -165,5 +165,15 @@ describe("the declared sweep scope", () => {
 		const report = renderReport(0, [], []);
 
 		expect(report).not.toContain("repo.app.sweep.repositories");
+	});
+});
+
+describe("the sweep's document probe list is shared with the protection pass", () => {
+	// Two lists of configuration-document names would be two things to keep in step, and a mismatch
+	// would not throw: the protection pass would simply find no lanes and report that a repository with
+	// protection declared has none. So they are one export, asserted here so the import cannot quietly
+	// become a copy.
+	it("is the list the protection pass probes", () => {
+		expect(CONFIG_DOCUMENT_NAMES).toEqual([MANIFEST_PATH, "config.dfconfig", ".dfconfig"]);
 	});
 });
