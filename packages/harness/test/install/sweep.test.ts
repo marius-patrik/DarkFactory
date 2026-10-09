@@ -17,6 +17,7 @@ describe("the installation sweep", () => {
 		pipelineSlug?: string;
 		account?: string | null;
 		installationId?: number;
+		scope?: string[];
 	}): SweepEnvironment & { calls: string[] } {
 		const installationId = options.installationId ?? 159771550;
 		const calls: string[] = [];
@@ -53,11 +54,12 @@ describe("the installation sweep", () => {
 				return installed.has(slug);
 			},
 			...(options.pipelineSlug ? { pipelineSlug: options.pipelineSlug } : {}),
+			...(options.scope ? { scope: options.scope } : {}),
 		};
 	}
 
 	it("targets a repository the App covers that has no installation yet", async () => {
-		const plan = await planSweep(environment({ repositories: [{ full_name: "acme/one" }] }));
+		const plan = await planSweep(environment({ repositories: [{ full_name: "acme/one" }], scope: ["acme/one"] }));
 
 		expect(plan.targets).toEqual([{ slug: "acme/one", installationId: 159771550, account: "acme" }]);
 		expect(plan.installations).toBe(1);
@@ -66,7 +68,9 @@ describe("the installation sweep", () => {
 	it("is idempotent: an already-installed repository is a skip, not a target", async () => {
 		// The property the cron depends on. Without it, every tick would re-install every repository
 		// and the sweep would be indistinguishable from a loop.
-		const plan = await planSweep(environment({ repositories: [{ full_name: "acme/one" }], installed: ["acme/one"] }));
+		const plan = await planSweep(
+			environment({ repositories: [{ full_name: "acme/one" }], installed: ["acme/one"], scope: ["acme/one"] }),
+		);
 
 		expect(plan.targets).toEqual([]);
 		expect(plan.skips).toEqual([{ slug: "acme/one", reason: "already-installed" }]);
@@ -95,6 +99,7 @@ describe("the installation sweep", () => {
 			environment({
 				repositories: [{ full_name: "marius-patrik/DarkFactory" }, { full_name: "acme/one" }],
 				pipelineSlug: "marius-patrik/darkfactory",
+				scope: ["marius-patrik/DarkFactory", "acme/one"],
 			}),
 		);
 
@@ -107,6 +112,7 @@ describe("the installation sweep", () => {
 		// trip would be spent to learn nothing.
 		const env = environment({
 			repositories: [{ full_name: "acme/old", archived: true }, { full_name: "acme/one" }],
+			scope: ["acme/old", "acme/one"],
 		});
 		const plan = await planSweep(env);
 
@@ -120,6 +126,7 @@ describe("the installation sweep", () => {
 		const plan = await planSweep(
 			environment({
 				repositories: [{ full_name: "acme/zebra" }, { full_name: "acme/alpha" }, { full_name: "acme/mango" }],
+				scope: ["acme/zebra", "acme/alpha", "acme/mango"],
 			}),
 		);
 
@@ -144,6 +151,7 @@ describe("the installation sweep", () => {
 			clientForInstallation: async (id) =>
 				new GitHubClient({ token: "ghs", fetch: (byInstallation[id] ?? first).fetch }),
 			isInstalled: async () => false,
+			scope: ["acme/one"],
 		});
 
 		expect(plan.targets).toHaveLength(1);
@@ -153,15 +161,71 @@ describe("the installation sweep", () => {
 	it("reports every installation even when none produced a target", async () => {
 		// The count is what tells a person the sweep is working at all. A sweep that found the App but
 		// installed nothing and said nothing is indistinguishable from a broken one.
-		const plan = await planSweep(environment({ repositories: [], account: "acme" }));
+		const plan = await planSweep(environment({ repositories: [], account: "acme", scope: [] }));
 
 		expect(plan.targets).toEqual([]);
 		expect(plan.installations).toBe(1);
 	});
 
+	// The scope tests use `scope: [...]` on the helper, so `environment()` grows the option below.
+	it("installs into nothing when no scope is declared", async () => {
+		// The property that makes an account-wide App safe. Being *able* to reach a repository is not a
+		// request to install into it, so an absent list installs into nothing rather than everything.
+		const plan = await planSweep(environment({ repositories: [{ full_name: "acme/one" }, { full_name: "acme/two" }] }));
+
+		expect(plan.targets).toEqual([]);
+		expect(plan.skips.map((s) => s.reason)).toEqual(["out-of-scope", "out-of-scope"]);
+	});
+
+	it("installs only into the declared scope and reports the rest", async () => {
+		const plan = await planSweep(
+			environment({
+				repositories: [{ full_name: "acme/one" }, { full_name: "acme/two" }, { full_name: "acme/three" }],
+				scope: ["acme/one", "acme/three"],
+			}),
+		);
+
+		expect(plan.targets.map((t) => t.slug)).toEqual(["acme/one", "acme/three"]);
+		// Reported, not silently dropped: the sweep's output accounts for everything the App could reach.
+		expect(plan.skips).toEqual([{ slug: "acme/two", reason: "out-of-scope" }]);
+	});
+
+	it("does not probe a repository outside the scope", async () => {
+		// The scope is declared, so asking GitHub whether the repository is already installed spends a
+		// round trip to learn something this repository already knows.
+		const env = environment({
+			repositories: [{ full_name: "acme/one" }, { full_name: "acme/two" }],
+			scope: ["acme/one"],
+		});
+		await planSweep(env);
+
+		expect(env.calls).toContain("probe:acme/one");
+		expect(env.calls).not.toContain("probe:acme/two");
+	});
+
+	it("matches the scope case-insensitively, because repository names are", async () => {
+		const plan = await planSweep(environment({ repositories: [{ full_name: "Acme/One" }], scope: ["acme/one"] }));
+
+		expect(plan.targets.map((t) => t.slug)).toEqual(["Acme/One"]);
+	});
+
+	it("checks scope before the free local skips, so the reason names the real cause", async () => {
+		// An archived repository inside the scope reports `archived`; the same repository outside it
+		// reports `out-of-scope`. The first is actionable and the second is a declaration problem.
+		const env = environment({ repositories: [{ full_name: "acme/old", archived: true }], scope: ["acme/other"] });
+		const plan = await planSweep(env);
+
+		expect(plan.skips).toEqual([{ slug: "acme/old", reason: "out-of-scope" }]);
+		// The installation token is still minted - the repository list has to be read to know what is in
+		// scope - but no repository is *probed*, which is the round trip being claimed.
+		expect(env.calls).toEqual(["mint:159771550"]);
+	});
+
 	it("tolerates an installation with no account", async () => {
 		// GitHub allows it, and a sweep that threw here would fail every tick rather than this one.
-		const plan = await planSweep(environment({ repositories: [{ full_name: "acme/one" }], account: null }));
+		const plan = await planSweep(
+			environment({ repositories: [{ full_name: "acme/one" }], account: null, scope: ["acme/one"] }),
+		);
 
 		expect(plan.targets[0]?.account).toBeUndefined();
 		expect(plan.targets[0]?.slug).toBe("acme/one");
