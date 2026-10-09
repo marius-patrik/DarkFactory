@@ -1150,3 +1150,40 @@ describe("the declared sweep scope", () => {
 		expect(repoConfig().app.sweep?.repositories).not.toContain(declaredSlug());
 	});
 });
+
+describe("a step that cannot invalidate an install must not report one", () => {
+	const install = parseWorkflow("install.yml");
+	const stepOrder = allSteps(install)
+		.filter(({ job }) => job === "install")
+		.map(({ step }) => step.name);
+
+	it("opens the pull request before reconciling settings", () => {
+		// The ordering is the whole basis for tolerating a failure below. If the reconcile ever ran
+		// first, a rate-limited board write would abort an installation that had not been delivered yet.
+		const opened = stepOrder.indexOf("Open a pull request on the target");
+		const reconciled = stepOrder.indexOf("Reconcile labels, board and settings");
+
+		expect(opened).toBeGreaterThan(-1);
+		expect(reconciled, "the reconcile step is gone, so this rule no longer describes the workflow").toBeGreaterThan(
+			opened,
+		);
+	});
+
+	it("does not fail the install when the settings reconcile fails", () => {
+		// Proven by the first sweep fan-out, which installed correctly and then went red on GraphQL
+		// quota exhaustion during the board reconcile - turning a completed installation into something
+		// a caller would re-run.
+		const reconcile = stepOrder.indexOf("Reconcile labels, board and settings");
+		const steps_ = allSteps(install).filter(({ job }) => job === "install");
+		const step = steps_.find(({ step }) => step.name === "Reconcile labels, board and settings")?.step;
+
+		expect(reconcile).toBeGreaterThan(-1);
+		expect(step?.["continue-on-error"], "a settings failure still fails the whole install").toBe(true);
+	});
+
+	it("still runs the reconcile when asked, and skips it otherwise", () => {
+		const step = allSteps(install).find(({ step }) => step.name === "Reconcile labels, board and settings")?.step;
+
+		expect(step?.if).toBe("inputs.apply-settings");
+	});
+});
