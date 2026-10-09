@@ -47,6 +47,9 @@ interface Job {
 	secrets?: Record<string, unknown>;
 	// Job outputs are declared with the same hyphenated names the workflow reads them by.
 	outputs?: Record<string, string>;
+	// Read by assertions, so typed rather than read through the catch-all. An unbounded job under a
+	// concurrency group that does not cancel itself is how one hung repository stops every later sweep.
+	"timeout-minutes"?: number;
 	[key: string]: unknown;
 	strategy?: {
 		"max-parallel"?: number;
