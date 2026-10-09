@@ -1192,3 +1192,27 @@ describe("a step that cannot invalidate an install must not report one", () => {
 		expect(step?.if).toBe("inputs.apply-settings");
 	});
 });
+
+describe("a job a sweep fans out over is bounded", () => {
+	const install = parseWorkflow("install.yml");
+	const sweep = parseWorkflow("install-sweep.yml");
+
+	// `install-sweep.yml` runs its matrix with `max-parallel: 1` under a concurrency group with
+	// `cancel-in-progress: false`, so a hung entry holds the slot and every later sweep queues behind it.
+	// GitHub's default job timeout is six hours, so without this one repository's hang would have stopped
+	// every repository from being installed, hourly, indefinitely.
+	it("bounds the install job", () => {
+		expect(install.jobs.install?.["timeout-minutes"], "a hung install holds the sweep's only slot").toBeGreaterThan(0);
+	});
+
+	// Bounded but not tight: the job legitimately does two checkouts, a frozen-lockfile install, a
+	// generation pass and a pull request. A timeout below the deciding job's own would turn a slow install
+	// into a failed one.
+	it("allows longer than the sweep's deciding job, which decides in ten minutes", () => {
+		expect(install.jobs.install?.["timeout-minutes"]).toBeGreaterThan(sweep.jobs.sweep?.["timeout-minutes"] ?? 0);
+	});
+
+	it("keeps the deciding job bounded too", () => {
+		expect(sweep.jobs.sweep?.["timeout-minutes"]).toBeGreaterThan(0);
+	});
+});

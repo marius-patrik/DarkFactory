@@ -63,6 +63,16 @@ jobs:
   install:
     name: install
     runs-on: ubuntu-latest
+    # Bounded, because the sweep calls this job in a matrix and the sweep's concurrency group does not
+    # cancel itself. GitHub's default is six hours, so a hung install - a checkout waiting on a prompt, a
+    # `gh` call against a rate-limited API - held its slot for six hours, and because the sweep is
+    # `cancel-in-progress: false` every later sweep queued behind it rather than replacing it. One
+    # repository's hang would have stopped every repository from being installed, hourly, indefinitely.
+    #
+    # Fifteen minutes is generous for what this does: two checkouts, `bun install --frozen-lockfile`, a
+    # generation pass and a pull request. The sweep's own deciding job is bounded at ten, and a matrix
+    # entry that runs longer than that is stuck rather than slow.
+    timeout-minutes: 15
     env:
       # The secrets context cannot be read from a step-level `if`, so the test is hoisted to the
       # job, where it can.
