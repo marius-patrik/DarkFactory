@@ -19,6 +19,7 @@ import { GitHubClient } from "../github/client.ts";
 import { AppInstallationTokenProvider, appIdentityFromManifest } from "../../../keychain/src/index.ts";
 import { MANIFEST_PATH } from "./manifest.ts";
 import { planSweep } from "./sweep.ts";
+import { protectSweepRepository } from "./sweep-protect.ts";
 
 /** Everything this entry point reads, so a test can supply it without a process environment. */
 interface SweepEnvironment {
@@ -42,7 +43,14 @@ interface SweepEnvironment {
  * the reader rather than in `sweep.ts`, which takes the predicate as a parameter for exactly this
  * reason.
  */
-const CONFIG_DOCUMENT_NAMES = [MANIFEST_PATH, "config.dfconfig", ".dfconfig"];
+/**
+ * Configuration-document names a repository may have selected.
+ *
+ * Exported rather than duplicated: the protection pass probes the same names, and two lists that were
+ * expected to agree is a comment waiting to become wrong. `plan.ts` honours whichever document a
+ * repository selected and will not add a second beside it.
+ */
+export const CONFIG_DOCUMENT_NAMES = [MANIFEST_PATH, "config.dfconfig", ".dfconfig"];
 
 /**
  * The `repo.app.sweep` block, read for the sweep's declared scope.
@@ -151,11 +159,43 @@ export async function runSweep(
 	// `matrix: {repository: fromJson(...)}` over an array of scalars is what makes `matrix.repository` a
 	// string; over an array of objects it is an object, and the input is rejected.
 	const matrix = plan.targets.map((target) => target.slug);
-	const report = renderReport(
-		plan.installations,
-		plan.targets.map((t) => t.slug),
-		plan.skips,
-	);
+
+	// Protection, for the repositories already installed. A repository in scope that still needs an
+	// install has no CI yet, so there is nothing to wait for and nothing to protect - the install's own
+	// pull request is the human checkpoint. A repository that is already installed may have CI, and if
+	// that CI has reported its declared checks green then the lane is applied here.
+	//
+	// This runs after planning and cannot change the install matrix, so a protection failure cannot
+	// affect what gets installed.
+	const installedInScope = plan.skips.filter((skip) => skip.reason === "already-installed").map((skip) => skip.slug);
+	const protection: string[] = [];
+	if (installedInScope.length > 0) {
+		// Branch protection needs `administration`, which a GitHub App does not hold, so this uses the
+		// person's token when there is one. Without it the pass is skipped and said so rather than
+		// reporting success it cannot achieve.
+		if (readToken) {
+			for (const slug of installedInScope) {
+				const outcome = await protectSweepRepository(
+					new GitHubClient({ token: () => readToken, fetch: globalThis.fetch }),
+					slug,
+				);
+				protection.push(...outcome.decisions.map((decision) => `${slug}: ${decision.reason}`));
+			}
+		} else {
+			protection.push(
+				"no GH_TOKEN: branch protection needs administration permission, which the App does not hold, so no lane was applied",
+			);
+		}
+	}
+
+	const report = [
+		renderReport(
+			plan.installations,
+			plan.targets.map((t) => t.slug),
+			plan.skips,
+		),
+		...protection,
+	].join("\n");
 	write(env, { matrix, hasTargets: matrix.length > 0, report });
 	return { targets: matrix.length, installations: plan.installations, report };
 }
