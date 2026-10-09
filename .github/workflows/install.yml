@@ -310,6 +310,20 @@ jobs:
             --body-file "$RUNNER_TEMP/config-issue.md"
 
       - name: Reconcile labels, board and settings
+        # `continue-on-error`, and not for the usual reason. This is the *last* step: the callers,
+        # manifest and licence are written, the installation pull request is open and bound, and the
+        # configuration issue is filed before this runs. Nothing here can invalidate any of that, so
+        # failing the job only turns a completed installation into a red run.
+        #
+        # It did exactly that: the first sweep fan-out installed the probe correctly - "wrote
+        # repo.dfconfig", "repinned .github/workflows/ci.yml", pull request opened and bound - and then
+        # went red on "3 operation(s) failed", all three being GraphQL quota exhaustion during the board
+        # reconcile. A caller reading that concludes the install failed and re-runs it.
+        #
+        # A rate limit is transient and retried by the next sweep; a permission problem is reported in
+        # the log and through the configuration issue, which stays open until a person closes it. So
+        # the failure is visible without being mistaken for a broken installation.
+        continue-on-error: true
         if: inputs.apply-settings
         env:
           # Both tokens, because this step needs both. `repo-settings` picks per call: Projects v2,
