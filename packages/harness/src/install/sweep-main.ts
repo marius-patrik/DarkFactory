@@ -192,7 +192,14 @@ export function renderReport(
 	];
 	// Named separately from the target count, because "nothing to install" reads as a broken sweep and
 	// "nothing in scope" reads as what it is.
-	if (targets.length === 0 && byReason.has("out-of-scope")) {
+	//
+	// Only when *every* skip is out-of-scope. An earlier version fired on "no targets", which is wrong:
+	// once the only repository in scope was already installed, the scope was fine and the sweep had
+	// simply done its job - and the hint then blamed the declaration for a correct run. The condition
+	// is "nothing was skipped for a reason other than scope", which is the only case where the scope is
+	// a plausible explanation for an empty target list.
+	const everySkipIsScope = skips.length > 0 && skips.every((skip) => skip.reason === "out-of-scope");
+	if (targets.length === 0 && everySkipIsScope) {
 		lines.push("repo.app.sweep.repositories is empty or lists nothing the App can reach");
 	}
 	return lines.join("\n");
