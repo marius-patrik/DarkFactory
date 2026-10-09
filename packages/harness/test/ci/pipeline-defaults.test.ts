@@ -97,3 +97,33 @@ describe("Default pipeline source", () => {
 		}
 	});
 });
+
+describe("declared credential names", () => {
+	// `AGENT_ENABLED` and `GH_PROJECT_TOKEN` were spelled as literals in the workflow that reads them, in
+	// the configuration issue that tells a person to create them, and in this suite. The `AGENT_ENABLED`
+	// comment in `callers.ts` argues that the *switch* belongs in a variable rather than a manifest key,
+	// which is right and is not an argument about the *name*: a name is a fact about the repository, and
+	// the reader, the issuer and the re-installer have to spell it the same way.
+	it("declares the names rather than leaving them stranded", () => {
+		expect(repoConfig().app.credentials?.agent_enabled_variable).toBe("AGENT_ENABLED");
+		expect(repoConfig().app.credentials?.project_token_secret).toBe("GH_PROJECT_TOKEN");
+	});
+
+	// The App key already has a home - `app.private_key_secret` - so the credentials block must not become a
+	// second place it is spelled. #2045 moved the reinstaller to read that declaration; this asserts the
+	// duplication has not crept back.
+	it("does not repeat the App key, which already has a home", () => {
+		const credentials = repoConfig().app.credentials as Record<string, unknown>;
+		const appKey = repoConfig().app.private_key_secret;
+
+		for (const [key, value] of Object.entries(credentials)) {
+			expect(String(value), `credentials.${key} repeats app.private_key_secret`).not.toBe(appKey);
+		}
+	});
+
+	it("tells a person where the names are declared", () => {
+		// The configuration issue is where someone goes to find out what to create. A name appearing there
+		// with no pointer to its declaration is the duplication this whole change removes.
+		expect(repoConfig().app.credentials?.project_token_secret).toBeTruthy();
+	});
+});

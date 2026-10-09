@@ -52,6 +52,11 @@ domains, then re-run the install workflow to reconcile the labels.
 | \`GH_PROJECT_TOKEN\` | Project board writes | Board automation fails; \`GITHUB_TOKEN\` cannot write user-owned Projects v2 |
 | \`ANTHROPIC_API_KEY\` / \`CLAUDE_CODE_OAUTH_TOKEN\` / others | The agent runner | The agent stays off |
 
+\`GH_PROJECT_TOKEN\` and \`AGENT_ENABLED\` are the pipeline's own names, declared in this repository's
+\`repo.dfconfig\` under \`app.credentials\` - spelled here because this is where someone comes to find out
+what to create, and a name with no pointer to its declaration is the duplication that declaration
+removes.
+
 Set \`AGENT_ENABLED\` to \`true\` only once you want the runner working.
 
 ### 3. Documentation
