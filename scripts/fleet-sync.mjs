@@ -22,7 +22,6 @@ export function isFleetExcluded(fullName) {
 	return /(?:^|[-_])old(?:$|[-_])/.test(name) || /(?:^|[-_])agents?[-_]os(?:$|[-_])/.test(name);
 }
 
-
 export function renderLegacyWorkflow({ tag, sha, digest }) {
 	if (!/^v[0-9][A-Za-z0-9.+-]*$/.test(tag) || !/^[a-f0-9]{40}$/.test(sha) || !/^[a-f0-9]{64}$/.test(digest)) {
 		throw new Error("Invalid stable release metadata");
@@ -357,7 +356,9 @@ async function main() {
 			!r.disabled &&
 			!isFleetExcluded(r.full_name),
 	);
-	console.log(`Selected ${eligible.length} eligible repositories (excluding old/Agent OS), released df ${selected.tag}`);
+	console.log(
+		`Selected ${eligible.length} eligible repositories (excluding old/Agent OS), released df ${selected.tag}`,
+	);
 	const stats = {},
 		failures = [];
 	for (const repo of eligible.sort((a, b) => a.full_name.localeCompare(b.full_name))) {
