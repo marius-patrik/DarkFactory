@@ -320,7 +320,7 @@ async function reconcile(repo, release, token) {
   const issue = await issueFor(slug, release, changes.map(c => c.path), conflicts, token);
   if (changes.length === 0) return "conflict";
 
-  const branch = "darkfactory/bridge-" + release.tag.replace(/[^A-Za-z0-9._-]/g, "-");
+  const branch = "df-bridge/" + release.tag.replace(/[^A-Za-z0-9._-]/g, "-");
   const existingPr = (await pages("/repos/" + slug + "/pulls?state=open", token))
     .find(item => item.head?.ref === branch);
   if (existingPr) {
