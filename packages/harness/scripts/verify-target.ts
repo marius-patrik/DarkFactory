@@ -7,7 +7,7 @@
  * runner that is natively that platform and architecture, and the binary is run here before it is
  * allowed to become a release artifact.
  */
-import { copyFile, mkdtemp, mkdir, readdir, rm } from "node:fs/promises";
+import { copyFile, mkdtemp, mkdir, readdir, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { RECORD_SUFFIX, writeReleaseChecksums } from "./release-checksums.ts";
@@ -66,7 +66,7 @@ const bundle = `${asset}.tar.gz`;
 const contents = (await readdir(dist)).filter(
   (entry) => entry !== bundle && !entry.endsWith(RECORD_SUFFIX) && entry !== "checksums.txt",
 ).sort();
-for (const required of [asset, "assets", "photon_rs_bg.wasm"]) {
+for (const required of [asset, "assets", "plugins", "photon_rs_bg.wasm"]) {
   if (!contents.includes(required)) throw new Error(`df bundle is missing ${required}`);
 }
 async function tarCommand(args: string[], cwd: string): Promise<void> {
@@ -86,6 +86,13 @@ const standalone = await mkdtemp(join(tmpdir(), "df-standalone-"));
 try {
   await tarCommand(["-xzf", join(dist, bundle), "-C", standalone], standalone);
   await run([join(standalone, asset), "__packaging-smoke"], "standalone packaging smoke", true);
+  // Official capabilities are bundled JS: this invocation must work without the source tree
+  // and prove that ci matrix can discover them dynamically from the installed executable.
+  await writeFile(
+    join(standalone, "package.json"),
+    JSON.stringify({ name: "df-release-smoke", scripts: { test: "echo ok", lint: "echo ok", typecheck: "echo ok", "format:check": "echo ok" } }),
+  );
+  await run([join(standalone, asset), "ci", "matrix", "--repo", standalone], "standalone capability smoke", true);
 } finally {
   await rm(standalone, { recursive: true, force: true });
 }
