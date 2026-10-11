@@ -158,7 +158,7 @@ export async function runReleasedInstaller(
 	}
 	await mkdir(flags.prefix, { recursive: true });
 	const lockPath = join(flags.prefix, ".install.lock");
-	let lock;
+	let lock: Awaited<ReturnType<typeof open>>;
 	try {
 		lock = await open(lockPath, "wx", 0o600);
 	} catch (error) {
