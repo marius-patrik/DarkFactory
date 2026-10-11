@@ -411,9 +411,12 @@ jobs:
           GH_TOKEN: ${{ steps.app-token.outputs.token || secrets.GITHUB_TOKEN }}
           TAG: ${{ needs.resolve.outputs.tag }}
         run: |
-          if git rev-parse "$TAG" >/dev/null 2>&1; then
-            echo "$TAG already exists; nothing to do."
-            exit 0
+          # A colliding immutable release tag is a *hard* failure. Previously the job
+          # exited green here after five successful native builds but published no assets.
+          # Never move an existing tag and never claim success for a skipped release.
+          if git rev-parse -q --verify "refs/tags/$TAG" >/dev/null 2>&1; then
+            echo "::error title=Existing release tag::$TAG already exists. Fix the version resolver instead of reusing or rewriting a tag." >&2
+            exit 1
           fi
           git tag "$TAG"
           git push origin "$TAG"
