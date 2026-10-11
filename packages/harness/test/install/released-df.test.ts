@@ -41,7 +41,7 @@ function apiFixture(getRelease: () => ReturnType<typeof release>, getBytes: () =
 	return (async (input: string | URL | Request) => {
 		const url = String(input);
 		if (url.endsWith("/releases/latest")) return Response.json(getRelease());
-		if (url.includes("/releases/download/")) return new Response(getBytes(), { status: 200 });
+		if (url.includes("/releases/download/")) return new Response(new TextDecoder().decode(getBytes()), { status: 200 });
 		throw new Error(`Unexpected URL: ${url}`);
 	}) as typeof fetch;
 }
