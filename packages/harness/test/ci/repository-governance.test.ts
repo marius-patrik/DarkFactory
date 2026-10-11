@@ -44,6 +44,8 @@ const EXPECTED_WORKFLOWS = [
 	"verify-pr-issue.yml",
 	"quota-resume.yml",
 	"install-sweep.yml",
+	// Fleet reconciliation runs only in the upstream repository with its App identity.
+	"fleet-updates.yml",
 ];
 
 /** Issue chooser and templates. */
@@ -67,6 +69,8 @@ const NOT_CALLABLE = [
 	// be asking the pipeline to install itself into the pipeline's installations, which it already does
 	// on its own schedule.
 	"install-sweep.yml",
+	// The fleet updater executes only in the upstream repository, not in consumers.
+	"fleet-updates.yml",
 ];
 
 /** Workflows that write to GitHub on the pipeline's behalf and must therefore authenticate as the App. */
@@ -76,6 +80,7 @@ const APP_AUTHENTICATED_WORKFLOWS = [
 	// Signs its App JWT in Bun rather than with `actions/create-github-app-token`, because that action
 	// cannot enumerate installations. See `appAuthenticationEvidence`.
 	"install-sweep.yml",
+	"fleet-updates.yml",
 	"open-pr.yml",
 	"pr-approval-automerge.yml",
 	"project-automation.yml",

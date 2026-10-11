@@ -1,0 +1,43 @@
+name: Synchronize DarkFactory Fleet
+
+# Follow the newest stable *released* binary, not the mutable main branch.
+# GitHub suppresses some workflow events created with GITHUB_TOKEN, hence
+# the daily reconciliation in addition to the published-release trigger.
+on:
+  release:
+    types: [published]
+  schedule:
+    - cron: "43 2 * * *"
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Inspect only; create no issues or pull requests"
+        type: boolean
+        required: false
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: darkfactory-fleet-release-updates
+  cancel-in-progress: false
+
+jobs:
+  reconcile:
+    if: github.repository == 'marius-patrik/DarkFactory'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    env:
+      DARKFACTORY_APP_ID: ${{ vars.DARKFACTORY_APP_ID || '4861004' }}
+      DF_FLEET_OWNER: ${{ github.repository_owner }}
+      DF_FLEET_DRY_RUN: ${{ inputs.dry_run && '1' || '0' }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Run fleet reconciliation
+        env:
+          DARKFACTORY_APP_PRIVATE_KEY: ${{ secrets.DARKFACTORY_APP_PRIVATE_KEY }}
+        run: node scripts/fleet-sync.mjs
