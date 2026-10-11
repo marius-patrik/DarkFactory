@@ -175,7 +175,7 @@ export async function runReleasedInstaller(
 		const versionDir = dirname(target);
 		if (existsSync(versionDir)) {
 			// Never overlay an existing version, even when its files are incomplete.
-			if (!existsSync(target) || !existsSync(join(versionDir, "assets")) || !existsSync(join(versionDir, "photon_rs_bg.wasm")))
+			if (!existsSync(target) || !existsSync(join(versionDir, "assets")) || !existsSync(join(versionDir, "plugins")) || !existsSync(join(versionDir, "photon_rs_bg.wasm")))
 				throw new Error(`Incomplete or modified immutable df installation: ${versionDir}`);
 			const oldHash = createHash("sha256").update(await readFile(target)).digest("hex");
 			if (oldHash !== release.binaryDigest) throw new Error(`Existing ${target} has modified content`);
