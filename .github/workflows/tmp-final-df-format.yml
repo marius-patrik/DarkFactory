@@ -1,0 +1,28 @@
+name: Temporary Final DF Format
+on:
+  push:
+    branches: [feat/released-df-installer-1166]
+permissions:
+  contents: write
+concurrency:
+  group: tmp-final-df-format
+  cancel-in-progress: false
+jobs:
+  format:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: feat/released-df-installer-1166
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6
+      - run: bun install --frozen-lockfile
+      - run: bunx biome format --write scripts/fleet-sync.mjs scripts/fleet-sync.test.mjs packages/harness/scripts/package-assets.ts packages/harness/scripts/verify-target.ts packages/harness/src/ci/detected.ts packages/harness/src/install/released-df.ts packages/harness/test/install/released-df.test.ts packages/harness/test/packaging.test.ts packages/harness/src/cli.ts
+      - name: Commit formatted files
+        run: |
+          if git diff --quiet; then exit 0; fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add scripts/fleet-sync.mjs scripts/fleet-sync.test.mjs packages/harness/scripts/package-assets.ts packages/harness/scripts/verify-target.ts packages/harness/src/ci/detected.ts packages/harness/src/install/released-df.ts packages/harness/test/install/released-df.test.ts packages/harness/test/packaging.test.ts packages/harness/src/cli.ts
+          git commit -m 'style(release): format finalized installer and fleet upgrader'
+          git push origin HEAD:feat/released-df-installer-1166
