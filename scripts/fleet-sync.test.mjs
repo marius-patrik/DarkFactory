@@ -1,6 +1,13 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { inspectConfig, inspectWorkflow, isFleetExcluded, renderConfig, renderLegacyWorkflow, renderWorkflow } from "./fleet-sync.mjs";
+import {
+	inspectConfig,
+	inspectWorkflow,
+	isFleetExcluded,
+	renderConfig,
+	renderLegacyWorkflow,
+	renderWorkflow,
+} from "./fleet-sync.mjs";
 
 const old = {
 	tag: "v0.3.2",
@@ -73,7 +80,8 @@ test("release updater permanently excludes old and Agent OS repositories without
 		"marius-patrik/paes-old",
 		"marius-patrik/data-agents-os",
 		"marius-patrik/agent-os",
-	]) assert.equal(isFleetExcluded(name), true, name);
+	])
+		assert.equal(isFleetExcluded(name), true, name);
 	for (const name of [
 		"marius-patrik/DarkFactory",
 		"marius-patrik/dsh-stack",
@@ -81,5 +89,6 @@ test("release updater permanently excludes old and Agent OS repositories without
 		"marius-patrik/data-agents",
 		"marius-patrik/OASIS",
 		"marius-patrik/SkyAgent",
-	]) assert.equal(isFleetExcluded(name), false, name);
+	])
+		assert.equal(isFleetExcluded(name), false, name);
 });
