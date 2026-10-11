@@ -83,10 +83,13 @@ function loadBoardDeclaration(root: string): BoardDeclaration {
 	const displayName = text(identity, "display_name", repoName);
 	const projectTitle = text(identity, "project_title", displayName);
 	const defaultBranch = text(identity, "default_branch", "main");
-	const globalTitle = text(board, "global_title", "");
+	const globalTitle = text(board, "global", "");
 
-	const linkedBoards = stringList(board.link_boards);
+	const linkedBoards = stringList(board.boards);
 	if (!linkedBoards.includes(projectTitle)) linkedBoards.push(projectTitle);
+	if (globalTitle && !linkedBoards.includes(globalTitle)) {
+		throw new Error(`Global board "${globalTitle}" must be declared in repo.board.boards.`);
+	}
 
 	return {
 		owner,
