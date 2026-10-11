@@ -48,7 +48,8 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          "$RUNNER_TEMP/df" ci matrix --repo "$GITHUB_WORKSPACE" > "$RUNNER_TEMP/df-matrix.json"
+          mkdir -p "$RUNNER_TEMP/df-capabilities"
+          "$RUNNER_TEMP/df" ci matrix --repo "$GITHUB_WORKSPACE" --capabilities-root "$RUNNER_TEMP/df-capabilities" > "$RUNNER_TEMP/df-matrix.json"
           jq --exit-status '.matrix | type == "array"' "$RUNNER_TEMP/df-matrix.json"
           jq --raw-output '"Detected packages: \\(.packages | length); unresolved actions: \\(.gaps | length)"' "$RUNNER_TEMP/df-matrix.json"
 `;
