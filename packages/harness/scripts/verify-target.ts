@@ -7,7 +7,7 @@
  * runner that is natively that platform and architecture, and the binary is run here before it is
  * allowed to become a release artifact.
  */
-import { copyFile, mkdtemp, mkdir, readdir, rm, writeFile } from "node:fs/promises";
+import { copyFile, mkdtemp, readdir, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { RECORD_SUFFIX, writeReleaseChecksums } from "./release-checksums.ts";
@@ -23,11 +23,11 @@ const target = requireReleaseTarget(targetName);
 const asset = releaseAssetName(target.name);
 const binary = join(dist, asset);
 
-async function run(command: string[], label: string, quiet = false): Promise<void> {
+async function run(command: string[], label: string, quiet = false, cwd = harnessRoot): Promise<void> {
 	// The image-resize worker is resolved against the working directory at run time, so the smoke
 	// runs from the harness root where that path exists. A packaged df installed anywhere else
 	// cannot find it; that is a separate defect and not something this step should hide.
-	const child = Bun.spawn(command, { cwd: harnessRoot, stdout: "pipe", stderr: "pipe" });
+	const child = Bun.spawn(command, { cwd, stdout: "pipe", stderr: "pipe" });
 	const [code, out, err] = await Promise.all([
 		child.exited,
 		new Response(child.stdout).text(),
@@ -85,14 +85,14 @@ await tarCommand(["-czf", bundle, ...contents], dist);
 const standalone = await mkdtemp(join(tmpdir(), "df-standalone-"));
 try {
   await tarCommand(["-xzf", join(dist, bundle), "-C", standalone], standalone);
-  await run([join(standalone, asset), "__packaging-smoke"], "standalone packaging smoke", true);
+  await run([join(standalone, asset), "__packaging-smoke"], "standalone packaging smoke", true, standalone);
   // Official capabilities are bundled JS: this invocation must work without the source tree
   // and prove that ci matrix can discover them dynamically from the installed executable.
   await writeFile(
     join(standalone, "package.json"),
     JSON.stringify({ name: "df-release-smoke", scripts: { test: "echo ok", lint: "echo ok", typecheck: "echo ok", "format:check": "echo ok" } }),
   );
-  await run([join(standalone, asset), "ci", "matrix", "--repo", standalone], "standalone capability smoke", true);
+  await run([join(standalone, asset), "ci", "matrix", "--repo", standalone], "standalone capability smoke", true, standalone);
 } finally {
   await rm(standalone, { recursive: true, force: true });
 }
