@@ -314,7 +314,9 @@ describe("the workflow registry", () => {
 
 describe("the generated configuration document", () => {
 	test("declares a distinct repository board and the one shared global board", async () => {
-		const config = JSON.parse(await renderManifest({ owner: "marius-patrik", repo: "Example", ref: "abc", root: repoRoot }));
+		const config = JSON.parse(
+			await renderManifest({ owner: "marius-patrik", repo: "Example", ref: "abc", root: repoRoot }),
+		);
 		expect(config.repo.identity.project_title).toBe("Example");
 		expect(config.repo.board).toEqual({ global: "Global", boards: ["Global", "Example"] });
 	});
