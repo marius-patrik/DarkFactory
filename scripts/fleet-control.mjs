@@ -79,7 +79,7 @@ export function renderControlWorkflow(slug, release, upstream = "marius-patrik/D
 		"        run: |",
 		'          "$RUNNER_TEMP/darkfactory/df-linux-x64" ci matrix --repo "$GITHUB_WORKSPACE" > "$RUNNER_TEMP/df-quality.json"',
 		'          echo "matrix=$(jq -c .matrix "$RUNNER_TEMP/df-quality.json")" >> "$GITHUB_OUTPUT"',
-		'          if [ "$(jq '.matrix | length' "$RUNNER_TEMP/df-quality.json")" -gt 0 ]; then echo "has-actions=true" >> "$GITHUB_OUTPUT"; else echo "has-actions=false" >> "$GITHUB_OUTPUT"; fi',
+		'          if [ "$(jq ".matrix | length" "$RUNNER_TEMP/df-quality.json")" -gt 0 ]; then echo "has-actions=true" >> "$GITHUB_OUTPUT"; else echo "has-actions=false" >> "$GITHUB_OUTPUT"; fi',
 		"  execute-quality:",
 		"    if: needs.detect.outputs.has-actions == 'true'",
 		"    needs: detect",
