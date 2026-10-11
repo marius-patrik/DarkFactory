@@ -193,7 +193,7 @@ export async function runReleasedInstaller(
 				]);
 				if (exit !== 0) throw new Error(`Unable to unpack verified df runtime: ${err || out}`);
 				const unpacked = join(staging, asset);
-				if (!existsSync(unpacked) || !existsSync(join(staging, "assets")) || !existsSync(join(staging, "photon_rs_bg.wasm")))
+				if (!existsSync(unpacked) || !existsSync(join(staging, "assets")) || !existsSync(join(staging, "plugins")) || !existsSync(join(staging, "photon_rs_bg.wasm")))
 					throw new Error("Published runtime bundle has missing components");
 				const binHash = createHash("sha256").update(await readFile(unpacked)).digest("hex");
 				if (binHash !== release.binaryDigest) throw new Error("Unpacked executable checksum mismatch");
