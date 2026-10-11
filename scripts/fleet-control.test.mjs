@@ -6,6 +6,8 @@ import {
 	CONTROL_MARKER,
 	CONTROL_WORKFLOW,
 	DEFAULT_BRIDGE,
+	controlFiles,
+	digestOf,
 	inspectManaged,
 	renderControlConfig,
 	renderControlWorkflow,
@@ -40,8 +42,10 @@ test("controller executes real released quality and pinned governance jobs", () 
 	const c = renderControlWorkflow("marius-patrik/Omnis", release);
 	assert.ok(c.startsWith(CONTROL_MARKER));
 	assert.match(c, /sha256sum --check/);
-	assert.match(c, / ci quality --repo /);
-	assert.doesNotMatch(c, / ci matrix --repo /);
+	assert.match(c, / ci matrix --repo /);
+	assert.match(c, /name: Run detected quality action/);
+	assert.match(c, /needs: \[detect, execute-quality\]/);
+	assert.match(c, /has-actions:/);
 	assert.match(c, /agent\.yml@a{40}/);
 	assert.match(c, /verify-pr-issue\.yml@a{40}/);
 	assert.match(c, /pr-approval-automerge\.yml@a{40}/);
@@ -96,4 +100,15 @@ test("initial controller install creates a source-free tree, never modifies main
 	const commit = requests.find((call) => call.method === "POST" && call.path.endsWith("/git/commits"));
 	assert.deepEqual(commit.data.parents, ["c".repeat(40)]);
 	assert.ok(!requests.some((call) => call.method === "PATCH" || call.method === "DELETE"));
+});
+
+test("receipt hashes pin installed source independently of future renderer versions", () => {
+	const files = controlFiles("marius-patrik/Omnis", "main", release, "marius-patrik/DarkFactory");
+	const receipt = JSON.parse(files[".darkfactory/installation.json"]);
+	assert.equal(receipt.schema, 2);
+	assert.equal(receipt.fileHashes["repo.dfconfig"], digestOf(files["repo.dfconfig"]));
+	assert.equal(
+		receipt.fileHashes[".github/workflows/darkfactory-control.yml"],
+		digestOf(files[".github/workflows/darkfactory-control.yml"]),
+	);
 });
