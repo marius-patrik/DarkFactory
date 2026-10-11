@@ -44,6 +44,8 @@ const EXPECTED_WORKFLOWS = [
 	"verify-pr-issue.yml",
 	"quota-resume.yml",
 	"install-sweep.yml",
+	// Fleet reconciliation runs only in the upstream repository with its App identity.
+	"fleet-updates.yml",
 ];
 
 /** Issue chooser and templates. */
@@ -76,6 +78,7 @@ const APP_AUTHENTICATED_WORKFLOWS = [
 	// Signs its App JWT in Bun rather than with `actions/create-github-app-token`, because that action
 	// cannot enumerate installations. See `appAuthenticationEvidence`.
 	"install-sweep.yml",
+	"fleet-updates.yml",
 	"open-pr.yml",
 	"pr-approval-automerge.yml",
 	"project-automation.yml",
