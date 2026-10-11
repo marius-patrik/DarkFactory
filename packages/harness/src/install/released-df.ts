@@ -95,21 +95,21 @@ async function atomicWrite(path: string, data: string | Uint8Array, mode?: numbe
   }
 }
 
-async function fetchRelease(): Promise<PublishedBinary> {
+async function fetchRelease(fetchImpl: typeof fetch): Promise<PublishedBinary> {
   const headers: Record<string, string> = {
     Accept: "application/vnd.github+json",
     "User-Agent": "darkfactory-release-installer",
   };
   const token = process.env.GH_TOKEN || process.env.GITHUB_TOKEN;
   if (token) headers.Authorization = `Bearer ${token}`;
-  const response = await fetch(API, { headers });
+  const response = await fetchImpl(API, { headers });
   if (!response.ok) throw new Error(`GitHub release lookup returned HTTP ${response.status}`);
   return selectPublishedBinary(await response.json(), assetForPlatform(process.platform, process.arch));
 }
 
-async function verifiedBytes(release: PublishedBinary): Promise<Uint8Array> {
+async function verifiedBytes(release: PublishedBinary, fetchImpl: typeof fetch): Promise<Uint8Array> {
   // Do not forward API credentials to release-asset redirect destinations.
-  const response = await fetch(release.url, { headers: { "User-Agent": "darkfactory-release-installer" } });
+  const response = await fetchImpl(release.url, { headers: { "User-Agent": "darkfactory-release-installer" } });
   if (!response.ok) throw new Error(`Binary download returned HTTP ${response.status}`);
   const length = Number(response.headers.get("content-length"));
   if (Number.isFinite(length) && length > MAX_BINARY_BYTES) throw new Error("Binary download exceeds size limit");
@@ -121,7 +121,7 @@ async function verifiedBytes(release: PublishedBinary): Promise<Uint8Array> {
   return bytes;
 }
 
-export async function runReleasedInstaller(command: "install" | "update", args: string[]): Promise<void> {
+export async function runReleasedInstaller(command: "install" | "update", args: string[], fetchImpl: typeof fetch = fetch): Promise<void> {
   const flags = parseFlags(args);
   const asset = assetForPlatform(process.platform, process.arch);
   const wrapperName = process.platform === "win32" ? "df.cmd" : "df";
@@ -135,7 +135,7 @@ export async function runReleasedInstaller(command: "install" | "update", args: 
   if (oldVersion && !TAG.test(oldVersion)) throw new Error("Invalid current.txt version pointer");
   if (command === "update" && !oldVersion) throw new Error("No managed installation; run df install first.");
   if (oldVersion && !oldWrapper) throw new Error("Version pointer exists without its managed wrapper");
-  const release = await fetchRelease();
+  const release = await fetchRelease(fetchImpl);
   const target = join(flags.prefix, "versions", release.tag, release.asset);
   console.log(`DarkFactory: installed ${oldVersion ?? "none"}; published ${release.tag}`);
   if (flags.check || flags.dryRun) {
@@ -160,7 +160,7 @@ export async function runReleasedInstaller(command: "install" | "update", args: 
   try {
     const observed = (await existingText(pointerPath))?.trim() ?? null;
     if (observed !== (oldVersion ?? null)) throw new Error("Installed version changed concurrently");
-    const bytes = await verifiedBytes(release);
+    const bytes = await verifiedBytes(release, fetchImpl);
     await mkdir(dirname(target), { recursive: true });
     if (existsSync(target)) {
       const oldHash = createHash("sha256").update(await readFile(target)).digest("hex");
