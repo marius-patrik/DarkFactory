@@ -1,5 +1,6 @@
 name: Temporary Installer Lint Diagnostics
 on:
+  pull_request:
   push:
     branches: [feat/released-df-installer-1166]
 permissions:
