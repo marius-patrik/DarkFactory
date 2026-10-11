@@ -1,0 +1,30 @@
+name: Temporary format control branch
+
+on:
+  push:
+    branches: [feat/darkfactory-control-branch]
+
+permissions:
+  contents: write
+
+jobs:
+  format:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feat/darkfactory-control-branch
+      - uses: oven-sh/setup-bun@v2
+      - run: bun install --frozen-lockfile
+      - name: Format installer and governance sources
+        run: |
+          bunx biome format --write scripts/fleet-control.mjs scripts/fleet-control.test.mjs scripts/fleet-sync.mjs scripts/fleet-projects.mjs packages/harness/src/install/manifest-generation.ts packages/harness/src/board/declaration.ts packages/harness/test/install/install.test.ts
+      - name: Commit formatter output
+        run: |
+          if ! git diff --quiet; then
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add scripts/fleet-control.mjs scripts/fleet-control.test.mjs scripts/fleet-sync.mjs scripts/fleet-projects.mjs packages/harness/src/install/manifest-generation.ts packages/harness/src/board/declaration.ts packages/harness/test/install/install.test.ts
+            git commit -m "style: apply canonical Biome formatting to managed control installer"
+            git push origin HEAD:feat/darkfactory-control-branch
+          fi
