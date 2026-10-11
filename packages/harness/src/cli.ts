@@ -1128,7 +1128,7 @@ async function packagingSmoke(): Promise<void> {
 		console.warn(`no packaged pi-tui native module for ${platform}-${arch}; pi-tui runs without one`);
 	}
 
-	const worker = new Worker("./src/image-resize-worker.ts");
+	const worker = new Worker(new URL("./image-resize-worker.ts", import.meta.url));
 	try {
 		const png = Uint8Array.from(
 			Buffer.from(
