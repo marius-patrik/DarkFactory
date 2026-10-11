@@ -1,6 +1,13 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { inspectConfig, inspectWorkflow, renderConfig, renderLegacyWorkflow, renderWorkflow } from "./fleet-sync.mjs";
+import {
+	inspectConfig,
+	inspectWorkflow,
+	isFleetExcluded,
+	renderConfig,
+	renderLegacyWorkflow,
+	renderWorkflow,
+} from "./fleet-sync.mjs";
 
 const old = {
 	tag: "v0.3.2",
@@ -62,4 +69,26 @@ test("fleet-owned config repins; noncanonical upstream is a user decision", () =
 test("invalid or unverified releases fail closed", () => {
 	assert.throws(() => renderWorkflow({ ...next, digest: "bad" }), /Invalid stable release/);
 	assert.throws(() => renderWorkflow({ ...next, tag: "main" }), /Invalid stable release/);
+});
+
+test("release updater permanently excludes old and Agent OS repositories without skipping active code or data", () => {
+	for (const name of [
+		"marius-patrik/andromeda-old-2",
+		"marius-patrik/Andromeda-OLD",
+		"marius-patrik/ams-old",
+		"marius-patrik/genesis-old",
+		"marius-patrik/paes-old",
+		"marius-patrik/data-agents-os",
+		"marius-patrik/agent-os",
+	])
+		assert.equal(isFleetExcluded(name), true, name);
+	for (const name of [
+		"marius-patrik/DarkFactory",
+		"marius-patrik/dsh-stack",
+		"marius-patrik/data-gemini",
+		"marius-patrik/data-agents",
+		"marius-patrik/OASIS",
+		"marius-patrik/SkyAgent",
+	])
+		assert.equal(isFleetExcluded(name), false, name);
 });
