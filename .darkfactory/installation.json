@@ -1,0 +1,11 @@
+{
+  "managedBy": "DarkFactory",
+  "schema": 1,
+  "slug": "marius-patrik/DarkFactory",
+  "sourceBranch": "main",
+  "release": {
+    "tag": "v0.288.1",
+    "sha": "13a9feb64555a8fb2f3ad9cf7e687b7fd1115838",
+    "digest": "8b4861ba4efcba1cf3378a2ff92a7fbb2d9887cabca6d494c9a58c7f95514ffd"
+  }
+}
