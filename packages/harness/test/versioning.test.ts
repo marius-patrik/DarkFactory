@@ -264,6 +264,29 @@ describe("resolving against a real repository", () => {
 		expect(answers["zerover"]).toBe("0.1.0");
 		expect(answers["pridever"]).toBe("0.1.0");
 	});
+	test("ZeroVer excludes legacy 3a tags and never reuses a reserved 0.x tag", async () => {
+		const repo = await initRepo("zerover", [CHORE]);
+		runGit(repo, ["tag", "v3a.3.2"]);
+		runGit(repo, ["tag", "v0.3.3"]);
+		runGit(repo, ["tag", "v0.4.0"]);
+		await later(repo, FEATURE);
+		// v0.4.0 is an old zero-asset release. Never repoint or republish that tag.
+		expect(resolveRelease(repo)).toMatchObject({
+			mode: "zerover",
+			current: "0.4.0",
+			current_tag: "v0.4.0",
+			next: "0.5.0",
+			tag: "v0.5.0",
+			bump: "minor",
+		});
+	});
+	test("ZeroVer patch bumps remain on their own line even with higher legacy tags", async () => {
+		const repo = await initRepo("zerover", [CHORE]);
+		runGit(repo, ["tag", "v3a.9.0"]);
+		runGit(repo, ["tag", "v0.3.3"]);
+		await later(repo, FIX);
+		expect(resolveRelease(repo)).toMatchObject({ current_tag: "v0.3.3", next: "0.3.4" });
+	});
 	test("manual mode requires a version file", async () => {
 		const repo = await initRepo("manual", [FEATURE]);
 		expect(() => resolveRelease(repo)).toThrow(VersioningError);
