@@ -30,8 +30,12 @@ function bundle(binary: Buffer): Bundle {
     writeFileSync(join(temp, asset), binary);
     mkdirSync(join(temp, "assets"));
     writeFileSync(join(temp, "assets", "test.txt"), "asset data");
+    mkdirSync(join(temp, "plugins"));
+    mkdirSync(join(temp, "plugins", "code"));
+    writeFileSync(join(temp, "plugins", "code", "capability.mjs"), "export default {};");
+
     writeFileSync(join(temp, "photon_rs_bg.wasm"), "wasm data");
-    const output = spawnSync("tar", ["-czf", "runtime.tar.gz", asset, "assets", "photon_rs_bg.wasm"], {
+    const output = spawnSync("tar", ["-czf", "runtime.tar.gz", asset, "assets", "plugins", "photon_rs_bg.wasm"], {
       cwd: temp, encoding: "utf8",
     });
     if (output.status !== 0) throw new Error(`Unable to create test runtime bundle: ${output.stderr}`);
