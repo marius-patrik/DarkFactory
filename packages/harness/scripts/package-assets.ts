@@ -47,7 +47,7 @@ export async function packageAssets(
 	// that there is one package and the build runs from the repository root.
 	const harnessRoot = join(root, "packages", "harness");
 	const source = existsSync(join(harnessRoot, "assets")) ? harnessRoot : root;
-	const dist = join(harnessRoot, "dist");
+	const dist = existsSync(harnessRoot) ? join(harnessRoot, "dist") : join(root, "dist");
 	await mkdir(dist, { recursive: true });
 	await copyFile(
 		dependencyAssetPath(root, "@silvia-odwyer", "photon-node", "photon_rs_bg.wasm"),
