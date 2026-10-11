@@ -69,6 +69,8 @@ const NOT_CALLABLE = [
 	// be asking the pipeline to install itself into the pipeline's installations, which it already does
 	// on its own schedule.
 	"install-sweep.yml",
+	// The fleet updater executes only in the upstream repository, not in consumers.
+	"fleet-updates.yml",
 ];
 
 /** Workflows that write to GitHub on the pipeline's behalf and must therefore authenticate as the App. */
