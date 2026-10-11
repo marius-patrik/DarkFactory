@@ -165,6 +165,11 @@ export async function reconcileControlBranch({ slug, sourceBranch, release, toke
   }));
 
   if (!current) {
+    // Git refuses refs/heads/darkfactory while refs/heads/darkfactory/*
+    // exists. The previous fleet updater created this namespace. Retire
+    // ONLY provably generated, merged/closed release branches; fail closed
+    // for user work or an open review with non-managed changes.
+    await clearObsoleteReleaseRefs(endpoint, slug, token, api);
     const base = await api("GET", endpoint + "/git/ref/heads/" + esc(sourceBranch), token);
     if (!base?.object?.sha) throw new Error("Cannot resolve default branch for " + slug);
     const tree = await api("POST", endpoint + "/git/trees", token, { tree: elements });
@@ -216,4 +221,37 @@ export async function reconcileControlBranch({ slug, sourceBranch, release, toke
     sha: commit.sha, force: false,
   });
   return { kind: "updated", sha: commit.sha };
+}
+
+const LEGACY_MANAGED_PATHS = new Set([".github/workflows/darkfactory.yml", "repo.dfconfig"]);
+
+export async function clearObsoleteReleaseRefs(endpoint, slug, token, api) {
+  const refs = await api("GET", endpoint + "/git/matching-refs/heads/darkfactory/", token);
+  if (!Array.isArray(refs)) throw new Error("Cannot enumerate DarkFactory branch namespace for " + slug);
+  const owner = slug.split("/")[0];
+  for (const ref of refs) {
+    const name = String(ref.ref || "").replace(/^refs\/heads\//, "");
+    if (!/^darkfactory\/release-v[0-9][A-Za-z0-9.+-]*$/.test(name))
+      throw new Error("Refusing to remove unexpected control-branch collision: " + name);
+    const prs = await api("GET", endpoint + "/pulls?state=all&head=" +
+      encodeURIComponent(owner + ":" + name) + "&per_page=100", token);
+    if (!Array.isArray(prs) || prs.length === 0)
+      throw new Error("Cannot prove legacy release branch ownership: " + name);
+    const pr = prs.find(item => item.head?.sha === ref.object?.sha);
+    if (!pr) throw new Error("Release branch contains unreviewed commits: " + name);
+    const files = await api("GET", endpoint + "/pulls/" + pr.number + "/files?per_page=100", token);
+    if (!Array.isArray(files) || files.length === 0 || files.length > 2 ||
+        files.some(file => !LEGACY_MANAGED_PATHS.has(file.filename)))
+      throw new Error("Release branch contains unowned changes: " + name);
+    if (pr.state === "open") {
+      await api("POST", endpoint + "/issues/" + pr.number + "/comments", token, {
+        body: "Superseded by the owner-approved isolated `darkfactory` control branch (DarkFactory#2070). " +
+          "Diff verified: only legacy generated integration files. Preserving repository source and CI.",
+      });
+      await api("PATCH", endpoint + "/pulls/" + pr.number, token, { state: "closed" });
+    } else if (pr.state !== "closed") {
+      throw new Error("Unexpected release PR state for " + name);
+    }
+    await api("DELETE", endpoint + "/git/refs/heads/" + name, token);
+  }
 }
