@@ -332,7 +332,18 @@ export function resolveRelease(repoRoot: string, requested?: string | null): Rel
 
 	const declared = readManualVersion(repoRoot);
 	const prefer = declared === null ? null : (parseVersion(declared)?.scheme ?? null);
-	const currentTag = latestTag(gitTags(repoRoot), prefer);
+	// ZeroVer is a distinct release line. Historical 3a.* tags carry a different numbering
+	// scheme, and treating one as the latest ZeroVer release caused v0.4.0 to be chosen
+	// again despite that tag already existing. ZeroVer must never inherit legacy tags.
+	const tags = gitTags(repoRoot);
+	const eligibleTags =
+		config.mode === "zerover"
+			? tags.filter((tag) => {
+				const parsed = tag.startsWith(prefix) ? parseVersion(tag.slice(prefix.length)) : null;
+				return parsed !== null && parsed.scheme === "" && parsed.numbers[0] === 0;
+			})
+			: tags;
+	const currentTag = latestTag(eligibleTags, prefer);
 	const current =
 		currentTag === null ? null : currentTag.startsWith(prefix) ? currentTag.slice(prefix.length) : currentTag;
 
