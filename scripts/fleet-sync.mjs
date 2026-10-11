@@ -13,6 +13,16 @@ const LEGACY_MARKER = "# df-fleet-managed: 1";
 const ISSUE_MARKER = "<!-- darkfactory-fleet-release: ";
 const DRY_RUN = process.env.DF_FLEET_DRY_RUN === "1";
 
+// Lifecycle exclusions are intentional. Do not open release upgrade PRs in
+// retired *-old repositories or Agent OS repositories. A previously installed
+// runtime is left in place; its workflows, issues and archived evidence are
+// never deleted by fleet reconciliation.
+export function isFleetExcluded(fullName) {
+	const name = String(fullName).split("/").at(-1)?.toLowerCase() ?? "";
+	return /(?:^|[-_])old(?:$|[-_])/.test(name) || /(?:^|[-_])agents?[-_]os(?:$|[-_])/.test(name);
+}
+
+
 export function renderLegacyWorkflow({ tag, sha, digest }) {
 	if (!/^v[0-9][A-Za-z0-9.+-]*$/.test(tag) || !/^[a-f0-9]{40}$/.test(sha) || !/^[a-f0-9]{64}$/.test(digest)) {
 		throw new Error("Invalid stable release metadata");
@@ -344,9 +354,10 @@ async function main() {
 			r.full_name?.split("/")[0]?.toLowerCase() === OWNER.toLowerCase() &&
 			r.full_name?.toLowerCase() !== UPSTREAM.toLowerCase() &&
 			!r.archived &&
-			!r.disabled,
+			!r.disabled &&
+			!isFleetExcluded(r.full_name),
 	);
-	console.log(`Selected ${eligible.length} active repositories, released df ${selected.tag}`);
+	console.log(`Selected ${eligible.length} eligible repositories (excluding old/Agent OS), released df ${selected.tag}`);
 	const stats = {},
 		failures = [];
 	for (const repo of eligible.sort((a, b) => a.full_name.localeCompare(b.full_name))) {
@@ -365,6 +376,7 @@ async function main() {
 			(r) =>
 				!r.archived &&
 				!r.disabled &&
+				!isFleetExcluded(r.full_name) &&
 				r.full_name?.toLowerCase() !== UPSTREAM.toLowerCase() &&
 				!available.has(r.full_name.toLowerCase()),
 		)
