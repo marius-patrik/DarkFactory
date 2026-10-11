@@ -56,7 +56,6 @@ jobs:
 `;
 }
 
-
 export function renderWorkflow({ tag, sha, digest }) {
 	if (!/^v[0-9][A-Za-z0-9.+-]*$/.test(tag) || !/^[a-f0-9]{40}$/.test(sha) || !/^[a-f0-9]{64}$/.test(digest)) {
 		throw new Error("Invalid stable release metadata");
@@ -101,7 +100,6 @@ jobs:
 `;
 }
 
-
 export function renderConfig(slug, branch, sha) {
 	const [owner, repo] = slug.split("/");
 	return (
@@ -131,7 +129,9 @@ export function inspectWorkflow(source, release) {
 	const digest = source.match(/^\s+DF_SHA256: "([^"]+)"$/m)?.[1];
 	let previous;
 	try {
-		previous = source.startsWith(LEGACY_MARKER) ? renderLegacyWorkflow({ tag, sha, digest }) : renderWorkflow({ tag, sha, digest });
+		previous = source.startsWith(LEGACY_MARKER)
+			? renderLegacyWorkflow({ tag, sha, digest })
+			: renderWorkflow({ tag, sha, digest });
 	} catch {
 		return { kind: "conflict", reason: "Invalid release metadata in existing workflow" };
 	}
