@@ -105,7 +105,7 @@ describe("the build and the verifier agree on where dist is", () => {
 
 	it("all three derive dist from packages/harness", () => {
 		expect(assets).toContain('const harnessRoot = join(root, "packages", "harness")');
-		expect(assets).toContain('const dist = join(root, "dist")');
+		expect(assets).toContain('const dist = existsSync(harnessRoot) ? join(harnessRoot, "dist") : join(root, "dist")');
 	});
 });
 
