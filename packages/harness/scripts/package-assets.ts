@@ -1,5 +1,5 @@
 import { existsSync } from "node:fs";
-import { copyFile, cp, mkdir } from "node:fs/promises";
+import { copyFile, cp, mkdir, readdir } from "node:fs/promises";
 import { dirname, join } from "node:path";
 
 export interface NativeAssetCandidate {
@@ -54,6 +54,29 @@ export async function packageAssets(
 		join(dist, "photon_rs_bg.wasm"),
 	);
 	await cp(join(source, "assets"), join(dist, "assets"), { recursive: true });
+
+	// The official plugins are TypeScript modules importing internal source paths. Copying those
+	// files is not a source-free installation: the imports would reference packages/ absent from
+	// an installed consumer. Bundle each official capability as a standalone Bun-loadable module.
+	const pluginRoot = join(root, ".darkfactory", "plugins");
+	if (existsSync(pluginRoot)) {
+		const entries = (await readdir(pluginRoot, { withFileTypes: true })).filter((entry) => entry.isDirectory());
+		for (const entry of entries) {
+			const input = join(pluginRoot, entry.name, "capability.ts");
+			if (!existsSync(input)) continue;
+			const pluginDist = join(dist, "plugins", entry.name);
+			await mkdir(pluginDist, { recursive: true });
+			const child = Bun.spawn(
+				["bun", "build", input, "--target=bun", "--outfile", join(pluginDist, "capability.mjs")],
+				{ cwd: root, stdout: "pipe", stderr: "pipe" },
+			);
+			const [status, output, diagnostics] = await Promise.all([
+				child.exited, new Response(child.stdout).text(), new Response(child.stderr).text(),
+			]);
+			if (status !== 0) throw new Error(`Cannot bundle capability ${entry.name}: ${diagnostics || output}`);
+		}
+	}
+
 
 	const candidates = nativeAssetCandidates(platform, arch);
 	if (candidates.length === 0) return;
