@@ -30,7 +30,6 @@ jobs:
     timeout-minutes: 60
     env:
       DARKFACTORY_APP_ID: ${{ vars.DARKFACTORY_APP_ID || '4861004' }}
-      DARKFACTORY_APP_PRIVATE_KEY: ${{ secrets.DARKFACTORY_APP_PRIVATE_KEY }}
       DF_FLEET_OWNER: ${{ github.repository_owner }}
       DF_FLEET_DRY_RUN: ${{ inputs.dry_run && '1' || '0' }}
     steps:
@@ -39,4 +38,6 @@ jobs:
         with:
           node-version: '22'
       - name: Run fleet reconciliation
+        env:
+          DARKFACTORY_APP_PRIVATE_KEY: ${{ secrets.DARKFACTORY_APP_PRIVATE_KEY }}
         run: node scripts/fleet-sync.mjs
