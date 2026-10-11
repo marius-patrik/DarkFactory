@@ -179,8 +179,10 @@ export async function renderManifest(options: RenderManifestOptions): Promise<st
 			ref,
 		},
 		board: {
-			global_title: "Global",
-			link_boards: ["Global"],
+			// The same canonical declaration is read by the installer and the live board controller.
+			// Every consumer gets its own scoped project and the single account-wide Global project.
+			global: "Global",
+			boards: ["Global", repo],
 		},
 		required_checks: requiredContexts(relevantWorkflows(hasGitmodules)),
 		areas: { ...STARTER_AREAS },
