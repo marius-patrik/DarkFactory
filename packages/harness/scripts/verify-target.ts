@@ -7,7 +7,7 @@
  * runner that is natively that platform and architecture, and the binary is run here before it is
  * allowed to become a release artifact.
  */
-import { copyFile, mkdtemp, rm } from "node:fs/promises";
+import { copyFile, mkdtemp, readdir, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { RECORD_SUFFIX, writeReleaseChecksums } from "./release-checksums.ts";
@@ -23,11 +23,11 @@ const target = requireReleaseTarget(targetName);
 const asset = releaseAssetName(target.name);
 const binary = join(dist, asset);
 
-async function run(command: string[], label: string, quiet = false): Promise<void> {
+async function run(command: string[], label: string, quiet = false, cwd = harnessRoot): Promise<void> {
 	// The image-resize worker is resolved against the working directory at run time, so the smoke
 	// runs from the harness root where that path exists. A packaged df installed anywhere else
 	// cannot find it; that is a separate defect and not something this step should hide.
-	const child = Bun.spawn(command, { cwd: harnessRoot, stdout: "pipe", stderr: "pipe" });
+	const child = Bun.spawn(command, { cwd, stdout: "pipe", stderr: "pipe" });
 	const [code, out, err] = await Promise.all([
 		child.exited,
 		new Response(child.stdout).text(),
@@ -60,8 +60,51 @@ if (target.platform === "win32") {
 	}
 }
 
-// The digest is taken here, over the bytes that were just built and run, so the publish job can
-// re-check what arrived rather than checksum whatever it happened to receive. The record is named
-// after the asset so five targets can be merged into one directory without overwriting each other.
-await writeReleaseChecksums(dist, [asset], `${asset}${RECORD_SUFFIX}`);
-process.stdout.write(`verified dist/${asset} and recorded dist/${asset}${RECORD_SUFFIX}\n`);
+// Ship the complete runtime, not only a compiled executable: the image worker, assets,
+// wasm and optional native prebuilds are resolved next to the running binary.
+const bundle = `${asset}.tar.gz`;
+const contents = (await readdir(dist))
+	.filter((entry) => entry !== bundle && !entry.endsWith(RECORD_SUFFIX) && entry !== "checksums.txt")
+	.sort();
+for (const required of [asset, "assets", "plugins", "photon_rs_bg.wasm"]) {
+	if (!contents.includes(required)) throw new Error(`df bundle is missing ${required}`);
+}
+async function tarCommand(args: string[], cwd: string): Promise<void> {
+	const child = Bun.spawn(["tar", ...args], { cwd, stdout: "pipe", stderr: "pipe" });
+	const [exit, stdout, stderr] = await Promise.all([
+		child.exited,
+		new Response(child.stdout).text(),
+		new Response(child.stderr).text(),
+	]);
+	if (exit !== 0) throw new Error(`tar ${args[0]} failed: ${stderr || stdout}`);
+}
+await tarCommand(["-czf", bundle, ...contents], dist);
+
+// Unpack in an unrelated temporary directory and execute from there. This catches source-tree
+// relative lookups and archive layout problems before publishing the release.
+const standalone = await mkdtemp(join(tmpdir(), "df-standalone-"));
+try {
+	await tarCommand(["-xzf", join(dist, bundle), "-C", standalone], standalone);
+	await run([join(standalone, asset), "__packaging-smoke"], "standalone packaging smoke", true, standalone);
+	// Official capabilities are bundled JS: this invocation must work without the source tree
+	// and prove that ci matrix can discover them dynamically from the installed executable.
+	await writeFile(
+		join(standalone, "package.json"),
+		JSON.stringify({
+			name: "df-release-smoke",
+			scripts: { test: "echo ok", lint: "echo ok", typecheck: "echo ok", "format:check": "echo ok" },
+		}),
+	);
+	await run(
+		[join(standalone, asset), "ci", "matrix", "--repo", standalone],
+		"standalone capability smoke",
+		true,
+		standalone,
+	);
+} finally {
+	await rm(standalone, { recursive: true, force: true });
+}
+
+// One per-target digest record includes both backwards-compatible raw binary and complete bundle.
+await writeReleaseChecksums(dist, [asset, bundle], `${asset}${RECORD_SUFFIX}`);
+process.stdout.write(`verified dist/${asset} and dist/${bundle} with recorded digests\n`);

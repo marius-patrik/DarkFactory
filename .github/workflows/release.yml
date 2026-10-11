@@ -311,6 +311,7 @@ jobs:
           name: df-${{ matrix.target }}
           path: |
             packages/harness/dist/${{ matrix.asset }}
+            packages/harness/dist/${{ matrix.asset }}.tar.gz
             packages/harness/dist/${{ matrix.asset }}.sha256
           if-no-files-found: error
           retention-days: 1

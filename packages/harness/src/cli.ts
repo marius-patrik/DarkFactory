@@ -31,6 +31,7 @@ import {
 import { loginProviderAccount } from "../../keychain/src/login.ts";
 import { runPluginCli } from "../../plugins/src/index.ts";
 import { runCiCli } from "./ci/cli.ts";
+import { executableReleaseVersion, runReleasedInstaller } from "./install/released-df.ts";
 import { applyLicence } from "./ci/licensing.ts";
 import { reportFailure, resolveFailure } from "./ci/report-failure.ts";
 import { DEFAULT_ROUTER_CONFIG, type DfConfig, loadDfConfig, localCredentialFallback } from "./config.ts";
@@ -82,6 +83,9 @@ import { describeSubmoduleMovement, pinSubmoduleBranches, updateSubmodules } fro
 function usage(): string {
 	return [
 		"Usage:",
+		"  df --version                       # installed release version",
+		"  df install [--prefix DIR] [--check|--dry-run]   # install latest verified stable release",
+		"  df update [--prefix DIR] [--check|--dry-run]    # update managed release without touching local state",
 		"  df | df chat [--chain provider/model@account,... | --model provider/model@account] [--reasoning hard]",
 		"  df run [--capture-schema [name]] [--chain provider/model@account,... | --model provider/model@account] [--reasoning hard] [--size small|medium|large] [--difficulty easy|medium|hard] [--min-tier id] [--timeout 15m0s] [--json] <prompt>",
 		"  df route [--kind kind] [--size size] [--difficulty easy|medium|hard] [--min-tier id] [--need capability] [--json] <prompt>",
@@ -1124,7 +1128,7 @@ async function packagingSmoke(): Promise<void> {
 		console.warn(`no packaged pi-tui native module for ${platform}-${arch}; pi-tui runs without one`);
 	}
 
-	const worker = new Worker("./src/image-resize-worker.ts");
+	const worker = new Worker(new URL("./image-resize-worker.ts", import.meta.url));
 	try {
 		const png = Uint8Array.from(
 			Buffer.from(
@@ -1670,6 +1674,11 @@ async function secretsCli(home: string, args: string[]): Promise<void> {
  */
 
 export async function main(args = process.argv.slice(2)): Promise<void> {
+	if (args[0] === "--version" || args[0] === "version") {
+		console.log(`df ${executableReleaseVersion() ?? "development/unmanaged"}`);
+		return;
+	}
+	if (args[0] === "install" || args[0] === "update") return runReleasedInstaller(args[0], args.slice(1));
 	if (args[0] === "graph") return graphCommand(args.slice(1));
 	// The nine runner commands are reached through `df` itself, not through a second executable.
 	//

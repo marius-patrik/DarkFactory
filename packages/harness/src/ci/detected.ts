@@ -1,4 +1,5 @@
-import { resolve } from "node:path";
+import { existsSync } from "node:fs";
+import { dirname, join, resolve } from "node:path";
 import {
 	qualityMatrix,
 	type ResolvedRepositoryActions,
@@ -20,9 +21,14 @@ export async function resolveDetectedQuality(
 	capabilitiesRoot?: string,
 ): Promise<DetectedQualityState> {
 	const evidence = await detectRepositoryEvidence(repoDir);
+	// Compiled standalone builds resolve official capabilities next to the executable; Bun source
+	// checkouts continue to use the tracked .darkfactory/plugins tree.
+	const installedPlugins = join(dirname(process.execPath), "plugins");
 	const root = capabilitiesRoot
 		? resolve(capabilitiesRoot)
-		: resolve(import.meta.dir, "..", "..", "..", "..", ".darkfactory", "plugins");
+		: existsSync(installedPlugins)
+			? installedPlugins
+			: resolve(import.meta.dir, "..", "..", "..", "..", ".darkfactory", "plugins");
 	const resolution = await resolveDetectedRepositoryActions(evidence, root);
 	return { evidence, resolution, matrix: qualityMatrix(resolution) };
 }
