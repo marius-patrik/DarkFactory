@@ -78,13 +78,19 @@ test("initial controller install creates a source-free tree, never modifies main
 		throw new Error("Unexpected API invocation: " + method + " " + path);
 	}
 	const outcome = await reconcileControlBranch({
-		slug: "marius-patrik/data-gemini", sourceBranch: "main", release,
-		token: "fake", api, upstream: "marius-patrik/DarkFactory",
+		slug: "marius-patrik/data-gemini",
+		sourceBranch: "main",
+		release,
+		token: "fake",
+		api,
+		upstream: "marius-patrik/DarkFactory",
 	});
 	assert.equal(outcome.kind, "created");
 	const tree = requests.find((call) => call.method === "POST" && call.path.endsWith("/git/trees"));
 	assert.deepEqual(tree.data.tree.map((file) => file.path).sort(), [
-		".darkfactory/installation.json", ".github/workflows/darkfactory-control.yml", "repo.dfconfig",
+		".darkfactory/installation.json",
+		".github/workflows/darkfactory-control.yml",
+		"repo.dfconfig",
 	]);
 	assert.equal(tree.data.base_tree, undefined, "never import user source files into the control branch");
 	const commit = requests.find((call) => call.method === "POST" && call.path.endsWith("/git/commits"));
