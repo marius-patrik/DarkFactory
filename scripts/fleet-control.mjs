@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 // A versioned management plane. The only default-branch exception is the
 // GitHub Actions event bridge; all managed policy and config is on darkfactory.
 export const CONTROL_BRANCH = "darkfactory";
@@ -259,15 +260,28 @@ export const CONTROL_RECEIPT = ".darkfactory/installation.json";
 const allowed = [CONTROL_CONFIG, CONTROL_WORKFLOW, CONTROL_RECEIPT].sort();
 const esc = (p) => p.split("/").map(encodeURIComponent).join("/");
 
-export function renderControlReceipt(slug, sourceBranch, release) {
-	return JSON.stringify({ managedBy: "DarkFactory", schema: 1, slug, sourceBranch, release }, null, 2) + "\n";
+export function digestOf(source) {
+	return createHash("sha256").update(source).digest("hex");
+}
+
+export function renderControlReceipt(slug, sourceBranch, release, fileHashes) {
+	return (
+		JSON.stringify(
+			{ managedBy: "DarkFactory", schema: 2, slug, sourceBranch, release, fileHashes },
+			null,
+			2,
+		) + "\n"
+	);
 }
 
 export function controlFiles(slug, sourceBranch, release, upstream) {
+	const config = renderControlConfig(slug, sourceBranch, release, upstream);
+	const workflow = renderControlWorkflow(slug, release, upstream);
+	const hashes = { [CONTROL_CONFIG]: digestOf(config), [CONTROL_WORKFLOW]: digestOf(workflow) };
 	return {
-		[CONTROL_CONFIG]: renderControlConfig(slug, sourceBranch, release, upstream),
-		[CONTROL_WORKFLOW]: renderControlWorkflow(slug, release, upstream),
-		[CONTROL_RECEIPT]: renderControlReceipt(slug, sourceBranch, release),
+		[CONTROL_CONFIG]: config,
+		[CONTROL_WORKFLOW]: workflow,
+		[CONTROL_RECEIPT]: renderControlReceipt(slug, sourceBranch, release, hashes),
 	};
 }
 
@@ -332,15 +346,15 @@ export async function reconcileControlBranch({ slug, sourceBranch, release, toke
 	}
 	if (
 		receipt.managedBy !== "DarkFactory" ||
-		receipt.schema !== 1 ||
+		receipt.schema !== 2 ||
 		receipt.slug !== slug ||
 		receipt.sourceBranch !== sourceBranch
 	)
 		throw new Error("Control branch ownership or branch does not match " + slug);
 
-	const previous = controlFiles(slug, sourceBranch, receipt.release, upstream);
-	for (const path of allowed) {
-		if (currentFiles[path] !== previous[path])
+	for (const path of [CONTROL_CONFIG, CONTROL_WORKFLOW]) {
+		if (typeof receipt.fileHashes?.[path] !== "string" ||
+			digestOf(currentFiles[path]) !== receipt.fileHashes[path])
 			throw new Error("Control branch contains modified " + path + "; refusing overwrite");
 	}
 	if (allowed.every((path) => files[path] === currentFiles[path])) return { kind: "current", sha: current.object.sha };
