@@ -133,3 +133,87 @@ export function inspectManaged(source, next, marker) {
     return { kind: "conflict", reason: "Unmanaged file; refusing overwrite" };
   return { kind: "review", reason: "Managed content differs; verify original canonical release first" };
 }
+
+
+// A separate branch contains only these three machine-managed files. It does
+// not snapshot or fork application source, and changing main never changes it.
+export const CONTROL_RECEIPT = ".darkfactory/installation.json";
+const allowed = [CONTROL_CONFIG, CONTROL_WORKFLOW, CONTROL_RECEIPT].sort();
+const esc = (p) => p.split("/").map(encodeURIComponent).join("/");
+
+export function renderControlReceipt(slug, sourceBranch, release) {
+  return JSON.stringify({ managedBy: "DarkFactory", schema: 1, slug, sourceBranch, release }, null, 2) + "\n";
+}
+
+export function controlFiles(slug, sourceBranch, release, upstream) {
+  return {
+    [CONTROL_CONFIG]: renderControlConfig(slug, sourceBranch, release, upstream),
+    [CONTROL_WORKFLOW]: renderControlWorkflow(slug, release, upstream),
+    [CONTROL_RECEIPT]: renderControlReceipt(slug, sourceBranch, release),
+  };
+}
+
+// api(method, path, token, body, optional) is the fleet's authenticated
+// GitHub client. Never overwrite preexisting unowned branches or edited files.
+export async function reconcileControlBranch({ slug, sourceBranch, release, token, api, upstream }) {
+  verifyRelease(release);
+  const endpoint = "/repos/" + slug;
+  const current = await api("GET", endpoint + "/git/ref/heads/" + CONTROL_BRANCH, token, undefined, true);
+  const files = controlFiles(slug, sourceBranch, release, upstream);
+  const elements = Object.entries(files).map(([path, content]) => ({
+    path, mode: "100644", type: "blob", content,
+  }));
+
+  if (!current) {
+    const base = await api("GET", endpoint + "/git/ref/heads/" + esc(sourceBranch), token);
+    if (!base?.object?.sha) throw new Error("Cannot resolve default branch for " + slug);
+    const tree = await api("POST", endpoint + "/git/trees", token, { tree: elements });
+    const commit = await api("POST", endpoint + "/git/commits", token, {
+      message: "feat(df): initialize isolated DarkFactory control plane (" + release.tag + ")",
+      tree: tree.sha, parents: [base.object.sha],
+    });
+    await api("POST", endpoint + "/git/refs", token, {
+      ref: "refs/heads/" + CONTROL_BRANCH, sha: commit.sha,
+    });
+    return { kind: "created", sha: commit.sha };
+  }
+
+  const head = await api("GET", endpoint + "/git/commits/" + current.object.sha, token);
+  const snapshot = await api("GET", endpoint + "/git/trees/" + head.tree.sha + "?recursive=1", token);
+  if (snapshot.truncated || !Array.isArray(snapshot.tree))
+    throw new Error("Control branch tree cannot be verified for " + slug);
+  const paths = snapshot.tree.filter((item) => item.type === "blob").map((item) => item.path).sort();
+  if (paths.some((path) => !allowed.includes(path)) || paths.length !== allowed.length)
+    throw new Error("Control branch has unexpected content; refusing to overwrite " + slug);
+
+  const currentFiles = {};
+  for (const path of allowed) {
+    const response = await api("GET", endpoint + "/contents/" + esc(path) + "?ref=" + CONTROL_BRANCH, token);
+    if (response?.type !== "file" || response.encoding !== "base64")
+      throw new Error("Cannot verify managed file " + path);
+    currentFiles[path] = Buffer.from(response.content, "base64").toString("utf8");
+  }
+  let receipt;
+  try { receipt = JSON.parse(currentFiles[CONTROL_RECEIPT]); }
+  catch { throw new Error("Control branch receipt is invalid for " + slug); }
+  if (receipt.managedBy !== "DarkFactory" || receipt.schema !== 1 ||
+      receipt.slug !== slug || receipt.sourceBranch !== sourceBranch)
+    throw new Error("Control branch ownership or branch does not match " + slug);
+
+  const previous = controlFiles(slug, sourceBranch, receipt.release, upstream);
+  for (const path of allowed) {
+    if (currentFiles[path] !== previous[path])
+      throw new Error("Control branch contains modified " + path + "; refusing overwrite");
+  }
+  if (allowed.every((path) => files[path] === currentFiles[path]))
+    return { kind: "current", sha: current.object.sha };
+  const tree = await api("POST", endpoint + "/git/trees", token, { tree: elements });
+  const commit = await api("POST", endpoint + "/git/commits", token, {
+    message: "chore(df): update isolated control plane to " + release.tag,
+    tree: tree.sha, parents: [current.object.sha],
+  });
+  await api("PATCH", endpoint + "/git/refs/heads/" + CONTROL_BRANCH, token, {
+    sha: commit.sha, force: false,
+  });
+  return { kind: "updated", sha: commit.sha };
+}
