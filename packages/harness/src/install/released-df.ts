@@ -18,6 +18,7 @@ export interface PublishedBinary {
 	asset: string;
 	url: string;
 	digest: string;
+	binaryDigest: string;
 	bytes: number;
 }
 
@@ -38,14 +39,17 @@ export function selectPublishedBinary(data: unknown, asset: string): PublishedBi
 	};
 	if (release.draft || release.prerelease || typeof release.tag_name !== "string" || !TAG.test(release.tag_name))
 		throw new Error("No valid published stable DarkFactory release");
-	const candidate = release.assets?.find((item) => item.name === asset);
+	const bundleName = `${asset}.tar.gz`;
+	const candidate = release.assets?.find((item) => item.name === bundleName);
+	const raw = release.assets?.find((item) => item.name === asset);
 	const digest = candidate?.digest?.match(DIGEST)?.[1];
-	const expected = `https://github.com/${UPSTREAM}/releases/download/${release.tag_name}/${asset}`;
-	if (!candidate || !digest || candidate.browser_download_url !== expected)
-		throw new Error(`Missing checksum-verified published artifact: ${asset}`);
+	const binaryDigest = raw?.digest?.match(DIGEST)?.[1];
+	const expected = `https://github.com/${UPSTREAM}/releases/download/${release.tag_name}/${bundleName}`;
+	if (!candidate || !digest || !binaryDigest || candidate.browser_download_url !== expected)
+		throw new Error(`Missing complete SHA-256 verified published df runtime bundle: ${bundleName}`);
 	if (!Number.isSafeInteger(candidate.size) || candidate.size! <= 0 || candidate.size! > MAX_BINARY_BYTES)
-		throw new Error(`Invalid published binary size for ${asset}`);
-	return { tag: release.tag_name, asset, url: expected, digest, bytes: candidate.size! };
+		throw new Error(`Invalid published bundle size for ${bundleName}`);
+	return { tag: release.tag_name, asset, url: expected, digest, binaryDigest, bytes: candidate.size! };
 }
 
 export function managedWrapper(platform: NodeJS.Platform, asset: string): string {
@@ -149,10 +153,8 @@ export async function runReleasedInstaller(
 		return;
 	}
 	if (oldVersion === release.tag && existsSync(target)) {
-		const hash = createHash("sha256")
-			.update(await readFile(target))
-			.digest("hex");
-		if (hash !== release.digest) throw new Error("Installed binary checksum mismatch");
+		const hash = createHash("sha256").update(await readFile(target)).digest("hex");
+		if (hash !== release.binaryDigest) throw new Error("Installed binary checksum mismatch");
 		console.log("Already on latest verified df release.");
 		return;
 	}
@@ -170,15 +172,38 @@ export async function runReleasedInstaller(
 		const observed = (await existingText(pointerPath))?.trim() ?? null;
 		if (observed !== (oldVersion ?? null)) throw new Error("Installed version changed concurrently");
 		const bytes = await verifiedBytes(release, fetchImpl);
-		await mkdir(dirname(target), { recursive: true });
-		if (existsSync(target)) {
-			const oldHash = createHash("sha256")
-				.update(await readFile(target))
-				.digest("hex");
-			if (oldHash !== release.digest) throw new Error(`Existing ${target} has modified content`);
+		const versionDir = dirname(target);
+		if (existsSync(versionDir)) {
+			// Never overlay an existing version, even when its files are incomplete.
+			if (!existsSync(target) || !existsSync(join(versionDir, "assets")) || !existsSync(join(versionDir, "photon_rs_bg.wasm")))
+				throw new Error(`Incomplete or modified immutable df installation: ${versionDir}`);
+			const oldHash = createHash("sha256").update(await readFile(target)).digest("hex");
+			if (oldHash !== release.binaryDigest) throw new Error(`Existing ${target} has modified content`);
 		} else {
-			await atomicWrite(target, bytes, 0o755);
-			if (process.platform !== "win32") await chmod(target, 0o755);
+			const staging = join(flags.prefix, `.install-${release.tag}-${randomUUID()}`);
+			await mkdir(staging, { recursive: true });
+			try {
+				const archive = join(staging, "runtime.tar.gz");
+				await writeFile(archive, bytes, { flag: "wx", mode: 0o600 });
+				const child = Bun.spawn(["tar", "-xzf", archive, "-C", staging], {
+					stdout: "pipe", stderr: "pipe",
+				});
+				const [exit, out, err] = await Promise.all([
+					child.exited, new Response(child.stdout).text(), new Response(child.stderr).text(),
+				]);
+				if (exit !== 0) throw new Error(`Unable to unpack verified df runtime: ${err || out}`);
+				const unpacked = join(staging, asset);
+				if (!existsSync(unpacked) || !existsSync(join(staging, "assets")) || !existsSync(join(staging, "photon_rs_bg.wasm")))
+					throw new Error("Published runtime bundle has missing components");
+				const binHash = createHash("sha256").update(await readFile(unpacked)).digest("hex");
+				if (binHash !== release.binaryDigest) throw new Error("Unpacked executable checksum mismatch");
+				await rm(archive, { force: true });
+				if (process.platform !== "win32") await chmod(unpacked, 0o755);
+				await mkdir(dirname(versionDir), { recursive: true });
+				await rename(staging, versionDir);
+			} finally {
+				await rm(staging, { recursive: true, force: true });
+			}
 		}
 		await mkdir(dirname(wrapperPath), { recursive: true });
 		const latestWrapper = await existingText(wrapperPath);
