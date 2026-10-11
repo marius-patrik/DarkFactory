@@ -172,7 +172,7 @@ export function inspectConfig(source, slug, branch, sha) {
 }
 
 const escaped = (path) => path.split("/").map(encodeURIComponent).join("/");
-async function api(method, path, token, data, optional = false) {
+export async function api(method, path, token, data, optional = false) {
 	const result = await fetch(API + path, {
 		method,
 		headers: {
@@ -188,7 +188,7 @@ async function api(method, path, token, data, optional = false) {
 	if (!result.ok) throw new Error(`${method} ${path}: HTTP ${result.status} ${(await result.text()).slice(0, 350)}`);
 	return result.status === 204 ? null : result.json();
 }
-async function pages(path, token, select = (value) => value) {
+export async function pages(path, token, select = (value) => value) {
 	const out = [];
 	for (let page = 1; page <= 100; page++) {
 		const body = await api("GET", `${path}${path.includes("?") ? "&" : "?"}per_page=100&page=${page}`, token);
@@ -199,7 +199,7 @@ async function pages(path, token, select = (value) => value) {
 	}
 	throw new Error(`Pagination exceeded ${path}`);
 }
-function appJwt(appId, pem) {
+export function appJwt(appId, pem) {
 	const now = Math.floor(Date.now() / 1000);
 	const base = [
 		Buffer.from(JSON.stringify({ alg: "RS256", typ: "JWT" })).toString("base64url"),
