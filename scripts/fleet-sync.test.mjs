@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { inspectConfig, inspectWorkflow, renderConfig, renderWorkflow } from "./fleet-sync.mjs";
+import { inspectConfig, inspectWorkflow, renderConfig, renderLegacyWorkflow, renderWorkflow } from "./fleet-sync.mjs";
 
 const old = {
 	tag: "v0.3.2",
@@ -20,6 +20,8 @@ test("initial integration is additive and pinned to the released binary checksum
 	assert.match(result.content, /name: DarkFactory Runtime/);
 	assert.match(result.content, /sha256sum --check -/);
 	assert.match(result.content, /ci matrix --repo/);
+	assert.match(result.content, /df-linux-x64\.tar\.gz/);
+	assert.match(result.content, /official capabilities/);
 	assert.doesNotMatch(result.content, /secrets:/);
 });
 test("an unchanged fleet-managed workflow updates deterministically", () => {
@@ -29,6 +31,14 @@ test("an unchanged fleet-managed workflow updates deterministically", () => {
 	assert.equal(result.content, renderWorkflow(next));
 	assert.equal(inspectWorkflow(result.content, next).kind, "current");
 });
+test("migrates untouched v1 workflows but refuses customized legacy workflows", () => {
+	const prior = renderLegacyWorkflow(old);
+	const migrated = inspectWorkflow(prior, next);
+	assert.equal(migrated.kind, "update");
+	assert.equal(migrated.content, renderWorkflow(next));
+	assert.equal(inspectWorkflow(prior + "# user-owned edit\\n", next).kind, "conflict");
+});
+
 test("unmanaged or customized project workflow is never overwritten", () => {
 	assert.equal(inspectWorkflow("name: My custom setup\n", next).kind, "conflict");
 	assert.equal(inspectWorkflow(renderWorkflow(old) + "# my change\n", next).kind, "conflict");
