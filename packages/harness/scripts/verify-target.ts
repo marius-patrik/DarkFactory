@@ -63,20 +63,20 @@ if (target.platform === "win32") {
 // Ship the complete runtime, not only a compiled executable: the image worker, assets,
 // wasm and optional native prebuilds are resolved next to the running binary.
 const bundle = `${asset}.tar.gz`;
-const contents = (await readdir(dist)).filter(
-  (entry) => entry !== bundle && !entry.endsWith(RECORD_SUFFIX) && entry !== "checksums.txt",
-).sort();
+const contents = (await readdir(dist))
+	.filter((entry) => entry !== bundle && !entry.endsWith(RECORD_SUFFIX) && entry !== "checksums.txt")
+	.sort();
 for (const required of [asset, "assets", "plugins", "photon_rs_bg.wasm"]) {
-  if (!contents.includes(required)) throw new Error(`df bundle is missing ${required}`);
+	if (!contents.includes(required)) throw new Error(`df bundle is missing ${required}`);
 }
 async function tarCommand(args: string[], cwd: string): Promise<void> {
-  const child = Bun.spawn(["tar", ...args], { cwd, stdout: "pipe", stderr: "pipe" });
-  const [exit, stdout, stderr] = await Promise.all([
-    child.exited,
-    new Response(child.stdout).text(),
-    new Response(child.stderr).text(),
-  ]);
-  if (exit !== 0) throw new Error(`tar ${args[0]} failed: ${stderr || stdout}`);
+	const child = Bun.spawn(["tar", ...args], { cwd, stdout: "pipe", stderr: "pipe" });
+	const [exit, stdout, stderr] = await Promise.all([
+		child.exited,
+		new Response(child.stdout).text(),
+		new Response(child.stderr).text(),
+	]);
+	if (exit !== 0) throw new Error(`tar ${args[0]} failed: ${stderr || stdout}`);
 }
 await tarCommand(["-czf", bundle, ...contents], dist);
 
@@ -84,17 +84,25 @@ await tarCommand(["-czf", bundle, ...contents], dist);
 // relative lookups and archive layout problems before publishing the release.
 const standalone = await mkdtemp(join(tmpdir(), "df-standalone-"));
 try {
-  await tarCommand(["-xzf", join(dist, bundle), "-C", standalone], standalone);
-  await run([join(standalone, asset), "__packaging-smoke"], "standalone packaging smoke", true, standalone);
-  // Official capabilities are bundled JS: this invocation must work without the source tree
-  // and prove that ci matrix can discover them dynamically from the installed executable.
-  await writeFile(
-    join(standalone, "package.json"),
-    JSON.stringify({ name: "df-release-smoke", scripts: { test: "echo ok", lint: "echo ok", typecheck: "echo ok", "format:check": "echo ok" } }),
-  );
-  await run([join(standalone, asset), "ci", "matrix", "--repo", standalone], "standalone capability smoke", true, standalone);
+	await tarCommand(["-xzf", join(dist, bundle), "-C", standalone], standalone);
+	await run([join(standalone, asset), "__packaging-smoke"], "standalone packaging smoke", true, standalone);
+	// Official capabilities are bundled JS: this invocation must work without the source tree
+	// and prove that ci matrix can discover them dynamically from the installed executable.
+	await writeFile(
+		join(standalone, "package.json"),
+		JSON.stringify({
+			name: "df-release-smoke",
+			scripts: { test: "echo ok", lint: "echo ok", typecheck: "echo ok", "format:check": "echo ok" },
+		}),
+	);
+	await run(
+		[join(standalone, asset), "ci", "matrix", "--repo", standalone],
+		"standalone capability smoke",
+		true,
+		standalone,
+	);
 } finally {
-  await rm(standalone, { recursive: true, force: true });
+	await rm(standalone, { recursive: true, force: true });
 }
 
 // One per-target digest record includes both backwards-compatible raw binary and complete bundle.

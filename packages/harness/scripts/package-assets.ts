@@ -71,12 +71,13 @@ export async function packageAssets(
 				{ cwd: root, stdout: "pipe", stderr: "pipe" },
 			);
 			const [status, output, diagnostics] = await Promise.all([
-				child.exited, new Response(child.stdout).text(), new Response(child.stderr).text(),
+				child.exited,
+				new Response(child.stdout).text(),
+				new Response(child.stderr).text(),
 			]);
 			if (status !== 0) throw new Error(`Cannot bundle capability ${entry.name}: ${diagnostics || output}`);
 		}
 	}
-
 
 	const candidates = nativeAssetCandidates(platform, arch);
 	if (candidates.length === 0) return;
