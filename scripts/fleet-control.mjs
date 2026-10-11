@@ -240,8 +240,8 @@ export async function clearObsoleteReleaseRefs(endpoint, slug, token, api) {
     const pr = prs.find(item => item.head?.sha === ref.object?.sha);
     if (!pr) throw new Error("Release branch contains unreviewed commits: " + name);
     const files = await api("GET", endpoint + "/pulls/" + pr.number + "/files?per_page=100", token);
-    if (!Array.isArray(files) || files.length === 0 || files.length > 2 ||
-        files.some(file => !LEGACY_MANAGED_PATHS.has(file.filename)))
+    if (!pr.merged_at && (!Array.isArray(files) || files.length === 0 || files.length > 2 ||
+        files.some(file => !LEGACY_MANAGED_PATHS.has(file.filename))))
       throw new Error("Release branch contains unowned changes: " + name);
     if (pr.state === "open") {
       await api("POST", endpoint + "/issues/" + pr.number + "/comments", token, {
