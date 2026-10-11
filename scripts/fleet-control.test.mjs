@@ -63,3 +63,31 @@ test("invalid release metadata is never installed", () => {
 		/Invalid pinned release/,
 	);
 });
+
+test("initial controller install creates a source-free tree, never modifies main", async () => {
+	const requests = [];
+	const release = { tag: "v0.288.1", sha: "a".repeat(40), digest: "b".repeat(64) };
+	async function api(method, path, _token, data) {
+		requests.push({ method, path, data });
+		if (method === "GET" && path.endsWith("/git/ref/heads/darkfactory")) return null;
+		if (method === "GET" && path.includes("/git/matching-refs/")) return [];
+		if (method === "GET" && path.endsWith("/git/ref/heads/main")) return { object: { sha: "c".repeat(40) } };
+		if (method === "POST" && path.endsWith("/git/trees")) return { sha: "d".repeat(40) };
+		if (method === "POST" && path.endsWith("/git/commits")) return { sha: "e".repeat(40) };
+		if (method === "POST" && path.endsWith("/git/refs")) return {};
+		throw new Error("Unexpected API invocation: " + method + " " + path);
+	}
+	const outcome = await reconcileControlBranch({
+		slug: "marius-patrik/data-gemini", sourceBranch: "main", release,
+		token: "fake", api, upstream: "marius-patrik/DarkFactory",
+	});
+	assert.equal(outcome.kind, "created");
+	const tree = requests.find((call) => call.method === "POST" && call.path.endsWith("/git/trees"));
+	assert.deepEqual(tree.data.tree.map((file) => file.path).sort(), [
+		".darkfactory/installation.json", ".github/workflows/darkfactory-control.yml", "repo.dfconfig",
+	]);
+	assert.equal(tree.data.base_tree, undefined, "never import user source files into the control branch");
+	const commit = requests.find((call) => call.method === "POST" && call.path.endsWith("/git/commits"));
+	assert.deepEqual(commit.data.parents, ["c".repeat(40)]);
+	assert.ok(!requests.some((call) => call.method === "PATCH" || call.method === "DELETE"));
+});
