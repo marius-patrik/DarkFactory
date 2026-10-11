@@ -8,15 +8,16 @@ const OWNER = process.env.DF_FLEET_OWNER || "marius-patrik";
 const UPSTREAM = `${OWNER}/DarkFactory`;
 const WORKFLOW = ".github/workflows/darkfactory.yml";
 const CONFIGS = ["repo.dfconfig", "config.dfconfig", ".dfconfig"];
-const MARKER = "# df-fleet-managed: 1";
+const MARKER = "# df-fleet-managed: 2";
+const LEGACY_MARKER = "# df-fleet-managed: 1";
 const ISSUE_MARKER = "<!-- darkfactory-fleet-release: ";
 const DRY_RUN = process.env.DF_FLEET_DRY_RUN === "1";
 
-export function renderWorkflow({ tag, sha, digest }) {
+export function renderLegacyWorkflow({ tag, sha, digest }) {
 	if (!/^v[0-9][A-Za-z0-9.+-]*$/.test(tag) || !/^[a-f0-9]{40}$/.test(sha) || !/^[a-f0-9]{64}$/.test(digest)) {
 		throw new Error("Invalid stable release metadata");
 	}
-	return `${MARKER}
+	return `${LEGACY_MARKER}
 # Additive integration: existing project workflows remain unchanged.
 # Customize in separate workflows; hand-editing this one pauses auto-updates.
 name: DarkFactory Runtime
@@ -55,6 +56,52 @@ jobs:
 `;
 }
 
+
+export function renderWorkflow({ tag, sha, digest }) {
+	if (!/^v[0-9][A-Za-z0-9.+-]*$/.test(tag) || !/^[a-f0-9]{40}$/.test(sha) || !/^[a-f0-9]{64}$/.test(digest)) {
+		throw new Error("Invalid stable release metadata");
+	}
+	return `${MARKER}
+# This managed workflow is additive; existing consumer CI remains intact.
+# User edits pause automated updates rather than being overwritten.
+name: DarkFactory Runtime
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  darkfactory:
+    name: released-df
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      DF_TAG: "${tag}"
+      DF_RELEASE_SHA: "${sha}"
+      DF_SHA256: "${digest}"
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - name: Install complete verified released df
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl --fail --location --silent --show-error --retry 3 "https://github.com/${UPSTREAM}/releases/download/$DF_TAG/df-linux-x64.tar.gz" --output "$RUNNER_TEMP/df-runtime.tar.gz"
+          echo "$DF_SHA256  $RUNNER_TEMP/df-runtime.tar.gz" | sha256sum --check -
+          mkdir -p "$RUNNER_TEMP/df-runtime"
+          tar -xzf "$RUNNER_TEMP/df-runtime.tar.gz" -C "$RUNNER_TEMP/df-runtime"
+          chmod +x "$RUNNER_TEMP/df-runtime/df-linux-x64"
+      - name: Verify df detects this repository using its official capabilities
+        shell: bash
+        run: |
+          set -euo pipefail
+          "$RUNNER_TEMP/df-runtime/df-linux-x64" ci matrix --repo "$GITHUB_WORKSPACE" > "$RUNNER_TEMP/df-matrix.json"
+          jq --exit-status '.matrix | type == "array"' "$RUNNER_TEMP/df-matrix.json"
+          jq --raw-output '"Detected packages: \(.packages | length); unresolved actions: \(.gaps | length)"' "$RUNNER_TEMP/df-matrix.json"
+`;
+}
+
+
 export function renderConfig(slug, branch, sha) {
 	const [owner, repo] = slug.split("/");
 	return (
@@ -77,14 +124,14 @@ export function renderConfig(slug, branch, sha) {
 
 export function inspectWorkflow(source, release) {
 	if (source === null) return { kind: "create", content: renderWorkflow(release) };
-	if (!source.startsWith(MARKER + "\n"))
+	if (!source.startsWith(MARKER + "\n") && !source.startsWith(LEGACY_MARKER + "\n"))
 		return { kind: "conflict", reason: "Existing workflow is not managed by fleet-sync" };
 	const tag = source.match(/^\s+DF_TAG: "([^"]+)"$/m)?.[1];
 	const sha = source.match(/^\s+DF_RELEASE_SHA: "([^"]+)"$/m)?.[1];
 	const digest = source.match(/^\s+DF_SHA256: "([^"]+)"$/m)?.[1];
 	let previous;
 	try {
-		previous = renderWorkflow({ tag, sha, digest });
+		previous = source.startsWith(LEGACY_MARKER) ? renderLegacyWorkflow({ tag, sha, digest }) : renderWorkflow({ tag, sha, digest });
 	} catch {
 		return { kind: "conflict", reason: "Invalid release metadata in existing workflow" };
 	}
@@ -284,9 +331,9 @@ async function main() {
 	const { token } = await api("POST", `/app/installations/${install.id}/access_tokens`, jwt, {});
 	const release = await api("GET", `/repos/${UPSTREAM}/releases/latest`, token);
 	if (!release?.tag_name || release.draft || release.prerelease) throw new Error("Stable release not found");
-	const asset = release.assets?.find((item) => item.name === "df-linux-x64");
+	const asset = release.assets?.find((item) => item.name === "df-linux-x64.tar.gz");
 	const digest = asset?.digest?.match(/^sha256:([a-f0-9]{64})$/)?.[1];
-	if (!digest) throw new Error("Latest release has no SHA-256-verified Linux binary");
+	if (!digest) throw new Error("Latest stable release has no SHA-256-verified Linux runtime archive");
 	let ref = await api("GET", `/repos/${UPSTREAM}/git/ref/tags/${encodeURIComponent(release.tag_name)}`, token);
 	if (ref.object.type === "tag") ref = await api("GET", `/repos/${UPSTREAM}/git/tags/${ref.object.sha}`, token);
 	if (ref.object.type !== "commit") throw new Error("Release tag is not a commit");
