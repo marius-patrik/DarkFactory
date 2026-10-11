@@ -339,9 +339,9 @@ export function resolveRelease(repoRoot: string, requested?: string | null): Rel
 	const eligibleTags =
 		config.mode === "zerover"
 			? tags.filter((tag) => {
-				const parsed = tag.startsWith(prefix) ? parseVersion(tag.slice(prefix.length)) : null;
-				return parsed !== null && parsed.scheme === "" && parsed.numbers[0] === 0;
-			})
+					const parsed = tag.startsWith(prefix) ? parseVersion(tag.slice(prefix.length)) : null;
+					return parsed !== null && parsed.scheme === "" && parsed.numbers[0] === 0;
+				})
 			: tags;
 	const currentTag = latestTag(eligibleTags, prefer);
 	const current =
