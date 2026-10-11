@@ -120,6 +120,14 @@ describe("release workflow", () => {
 
 	// The digest is taken where the bytes are built and re-checked where they are published, so a
 	// corrupted artifact upload cannot be published with checksums that describe it as intact.
+	test("refuses tag reuse rather than reporting success without publishing a release", () => {
+		const create = workflow.jobs.publish?.steps.find((step) => step.run?.includes("gh release create"));
+		const script = create?.run ?? "";
+		expect(script).toContain('git rev-parse -q --verify "refs/tags/$TAG"');
+		expect(script).toContain("Fix the version resolver");
+		expect(script).not.toContain("already exists; nothing to do.");
+	});
+
 	test("re-verifies the downloaded artifacts against their build-time digests", () => {
 		const steps = workflow.jobs.publish?.steps ?? [];
 		const verify = steps.findIndex((step) => step.run?.includes("release-checksums.ts"));
