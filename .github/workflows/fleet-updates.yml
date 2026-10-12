@@ -43,7 +43,7 @@ jobs:
         run: node scripts/fleet-sync.mjs
 
   projects:
-    if: github.repository == 'marius-patrik/DarkFactory'
+    if: github.repository == 'marius-patrik/DarkFactory' && !inputs.dry_run
     name: Reconcile scoped and Global projects
     runs-on: ubuntu-24.04
     timeout-minutes: 60
