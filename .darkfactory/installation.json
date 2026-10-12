@@ -1,11 +1,15 @@
 {
   "managedBy": "DarkFactory",
-  "schema": 1,
+  "schema": 2,
   "slug": "marius-patrik/DarkFactory",
   "sourceBranch": "main",
   "release": {
     "tag": "v0.288.1",
     "sha": "13a9feb64555a8fb2f3ad9cf7e687b7fd1115838",
     "digest": "8b4861ba4efcba1cf3378a2ff92a7fbb2d9887cabca6d494c9a58c7f95514ffd"
+  },
+  "fileHashes": {
+    "repo.dfconfig": "6c4c3e7408906a08cdc01b6cc08a1a9dd81daa2be0dff76b7de2c12bb8e516b9",
+    ".github/workflows/darkfactory-control.yml": "4edf0810e0c3768d72561ed68b29cf812bcfbc28fd3b8942d156fd1af1cdf323"
   }
 }
