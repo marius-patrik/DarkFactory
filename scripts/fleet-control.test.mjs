@@ -84,6 +84,7 @@ test("generated management workflows are valid YAML and execute only pinned cont
 	assert.ok(Object.hasOwn(bridge.on, "issues"));
 	assert.ok(bridge.on.schedule);
 	assert.equal(bridge.jobs.governed.uses, "marius-patrik/OASIS/.github/workflows/darkfactory-control.yml@darkfactory");
+	assert.match(workflow.jobs.quality.if, /github\.event_name/);
 	assert.ok(workflow.jobs.detect.steps.some((step) => step.with?.ref === "darkfactory"));
 	assert.ok(workflow.jobs["execute-quality"].steps.some((step) => step.with?.ref === "darkfactory"));
 	assert.match(renderControlWorkflow("marius-patrik/OASIS", release), /ci matrix --repo/);
