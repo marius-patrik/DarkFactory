@@ -13,7 +13,13 @@ export function verifyRelease({ tag, sha, digest }) {
 		throw new Error("Invalid pinned release metadata");
 }
 
-export function renderControlConfig(slug, sourceBranch, release, upstream = "marius-patrik/DarkFactory", baseConfig = null) {
+export function renderControlConfig(
+	slug,
+	sourceBranch,
+	release,
+	upstream = "marius-patrik/DarkFactory",
+	baseConfig = null,
+) {
 	verifyRelease(release);
 	const [owner, repo, extra] = slug.split("/");
 	if (!owner || !repo || extra) throw new Error("Invalid repository slug");
@@ -23,26 +29,40 @@ export function renderControlConfig(slug, sourceBranch, release, upstream = "mar
 	} catch {
 		throw new Error("Repository configuration is invalid JSON; refusing destructive replacement");
 	}
-	if (!doc || typeof doc !== "object" || Array.isArray(doc) ||
-		!doc.repo || typeof doc.repo !== "object" || Array.isArray(doc.repo))
+	if (
+		!doc ||
+		typeof doc !== "object" ||
+		Array.isArray(doc) ||
+		!doc.repo ||
+		typeof doc.repo !== "object" ||
+		Array.isArray(doc.repo)
+	)
 		throw new Error("Repository configuration is not a valid combined document");
-	const existingIdentity = doc.repo.identity && typeof doc.repo.identity === "object"
-		? doc.repo.identity : {};
+	const existingIdentity = doc.repo.identity && typeof doc.repo.identity === "object" ? doc.repo.identity : {};
 	const self = slug.toLowerCase() === upstream.toLowerCase();
-	return JSON.stringify({
-		...doc,
-		repo: {
-			...doc.repo,
-			identity: {
-				...existingIdentity, owner, repo,
-				display_name: existingIdentity.display_name || repo,
-				project_title: repo, default_branch: sourceBranch,
-				development_branch: existingIdentity.development_branch || sourceBranch,
+	return (
+		JSON.stringify(
+			{
+				...doc,
+				repo: {
+					...doc.repo,
+					identity: {
+						...existingIdentity,
+						owner,
+						repo,
+						display_name: existingIdentity.display_name || repo,
+						project_title: repo,
+						default_branch: sourceBranch,
+						development_branch: existingIdentity.development_branch || sourceBranch,
+					},
+					upstream: self ? { repo: null, ref: null } : { repo: upstream, ref: release.sha },
+					board: { global: "Global", boards: ["Global", repo] },
+				},
 			},
-			upstream: self ? { repo: null, ref: null } : { repo: upstream, ref: release.sha },
-			board: { global: "Global", boards: ["Global", repo] },
-		},
-	}, null, 2) + "\n";
+			null,
+			2,
+		) + "\n"
+	);
 }
 
 export function renderControlWorkflow(slug, release, upstream = "marius-patrik/DarkFactory") {
@@ -300,7 +320,15 @@ export function controlFiles(slug, sourceBranch, release, upstream, baseConfig =
 
 // api(method, path, token, body, optional) is the fleet's authenticated
 // GitHub client. Never overwrite preexisting unowned branches or edited files.
-export async function reconcileControlBranch({ slug, sourceBranch, release, token, api, upstream, sourceConfig = null }) {
+export async function reconcileControlBranch({
+	slug,
+	sourceBranch,
+	release,
+	token,
+	api,
+	upstream,
+	sourceConfig = null,
+}) {
 	verifyRelease(release);
 	const endpoint = "/repos/" + slug;
 	const current = await api("GET", endpoint + "/git/ref/heads/" + CONTROL_BRANCH, token, undefined, true);
@@ -382,8 +410,7 @@ export async function reconcileControlBranch({ slug, sourceBranch, release, toke
 		} catch {
 			throw new Error("Source/control manifest cannot be parsed for " + slug);
 		}
-		if (fromMain?.repo?.app && !fromControl?.repo?.app)
-			preserved = sourceConfig;
+		if (fromMain?.repo?.app && !fromControl?.repo?.app) preserved = sourceConfig;
 	}
 	files = controlFiles(slug, sourceBranch, release, upstream, preserved);
 	if (allowed.every((path) => files[path] === currentFiles[path])) return { kind: "current", sha: current.object.sha };

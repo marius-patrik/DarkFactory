@@ -51,7 +51,13 @@ test("self-hosted producer remains its own upstream and retains full config", ()
 		providers: { default: "some-provider" },
 	};
 	const config = JSON.parse(
-		renderControlConfig("marius-patrik/DarkFactory", "main", release, "marius-patrik/DarkFactory", JSON.stringify(full)),
+		renderControlConfig(
+			"marius-patrik/DarkFactory",
+			"main",
+			release,
+			"marius-patrik/DarkFactory",
+			JSON.stringify(full),
+		),
 	);
 	assert.deepEqual(config.repo.upstream, { repo: null, ref: null });
 	assert.deepEqual(config.repo.board, { global: "Global", boards: ["Global", "DarkFactory"] });
