@@ -189,19 +189,19 @@ export function renderControlWorkflow(slug, release, upstream = "marius-patrik/D
 			.replaceAll("@@SHA@@", release.sha)
 			.replaceAll("@@AT@@", "@" + release.sha)
 			.replaceAll("@@AGENT_ENABLED@@", "$" + "{{ vars.AGENT_ENABLED }}")
-		.replaceAll("@@MATRIX_OUTPUT@@", "$" + "{{ steps.matrix.outputs.matrix }}")
-		.replaceAll("@@HAS_OUTPUT@@", "$" + "{{ steps.matrix.outputs.has-actions }}")
-		.replaceAll("@@MATRIX_ID@@", "$" + "{{ matrix.id }}")
-		.replaceAll("@@MATRIX_INPUT@@", "$" + "{{ fromJson(needs.detect.outputs.matrix) }}")
-		.replaceAll("@@PY_VERSION@@", "$" + "{{ matrix.version || '3.13' }}")
-		.replaceAll("@@PKG_MANAGER@@", "$" + "{{ matrix.packageManager }}")
-		.replaceAll("@@SETUP_COMMAND@@", "$" + "{{ matrix.setupCommand }}")
-		.replaceAll("@@SETUP_CWD@@", "$" + "{{ matrix.setupCwd }}")
-		.replaceAll("@@ACTION_COMMAND@@", "$" + "{{ matrix.command }}")
-		.replaceAll("@@ACTION_CWD@@", "$" + "{{ matrix.cwd }}")
-		.replaceAll("@@DETECT_RESULT@@", "$" + "{{ needs.detect.result }}")
-		.replaceAll("@@EXECUTE_RESULT@@", "$" + "{{ needs.execute-quality.result }}")
-		.replaceAll("@@HAS_MATRIX@@", "$" + "{{ needs.detect.outputs.has-actions }}") + "\n"
+			.replaceAll("@@MATRIX_OUTPUT@@", "$" + "{{ steps.matrix.outputs.matrix }}")
+			.replaceAll("@@HAS_OUTPUT@@", "$" + "{{ steps.matrix.outputs.has-actions }}")
+			.replaceAll("@@MATRIX_ID@@", "$" + "{{ matrix.id }}")
+			.replaceAll("@@MATRIX_INPUT@@", "$" + "{{ fromJson(needs.detect.outputs.matrix) }}")
+			.replaceAll("@@PY_VERSION@@", "$" + "{{ matrix.version || '3.13' }}")
+			.replaceAll("@@PKG_MANAGER@@", "$" + "{{ matrix.packageManager }}")
+			.replaceAll("@@SETUP_COMMAND@@", "$" + "{{ matrix.setupCommand }}")
+			.replaceAll("@@SETUP_CWD@@", "$" + "{{ matrix.setupCwd }}")
+			.replaceAll("@@ACTION_COMMAND@@", "$" + "{{ matrix.command }}")
+			.replaceAll("@@ACTION_CWD@@", "$" + "{{ matrix.cwd }}")
+			.replaceAll("@@DETECT_RESULT@@", "$" + "{{ needs.detect.result }}")
+			.replaceAll("@@EXECUTE_RESULT@@", "$" + "{{ needs.execute-quality.result }}")
+			.replaceAll("@@HAS_MATRIX@@", "$" + "{{ needs.detect.outputs.has-actions }}") + "\n"
 	);
 }
 
@@ -266,11 +266,7 @@ export function digestOf(source) {
 
 export function renderControlReceipt(slug, sourceBranch, release, fileHashes) {
 	return (
-		JSON.stringify(
-			{ managedBy: "DarkFactory", schema: 2, slug, sourceBranch, release, fileHashes },
-			null,
-			2,
-		) + "\n"
+		JSON.stringify({ managedBy: "DarkFactory", schema: 2, slug, sourceBranch, release, fileHashes }, null, 2) + "\n"
 	);
 }
 
@@ -353,8 +349,7 @@ export async function reconcileControlBranch({ slug, sourceBranch, release, toke
 		throw new Error("Control branch ownership or branch does not match " + slug);
 
 	for (const path of [CONTROL_CONFIG, CONTROL_WORKFLOW]) {
-		if (typeof receipt.fileHashes?.[path] !== "string" ||
-			digestOf(currentFiles[path]) !== receipt.fileHashes[path])
+		if (typeof receipt.fileHashes?.[path] !== "string" || digestOf(currentFiles[path]) !== receipt.fileHashes[path])
 			throw new Error("Control branch contains modified " + path + "; refusing overwrite");
 	}
 	if (allowed.every((path) => files[path] === currentFiles[path])) return { kind: "current", sha: current.object.sha };
