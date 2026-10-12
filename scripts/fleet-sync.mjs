@@ -13,6 +13,8 @@ const MARKER = "# df-fleet-managed: 2";
 const LEGACY_MARKER = "# df-fleet-managed: 1";
 const ISSUE_MARKER = "<!-- darkfactory-fleet-release: ";
 const DRY_RUN = process.env.DF_FLEET_DRY_RUN === "1";
+// Production rollout is explicitly gated until DarkFactory self-hosting is proven.
+const CONSUMER_ROLLOUT = process.env.DF_FLEET_CONSUMERS_ENABLED === "1";
 
 // Lifecycle exclusions are intentional. Do not open release upgrade PRs in
 // retired *-old repositories or Agent OS repositories. A previously installed
@@ -413,7 +415,8 @@ async function main() {
 			r.full_name?.split("/")[0]?.toLowerCase() === OWNER.toLowerCase() &&
 			!r.archived &&
 			!r.disabled &&
-			!isFleetExcluded(r.full_name),
+			!isFleetExcluded(r.full_name) &&
+			(CONSUMER_ROLLOUT || r.full_name.toLowerCase() === UPSTREAM.toLowerCase()),
 	);
 	console.log(
 		`Selected ${eligible.length} eligible repositories (including upstream self-control, excluding old/Agent OS), released df ${selected.tag}`,
@@ -438,7 +441,8 @@ async function main() {
 				!r.disabled &&
 				!isFleetExcluded(r.full_name) &&
 				r.full_name?.toLowerCase() !== UPSTREAM.toLowerCase() &&
-				!available.has(r.full_name.toLowerCase()),
+				!available.has(r.full_name.toLowerCase()) &&
+				CONSUMER_ROLLOUT,
 		)
 		.map((r) => r.full_name);
 	if (missing.length) failures.push(`Grant App access to: ${missing.join(", ")}`);
