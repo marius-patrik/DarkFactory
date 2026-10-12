@@ -123,3 +123,10 @@ jobs:
         run: |
           test "$DF_DETECT" = "success"
           if [ "$DF_HAS_ACTIONS" = "true" ]; then test "$DF_QUALITY" = "success"; fi
+  issue-binding:
+    if: github.event_name == 'pull_request'
+    uses: marius-patrik/DarkFactory/.github/workflows/verify-pr-issue.yml@13a9feb64555a8fb2f3ad9cf7e687b7fd1115838
+    with:
+      pipeline-ref: "13a9feb64555a8fb2f3ad9cf7e687b7fd1115838"
+      pipeline-repo: marius-patrik/DarkFactory
+    secrets: inherit
