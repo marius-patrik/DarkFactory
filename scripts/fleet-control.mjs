@@ -370,7 +370,22 @@ export async function reconcileControlBranch({ slug, sourceBranch, release, toke
 			throw new Error("Control branch contains modified " + path + "; refusing overwrite");
 	}
 	// A release update must preserve the previous managed configuration, not reset it to defaults.
-	files = controlFiles(slug, sourceBranch, release, upstream, currentFiles[CONTROL_CONFIG]);
+	// The first producer self-hosting checkout started from a minimal bootstrap.
+	// Promote its existing full source config once, without overwriting a later
+	// control-branch configuration or discarding app/release/docs declarations.
+	let preserved = currentFiles[CONTROL_CONFIG];
+	if (sourceConfig) {
+		let fromMain, fromControl;
+		try {
+			fromMain = JSON.parse(sourceConfig);
+			fromControl = JSON.parse(preserved);
+		} catch {
+			throw new Error("Source/control manifest cannot be parsed for " + slug);
+		}
+		if (fromMain?.repo?.app && !fromControl?.repo?.app)
+			preserved = sourceConfig;
+	}
+	files = controlFiles(slug, sourceBranch, release, upstream, preserved);
 	if (allowed.every((path) => files[path] === currentFiles[path])) return { kind: "current", sha: current.object.sha };
 	const tree = await api("POST", endpoint + "/git/trees", token, { tree: elements });
 	const commit = await api("POST", endpoint + "/git/commits", token, {
