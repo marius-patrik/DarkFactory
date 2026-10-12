@@ -168,7 +168,7 @@ export async function runFleetProjects(env = process.env) {
 		await pages("/installation/repositories", appToken, (p) => p.repositories),
 		owner,
 		upstream,
-	);
+	).filter((repo) => env.DF_FLEET_CONSUMERS_ENABLED === "1" || repo.full_name.toLowerCase() === upstream.toLowerCase());
 	if (!repositories.some((r) => r.full_name.toLowerCase() === upstream.toLowerCase()))
 		throw new Error("Self-hosted DarkFactory repo missing from App installation");
 	const { ownerId, byTitle } = await readOwnerProjects(owner, env.GH_PROJECT_TOKEN);
