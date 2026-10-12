@@ -90,7 +90,6 @@ jobs:
     # guard then refused to act on it, so every failure was reported and ignored forever. The label
     # stays for board and triage purposes; the loop is bounded by the deterministic effect identity
     # the runner claims in agent_runner.py (`claim_failure_dispatch`), not by a label test.
-    if: (vars.AGENT_ENABLED == 'true' || inputs.agent-enabled == 'true') && (!endsWith(github.event.comment.user.login, '[bot]') || startsWith(github.event.comment.body, 'Failed again:'))
     runs-on: ubuntu-latest
     # The pipeline's own failure reports are not work. `report-failure.yml` fires on
     # `workflow_run: completed` and opens a `pipeline-failure`-labelled issue whenever a workflow
