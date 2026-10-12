@@ -4,6 +4,9 @@ name: Synchronize DarkFactory Fleet
 # GitHub suppresses some workflow events created with GITHUB_TOKEN, hence
 # the daily reconciliation in addition to the published-release trigger.
 on:
+  # After a producer merge, reconcile only the producer. Consumers require opt-in.
+  push:
+    branches: [main]
   release:
     types: [published]
   schedule:
