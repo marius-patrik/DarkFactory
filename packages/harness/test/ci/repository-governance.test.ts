@@ -46,6 +46,9 @@ const EXPECTED_WORKFLOWS = [
 	"install-sweep.yml",
 	// Fleet reconciliation runs only in the upstream repository with its App identity.
 	"fleet-updates.yml",
+	// Producer-only event bridges and verification workflows are never called by consumers.
+	"darkfactory-self.yml",
+	"self-install.yml",
 ];
 
 /** Issue chooser and templates. */
