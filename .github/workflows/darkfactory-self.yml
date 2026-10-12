@@ -19,5 +19,5 @@ permissions:
 
 jobs:
   managed:
-    uses: marius-patrik/DarkFactory/.github/workflows/darkfactory-control.yml@darkfactory
+    uses: marius-patrik/DarkFactory/.github/workflows/darkfactory-control.yml@ccec9a92b585d947e73cda910cf5cee60acac3f2
     secrets: inherit
