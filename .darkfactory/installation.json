@@ -9,7 +9,7 @@
     "digest": "8b4861ba4efcba1cf3378a2ff92a7fbb2d9887cabca6d494c9a58c7f95514ffd"
   },
   "fileHashes": {
-    "repo.dfconfig": "6c4c3e7408906a08cdc01b6cc08a1a9dd81daa2be0dff76b7de2c12bb8e516b9",
-    ".github/workflows/darkfactory-control.yml": "4edf0810e0c3768d72561ed68b29cf812bcfbc28fd3b8942d156fd1af1cdf323"
+    "repo.dfconfig": "69e9ef95f398860b90ff2e01527a944c87dec2c9c83701f1ed2c0c4c3034a4cc",
+    ".github/workflows/darkfactory-control.yml": "ac2ab6caf0c7c37bd659e549dc10d342ce1f05e2f66a990913dee63d630896e4"
   }
 }
