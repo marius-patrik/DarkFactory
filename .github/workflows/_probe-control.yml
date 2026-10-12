@@ -125,9 +125,9 @@ jobs:
           if [ "$DF_HAS_ACTIONS" = "true" ]; then test "$DF_QUALITY" = "success"; fi
   agent:
     if: github.event_name == 'issues' || github.event_name == 'issue_comment' || github.event_name == 'pull_request_review_comment'
-    uses: marius-patrik/DarkFactory/.github/workflows/agent.yml@13a9feb64555a8fb2f3ad9cf7e687b7fd1115838
+    uses: marius-patrik/DarkFactory/.github/workflows/agent.yml@280d012138b0b95fb96516d3b43b77de764dcf00
     with:
-      pipeline-ref: "13a9feb64555a8fb2f3ad9cf7e687b7fd1115838"
+      pipeline-ref: "280d012138b0b95fb96516d3b43b77de764dcf00"
       pipeline-repo: marius-patrik/DarkFactory
     secrets: inherit
   issue-binding:
