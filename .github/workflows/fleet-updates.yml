@@ -15,6 +15,11 @@ on:
         type: boolean
         required: false
         default: false
+      include_consumers:
+        description: "Explicitly allow changing consumer repositories (self-only by default)"
+        type: boolean
+        required: false
+        default: false
 
 permissions:
   contents: read
@@ -32,6 +37,7 @@ jobs:
       DARKFACTORY_APP_ID: ${{ vars.DARKFACTORY_APP_ID || '4861004' }}
       DF_FLEET_OWNER: ${{ github.repository_owner }}
       DF_FLEET_DRY_RUN: ${{ inputs.dry_run && '1' || '0' }}
+      DF_FLEET_CONSUMERS_ENABLED: ${{ inputs.include_consumers && '1' || '0' }}
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
       - uses: actions/setup-node@v4
@@ -50,6 +56,7 @@ jobs:
     env:
       DARKFACTORY_APP_ID: ${{ vars.DARKFACTORY_APP_ID || '4861004' }}
       DF_FLEET_OWNER: ${{ github.repository_owner }}
+      DF_FLEET_CONSUMERS_ENABLED: ${{ inputs.include_consumers && '1' || '0' }}
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
       - uses: actions/setup-node@v4
