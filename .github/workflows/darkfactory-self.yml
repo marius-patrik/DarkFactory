@@ -19,5 +19,5 @@ permissions:
 
 jobs:
   managed:
-    uses: marius-patrik/DarkFactory/.github/workflows/verify-pr-issue.yml@13a9feb64555a8fb2f3ad9cf7e687b7fd1115838
+    uses: marius-patrik/DarkFactory/.github/workflows/_probe-control.yml@feat/darkfactory-control-branch
     secrets: inherit
