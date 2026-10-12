@@ -1,0 +1,33 @@
+name: Verify DarkFactory Self-Installation
+
+on:
+  pull_request:
+    paths:
+      - "scripts/fleet-control.mjs"
+      - "scripts/fleet-sync.mjs"
+      - "scripts/self-install-check.mjs"
+      - ".github/workflows/self-install.yml"
+      - ".github/workflows/project-automation.yml"
+      - ".github/workflows/fleet-updates.yml"
+      - ".github/workflows/verify-pr-issue.yml"
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  self-install:
+    name: self-install
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout DarkFactory source
+        uses: actions/checkout@v4
+      - name: Checkout isolated managed branch
+        uses: actions/checkout@v4
+        with:
+          ref: darkfactory
+          path: .darkfactory-managed
+      - name: Verify sealed control-plane content and board configuration
+        run: node scripts/self-install-check.mjs .darkfactory-managed

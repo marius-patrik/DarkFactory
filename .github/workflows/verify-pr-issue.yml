@@ -37,13 +37,26 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Checkout pinned pipeline for consumers
+        if: inputs.pipeline-ref != ''
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ inputs.pipeline-repo }}
+          ref: ${{ inputs.pipeline-ref }}
+          path: .darkfactory-pipeline
+
       - name: Set up Bun
         uses: oven-sh/setup-bun@v2
 
       - name: Verify PR description binds a tracking issue
         # The gate lives with the rest of the pipeline's CI code, so the grammar a required check
         # enforces is testable rather than buried in a heredoc inside this file.
-        run: bun packages/harness/src/ci/bound-issue.ts
+        run: |
+          ROOT="$GITHUB_WORKSPACE"
+          if [ -d "$GITHUB_WORKSPACE/.darkfactory-pipeline" ]; then
+            ROOT="$GITHUB_WORKSPACE/.darkfactory-pipeline"
+          fi
+          bun "$ROOT/packages/harness/src/ci/bound-issue.ts"
         env:
           PR_BODY: ${{ github.event.pull_request.body }}
           GITHUB_EVENT_NAME: ${{ github.event_name }}

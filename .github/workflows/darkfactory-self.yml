@@ -1,0 +1,23 @@
+name: DarkFactory Self-Hosted Control
+
+# Prove the production GitHub Actions reusable-workflow runtime, not just YAML
+# parsing or a downloaded binary. The declared managed workflow stays in the
+# isolated darkfactory branch, including for DarkFactory itself.
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  actions: write
+  issues: write
+  pull-requests: write
+  repository-projects: write
+
+jobs:
+  managed:
+    uses: marius-patrik/DarkFactory/.github/workflows/darkfactory-control.yml@darkfactory
+    secrets: inherit
