@@ -54,7 +54,7 @@ const REMAINING_PYTHON_STEPS: Record<string, string[]> = {
 
 /** The steps moved off Python, and the command each one runs instead. */
 const CONVERTED: Array<[workflow: string, step: string, expected: string]> = [
-	["verify-pr-issue.yml", "Verify PR description binds a tracking issue", "bun packages/harness/src/ci/bound-issue.ts"],
+	["verify-pr-issue.yml", "Verify PR description binds a tracking issue", "bun \"$ROOT/packages/harness/src/ci/bound-issue.ts\""],
 	["release.yml", "Decide which build tooling is needed", "jq -r"],
 	["release.yml", "Build release assets", "jq -r"],
 	["project-automation.yml", "Run Project Board Automation", 'bun "$ROOT/packages/harness/src/board/main.ts"'],
