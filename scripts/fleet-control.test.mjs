@@ -7,6 +7,7 @@ import {
 	CONTROL_WORKFLOW,
 	DEFAULT_BRIDGE,
 	controlFiles,
+	reconcileControlBranch,
 	digestOf,
 	inspectManaged,
 	renderControlConfig,
