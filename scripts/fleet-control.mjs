@@ -13,33 +13,36 @@ export function verifyRelease({ tag, sha, digest }) {
 		throw new Error("Invalid pinned release metadata");
 }
 
-export function renderControlConfig(slug, sourceBranch, release, upstream = "marius-patrik/DarkFactory") {
+export function renderControlConfig(slug, sourceBranch, release, upstream = "marius-patrik/DarkFactory", baseConfig = null) {
 	verifyRelease(release);
 	const [owner, repo, extra] = slug.split("/");
 	if (!owner || !repo || extra) throw new Error("Invalid repository slug");
-	return (
-		JSON.stringify(
-			{
-				repo: {
-					identity: {
-						owner,
-						repo,
-						display_name: repo,
-						project_title: repo,
-						default_branch: sourceBranch,
-						development_branch: sourceBranch,
-					},
-					upstream: { repo: upstream, ref: release.sha },
-					board: { global: "Global", boards: ["Global", repo] },
-					$comment: "Owned by DarkFactory on the darkfactory branch. The default branch holds application source.",
-				},
-				docs: {},
-				providers: {},
+	let doc;
+	try {
+		doc = baseConfig ? JSON.parse(baseConfig) : { repo: {}, docs: {}, providers: {} };
+	} catch {
+		throw new Error("Repository configuration is invalid JSON; refusing destructive replacement");
+	}
+	if (!doc || typeof doc !== "object" || Array.isArray(doc) ||
+		!doc.repo || typeof doc.repo !== "object" || Array.isArray(doc.repo))
+		throw new Error("Repository configuration is not a valid combined document");
+	const existingIdentity = doc.repo.identity && typeof doc.repo.identity === "object"
+		? doc.repo.identity : {};
+	const self = slug.toLowerCase() === upstream.toLowerCase();
+	return JSON.stringify({
+		...doc,
+		repo: {
+			...doc.repo,
+			identity: {
+				...existingIdentity, owner, repo,
+				display_name: existingIdentity.display_name || repo,
+				project_title: repo, default_branch: sourceBranch,
+				development_branch: existingIdentity.development_branch || sourceBranch,
 			},
-			null,
-			2,
-		) + "\n"
-	);
+			upstream: self ? { repo: null, ref: null } : { repo: upstream, ref: release.sha },
+			board: { global: "Global", boards: ["Global", repo] },
+		},
+	}, null, 2) + "\n";
 }
 
 export function renderControlWorkflow(slug, release, upstream = "marius-patrik/DarkFactory") {
@@ -284,8 +287,8 @@ export function renderControlReceipt(slug, sourceBranch, release, fileHashes) {
 	);
 }
 
-export function controlFiles(slug, sourceBranch, release, upstream) {
-	const config = renderControlConfig(slug, sourceBranch, release, upstream);
+export function controlFiles(slug, sourceBranch, release, upstream, baseConfig = null) {
+	const config = renderControlConfig(slug, sourceBranch, release, upstream, baseConfig);
 	const workflow = renderControlWorkflow(slug, release, upstream);
 	const hashes = { [CONTROL_CONFIG]: digestOf(config), [CONTROL_WORKFLOW]: digestOf(workflow) };
 	return {
@@ -297,11 +300,11 @@ export function controlFiles(slug, sourceBranch, release, upstream) {
 
 // api(method, path, token, body, optional) is the fleet's authenticated
 // GitHub client. Never overwrite preexisting unowned branches or edited files.
-export async function reconcileControlBranch({ slug, sourceBranch, release, token, api, upstream }) {
+export async function reconcileControlBranch({ slug, sourceBranch, release, token, api, upstream, sourceConfig = null }) {
 	verifyRelease(release);
 	const endpoint = "/repos/" + slug;
 	const current = await api("GET", endpoint + "/git/ref/heads/" + CONTROL_BRANCH, token, undefined, true);
-	const files = controlFiles(slug, sourceBranch, release, upstream);
+	let files = controlFiles(slug, sourceBranch, release, upstream, sourceConfig);
 	const elements = Object.entries(files).map(([path, content]) => ({
 		path,
 		mode: "100644",
@@ -366,6 +369,8 @@ export async function reconcileControlBranch({ slug, sourceBranch, release, toke
 		if (typeof receipt.fileHashes?.[path] !== "string" || digestOf(currentFiles[path]) !== receipt.fileHashes[path])
 			throw new Error("Control branch contains modified " + path + "; refusing overwrite");
 	}
+	// A release update must preserve the previous managed configuration, not reset it to defaults.
+	files = controlFiles(slug, sourceBranch, release, upstream, currentFiles[CONTROL_CONFIG]);
 	if (allowed.every((path) => files[path] === currentFiles[path])) return { kind: "current", sha: current.object.sha };
 	const tree = await api("POST", endpoint + "/git/trees", token, { tree: elements });
 	const commit = await api("POST", endpoint + "/git/commits", token, {
