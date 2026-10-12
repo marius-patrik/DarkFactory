@@ -74,6 +74,9 @@ const NOT_CALLABLE = [
 	"install-sweep.yml",
 	// The fleet updater executes only in the upstream repository, not in consumers.
 	"fleet-updates.yml",
+	// Self-hosted event bridges are producer-only, not reusable consumer workflows.
+	"darkfactory-self.yml",
+	"self-install.yml",
 ];
 
 /** Workflows that write to GitHub on the pipeline's behalf and must therefore authenticate as the App. */
