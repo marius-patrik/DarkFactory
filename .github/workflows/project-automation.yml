@@ -64,6 +64,15 @@ jobs:
           ref: ${{ inputs.pipeline-ref }}
           path: .darkfactory-pipeline
 
+      - name: Checkout DarkFactory-managed repository configuration
+        uses: actions/checkout@v4
+        with:
+          ref: darkfactory
+          path: .darkfactory-managed
+
+      - name: Load canonical repository configuration
+        run: cp "$GITHUB_WORKSPACE/.darkfactory-managed/repo.dfconfig" "$GITHUB_WORKSPACE/repo.dfconfig"
+
       - name: Mint an installation token for the App
         # Issue and pull request work belongs to the App, which has its own rate limit. Only
         # Projects v2 needs a person's token, because GitHub scopes project permissions to
