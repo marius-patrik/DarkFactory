@@ -129,7 +129,6 @@ jobs:
     with:
       pipeline-ref: "13a9feb64555a8fb2f3ad9cf7e687b7fd1115838"
       pipeline-repo: marius-patrik/DarkFactory
-      agent-enabled: ${{ vars.AGENT_ENABLED }}
     secrets: inherit
   issue-binding:
     if: github.event_name == 'pull_request'
