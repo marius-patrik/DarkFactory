@@ -160,7 +160,7 @@ export function renderControlWorkflow(slug, release, upstream = "marius-patrik/D
 		"  quality:",
 		"    name: released-df-quality",
 		"    runs-on: ubuntu-latest",
-		"    if: always()",
+		"    if: always() && (github.event_name == 'push' || github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch')",
 		"    needs: [detect, execute-quality]",
 		"    steps:",
 		"      - name: Require all actual supported quality actions green",
