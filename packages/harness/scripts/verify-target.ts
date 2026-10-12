@@ -52,11 +52,17 @@ if (target.platform === "win32") {
 		await copyFile(join(repositoryRoot, "scripts", "df-wrapper.cmd"), join(stage, "df.cmd"));
 		await copyFile(binary, join(stage, "df-bin.exe"));
 		const child = Bun.spawn([join(stage, "df.cmd"), "providers"], { cwd: stage, stdout: "pipe", stderr: "pipe" });
-		const [code, err] = await Promise.all([child.exited, new Response(child.stderr).text()]);
+		const [code, , err] = await Promise.all([
+			child.exited,
+			new Response(child.stdout).text(),
+			new Response(child.stderr).text(),
+		]);
 		if (code !== 0) throw new Error(`df.cmd providers failed for ${target.name} with exit ${code}: ${err.trim()}`);
 		process.stdout.write("df.cmd: reached the DarkFactory binary\n");
 	} finally {
-		await rm(stage, { recursive: true, force: true });
+		// Windows can retain child executable handles briefly after cmd.exe exits.
+		// Drain both streams and let rm retry EBUSY/EPERM rather than failing a verified release.
+		await rm(stage, { recursive: true, force: true, maxRetries: 12, retryDelay: 250 });
 	}
 }
 
@@ -102,7 +108,7 @@ try {
 		standalone,
 	);
 } finally {
-	await rm(standalone, { recursive: true, force: true });
+	await rm(standalone, { recursive: true, force: true, maxRetries: 12, retryDelay: 250 });
 }
 
 // One per-target digest record includes both backwards-compatible raw binary and complete bundle.
