@@ -319,6 +319,7 @@ async function reconcile(repo, release, token) {
 		token,
 		api,
 		upstream: UPSTREAM,
+		sourceConfig: original?.content ?? null,
 	});
 	console.log(slug + ": control branch " + control.kind);
 
