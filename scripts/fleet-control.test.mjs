@@ -72,11 +72,16 @@ test("invalid release metadata is never installed", () => {
 test("generated management workflows are valid YAML and execute only pinned control", () => {
 	const workflow = Bun.YAML.parse(renderControlWorkflow("marius-patrik/OASIS", release));
 	const bridge = Bun.YAML.parse(renderDefaultBridge("marius-patrik/OASIS", "main"));
-	assert.ok(workflow.on.workflow_call);
+	assert.ok(Object.hasOwn(workflow.on, "workflow_call"));
 	assert.deepEqual(Object.keys(workflow.jobs).sort(), [
-		"agent", "approvals", "detect", "execute-quality", "issue-binding", "quality",
+		"agent",
+		"approvals",
+		"detect",
+		"execute-quality",
+		"issue-binding",
+		"quality",
 	]);
-	assert.ok(bridge.on.issues);
+	assert.ok(Object.hasOwn(bridge.on, "issues"));
 	assert.ok(bridge.on.schedule);
 	assert.equal(bridge.jobs.governed.uses, "marius-patrik/OASIS/.github/workflows/darkfactory-control.yml@darkfactory");
 	assert.ok(workflow.jobs.detect.steps.some((step) => step.with?.ref === "darkfactory"));
