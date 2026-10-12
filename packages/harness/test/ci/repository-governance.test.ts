@@ -718,6 +718,12 @@ describe("branch roles", () => {
 });
 
 describe("shared workflow contracts", () => {
+	it("test_agent_job_has_a_single_if_condition: duplicate YAML job keys invalidate workflow_call", () => {
+		const job = workflowSource("agent.yml").split("\n  run-agent:\n")[1] ?? "";
+		expect(job).not.toBe("");
+		expect([...job.matchAll(/^    if:/gm)]).toHaveLength(1);
+	});
+
 	it("test_every_shared_workflow_is_callable: a workflow a consumer cannot call is one it copies", () => {
 		for (const name of workflowNames()) {
 			if (NOT_CALLABLE.includes(name)) continue;
