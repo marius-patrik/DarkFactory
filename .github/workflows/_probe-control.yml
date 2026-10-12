@@ -130,3 +130,10 @@ jobs:
       pipeline-ref: "13a9feb64555a8fb2f3ad9cf7e687b7fd1115838"
       pipeline-repo: marius-patrik/DarkFactory
     secrets: inherit
+  approvals:
+    if: github.event_name == 'pull_request_review' || github.event_name == 'issue_comment'
+    uses: marius-patrik/DarkFactory/.github/workflows/pr-approval-automerge.yml@13a9feb64555a8fb2f3ad9cf7e687b7fd1115838
+    with:
+      pipeline-ref: "13a9feb64555a8fb2f3ad9cf7e687b7fd1115838"
+      pipeline-repo: marius-patrik/DarkFactory
+    secrets: inherit
