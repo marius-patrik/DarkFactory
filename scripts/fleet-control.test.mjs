@@ -39,6 +39,28 @@ test("control manifest contains scoped project and single common Global project"
 	assert.equal(config.repo.upstream.ref, release.sha);
 });
 
+test("self-hosted producer remains its own upstream and retains full config", () => {
+	const full = {
+		repo: {
+			identity: { owner: "marius-patrik", repo: "DarkFactory", agent_slug: "factory-agent" },
+			app: { app_id: 1234, private_key_secret: "DARKFACTORY_APP_PRIVATE_KEY" },
+			release: { package: "df" },
+			board: { boards: ["Global", "DarkFactory", "Legacy"] },
+		},
+		docs: { home: "README.md" },
+		providers: { default: "some-provider" },
+	};
+	const config = JSON.parse(
+		renderControlConfig("marius-patrik/DarkFactory", "main", release, "marius-patrik/DarkFactory", JSON.stringify(full)),
+	);
+	assert.deepEqual(config.repo.upstream, { repo: null, ref: null });
+	assert.deepEqual(config.repo.board, { global: "Global", boards: ["Global", "DarkFactory"] });
+	assert.equal(config.repo.identity.agent_slug, "factory-agent");
+	assert.equal(config.repo.app.app_id, 1234);
+	assert.deepEqual(config.docs, full.docs);
+	assert.deepEqual(config.providers, full.providers);
+});
+
 test("controller executes real released quality and pinned governance jobs", () => {
 	const c = renderControlWorkflow("marius-patrik/Omnis", release);
 	assert.ok(c.startsWith(CONTROL_MARKER));
