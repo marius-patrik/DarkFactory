@@ -19,5 +19,5 @@ permissions:
 
 jobs:
   managed:
-    uses: marius-patrik/DarkFactory/.github/workflows/_probe-control.yml@feat/darkfactory-control-branch
+    uses: marius-patrik/DarkFactory/.github/workflows/darkfactory-control.yml@darkfactory
     secrets: inherit
