@@ -10,7 +10,8 @@ on:
   release:
     types: [published]
   schedule:
-    - cron: "43 2 * * *"
+    # Bootstrap per-repo and Global boards after hourly owner quota resets.
+    - cron: "43 * * * *"
   workflow_dispatch:
     inputs:
       dry_run:
