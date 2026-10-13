@@ -1,7 +1,7 @@
 import { createHash } from "node:crypto";
-// A versioned management plane. The only default-branch exception is the
-// GitHub Actions event bridge; all managed policy and config is on darkfactory.
-export const CONTROL_BRANCH = "darkfactory";
+// The configuration and its reusable workflow live on each repository's default branch.
+// "darkfactory" is recognized only to retire previously installed control branches.
+export const LEGACY_CONTROL_BRANCH = "darkfactory";
 export const CONTROL_WORKFLOW = ".github/workflows/darkfactory-control.yml";
 export const DEFAULT_BRIDGE = ".github/workflows/darkfactory.yml";
 export const CONTROL_CONFIG = "repo.dfconfig";
@@ -88,13 +88,6 @@ export function renderControlWorkflow(slug, release, upstream = "marius-patrik/D
 		"      has-actions: @@HAS_OUTPUT@@",
 		"    steps:",
 		"      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0",
-		"      - name: Checkout managed DarkFactory configuration",
-		"        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0",
-		"        with:",
-		"          ref: darkfactory",
-		"          path: .darkfactory-managed",
-		"      - name: Materialize control-branch configuration for this run",
-		'        run: cp "$GITHUB_WORKSPACE/.darkfactory-managed/repo.dfconfig" "$GITHUB_WORKSPACE/repo.dfconfig"',
 		"      - name: Install SHA256-verified released df",
 		"        env:",
 		'          DF_TAG: "@@TAG@@"',
@@ -122,13 +115,6 @@ export function renderControlWorkflow(slug, release, upstream = "marius-patrik/D
 		"        include: @@MATRIX_INPUT@@",
 		"    steps:",
 		"      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0",
-		"      - name: Checkout managed DarkFactory configuration",
-		"        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0",
-		"        with:",
-		"          ref: darkfactory",
-		"          path: .darkfactory-managed",
-		"      - name: Materialize control-branch configuration for this run",
-		'        run: cp "$GITHUB_WORKSPACE/.darkfactory-managed/repo.dfconfig" "$GITHUB_WORKSPACE/repo.dfconfig"',
 		"      - if: matrix.packageManager == 'bun' || matrix.ecosystem == 'typst'",
 		"        uses: oven-sh/setup-bun@v2",
 		"      - if: matrix.ecosystem == 'node' && matrix.packageManager != 'bun'",
@@ -249,7 +235,7 @@ export function renderDefaultBridge(slug, sourceBranch = "main") {
 		[
 			BRIDGE_MARKER,
 			"# GitHub requires issues, workflow_dispatch and schedules on the default branch.",
-			"# Every executable job and managed config lives on the darkfactory branch.",
+			"# Configuration and executable workflows reside on this repository's default branch.",
 			"name: DarkFactory Runtime",
 			"on:",
 			"  push:",
@@ -275,13 +261,23 @@ export function renderDefaultBridge(slug, sourceBranch = "main") {
 			"  repository-projects: write",
 			"jobs:",
 			"  governed:",
-			"    uses: @@REPO@@/.github/workflows/darkfactory-control.yml@darkfactory",
+			"    uses: ./.github/workflows/darkfactory-control.yml",
 			"    secrets: inherit",
 		]
 			.join("\n")
 			.replaceAll("@@REPO@@", slug)
 			.replaceAll("@@BRANCH@@", sourceBranch) + "\n"
 	);
+}
+
+// Exact legacy bridge renderer for checking ownership during one-time migration.
+export function renderLegacyDefaultBridge(slug, sourceBranch = "main") {
+	return renderDefaultBridge(slug, sourceBranch)
+		.replace(
+			"# Configuration and executable workflows reside on this repository's default branch.",
+			"# Every executable job and managed config lives on the darkfactory branch.",
+		)
+		.replace("uses: ./.github/workflows/darkfactory-control.yml", "uses: " + slug + "/.github/workflows/darkfactory-control.yml@darkfactory");
 }
 
 export function inspectManaged(source, next, marker) {
@@ -291,11 +287,10 @@ export function inspectManaged(source, next, marker) {
 	return { kind: "review", reason: "Managed content differs; verify original canonical release first" };
 }
 
-// A separate branch contains only these three machine-managed files. It does
-// not snapshot or fork application source, and changing main never changes it.
+
 export const CONTROL_RECEIPT = ".darkfactory/installation.json";
-const allowed = [CONTROL_CONFIG, CONTROL_WORKFLOW, CONTROL_RECEIPT].sort();
-const esc = (p) => p.split("/").map(encodeURIComponent).join("/");
+export const CONTROL_FILES = [CONTROL_CONFIG, CONTROL_WORKFLOW, CONTROL_RECEIPT].sort();
+const esc = (path) => path.split("/").map(encodeURIComponent).join("/");
 
 export function digestOf(source) {
 	return createHash("sha256").update(source).digest("hex");
@@ -310,161 +305,83 @@ export function renderControlReceipt(slug, sourceBranch, release, fileHashes) {
 export function controlFiles(slug, sourceBranch, release, upstream, baseConfig = null) {
 	const config = renderControlConfig(slug, sourceBranch, release, upstream, baseConfig);
 	const workflow = renderControlWorkflow(slug, release, upstream);
-	const hashes = { [CONTROL_CONFIG]: digestOf(config), [CONTROL_WORKFLOW]: digestOf(workflow) };
 	return {
 		[CONTROL_CONFIG]: config,
 		[CONTROL_WORKFLOW]: workflow,
-		[CONTROL_RECEIPT]: renderControlReceipt(slug, sourceBranch, release, hashes),
+		[CONTROL_RECEIPT]: renderControlReceipt(slug, sourceBranch, release, {
+			[CONTROL_CONFIG]: digestOf(config),
+			[CONTROL_WORKFLOW]: digestOf(workflow),
+		}),
 	};
 }
 
-// api(method, path, token, body, optional) is the fleet's authenticated
-// GitHub client. Never overwrite preexisting unowned branches or edited files.
-export async function reconcileControlBranch({
-	slug,
-	sourceBranch,
-	release,
-	token,
-	api,
-	upstream,
-	sourceConfig = null,
-}) {
-	verifyRelease(release);
-	const endpoint = "/repos/" + slug;
-	const current = await api("GET", endpoint + "/git/ref/heads/" + CONTROL_BRANCH, token, undefined, true);
-	let files = controlFiles(slug, sourceBranch, release, upstream, sourceConfig);
-	const elements = Object.entries(files).map(([path, content]) => ({
-		path,
-		mode: "100644",
-		type: "blob",
-		content,
-	}));
-
-	if (!current) {
-		// Git refuses refs/heads/darkfactory while refs/heads/darkfactory/*
-		// exists. The previous fleet updater created this namespace. Retire
-		// ONLY provably generated, merged/closed release branches; fail closed
-		// for user work or an open review with non-managed changes.
-		await clearObsoleteReleaseRefs(endpoint, slug, token, api);
-		const base = await api("GET", endpoint + "/git/ref/heads/" + esc(sourceBranch), token);
-		if (!base?.object?.sha) throw new Error("Cannot resolve default branch for " + slug);
-		const tree = await api("POST", endpoint + "/git/trees", token, { tree: elements });
-		const commit = await api("POST", endpoint + "/git/commits", token, {
-			message: "feat(df): initialize isolated DarkFactory control plane (" + release.tag + ")",
-			tree: tree.sha,
-			parents: [base.object.sha],
-		});
-		await api("POST", endpoint + "/git/refs", token, {
-			ref: "refs/heads/" + CONTROL_BRANCH,
-			sha: commit.sha,
-		});
-		return { kind: "created", sha: commit.sha };
-	}
-
-	const head = await api("GET", endpoint + "/git/commits/" + current.object.sha, token);
-	const snapshot = await api("GET", endpoint + "/git/trees/" + head.tree.sha + "?recursive=1", token);
-	if (snapshot.truncated || !Array.isArray(snapshot.tree))
-		throw new Error("Control branch tree cannot be verified for " + slug);
-	const paths = snapshot.tree
-		.filter((item) => item.type === "blob")
-		.map((item) => item.path)
-		.sort();
-	if (paths.some((path) => !allowed.includes(path)) || paths.length !== allowed.length)
-		throw new Error("Control branch has unexpected content; refusing to overwrite " + slug);
-
-	const currentFiles = {};
-	for (const path of allowed) {
-		const response = await api("GET", endpoint + "/contents/" + esc(path) + "?ref=" + CONTROL_BRANCH, token);
-		if (response?.type !== "file" || response.encoding !== "base64")
-			throw new Error("Cannot verify managed file " + path);
-		currentFiles[path] = Buffer.from(response.content, "base64").toString("utf8");
-	}
+// A schema-2 receipt proves the owner and bytes; a marker alone never proves ownership.
+export function verifyControlReceipt(receiptText, configText, workflowText, slug, sourceBranch) {
 	let receipt;
 	try {
-		receipt = JSON.parse(currentFiles[CONTROL_RECEIPT]);
+		receipt = JSON.parse(receiptText);
 	} catch {
-		throw new Error("Control branch receipt is invalid for " + slug);
+		throw new Error("Invalid DarkFactory installation receipt");
 	}
-	if (
-		receipt.managedBy !== "DarkFactory" ||
-		receipt.schema !== 2 ||
-		receipt.slug !== slug ||
-		receipt.sourceBranch !== sourceBranch
-	)
-		throw new Error("Control branch ownership or branch does not match " + slug);
-
-	for (const path of [CONTROL_CONFIG, CONTROL_WORKFLOW]) {
-		if (typeof receipt.fileHashes?.[path] !== "string" || digestOf(currentFiles[path]) !== receipt.fileHashes[path])
-			throw new Error("Control branch contains modified " + path + "; refusing overwrite");
+	if (receipt.managedBy !== "DarkFactory" || receipt.schema !== 2 || receipt.slug !== slug ||
+		receipt.sourceBranch !== sourceBranch) {
+		throw new Error("DarkFactory installation receipt ownership or source branch mismatch");
 	}
-	// A release update must preserve the previous managed configuration, not reset it to defaults.
-	// The first producer self-hosting checkout started from a minimal bootstrap.
-	// Promote its existing full source config once, without overwriting a later
-	// control-branch configuration or discarding app/release/docs declarations.
-	let preserved = currentFiles[CONTROL_CONFIG];
-	if (sourceConfig) {
-		let fromMain, fromControl;
-		try {
-			fromMain = JSON.parse(sourceConfig);
-			fromControl = JSON.parse(preserved);
-		} catch {
-			throw new Error("Source/control manifest cannot be parsed for " + slug);
+	verifyRelease(receipt.release);
+	for (const [path, content] of [[CONTROL_CONFIG, configText], [CONTROL_WORKFLOW, workflowText]]) {
+		if (typeof content !== "string" || digestOf(content) !== receipt.fileHashes?.[path]) {
+			throw new Error("DarkFactory installation contains modified or missing " + path);
 		}
-		if (fromMain?.repo?.app && !fromControl?.repo?.app) preserved = sourceConfig;
 	}
-	files = controlFiles(slug, sourceBranch, release, upstream, preserved);
-	if (allowed.every((path) => files[path] === currentFiles[path])) return { kind: "current", sha: current.object.sha };
-	const tree = await api("POST", endpoint + "/git/trees", token, { tree: elements });
-	const commit = await api("POST", endpoint + "/git/commits", token, {
-		message: "chore(df): update isolated control plane to " + release.tag,
-		tree: tree.sha,
-		parents: [current.object.sha],
-	});
-	await api("PATCH", endpoint + "/git/refs/heads/" + CONTROL_BRANCH, token, {
-		sha: commit.sha,
-		force: false,
-	});
-	return { kind: "updated", sha: commit.sha };
+	return receipt;
 }
 
-const LEGACY_MANAGED_PATHS = new Set([".github/workflows/darkfactory.yml", "repo.dfconfig"]);
-
-export async function clearObsoleteReleaseRefs(endpoint, slug, token, api) {
-	const refs = await api("GET", endpoint + "/git/matching-refs/heads/darkfactory/", token);
-	if (!Array.isArray(refs)) throw new Error("Cannot enumerate DarkFactory branch namespace for " + slug);
-	const owner = slug.split("/")[0];
-	for (const ref of refs) {
-		const name = String(ref.ref || "").replace(/^refs\/heads\//, "");
-		if (!/^darkfactory\/release-v[0-9][A-Za-z0-9.+-]*$/.test(name))
-			throw new Error("Refusing to remove unexpected control-branch collision: " + name);
-		const prs = await api(
-			"GET",
-			endpoint + "/pulls?state=all&head=" + encodeURIComponent(owner + ":" + name) + "&per_page=100",
-			token,
-		);
-		if (!Array.isArray(prs) || prs.length === 0)
-			throw new Error("Cannot prove legacy release branch ownership: " + name);
-		const pr = prs.find((item) => item.head?.sha === ref.object?.sha);
-		if (!pr) throw new Error("Release branch contains unreviewed commits: " + name);
-		const files = await api("GET", endpoint + "/pulls/" + pr.number + "/files?per_page=100", token);
-		if (
-			!pr.merged_at &&
-			(!Array.isArray(files) ||
-				files.length === 0 ||
-				files.length > 2 ||
-				files.some((file) => !LEGACY_MANAGED_PATHS.has(file.filename)))
-		)
-			throw new Error("Release branch contains unowned changes: " + name);
-		if (pr.state === "open") {
-			await api("POST", endpoint + "/issues/" + pr.number + "/comments", token, {
-				body:
-					"Superseded by the owner-approved isolated `darkfactory` control branch (DarkFactory#2070). " +
-					"Diff verified: only legacy generated integration files. Preserving repository source and CI.",
-			});
-			await api("PATCH", endpoint + "/pulls/" + pr.number, token, { state: "closed" });
-		} else if (pr.state !== "closed") {
-			throw new Error("Unexpected release PR state for " + name);
-		}
-		await api("DELETE", endpoint + "/git/refs/heads/" + name, token);
+/**
+ * Read an optional previous isolated installation without modifying its branch.
+ * It is eligible for retirement only if every byte belongs to the sealed
+ * three-file control tree. Any unexpected file or modified receipt fails closed.
+ */
+export async function readLegacyControl({ slug, sourceBranch, token, api }) {
+	const endpoint = "/repos/" + slug;
+	const ref = await api("GET", endpoint + "/git/ref/heads/" + LEGACY_CONTROL_BRANCH, token, undefined, true);
+	if (!ref) return null;
+	const head = await api("GET", endpoint + "/git/commits/" + ref.object.sha, token);
+	const snapshot = await api("GET", endpoint + "/git/trees/" + head.tree.sha + "?recursive=1", token);
+	if (snapshot.truncated || !Array.isArray(snapshot.tree)) throw new Error("Cannot inspect legacy branch: " + slug);
+	const paths = snapshot.tree.filter((entry) => entry.type === "blob").map((entry) => entry.path).sort();
+	if (JSON.stringify(paths) !== JSON.stringify(CONTROL_FILES) ||
+		snapshot.tree.some((entry) => entry.type !== "tree" && entry.type !== "blob")) {
+		throw new Error("Legacy control branch contains unowned paths: " + slug);
 	}
+	const files = {};
+	for (const path of CONTROL_FILES) {
+		const response = await api("GET", endpoint + "/contents/" + esc(path) + "?ref=" + LEGACY_CONTROL_BRANCH, token);
+		if (response?.type !== "file" || response.encoding !== "base64") {
+			throw new Error("Legacy control file is not regular: " + path);
+		}
+		files[path] = Buffer.from(response.content, "base64").toString("utf8");
+	}
+	verifyControlReceipt(files[CONTROL_RECEIPT], files[CONTROL_CONFIG], files[CONTROL_WORKFLOW], slug, sourceBranch);
+	return { sha: ref.object.sha, files };
+}
+
+/** Never delete before a validated, lossless default-branch installation is visible. */
+export async function retireLegacyControl({ slug, sourceBranch, upstream, token, api, mainFiles, legacy }) {
+	if (!legacy) return "absent";
+	const receipt = verifyControlReceipt(
+		mainFiles[CONTROL_RECEIPT], mainFiles[CONTROL_CONFIG], mainFiles[CONTROL_WORKFLOW], slug, sourceBranch,
+	);
+	const expected = controlFiles(slug, sourceBranch, receipt.release, upstream, legacy.files[CONTROL_CONFIG]);
+	if (expected[CONTROL_CONFIG] !== mainFiles[CONTROL_CONFIG] ||
+		expected[CONTROL_WORKFLOW] !== mainFiles[CONTROL_WORKFLOW] ||
+		renderDefaultBridge(slug, sourceBranch) !== mainFiles[DEFAULT_BRIDGE]) return "retained: configuration differs";
+	const endpoint = "/repos/" + slug;
+	const owner = slug.split("/")[0];
+	const prs = await api("GET", endpoint + "/pulls?state=open&head=" +
+		encodeURIComponent(owner + ":" + LEGACY_CONTROL_BRANCH) + "&per_page=100", token);
+	if (!Array.isArray(prs) || prs.length > 0) return "retained: open review";
+	const latest = await api("GET", endpoint + "/git/ref/heads/" + LEGACY_CONTROL_BRANCH, token, undefined, true);
+	if (latest?.object?.sha !== legacy.sha) return "retained: branch changed";
+	await api("DELETE", endpoint + "/git/refs/heads/" + LEGACY_CONTROL_BRANCH, token);
+	return "retired";
 }
