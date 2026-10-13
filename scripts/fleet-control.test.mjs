@@ -53,6 +53,7 @@ test("control workflow uses main checkout, released quality and immutable govern
 	assert.match(rendered, /python -m pip install black/);
 	assert.match(rendered, /DF_ACTION_COMMAND/);
 	assert.match(rendered, /npm install --no-package-lock/);
+	assert.match(rendered, /node_modules\\/\\.bin/);
 	assert.match(rendered, /! -f package-lock.json/);
 	const workflow = Bun.YAML.parse(rendered);
 	const bridge = Bun.YAML.parse(renderDefaultBridge(slug));
