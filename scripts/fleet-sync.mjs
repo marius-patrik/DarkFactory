@@ -1,6 +1,10 @@
 import { createSign } from "node:crypto";
 import { pathToFileURL } from "node:url";
-import { BRIDGE_MARKER, renderDefaultBridge, reconcileControlBranch } from "./fleet-control.mjs";
+import {
+	BRIDGE_MARKER, CONTROL_CONFIG, CONTROL_RECEIPT, CONTROL_WORKFLOW, DEFAULT_BRIDGE,
+	controlFiles, readLegacyControl, renderDefaultBridge, renderLegacyDefaultBridge,
+	retireLegacyControl, verifyControlReceipt,
+} from "./fleet-control.mjs";
 
 // Additive, release-driven GitHub App reconciler. Existing consumer CI,
 // configuration, secrets and branch protection are never overwritten.
@@ -13,8 +17,8 @@ const MARKER = "# df-fleet-managed: 2";
 const LEGACY_MARKER = "# df-fleet-managed: 1";
 const ISSUE_MARKER = "<!-- darkfactory-fleet-release: ";
 const DRY_RUN = process.env.DF_FLEET_DRY_RUN === "1";
-// Production rollout is explicitly gated until DarkFactory self-hosting is proven.
-const CONSUMER_ROLLOUT = process.env.DF_FLEET_CONSUMERS_ENABLED === "1";
+// A released update proposes reviewed PRs in every eligible consumer; it never
+// overwrites user-owned files or changes branch protections.
 
 // Lifecycle exclusions are intentional. Do not open release upgrade PRs in
 // retired *-old repositories or Agent OS repositories. A previously installed
@@ -227,7 +231,7 @@ async function issueFor(slug, release, changes, conflicts, token) {
 		(item) => !item.pull_request && item.body?.includes(marker),
 	);
 	if (existing) return existing.number;
-	const title = `${changes.length ? "Install/update" : "Review"} DarkFactory ${release.tag}`;
+	const title = `${changes.length ? "Install/update" : "Review"} DarkFactory ${release.tag} on default branch`;
 	const body = [
 		marker,
 		"",
@@ -246,146 +250,183 @@ async function issueFor(slug, release, changes, conflicts, token) {
 	}
 	return (await api("POST", `/repos/${slug}/issues`, token, { title, body })).number;
 }
+
+/** A user-authored field is not overwritten just because the previous control
+ * branch declared a different value. Import nonconflicting branch fields, and
+ * surface the paths that require a deliberate owner decision. */
+export function mergeConfigSources(mainText, legacyText) {
+	if (!mainText) return { content: legacyText, conflicts: [] };
+	if (!legacyText) return { content: mainText, conflicts: [] };
+	let main, legacy;
+	try {
+		main = JSON.parse(mainText);
+		legacy = JSON.parse(legacyText);
+	} catch {
+		throw new Error("Cannot merge invalid JSON configuration");
+	}
+	const conflicts = [];
+	const derived = new Set([
+		"repo.upstream", "repo.board", "repo.identity.owner", "repo.identity.repo",
+		"repo.identity.display_name", "repo.identity.project_title",
+		"repo.identity.default_branch", "repo.identity.development_branch",
+	]);
+	function merge(a, b, prefix = "") {
+		if (a === undefined) return b;
+		if (b === undefined) return a;
+		if (JSON.stringify(a) === JSON.stringify(b) || derived.has(prefix)) return a;
+		if (a && b && typeof a === "object" && typeof b === "object" &&
+			!Array.isArray(a) && !Array.isArray(b)) {
+			const result = {};
+			for (const key of new Set([...Object.keys(b), ...Object.keys(a)])) {
+				result[key] = merge(a[key], b[key], prefix ? prefix + "." + key : key);
+			}
+			return result;
+		}
+		conflicts.push(prefix);
+		return a;
+	}
+	const merged = merge(main, legacy);
+	return { content: JSON.stringify(merged, null, 2) + "\n", conflicts };
+}
+
+/**
+ * Produce a single atomic default-branch PR. Never stage a partial installation
+ * whose receipt would attest to files that were never installed.
+ */
+export function planMainInstallation({ slug, base, release, upstream, mainFiles, legacy }) {
+	const conflicts = [];
+	const changes = [];
+	const current = (path) => mainFiles[path]?.content ?? null;
+	const oldConfig = current(CONTROL_CONFIG);
+	const branchConfig = legacy?.files[CONTROL_CONFIG] ?? null;
+	if (mainFiles["config.dfconfig"] || mainFiles[".dfconfig"]) {
+		return { changes, conflicts: ["Alternate root configuration already exists; reconcile to one canonical config first"] };
+	}
+	const existingReceipt = current(CONTROL_RECEIPT);
+	if (existingReceipt) {
+		try {
+			verifyControlReceipt(existingReceipt, oldConfig, current(CONTROL_WORKFLOW), slug, base);
+		} catch (error) {
+			return { changes, conflicts: [String(error)] };
+		}
+	} else if (current(CONTROL_WORKFLOW)) {
+		return { changes, conflicts: ["Existing control workflow has no verifiable installation receipt"] };
+	}
+	let merged;
+	try {
+		merged = mergeConfigSources(oldConfig, branchConfig);
+		const doc = merged.content ? JSON.parse(merged.content) : null;
+		if (doc?.repo?.upstream?.repo && doc.repo.upstream.repo.toLowerCase() !== upstream.toLowerCase()) {
+			return { changes, conflicts: ["Consumer configuration selects an alternate DarkFactory upstream"] };
+		}
+	} catch (error) {
+		return { changes, conflicts: [String(error)] };
+	}
+	if (merged.conflicts.length) {
+		return { changes, conflicts: merged.conflicts.map((p) => "Divergent main/control configuration: " + p) };
+	}
+	let files;
+	try {
+		files = controlFiles(slug, base, release, upstream, merged.content);
+	} catch (error) {
+		return { changes, conflicts: [String(error)] };
+	}
+	const oldBridge = current(DEFAULT_BRIDGE);
+	const newBridge = renderDefaultBridge(slug, base);
+	if (oldBridge !== null && oldBridge !== newBridge &&
+		oldBridge !== renderLegacyDefaultBridge(slug, base)) {
+		// The previous released-binary smoke is machine-generated and can be replaced,
+		// but only if its rendered bytes match the version it declares.
+		const tag = oldBridge.match(/^\s+DF_TAG: "([^"]+)"$/m)?.[1];
+		const sha = oldBridge.match(/^\s+DF_RELEASE_SHA: "([^"]+)"$/m)?.[1];
+		const digest = oldBridge.match(/^\s+DF_SHA256: "([^"]+)"$/m)?.[1];
+		let canonical = false;
+		try {
+			if (oldBridge.startsWith(MARKER + "\n")) canonical = oldBridge === renderWorkflow({ tag, sha, digest });
+			else if (oldBridge.startsWith(LEGACY_MARKER + "\n")) canonical = oldBridge === renderLegacyWorkflow({ tag, sha, digest });
+		} catch {
+			// Unverifiable release metadata is a conflict, not ownership proof.
+		}
+		if (!canonical) return { changes, conflicts: ["Default-branch workflow is customized or unowned"] };
+	}
+	for (const [path, content] of Object.entries({ ...files, [DEFAULT_BRIDGE]: newBridge })) {
+		if (current(path) !== content) changes.push({ path, content, sha: mainFiles[path]?.sha });
+	}
+	return { changes, conflicts };
+}
+
 async function reconcile(repo, release, token) {
 	const slug = repo.full_name;
-	if (slug.toLowerCase() === UPSTREAM.toLowerCase()) {
-		console.log(slug + ": producer installation belongs to main; no isolated branch is created");
-		return "self-main";
-	}
+	if (slug.toLowerCase() === UPSTREAM.toLowerCase()) return "self-main";
 	const base = repo.default_branch;
 	if (!base) throw new Error(slug + " has no default branch");
-
-	// GitHub's event system requires one default-branch workflow. Everything
-	// it executes is defined on the isolated control branch; no repo-local
-	// installation code or configuration is generated on main.
-	const oldWorkflow = await readFile(slug, WORKFLOW, base, token);
-	const next = renderDefaultBridge(slug, base);
-	let workflow;
-	if (oldWorkflow === null) {
-		workflow = { kind: "create", content: next };
-	} else if (oldWorkflow.content === next) {
-		workflow = { kind: "current" };
-	} else if (oldWorkflow.content.startsWith(BRIDGE_MARKER + "\n")) {
-		workflow = { kind: "conflict", reason: "The default-branch event bridge was customized" };
-	} else if (oldWorkflow.content.startsWith(MARKER + "\n") || oldWorkflow.content.startsWith(LEGACY_MARKER + "\n")) {
-		// Prior binary-only installations are migratable iff byte-for-byte
-		// identical to their original canonical renderer. Preserve user edits.
-		const tag = oldWorkflow.content.match(/^\s+DF_TAG: "([^"]+)"$/m)?.[1];
-		const sha = oldWorkflow.content.match(/^\s+DF_RELEASE_SHA: "([^"]+)"$/m)?.[1];
-		const digest = oldWorkflow.content.match(/^\s+DF_SHA256: "([^"]+)"$/m)?.[1];
-		const previous = { tag, sha, digest };
-		let unedited = false;
-		try {
-			unedited =
-				oldWorkflow.content ===
-				(oldWorkflow.content.startsWith(LEGACY_MARKER) ? renderLegacyWorkflow(previous) : renderWorkflow(previous));
-		} catch {
-			/* invalid metadata belongs to the owner */
-		}
-		workflow = unedited
-			? { kind: "update", content: next }
-			: { kind: "conflict", reason: "Existing runtime workflow differs from canonical release; refusing overwrite" };
-	} else {
-		workflow = { kind: "conflict", reason: "Existing workflow was not generated by DarkFactory" };
+	const legacy = await readLegacyControl({ slug, sourceBranch: base, token, api });
+	const mainFiles = {};
+	for (const path of [CONTROL_CONFIG, "config.dfconfig", ".dfconfig",
+		CONTROL_WORKFLOW, CONTROL_RECEIPT, DEFAULT_BRIDGE]) {
+		mainFiles[path] = await readFile(slug, path, base, token);
 	}
-
-	// A managed legacy config on main is the precise exception we can remove.
-	// All other existing repo configuration stays, with an explicit review note.
-	const original = await readFile(slug, CONFIGS[0], base, token);
-	let legacyOwned = false;
-	if (original) {
-		try {
-			const oldRef = JSON.parse(original.content)?.repo?.upstream?.ref;
-			legacyOwned = /^[a-f0-9]{40}$/.test(oldRef) && original.content === renderConfig(slug, base, oldRef);
-		} catch {
-			/* user-owned config */
-		}
+	const { changes, conflicts } = planMainInstallation({
+		slug, base, release, upstream: UPSTREAM, mainFiles, legacy,
+	});
+	if (!changes.length && !conflicts.length) {
+		if (!legacy) return "current";
+		if (DRY_RUN) return "dry-run";
+		const outcome = await retireLegacyControl({
+			slug, sourceBranch: base, upstream: UPSTREAM, token, api,
+			mainFiles: Object.fromEntries(Object.entries(mainFiles).map(([path, value]) => [path, value?.content ?? null])),
+			legacy,
+		});
+		console.log(slug + ": legacy branch " + outcome);
+		return outcome === "retired" ? "retired" : "current-" + outcome;
 	}
-	const changes = [];
-	if (workflow.content) changes.push({ path: WORKFLOW, content: workflow.content, sha: oldWorkflow?.sha });
-	if (legacyOwned) changes.push({ path: CONFIGS[0], sha: original.sha, deletion: true });
-	const conflicts = [];
-	if (workflow.kind === "conflict") conflicts.push(WORKFLOW + ": " + workflow.reason);
-	if (original && !legacyOwned)
-		conflicts.push(CONFIGS[0] + ": consumer-owned config remains on main pending a reviewed relocation");
-
 	if (DRY_RUN) {
-		console.log("[dry-run] " + slug + ": control branch and " + changes.map((c) => c.path).join(", "));
+		console.log("[dry-run] " + slug + ": " + JSON.stringify({ changes: changes.map((x) => x.path), conflicts }));
 		return "dry-run";
 	}
-
-	// Provision the control-plane branch before proposing the bridge, so no
-	// accepted workflow can refer to an uninstalled implementation.
-	const control = await reconcileControlBranch({
-		slug,
-		sourceBranch: base,
-		release,
-		token,
-		api,
-		upstream: UPSTREAM,
-		sourceConfig: original?.content ?? null,
-	});
-	console.log(slug + ": control branch " + control.kind);
-
-	if (changes.length === 0 && conflicts.length === 0) return "control-" + control.kind;
-	const issue = await issueFor(
-		slug,
-		release,
-		changes.map((c) => c.path),
-		conflicts,
-		token,
-	);
-	if (changes.length === 0) return "conflict";
-
-	const branch = "df-bridge/" + release.tag.replace(/[^A-Za-z0-9._-]/g, "-");
+	const issue = await issueFor(slug, release, changes.map((x) => x.path), conflicts, token);
+	if (!changes.length) return "conflict";
+	const proposal = "df-main/" + release.tag.replace(/[^A-Za-z0-9._-]/g, "-");
 	const existingPr = (await pages("/repos/" + slug + "/pulls?state=open", token)).find(
-		(item) => item.head?.ref === branch,
+		(item) => item.head?.ref === proposal,
 	);
 	if (existingPr) {
-		console.log(slug + ": " + existingPr.html_url);
+		console.log(slug + ": already proposed " + existingPr.html_url);
 		return "pending";
 	}
-	if (await api("GET", "/repos/" + slug + "/git/ref/heads/" + escaped(branch), token, undefined, true))
-		throw new Error(slug + ": installer bridge branch already exists with no open PR");
-
-	const head = await api("GET", "/repos/" + slug + "/git/ref/heads/" + escaped(base), token);
-	await api("POST", "/repos/" + slug + "/git/refs", token, { ref: "refs/heads/" + branch, sha: head.object.sha });
-	for (const change of changes) {
-		const path = "/repos/" + slug + "/contents/" + escaped(change.path);
-		if (change.deletion) {
-			await api("DELETE", path, token, {
-				message: "chore(df): move generated config to darkfactory branch",
-				sha: change.sha,
-				branch,
-			});
-		} else {
-			await api("PUT", path, token, {
-				message: "feat(df): link default-branch events to isolated DarkFactory control",
-				content: Buffer.from(change.content).toString("base64"),
-				branch,
-				...(change.sha ? { sha: change.sha } : {}),
-			});
-		}
+	const endpoint = "/repos/" + slug;
+	if (await api("GET", endpoint + "/git/ref/heads/" + escaped(proposal), token, undefined, true)) {
+		throw new Error(slug + ": installation proposal branch exists without an open review");
 	}
-	const pr = await api("POST", "/repos/" + slug + "/pulls", token, {
-		title: "feat(df): install governed control from darkfactory branch",
-		head: branch,
+	const ref = await api("GET", endpoint + "/git/ref/heads/" + escaped(base), token);
+	const commit = await api("GET", endpoint + "/git/commits/" + ref.object.sha, token);
+	// One tree/commit/ref transaction: readers never see a half-installed controller.
+	const tree = await api("POST", endpoint + "/git/trees", token, {
+		base_tree: commit.tree.sha,
+		tree: changes.map(({ path, content }) => ({ path, mode: "100644", type: "blob", content })),
+	});
+	const built = await api("POST", endpoint + "/git/commits", token, {
+		message: "feat(df): install managed control on default branch (" + release.tag + ")",
+		tree: tree.sha,
+		parents: [ref.object.sha],
+	});
+	await api("POST", endpoint + "/git/refs", token, {
+		ref: "refs/heads/" + proposal, sha: built.sha,
+	});
+	const pr = await api("POST", endpoint + "/pulls", token, {
+		title: "feat(df): install managed configuration and workflows on main",
+		head: proposal,
 		base,
 		body: [
-			"Closes #" + issue,
+			"Closes #" + issue, "",
+			"Install DarkFactory entirely on the repository default branch. No separate",
+			"persistent control branch or external workflow checkout is required.",
+			"Existing non-DarkFactory CI and repository setup are preserved.", "",
+			"Changes:", ...changes.map((x) => "- `" + x.path + "`"),
+			...(conflicts.length ? ["", "Review considerations:", ...conflicts.map((x) => "- " + x)] : []),
 			"",
-			"All DarkFactory configuration and executable management workflows reside on `darkfactory`.",
-			"The only source-branch exception is the minimal GitHub Actions event bridge",
-			"required by GitHub for issues, schedules and manual triggers.",
-			"",
-			"Managed changes:",
-			...changes.map((c) => "- `" + c.path + "`" + (c.deletion ? " (moved)" : " (bridge)")),
-			...(conflicts.length ? ["", "Preserved for review:", ...conflicts.map((c) => "- " + c)] : []),
-			"",
-			"The control branch runs SHA-256-verified released df ci quality and pinned",
-			"GitHub issue/PR/agent workflow calls. Existing project CI and branch",
-			"protections remain enforced. Do not merge if any check is red.",
-			"Refs marius-patrik/DarkFactory#2070.",
+			"The old isolated branch is removed only after a later run verifies an",
+			"equivalent receipt-sealed main installation and no open review on that branch.",
 		].join("\n"),
 	});
 	console.log(slug + ": " + pr.html_url);
@@ -416,10 +457,10 @@ async function main() {
 			!r.archived &&
 			!r.disabled &&
 			!isFleetExcluded(r.full_name) &&
-			(CONSUMER_ROLLOUT || r.full_name.toLowerCase() === UPSTREAM.toLowerCase()),
+			true,
 	);
 	console.log(
-		`Selected ${eligible.length} eligible repositories (including upstream self-control, excluding old/Agent OS), released df ${selected.tag}`,
+		`Selected ${eligible.length} eligible repositories (producer on main; all active consumers), released df ${selected.tag}`,
 	);
 	const stats = {},
 		failures = [];
@@ -442,7 +483,7 @@ async function main() {
 				!isFleetExcluded(r.full_name) &&
 				r.full_name?.toLowerCase() !== UPSTREAM.toLowerCase() &&
 				!available.has(r.full_name.toLowerCase()) &&
-				CONSUMER_ROLLOUT,
+				true,
 		)
 		.map((r) => r.full_name);
 	if (missing.length) failures.push(`Grant App access to: ${missing.join(", ")}`);
