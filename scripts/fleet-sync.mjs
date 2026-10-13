@@ -1,9 +1,17 @@
 import { createSign } from "node:crypto";
 import { pathToFileURL } from "node:url";
 import {
-	BRIDGE_MARKER, CONTROL_CONFIG, CONTROL_RECEIPT, CONTROL_WORKFLOW, DEFAULT_BRIDGE,
-	controlFiles, readLegacyControl, renderDefaultBridge, renderLegacyDefaultBridge,
-	retireLegacyControl, verifyControlReceipt,
+	BRIDGE_MARKER,
+	CONTROL_CONFIG,
+	CONTROL_RECEIPT,
+	CONTROL_WORKFLOW,
+	DEFAULT_BRIDGE,
+	controlFiles,
+	readLegacyControl,
+	renderDefaultBridge,
+	renderLegacyDefaultBridge,
+	retireLegacyControl,
+	verifyControlReceipt,
 } from "./fleet-control.mjs";
 
 // Additive, release-driven GitHub App reconciler. Existing consumer CI,
@@ -112,7 +120,7 @@ jobs:
           set -euo pipefail
           "$RUNNER_TEMP/df-runtime/df-linux-x64" ci matrix --repo "$GITHUB_WORKSPACE" > "$RUNNER_TEMP/df-matrix.json"
           jq --exit-status '.matrix | type == "array"' "$RUNNER_TEMP/df-matrix.json"
-          jq --raw-output '"Detected packages: \(.packages | length); unresolved actions: \(.gaps | length)"' "$RUNNER_TEMP/df-matrix.json"
+          jq --raw-output '"Detected packages: (.packages | length); unresolved actions: (.gaps | length)"' "$RUNNER_TEMP/df-matrix.json"
 `;
 }
 
@@ -266,16 +274,20 @@ export function mergeConfigSources(mainText, legacyText) {
 	}
 	const conflicts = [];
 	const derived = new Set([
-		"repo.upstream", "repo.board", "repo.identity.owner", "repo.identity.repo",
-		"repo.identity.display_name", "repo.identity.project_title",
-		"repo.identity.default_branch", "repo.identity.development_branch",
+		"repo.upstream",
+		"repo.board",
+		"repo.identity.owner",
+		"repo.identity.repo",
+		"repo.identity.display_name",
+		"repo.identity.project_title",
+		"repo.identity.default_branch",
+		"repo.identity.development_branch",
 	]);
 	function merge(a, b, prefix = "") {
 		if (a === undefined) return b;
 		if (b === undefined) return a;
 		if (JSON.stringify(a) === JSON.stringify(b) || derived.has(prefix)) return a;
-		if (a && b && typeof a === "object" && typeof b === "object" &&
-			!Array.isArray(a) && !Array.isArray(b)) {
+		if (a && b && typeof a === "object" && typeof b === "object" && !Array.isArray(a) && !Array.isArray(b)) {
 			const result = {};
 			for (const key of new Set([...Object.keys(b), ...Object.keys(a)])) {
 				result[key] = merge(a[key], b[key], prefix ? prefix + "." + key : key);
@@ -300,7 +312,10 @@ export function planMainInstallation({ slug, base, release, upstream, mainFiles,
 	const oldConfig = current(CONTROL_CONFIG);
 	const branchConfig = legacy?.files[CONTROL_CONFIG] ?? null;
 	if (mainFiles["config.dfconfig"] || mainFiles[".dfconfig"]) {
-		return { changes, conflicts: ["Alternate root configuration already exists; reconcile to one canonical config first"] };
+		return {
+			changes,
+			conflicts: ["Alternate root configuration already exists; reconcile to one canonical config first"],
+		};
 	}
 	const existingReceipt = current(CONTROL_RECEIPT);
 	if (existingReceipt) {
@@ -333,8 +348,7 @@ export function planMainInstallation({ slug, base, release, upstream, mainFiles,
 	}
 	const oldBridge = current(DEFAULT_BRIDGE);
 	const newBridge = renderDefaultBridge(slug, base);
-	if (oldBridge !== null && oldBridge !== newBridge &&
-		oldBridge !== renderLegacyDefaultBridge(slug, base)) {
+	if (oldBridge !== null && oldBridge !== newBridge && oldBridge !== renderLegacyDefaultBridge(slug, base)) {
 		// The previous released-binary smoke is machine-generated and can be replaced,
 		// but only if its rendered bytes match the version it declares.
 		const tag = oldBridge.match(/^\s+DF_TAG: "([^"]+)"$/m)?.[1];
@@ -343,7 +357,8 @@ export function planMainInstallation({ slug, base, release, upstream, mainFiles,
 		let canonical = false;
 		try {
 			if (oldBridge.startsWith(MARKER + "\n")) canonical = oldBridge === renderWorkflow({ tag, sha, digest });
-			else if (oldBridge.startsWith(LEGACY_MARKER + "\n")) canonical = oldBridge === renderLegacyWorkflow({ tag, sha, digest });
+			else if (oldBridge.startsWith(LEGACY_MARKER + "\n"))
+				canonical = oldBridge === renderLegacyWorkflow({ tag, sha, digest });
 		} catch {
 			// Unverifiable release metadata is a conflict, not ownership proof.
 		}
@@ -362,18 +377,33 @@ async function reconcile(repo, release, token) {
 	if (!base) throw new Error(slug + " has no default branch");
 	const legacy = await readLegacyControl({ slug, sourceBranch: base, token, api });
 	const mainFiles = {};
-	for (const path of [CONTROL_CONFIG, "config.dfconfig", ".dfconfig",
-		CONTROL_WORKFLOW, CONTROL_RECEIPT, DEFAULT_BRIDGE]) {
+	for (const path of [
+		CONTROL_CONFIG,
+		"config.dfconfig",
+		".dfconfig",
+		CONTROL_WORKFLOW,
+		CONTROL_RECEIPT,
+		DEFAULT_BRIDGE,
+	]) {
 		mainFiles[path] = await readFile(slug, path, base, token);
 	}
 	const { changes, conflicts } = planMainInstallation({
-		slug, base, release, upstream: UPSTREAM, mainFiles, legacy,
+		slug,
+		base,
+		release,
+		upstream: UPSTREAM,
+		mainFiles,
+		legacy,
 	});
 	if (!changes.length && !conflicts.length) {
 		if (!legacy) return "current";
 		if (DRY_RUN) return "dry-run";
 		const outcome = await retireLegacyControl({
-			slug, sourceBranch: base, upstream: UPSTREAM, token, api,
+			slug,
+			sourceBranch: base,
+			upstream: UPSTREAM,
+			token,
+			api,
 			mainFiles: Object.fromEntries(Object.entries(mainFiles).map(([path, value]) => [path, value?.content ?? null])),
 			legacy,
 		});
@@ -384,7 +414,13 @@ async function reconcile(repo, release, token) {
 		console.log("[dry-run] " + slug + ": " + JSON.stringify({ changes: changes.map((x) => x.path), conflicts }));
 		return "dry-run";
 	}
-	const issue = await issueFor(slug, release, changes.map((x) => x.path), conflicts, token);
+	const issue = await issueFor(
+		slug,
+		release,
+		changes.map((x) => x.path),
+		conflicts,
+		token,
+	);
 	if (!changes.length) return "conflict";
 	const proposal = "df-main/" + release.tag.replace(/[^A-Za-z0-9._-]/g, "-");
 	const existingPr = (await pages("/repos/" + slug + "/pulls?state=open", token)).find(
@@ -411,18 +447,22 @@ async function reconcile(repo, release, token) {
 		parents: [ref.object.sha],
 	});
 	await api("POST", endpoint + "/git/refs", token, {
-		ref: "refs/heads/" + proposal, sha: built.sha,
+		ref: "refs/heads/" + proposal,
+		sha: built.sha,
 	});
 	const pr = await api("POST", endpoint + "/pulls", token, {
 		title: "feat(df): install managed configuration and workflows on main",
 		head: proposal,
 		base,
 		body: [
-			"Closes #" + issue, "",
+			"Closes #" + issue,
+			"",
 			"Install DarkFactory entirely on the repository default branch. No separate",
 			"persistent control branch or external workflow checkout is required.",
-			"Existing non-DarkFactory CI and repository setup are preserved.", "",
-			"Changes:", ...changes.map((x) => "- `" + x.path + "`"),
+			"Existing non-DarkFactory CI and repository setup are preserved.",
+			"",
+			"Changes:",
+			...changes.map((x) => "- `" + x.path + "`"),
 			...(conflicts.length ? ["", "Review considerations:", ...conflicts.map((x) => "- " + x)] : []),
 			"",
 			"The old isolated branch is removed only after a later run verifies an",

@@ -277,7 +277,10 @@ export function renderLegacyDefaultBridge(slug, sourceBranch = "main") {
 			"# Configuration and executable workflows reside on this repository's default branch.",
 			"# Every executable job and managed config lives on the darkfactory branch.",
 		)
-		.replace("uses: ./.github/workflows/darkfactory-control.yml", "uses: " + slug + "/.github/workflows/darkfactory-control.yml@darkfactory");
+		.replace(
+			"uses: ./.github/workflows/darkfactory-control.yml",
+			"uses: " + slug + "/.github/workflows/darkfactory-control.yml@darkfactory",
+		);
 }
 
 export function inspectManaged(source, next, marker) {
@@ -286,7 +289,6 @@ export function inspectManaged(source, next, marker) {
 	if (!source.startsWith(marker + "\n")) return { kind: "conflict", reason: "Unmanaged file; refusing overwrite" };
 	return { kind: "review", reason: "Managed content differs; verify original canonical release first" };
 }
-
 
 export const CONTROL_RECEIPT = ".darkfactory/installation.json";
 export const CONTROL_FILES = [CONTROL_CONFIG, CONTROL_WORKFLOW, CONTROL_RECEIPT].sort();
@@ -323,12 +325,19 @@ export function verifyControlReceipt(receiptText, configText, workflowText, slug
 	} catch {
 		throw new Error("Invalid DarkFactory installation receipt");
 	}
-	if (receipt.managedBy !== "DarkFactory" || receipt.schema !== 2 || receipt.slug !== slug ||
-		receipt.sourceBranch !== sourceBranch) {
+	if (
+		receipt.managedBy !== "DarkFactory" ||
+		receipt.schema !== 2 ||
+		receipt.slug !== slug ||
+		receipt.sourceBranch !== sourceBranch
+	) {
 		throw new Error("DarkFactory installation receipt ownership or source branch mismatch");
 	}
 	verifyRelease(receipt.release);
-	for (const [path, content] of [[CONTROL_CONFIG, configText], [CONTROL_WORKFLOW, workflowText]]) {
+	for (const [path, content] of [
+		[CONTROL_CONFIG, configText],
+		[CONTROL_WORKFLOW, workflowText],
+	]) {
 		if (typeof content !== "string" || digestOf(content) !== receipt.fileHashes?.[path]) {
 			throw new Error("DarkFactory installation contains modified or missing " + path);
 		}
@@ -348,9 +357,14 @@ export async function readLegacyControl({ slug, sourceBranch, token, api }) {
 	const head = await api("GET", endpoint + "/git/commits/" + ref.object.sha, token);
 	const snapshot = await api("GET", endpoint + "/git/trees/" + head.tree.sha + "?recursive=1", token);
 	if (snapshot.truncated || !Array.isArray(snapshot.tree)) throw new Error("Cannot inspect legacy branch: " + slug);
-	const paths = snapshot.tree.filter((entry) => entry.type === "blob").map((entry) => entry.path).sort();
-	if (JSON.stringify(paths) !== JSON.stringify(CONTROL_FILES) ||
-		snapshot.tree.some((entry) => entry.type !== "tree" && entry.type !== "blob")) {
+	const paths = snapshot.tree
+		.filter((entry) => entry.type === "blob")
+		.map((entry) => entry.path)
+		.sort();
+	if (
+		JSON.stringify(paths) !== JSON.stringify(CONTROL_FILES) ||
+		snapshot.tree.some((entry) => entry.type !== "tree" && entry.type !== "blob")
+	) {
 		throw new Error("Legacy control branch contains unowned paths: " + slug);
 	}
 	const files = {};
@@ -369,16 +383,26 @@ export async function readLegacyControl({ slug, sourceBranch, token, api }) {
 export async function retireLegacyControl({ slug, sourceBranch, upstream, token, api, mainFiles, legacy }) {
 	if (!legacy) return "absent";
 	const receipt = verifyControlReceipt(
-		mainFiles[CONTROL_RECEIPT], mainFiles[CONTROL_CONFIG], mainFiles[CONTROL_WORKFLOW], slug, sourceBranch,
+		mainFiles[CONTROL_RECEIPT],
+		mainFiles[CONTROL_CONFIG],
+		mainFiles[CONTROL_WORKFLOW],
+		slug,
+		sourceBranch,
 	);
 	const expected = controlFiles(slug, sourceBranch, receipt.release, upstream, legacy.files[CONTROL_CONFIG]);
-	if (expected[CONTROL_CONFIG] !== mainFiles[CONTROL_CONFIG] ||
+	if (
+		expected[CONTROL_CONFIG] !== mainFiles[CONTROL_CONFIG] ||
 		expected[CONTROL_WORKFLOW] !== mainFiles[CONTROL_WORKFLOW] ||
-		renderDefaultBridge(slug, sourceBranch) !== mainFiles[DEFAULT_BRIDGE]) return "retained: configuration differs";
+		renderDefaultBridge(slug, sourceBranch) !== mainFiles[DEFAULT_BRIDGE]
+	)
+		return "retained: configuration differs";
 	const endpoint = "/repos/" + slug;
 	const owner = slug.split("/")[0];
-	const prs = await api("GET", endpoint + "/pulls?state=open&head=" +
-		encodeURIComponent(owner + ":" + LEGACY_CONTROL_BRANCH) + "&per_page=100", token);
+	const prs = await api(
+		"GET",
+		endpoint + "/pulls?state=open&head=" + encodeURIComponent(owner + ":" + LEGACY_CONTROL_BRANCH) + "&per_page=100",
+		token,
+	);
 	if (!Array.isArray(prs) || prs.length > 0) return "retained: open review";
 	const latest = await api("GET", endpoint + "/git/ref/heads/" + LEGACY_CONTROL_BRANCH, token, undefined, true);
 	if (latest?.object?.sha !== legacy.sha) return "retained: branch changed";
