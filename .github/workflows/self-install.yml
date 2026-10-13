@@ -19,7 +19,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
   self-install:
@@ -28,19 +28,5 @@ jobs:
     steps:
       - name: Checkout DarkFactory source
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
       - name: Verify source-owned installation on main
         run: node scripts/self-install-check.mjs .
-      - name: Retire merged control branch
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          set -euo pipefail
-          branch_sha=$(gh api "repos/$GITHUB_REPOSITORY/git/ref/heads/darkfactory" --jq ".object.sha" 2>/dev/null || true)
-          if [ -n "$branch_sha" ]; then
-            git cat-file -e "$branch_sha^{commit}" || git fetch origin "$branch_sha"
-            git merge-base --is-ancestor "$branch_sha" HEAD || { echo "Refusing to remove an unmerged control branch" >&2; exit 1; }
-            gh api -X DELETE "repos/$GITHUB_REPOSITORY/git/refs/heads/darkfactory"
-          fi
