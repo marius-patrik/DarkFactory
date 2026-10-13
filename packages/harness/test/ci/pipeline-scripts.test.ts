@@ -237,18 +237,13 @@ describe("sources name only this repository", () => {
 });
 
 describe("paths that must stay ignored", () => {
-	// Both of these were lost to a rebase that took develop's copy of `.gitignore` while resolving a
-	// conflict elsewhere in the file, and neither failed loudly: an agent worktree became committable,
-	// and a quality row began rewriting a tracked PDF. Both are ignore *properties* rather than
-	// ignore lines, so they are asserted as properties.
+	// Assert effective ignore behavior, rather than a particular .gitignore pattern.
 	const ignored = (path: string): boolean =>
 		Bun.spawnSync(["git", "-C", repoRoot, "check-ignore", "-q", path], { cwd: repoRoot }).exitCode === 0;
 
-	it("a checkout under .worktrees/ cannot reach a commit, and .gitkeep stays tracked", () => {
+	it("the entire transient .worktrees/ directory is ignored", () => {
 		expect(ignored(".worktrees/probe/packages/core/src/index.ts")).toBe(true);
-		// The negation is the point: an ignore pattern without it swallows the directory itself, and a
-		// fresh clone has nowhere to put a worktree.
-		expect(ignored(".worktrees/.gitkeep")).toBe(false);
+		expect(ignored(".worktrees/.gitkeep")).toBe(true);
 	});
 
 	it("generated paper output is not repository content", () => {

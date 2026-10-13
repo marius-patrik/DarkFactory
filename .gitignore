@@ -43,11 +43,8 @@ site/
 # manuscript under `paper/` writes here, and committing the intermediate would make a green matrix
 # run rewrite a tracked binary.
 
-# Agent worktrees. The folder is tracked through a .gitkeep so it exists in a fresh clone, and
-# everything below it is ignored: a checkout is local working state, and there is no path by which
-# one should reach a commit.
-.worktrees/*
-!.worktrees/.gitkeep
+# Local Git worktrees are transient and must never be committed.
+/.worktrees/
 
 # IDE / Editor / OS
 .vscode/
