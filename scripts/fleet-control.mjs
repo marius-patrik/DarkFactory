@@ -291,6 +291,7 @@ export function inspectManaged(source, next, marker) {
 }
 
 export const CONTROL_RECEIPT = ".darkfactory/installation.json";
+export const SUBMODULE_CONTROL_RECEIPT = ".github/darkfactory-installation.json";
 export const CONTROL_FILES = [CONTROL_CONFIG, CONTROL_WORKFLOW, CONTROL_RECEIPT].sort();
 const esc = (path) => path.split("/").map(encodeURIComponent).join("/");
 
@@ -304,13 +305,15 @@ export function renderControlReceipt(slug, sourceBranch, release, fileHashes) {
 	);
 }
 
-export function controlFiles(slug, sourceBranch, release, upstream, baseConfig = null) {
+export function controlFiles(slug, sourceBranch, release, upstream, baseConfig = null, receiptPath = CONTROL_RECEIPT) {
+	if (![CONTROL_RECEIPT, SUBMODULE_CONTROL_RECEIPT].includes(receiptPath))
+		throw new Error("Unknown installation receipt location");
 	const config = renderControlConfig(slug, sourceBranch, release, upstream, baseConfig);
 	const workflow = renderControlWorkflow(slug, release, upstream);
 	return {
 		[CONTROL_CONFIG]: config,
 		[CONTROL_WORKFLOW]: workflow,
-		[CONTROL_RECEIPT]: renderControlReceipt(slug, sourceBranch, release, {
+		[receiptPath]: renderControlReceipt(slug, sourceBranch, release, {
 			[CONTROL_CONFIG]: digestOf(config),
 			[CONTROL_WORKFLOW]: digestOf(workflow),
 		}),
@@ -380,16 +383,16 @@ export async function readLegacyControl({ slug, sourceBranch, token, api }) {
 }
 
 /** Never delete before a validated, lossless default-branch installation is visible. */
-export async function retireLegacyControl({ slug, sourceBranch, upstream, token, api, mainFiles, legacy }) {
+export async function retireLegacyControl({ slug, sourceBranch, upstream, token, api, mainFiles, legacy, receiptPath = CONTROL_RECEIPT }) {
 	if (!legacy) return "absent";
 	const receipt = verifyControlReceipt(
-		mainFiles[CONTROL_RECEIPT],
+		mainFiles[receiptPath],
 		mainFiles[CONTROL_CONFIG],
 		mainFiles[CONTROL_WORKFLOW],
 		slug,
 		sourceBranch,
 	);
-	const expected = controlFiles(slug, sourceBranch, receipt.release, upstream, legacy.files[CONTROL_CONFIG]);
+	const expected = controlFiles(slug, sourceBranch, receipt.release, upstream, legacy.files[CONTROL_CONFIG], receiptPath);
 	if (
 		expected[CONTROL_CONFIG] !== mainFiles[CONTROL_CONFIG] ||
 		expected[CONTROL_WORKFLOW] !== mainFiles[CONTROL_WORKFLOW] ||
