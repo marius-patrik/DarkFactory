@@ -356,7 +356,10 @@ test("repin the only verified installer review from latest default branch withou
 		api,
 	});
 	assert.equal(result.kind, "updated");
-	assert.deepEqual(calls.find((x) => x.method === "POST" && x.path.endsWith("/git/commits")).data.parents, [oldSHA, mainSHA]);
+	assert.deepEqual(calls.find((x) => x.method === "POST" && x.path.endsWith("/git/commits")).data.parents, [
+		oldSHA,
+		mainSHA,
+	]);
 	assert.equal(calls.find((x) => x.method === "POST" && x.path.endsWith("/git/trees")).data.base_tree, "c".repeat(40));
 	assert.ok(calls.some((x) => x.method === "PATCH" && x.data.force === false));
 });
