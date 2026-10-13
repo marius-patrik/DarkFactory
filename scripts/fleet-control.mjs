@@ -159,7 +159,7 @@ export function renderControlWorkflow(slug, release, upstream = "marius-patrik/D
 		"        run: |",
 		'          cd "$GITHUB_WORKSPACE/$DF_SETUP_CWD"',
 		'          if [ "$DF_SETUP_COMMAND" = "npm ci" ] && [ ! -f package-lock.json ] && [ ! -f npm-shrinkwrap.json ]; then',
-		'            npm install --no-package-lock',
+		"            npm install --no-package-lock",
 		"          else",
 		'            bash -lc "$DF_SETUP_COMMAND"',
 		"          fi",
