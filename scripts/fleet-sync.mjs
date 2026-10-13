@@ -421,6 +421,19 @@ async function reconcile(repo, release, token) {
 		console.log("[dry-run] " + slug + ": " + JSON.stringify({ changes: changes.map((x) => x.path), conflicts }));
 		return "dry-run";
 	}
+	// One open installation review per consumer. Never open a second PR simply
+	// because a newer upstream release appeared while the first awaits review.
+	if (changes.length) {
+		const pending = (await pages("/repos/" + slug + "/pulls?state=open", token)).find(
+			(item) => /^df-main\/v[0-9]/.test(item.head?.ref ?? "") &&
+				item.user?.login === "darkfactory-pipeline[bot]",
+		);
+		if (pending) {
+			console.log(slug + ": existing installation review " + pending.html_url +
+				"; update the existing PR rather than opening a second proposal for " + release.tag);
+			return "pending";
+		}
+	}
 	const issue = await issueFor(
 		slug,
 		release,
