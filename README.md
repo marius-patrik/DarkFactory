@@ -387,9 +387,12 @@ same-commit local reusable workflow; released engine artifacts and upstream
 governance workflows remain independently pinned to immutable release SHAs.
 
 Install/update proposes an atomic, reviewable PR with `repo.dfconfig`,
-`.darkfactory/installation.json` (or `.github/darkfactory-installation.json` when\n`.darkfactory` is occupied by a submodule or symlink),\n`.github/workflows/darkfactory-control.yml`
-and `.github/workflows/darkfactory.yml`. The receipt fingerprints the first
-two. Consumer-owned CI, settings and custom configuration are preserved.
+`.github/workflows/darkfactory-control.yml` and `.github/workflows/darkfactory.yml`,
+plus a sealed installation receipt. Its path is `.darkfactory/installation.json`
+unless `.darkfactory` is owned by a submodule or symlink, in which case it
+lives at `.github/darkfactory-installation.json`. The receipt fingerprints
+the config and reusable control workflow. Consumer-owned CI, settings and
+custom configuration are preserved.
 Unexpected changes or conflicting configuration stop automated installation
 and require explicit review. The obsolete control branch is deleted only
 after a sealed equivalent installation exists on the default branch; review
