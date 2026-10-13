@@ -11,6 +11,7 @@ import {
 	renderDefaultBridge,
 	renderLegacyDefaultBridge,
 	retireLegacyControl,
+	retireLegacyReleaseBranches,
 	verifyControlReceipt,
 } from "./fleet-control.mjs";
 
@@ -402,9 +403,9 @@ async function reconcile(repo, release, token) {
 		receiptPath,
 	});
 	if (!changes.length && !conflicts.length) {
-		if (!legacy) return "current";
 		if (DRY_RUN) return "dry-run";
-		const outcome = await retireLegacyControl({
+		let outcome = "absent";
+		if (legacy) outcome = await retireLegacyControl({
 			slug,
 			sourceBranch: base,
 			upstream: UPSTREAM,
@@ -414,8 +415,11 @@ async function reconcile(repo, release, token) {
 			legacy,
 			receiptPath,
 		});
-		console.log(slug + ": legacy branch " + outcome);
-		return outcome === "retired" ? "retired" : "current-" + outcome;
+		console.log(slug + ": legacy control branch " + outcome);
+		const oldReleases = await retireLegacyReleaseBranches({ slug, token, api });
+		if (oldReleases.length) console.log(slug + ": legacy release branch audit " + JSON.stringify(oldReleases));
+		return outcome === "retired" || oldReleases.some((item) => item.disposition === "retired")
+			? "retired" : "current";
 	}
 	if (DRY_RUN) {
 		console.log("[dry-run] " + slug + ": " + JSON.stringify({ changes: changes.map((x) => x.path), conflicts }));
