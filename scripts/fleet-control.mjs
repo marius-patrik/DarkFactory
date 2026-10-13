@@ -183,6 +183,7 @@ export function renderControlWorkflow(slug, release, upstream = "marius-patrik/D
 		"          DF_ACTION_CWD: @@ACTION_CWD@@",
 		"        run: |",
 		'          cd "$GITHUB_WORKSPACE/$DF_ACTION_CWD"',
+		'          export PATH="$GITHUB_WORKSPACE/node_modules/.bin:$PWD/node_modules/.bin:$PATH"',
 		'          bash -lc "$DF_ACTION_COMMAND"',
 		"  quality:",
 		"    name: released-df-quality",
