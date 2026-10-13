@@ -5,6 +5,7 @@ import {
 	inspectWorkflow,
 	mergeConfigSources,
 	planMainInstallation,
+	retireMergedProposalRef,
 	isFleetExcluded,
 	renderConfig,
 	renderLegacyWorkflow,
@@ -252,4 +253,66 @@ test("a consumer-owned .darkfactory gitlink installs the receipt in .github with
 	assert.ok(!result.changes.some((x) => x.path.startsWith(".darkfactory/")));
 	const receipt = result.changes.find((x) => x.path === SUBMODULE_CONTROL_RECEIPT);
 	assert.equal(JSON.parse(receipt.content).fileHashes[CONTROL_CONFIG].length, 64);
+});
+
+test("merged installation proposal is safely retired only with exact unchanged SHA", async () => {
+	const endpoint = "/repos/marius-patrik/OASIS";
+	const branch = "df-main/v0.291.0";
+	const sha = "a".repeat(40);
+	const requests = [];
+	async function api(method, path) {
+		requests.push({ method, path });
+		if (method === "GET" && path.includes("/pulls?state=all")) {
+			return [
+				{
+					head: { sha },
+					merged_at: "2026-10-13T20:00:00Z",
+					user: { login: "darkfactory-pipeline[bot]" },
+					title: "feat(df): install managed configuration and workflows on main",
+				},
+			];
+		}
+		if (method === "GET" && path.endsWith("/git/ref/heads/" + branch)) return { object: { sha } };
+		if (method === "DELETE" && path.endsWith("/git/refs/heads/" + branch)) return null;
+		throw Error("unexpected " + method + " " + path);
+	}
+	const outcome = await retireMergedProposalRef({
+		api,
+		endpoint,
+		slug: "marius-patrik/OASIS",
+		branch,
+		token: "test",
+	});
+	assert.equal(outcome, "retired");
+	assert.equal(requests.filter((x) => x.method === "DELETE").length, 1);
+});
+
+test("closed-unmerged installer review cannot be silently deleted", async () => {
+	const branch = "df-main/v0.291.0";
+	const sha = "f".repeat(40);
+	const calls = [];
+	async function api(method, path) {
+		calls.push(method);
+		if (path.includes("/pulls?state=all")) {
+			return [
+				{
+					head: { sha },
+					merged_at: null,
+					user: { login: "darkfactory-pipeline[bot]" },
+					title: "feat(df): install managed configuration and workflows on main",
+				},
+			];
+		}
+		if (path.endsWith("/git/ref/heads/" + branch)) return { object: { sha } };
+		throw Error("unapproved mutation");
+	}
+	const outcome = await retireMergedProposalRef({
+		api,
+		endpoint: "/repos/marius-patrik/OASIS",
+		slug: "marius-patrik/OASIS",
+		branch,
+		token: "test",
+	});
+	assert.match(outcome, /retained/);
+	assert.ok(!calls.includes("DELETE"));
 });

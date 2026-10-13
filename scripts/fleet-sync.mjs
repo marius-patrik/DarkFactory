@@ -377,6 +377,35 @@ export function planMainInstallation({
 	return { changes, conflicts };
 }
 
+/**
+ * A merged installer proposal leaves an ordinary temporary PR branch behind in
+ * some repositories. Delete only the unchanged head of its already-merged PR,
+ * never a diverged ref, closed-unmerged review, or user-owned branch.
+ */
+export async function retireMergedProposalRef({ api, endpoint, slug, branch, token }) {
+	const ref = await api("GET", endpoint + "/git/ref/heads/" + escaped(branch), token, undefined, true);
+	if (!ref) return "absent";
+	const owner = slug.split("/")[0];
+	const prs = await api(
+		"GET",
+		endpoint + "/pulls?state=all&head=" + encodeURIComponent(owner + ":" + branch) + "&per_page=100",
+		token,
+	);
+	if (!Array.isArray(prs)) throw new Error("Cannot prove ownership of " + slug + ":" + branch);
+	const pr = prs.find(
+		(item) =>
+			item.head?.sha === ref.object?.sha &&
+			item.merged_at &&
+			item.user?.login === "darkfactory-pipeline[bot]" &&
+			item.title === "feat(df): install managed configuration and workflows on main",
+	);
+	if (!pr) return "retained: no matching merged DarkFactory proposal";
+	const latest = await api("GET", endpoint + "/git/ref/heads/" + escaped(branch), token, undefined, true);
+	if (latest?.object?.sha !== ref.object.sha) return "retained: proposal ref moved";
+	await api("DELETE", endpoint + "/git/refs/heads/" + branch, token);
+	return "retired";
+}
+
 async function reconcile(repo, release, token) {
 	const slug = repo.full_name;
 	if (slug.toLowerCase() === UPSTREAM.toLowerCase()) return "self-main";
@@ -394,6 +423,44 @@ async function reconcile(repo, release, token) {
 	for (const path of [CONTROL_CONFIG, "config.dfconfig", ".dfconfig", CONTROL_WORKFLOW, receiptPath, DEFAULT_BRIDGE]) {
 		mainFiles[path] = await readFile(slug, path, base, token);
 	}
+	// Retirement is independent of release updates: a verified installed release
+	// on main is enough to retire obsolete legacy refs even if another release
+	// has since appeared. No consumer source or unreviewed work is removed.
+	let retired = false;
+	if (mainFiles[receiptPath]?.content) {
+		try {
+			verifyControlReceipt(
+				mainFiles[receiptPath].content,
+				mainFiles[CONTROL_CONFIG]?.content,
+				mainFiles[CONTROL_WORKFLOW]?.content,
+				slug,
+				base,
+			);
+			if (!DRY_RUN) {
+				if (legacy) {
+					const outcome = await retireLegacyControl({
+						slug,
+						sourceBranch: base,
+						upstream: UPSTREAM,
+						token,
+						api,
+						mainFiles: Object.fromEntries(
+							Object.entries(mainFiles).map(([path, value]) => [path, value?.content ?? null]),
+						),
+						legacy,
+						receiptPath,
+					});
+					console.log(slug + ": legacy control branch " + outcome);
+					retired ||= outcome === "retired";
+				}
+				const oldReleases = await retireLegacyReleaseBranches({ slug, token, api });
+				if (oldReleases.length) console.log(slug + ": legacy release branch audit " + JSON.stringify(oldReleases));
+				retired ||= oldReleases.some((item) => item.disposition === "retired");
+			}
+		} catch (error) {
+			console.log(slug + ": legacy retirement preserved after verification failure: " + String(error));
+		}
+	}
 	const { changes, conflicts } = planMainInstallation({
 		slug,
 		base,
@@ -403,25 +470,7 @@ async function reconcile(repo, release, token) {
 		legacy,
 		receiptPath,
 	});
-	if (!changes.length && !conflicts.length) {
-		if (DRY_RUN) return "dry-run";
-		let outcome = "absent";
-		if (legacy)
-			outcome = await retireLegacyControl({
-				slug,
-				sourceBranch: base,
-				upstream: UPSTREAM,
-				token,
-				api,
-				mainFiles: Object.fromEntries(Object.entries(mainFiles).map(([path, value]) => [path, value?.content ?? null])),
-				legacy,
-				receiptPath,
-			});
-		console.log(slug + ": legacy control branch " + outcome);
-		const oldReleases = await retireLegacyReleaseBranches({ slug, token, api });
-		if (oldReleases.length) console.log(slug + ": legacy release branch audit " + JSON.stringify(oldReleases));
-		return outcome === "retired" || oldReleases.some((item) => item.disposition === "retired") ? "retired" : "current";
-	}
+	if (!changes.length && !conflicts.length) return retired ? "retired" : "current";
 	if (DRY_RUN) {
 		console.log("[dry-run] " + slug + ": " + JSON.stringify({ changes: changes.map((x) => x.path), conflicts }));
 		return "dry-run";
@@ -459,9 +508,9 @@ async function reconcile(repo, release, token) {
 		console.log(slug + ": already proposed " + existingPr.html_url);
 		return "pending";
 	}
-	if (await api("GET", endpoint + "/git/ref/heads/" + escaped(proposal), token, undefined, true)) {
-		throw new Error(slug + ": installation proposal branch exists without an open review");
-	}
+	const stale = await retireMergedProposalRef({ api, endpoint, slug, branch: proposal, token });
+	if (stale.startsWith("retained:")) throw new Error(slug + ": installer proposal branch cannot be reused: " + stale);
+	if (stale === "retired") console.log(slug + ": removed previous merged proposal branch " + proposal);
 	// One tree/commit/ref transaction: readers never see a half-installed controller.
 	const tree = await api("POST", endpoint + "/git/trees", token, {
 		base_tree: commit.tree.sha,
