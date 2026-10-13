@@ -15,6 +15,7 @@ import {
 	renderDefaultBridge,
 	renderLegacyDefaultBridge,
 	retireLegacyControl,
+	retireLegacyReleaseBranches,
 	verifyControlReceipt,
 	verifyRelease,
 } from "./fleet-control.mjs";
@@ -199,4 +200,29 @@ test("user customization, alternate upstream or invalid release is never silentl
 	assert.equal(inspectManaged("name: User custom\n", old, BRIDGE_MARKER).kind, "conflict");
 	assert.throws(() => verifyRelease({ ...release, sha: "main" }), /Invalid pinned release/);
 	assert.throws(() => renderControlConfig("bad", "main", release), /Invalid repository slug/);
+});
+
+test("legacy release cleanup refuses unowned and open refs and deletes only verified closed machine changes", async () => {
+	const calls = [];
+	const good = { ref: "refs/heads/darkfactory/release-v0.288.1", object: { sha: "1".repeat(40) } };
+	const open = { ref: "refs/heads/darkfactory/release-v0.288.0", object: { sha: "2".repeat(40) } };
+	const unknown = { ref: "refs/heads/darkfactory/experiment", object: { sha: "3".repeat(40) } };
+	async function api(method, path) {
+		calls.push([method, path]);
+		if (path.endsWith("/matching-refs/heads/darkfactory/")) return [good, open, unknown];
+		if (path.includes("/pulls?state=all&head=") && path.includes("v0.288.1")) {
+			return [{ number: 21, state: "closed", head: { sha: good.object.sha } }];
+		}
+		if (path.includes("/pulls?state=all&head=") && path.includes("v0.288.0")) {
+			return [{ number: 18, state: "open", head: { sha: open.object.sha } }];
+		}
+		if (path.endsWith("/pulls/21/files?per_page=100")) return [{ filename: "repo.dfconfig" }];
+		if (path.endsWith("/git/ref/heads/darkfactory/release-v0.288.1")) return { object: { sha: good.object.sha } };
+		if (method === "DELETE" && path.endsWith("darkfactory/release-v0.288.1")) return null;
+		throw Error("unexpected " + method + " " + path);
+	}
+	const result = await retireLegacyReleaseBranches({ slug, token: "token", api });
+	assert.deepEqual(result.map((x) => x.disposition), ["retired", "retained: unreviewed or still open"]);
+	assert.equal(calls.filter(([method]) => method === "DELETE").length, 1);
+	assert.ok(!calls.some(([, path]) => path.endsWith("/experiment")));
 });
