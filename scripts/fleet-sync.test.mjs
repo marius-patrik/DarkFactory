@@ -3,11 +3,15 @@ import assert from "node:assert/strict";
 import {
 	inspectConfig,
 	inspectWorkflow,
+	mergeConfigSources,
+	planMainInstallation,
 	isFleetExcluded,
 	renderConfig,
 	renderLegacyWorkflow,
 	renderWorkflow,
 } from "./fleet-sync.mjs";
+import { CONTROL_CONFIG, CONTROL_RECEIPT, CONTROL_WORKFLOW, DEFAULT_BRIDGE,
+ controlFiles, renderDefaultBridge, renderLegacyDefaultBridge } from "./fleet-control.mjs";
 
 const old = {
 	tag: "v0.3.2",
@@ -91,4 +95,79 @@ test("release updater permanently excludes old and Agent OS repositories without
 		"marius-patrik/SkyAgent",
 	])
 		assert.equal(isFleetExcluded(name), false, name);
+});
+
+test("fresh consumer install proposes all four managed files on its default branch", () => {
+	const plan = planMainInstallation({ slug, base: "main", release: next, upstream: "marius-patrik/DarkFactory",
+		mainFiles: {}, legacy: null });
+	assert.deepEqual(plan.conflicts, []);
+	assert.deepEqual(plan.changes.map((x) => x.path).sort(), [
+		CONTROL_CONFIG, CONTROL_RECEIPT, CONTROL_WORKFLOW, DEFAULT_BRIDGE,
+	].sort());
+	assert.ok(plan.changes.some((x) => x.path === DEFAULT_BRIDGE &&
+		x.content.includes("uses: ./.github/workflows/darkfactory-control.yml")));
+	assert.ok(plan.changes.every((x) => !x.content.includes("@darkfactory")));
+});
+
+test("migration replaces only a provably canonical old bridge and imports sealed legacy config", () => {
+	const oldFiles = controlFiles(slug, "main", old, "marius-patrik/DarkFactory");
+	const legacy = { sha: "e".repeat(40), files: oldFiles };
+	const mainFiles = { [DEFAULT_BRIDGE]: { content: renderLegacyDefaultBridge(slug, "main"), sha: "f".repeat(40) } };
+	const plan = planMainInstallation({ slug, base: "main", release: next,
+		upstream: "marius-patrik/DarkFactory", mainFiles, legacy });
+	assert.deepEqual(plan.conflicts, []);
+	assert.equal(plan.changes.length, 4);
+	assert.equal(plan.changes.find((x) => x.path === DEFAULT_BRIDGE).sha, "f".repeat(40));
+	const expected = controlFiles(slug, "main", next, "marius-patrik/DarkFactory", oldFiles[CONTROL_CONFIG]);
+	assert.equal(plan.changes.find((x) => x.path === CONTROL_CONFIG).content, expected[CONTROL_CONFIG]);
+});
+
+test("reinstall is idempotent with valid receipt and no legacy branch", () => {
+	const files = controlFiles(slug, "main", next, "marius-patrik/DarkFactory");
+	const mainFiles = Object.fromEntries(Object.entries({ ...files, [DEFAULT_BRIDGE]: renderDefaultBridge(slug) })
+		.map(([path, content]) => [path, { content, sha: "f".repeat(40) }]));
+	const plan = planMainInstallation({ slug, base: "main", release: next,
+		upstream: "marius-patrik/DarkFactory", mainFiles, legacy: null });
+	assert.deepEqual(plan.changes, []);
+	assert.deepEqual(plan.conflicts, []);
+});
+
+test("modified receipt, workflow or custom bridge blocks partial install", () => {
+	const files = controlFiles(slug, "main", old, "marius-patrik/DarkFactory");
+	const previous = Object.fromEntries(Object.entries(files)
+		.map(([path, content]) => [path, { content, sha: "f".repeat(40) }]));
+	const patched = { ...previous, [CONTROL_WORKFLOW]: { content: "name: edited\n", sha: "f".repeat(40) } };
+	const plan = planMainInstallation({ slug, base: "main", release: next,
+		upstream: "marius-patrik/DarkFactory", mainFiles: patched, legacy: null });
+	assert.equal(plan.changes.length, 0);
+	assert.match(plan.conflicts.join(" "), /modified or missing/);
+	const bridge = planMainInstallation({ slug, base: "main", release: next,
+		upstream: "marius-patrik/DarkFactory", mainFiles: { [DEFAULT_BRIDGE]: { content: "name: custom\n" } }, legacy: null });
+	assert.equal(bridge.changes.length, 0);
+	assert.match(bridge.conflicts.join(" "), /customized or unowned/);
+});
+
+test("never produce ambiguous config or replace an alternate selected upstream", () => {
+	const alias = planMainInstallation({ slug, base: "main", release: next,
+		upstream: "marius-patrik/DarkFactory", mainFiles: { ".dfconfig": { content: "{}\n" } }, legacy: null });
+	assert.equal(alias.changes.length, 0);
+	assert.match(alias.conflicts.join(" "), /Alternate root/);
+	const conflict = planMainInstallation({ slug, base: "main", release: next,
+		upstream: "marius-patrik/DarkFactory", mainFiles: {
+			[CONTROL_CONFIG]: { content: JSON.stringify({ repo: { upstream: { repo: "other/repo", ref: old.sha } } }) }
+		}, legacy: null });
+	assert.equal(conflict.changes.length, 0);
+	assert.match(conflict.conflicts.join(" "), /alternate DarkFactory upstream/);
+});
+
+test("merge config sources imports missing branch fields but never overwrites conflicting ones", () => {
+	const main = JSON.stringify({ repo: { identity: { repo: "OASIS" }, app: { id: "main" } }, docs: { title: "main" } });
+	const branch = JSON.stringify({ repo: { identity: { repo: "OASIS" }, app: { id: "branch" }, labels: { status: [] } },
+		docs: { title: "branch" }, providers: { defaults: [] } });
+	const result = mergeConfigSources(main, branch);
+	assert.deepEqual(result.conflicts.sort(), ["docs.title", "repo.app.id"]);
+	const obj = JSON.parse(result.content);
+	assert.equal(obj.repo.app.id, "main");
+	assert.ok(obj.repo.labels);
+	assert.ok(obj.providers);
 });
