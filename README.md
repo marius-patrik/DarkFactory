@@ -384,6 +384,21 @@ Consumers receive released df and managed project-specific setup. They do not re
 
 Capabilities should handle project/repository-specific setup wherever possible, including quality actions, docs, hooks, release and workflow configuration.
 
+All consumers, like DarkFactory itself, keep **one canonical configuration and their managed
+GitHub Actions workflows on the repository default branch**. A permanent `darkfactory`
+control branch is not part of installation. The small event workflow calls the
+same-commit local reusable workflow; released engine artifacts and upstream
+governance workflows remain independently pinned to immutable release SHAs.
+
+Install/update proposes an atomic, reviewable PR with `repo.dfconfig`,
+`.darkfactory/installation.json`, `.github/workflows/darkfactory-control.yml`
+and `.github/workflows/darkfactory.yml`. The receipt fingerprints the first
+two. Consumer-owned CI, settings and custom configuration are preserved.
+Unexpected changes or conflicting configuration stop automated installation
+and require explicit review. The obsolete control branch is deleted only
+after a sealed equivalent installation exists on the default branch; review
+branches remain temporary and follow normal merge protection.
+
 Install/update is idempotent and drift-aware.
 
 ## 18. Security requirements
