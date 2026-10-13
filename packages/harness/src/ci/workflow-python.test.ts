@@ -43,13 +43,13 @@ function pushPathFilter(workflow: string): string[] {
  * has moved to `bun` or `jq`, and the two that shelled out to a *deleted* script now name the
  * TypeScript that replaced it.
  *
- * `ci.yml` is the remaining entry and it is deliberate: its `python` matrix axis exists to test a
- * *consumer's* Python package, not this repository's tooling, so removing it would delete coverage
- * rather than an interpreter the pipeline depends on. It leaves when `repo.dfconfig` stops declaring
- * `environment.{testing,formatting,setup}.python`, and not before. #1148 is open until then.
+ * `ci.yml` and `darkfactory-control.yml` both support testing Python consumer packages.
+ * Their interpreter setup belongs to detected ecosystem execution, not the producer runtime.
+ * Removing these commands would drop supported quality actions. #1148 tracks this distinction.
  */
 const REMAINING_PYTHON_STEPS: Record<string, string[]> = {
 	"ci.yml": ["quality-run / Install Python package manager"],
+	"darkfactory-control.yml": ["execute-quality / (unnamed)"],
 };
 
 /** The steps moved off Python, and the command each one runs instead. */
