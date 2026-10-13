@@ -426,3 +426,46 @@ export async function retireLegacyControl({ slug, sourceBranch, upstream, token,
 	await api("DELETE", endpoint + "/git/refs/heads/" + LEGACY_CONTROL_BRANCH, token);
 	return "retired";
 }
+
+/**
+ * Retire only historical DarkFactory release branches whose exact head belongs
+ * to a closed/merged, narrowly scoped install PR. Never touch user work,
+ * arbitrary darkfactory/* refs or branches with unreviewed changes.
+ */
+export async function retireLegacyReleaseBranches({ slug, token, api }) {
+	const endpoint = "/repos/" + slug;
+	const refs = await api("GET", endpoint + "/git/matching-refs/heads/darkfactory/", token);
+	if (!Array.isArray(refs)) throw new Error("Cannot enumerate legacy release branches for " + slug);
+	const results = [];
+	for (const ref of refs) {
+		const name = String(ref.ref || "").replace(/^refs\/heads\//, "");
+		if (!/^darkfactory\/release-v[0-9][A-Za-z0-9.+-]*$/.test(name)) continue;
+		const owner = slug.split("/")[0];
+		const prs = await api("GET", endpoint + "/pulls?state=all&head=" +
+			encodeURIComponent(owner + ":" + name) + "&per_page=100", token);
+		if (!Array.isArray(prs) || prs.length === 0) {
+			results.push({ branch: name, disposition: "retained: no verified pull request" });
+			continue;
+		}
+		const pr = prs.find((value) => value.head?.sha === ref.object?.sha);
+		if (!pr || pr.state !== "closed") {
+			results.push({ branch: name, disposition: "retained: unreviewed or still open" });
+			continue;
+		}
+		const files = await api("GET", endpoint + "/pulls/" + pr.number + "/files?per_page=100", token);
+		const owned = new Set([DEFAULT_BRIDGE, CONTROL_CONFIG]);
+		if (!Array.isArray(files) || files.length === 0 || files.length > owned.size ||
+			files.some((entry) => !owned.has(entry.filename))) {
+			results.push({ branch: name, disposition: "retained: unowned changes" });
+			continue;
+		}
+		const check = await api("GET", endpoint + "/git/ref/heads/" + name, token, undefined, true);
+		if (check?.object?.sha !== ref.object.sha) {
+			results.push({ branch: name, disposition: "retained: branch moved" });
+			continue;
+		}
+		await api("DELETE", endpoint + "/git/refs/heads/" + name, token);
+		results.push({ branch: name, disposition: "retired" });
+	}
+	return results;
+}
