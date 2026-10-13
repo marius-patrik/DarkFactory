@@ -3,6 +3,7 @@ import { pathToFileURL } from "node:url";
 import {
 	CONTROL_CONFIG,
 	CONTROL_RECEIPT,
+	SUBMODULE_CONTROL_RECEIPT,
 	CONTROL_WORKFLOW,
 	DEFAULT_BRIDGE,
 	controlFiles,
@@ -10,6 +11,7 @@ import {
 	renderDefaultBridge,
 	renderLegacyDefaultBridge,
 	retireLegacyControl,
+	retireLegacyReleaseBranches,
 	verifyControlReceipt,
 } from "./fleet-control.mjs";
 
@@ -302,7 +304,15 @@ export function mergeConfigSources(mainText, legacyText) {
  * Produce a single atomic default-branch PR. Never stage a partial installation
  * whose receipt would attest to files that were never installed.
  */
-export function planMainInstallation({ slug, base, release, upstream, mainFiles, legacy }) {
+export function planMainInstallation({
+	slug,
+	base,
+	release,
+	upstream,
+	mainFiles,
+	legacy,
+	receiptPath = CONTROL_RECEIPT,
+}) {
 	const conflicts = [];
 	const changes = [];
 	const current = (path) => mainFiles[path]?.content ?? null;
@@ -314,7 +324,7 @@ export function planMainInstallation({ slug, base, release, upstream, mainFiles,
 			conflicts: ["Alternate root configuration already exists; reconcile to one canonical config first"],
 		};
 	}
-	const existingReceipt = current(CONTROL_RECEIPT);
+	const existingReceipt = current(receiptPath);
 	if (existingReceipt) {
 		try {
 			verifyControlReceipt(existingReceipt, oldConfig, current(CONTROL_WORKFLOW), slug, base);
@@ -339,7 +349,7 @@ export function planMainInstallation({ slug, base, release, upstream, mainFiles,
 	}
 	let files;
 	try {
-		files = controlFiles(slug, base, release, upstream, merged.content);
+		files = controlFiles(slug, base, release, upstream, merged.content, receiptPath);
 	} catch (error) {
 		return { changes, conflicts: [String(error)] };
 	}
@@ -373,15 +383,15 @@ async function reconcile(repo, release, token) {
 	const base = repo.default_branch;
 	if (!base) throw new Error(slug + " has no default branch");
 	const legacy = await readLegacyControl({ slug, sourceBranch: base, token, api });
+	const endpoint = "/repos/" + slug;
+	const ref = await api("GET", endpoint + "/git/ref/heads/" + escaped(base), token);
+	const commit = await api("GET", endpoint + "/git/commits/" + ref.object.sha, token);
+	const root = await api("GET", endpoint + "/git/trees/" + commit.tree.sha, token);
+	if (!Array.isArray(root?.tree)) throw new Error("Cannot inspect root layout: " + slug);
+	const dfEntry = root.tree.find((entry) => entry.path === ".darkfactory");
+	const receiptPath = dfEntry && dfEntry.type !== "tree" ? SUBMODULE_CONTROL_RECEIPT : CONTROL_RECEIPT;
 	const mainFiles = {};
-	for (const path of [
-		CONTROL_CONFIG,
-		"config.dfconfig",
-		".dfconfig",
-		CONTROL_WORKFLOW,
-		CONTROL_RECEIPT,
-		DEFAULT_BRIDGE,
-	]) {
+	for (const path of [CONTROL_CONFIG, "config.dfconfig", ".dfconfig", CONTROL_WORKFLOW, receiptPath, DEFAULT_BRIDGE]) {
 		mainFiles[path] = await readFile(slug, path, base, token);
 	}
 	const { changes, conflicts } = planMainInstallation({
@@ -391,25 +401,47 @@ async function reconcile(repo, release, token) {
 		upstream: UPSTREAM,
 		mainFiles,
 		legacy,
+		receiptPath,
 	});
 	if (!changes.length && !conflicts.length) {
-		if (!legacy) return "current";
 		if (DRY_RUN) return "dry-run";
-		const outcome = await retireLegacyControl({
-			slug,
-			sourceBranch: base,
-			upstream: UPSTREAM,
-			token,
-			api,
-			mainFiles: Object.fromEntries(Object.entries(mainFiles).map(([path, value]) => [path, value?.content ?? null])),
-			legacy,
-		});
-		console.log(slug + ": legacy branch " + outcome);
-		return outcome === "retired" ? "retired" : "current-" + outcome;
+		let outcome = "absent";
+		if (legacy)
+			outcome = await retireLegacyControl({
+				slug,
+				sourceBranch: base,
+				upstream: UPSTREAM,
+				token,
+				api,
+				mainFiles: Object.fromEntries(Object.entries(mainFiles).map(([path, value]) => [path, value?.content ?? null])),
+				legacy,
+				receiptPath,
+			});
+		console.log(slug + ": legacy control branch " + outcome);
+		const oldReleases = await retireLegacyReleaseBranches({ slug, token, api });
+		if (oldReleases.length) console.log(slug + ": legacy release branch audit " + JSON.stringify(oldReleases));
+		return outcome === "retired" || oldReleases.some((item) => item.disposition === "retired") ? "retired" : "current";
 	}
 	if (DRY_RUN) {
 		console.log("[dry-run] " + slug + ": " + JSON.stringify({ changes: changes.map((x) => x.path), conflicts }));
 		return "dry-run";
+	}
+	// One open installation review per consumer. Never open a second PR simply
+	// because a newer upstream release appeared while the first awaits review.
+	if (changes.length) {
+		const pending = (await pages("/repos/" + slug + "/pulls?state=open", token)).find(
+			(item) => /^df-main\/v[0-9]/.test(item.head?.ref ?? "") && item.user?.login === "darkfactory-pipeline[bot]",
+		);
+		if (pending) {
+			console.log(
+				slug +
+					": existing installation review " +
+					pending.html_url +
+					"; update the existing PR rather than opening a second proposal for " +
+					release.tag,
+			);
+			return "pending";
+		}
 	}
 	const issue = await issueFor(
 		slug,
@@ -427,12 +459,9 @@ async function reconcile(repo, release, token) {
 		console.log(slug + ": already proposed " + existingPr.html_url);
 		return "pending";
 	}
-	const endpoint = "/repos/" + slug;
 	if (await api("GET", endpoint + "/git/ref/heads/" + escaped(proposal), token, undefined, true)) {
 		throw new Error(slug + ": installation proposal branch exists without an open review");
 	}
-	const ref = await api("GET", endpoint + "/git/ref/heads/" + escaped(base), token);
-	const commit = await api("GET", endpoint + "/git/commits/" + ref.object.sha, token);
 	// One tree/commit/ref transaction: readers never see a half-installed controller.
 	const tree = await api("POST", endpoint + "/git/trees", token, {
 		base_tree: commit.tree.sha,

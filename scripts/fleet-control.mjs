@@ -159,6 +159,20 @@ export function renderControlWorkflow(slug, release, upstream = "marius-patrik/D
 		"        run: |",
 		'          cd "$GITHUB_WORKSPACE/$DF_SETUP_CWD"',
 		'          bash -lc "$DF_SETUP_COMMAND"',
+		"      - if: matrix.ecosystem == 'python'",
+		"        name: Install inferred Python quality tooling",
+		"        env:",
+		"          DF_ACTION_COMMAND: @@ACTION_COMMAND@@",
+		"        run: |",
+		"          set -euo pipefail",
+		'          case "$DF_ACTION_COMMAND" in',
+		"            pytest*|*' -m pytest'*) python -m pip install pytest ;;",
+		"            black*|*' -m black'*) python -m pip install black ;;",
+		"            ruff*|*' -m ruff'*) python -m pip install ruff ;;",
+		"            mypy*|*' -m mypy'*) python -m pip install mypy ;;",
+		"            flake8*|*' -m flake8'*) python -m pip install flake8 ;;",
+		"            isort*|*' -m isort'*) python -m pip install isort ;;",
+		"          esac",
 		"      - name: Run detected quality action",
 		"        env:",
 		"          DF_ACTION_COMMAND: @@ACTION_COMMAND@@",
@@ -291,6 +305,7 @@ export function inspectManaged(source, next, marker) {
 }
 
 export const CONTROL_RECEIPT = ".darkfactory/installation.json";
+export const SUBMODULE_CONTROL_RECEIPT = ".github/darkfactory-installation.json";
 export const CONTROL_FILES = [CONTROL_CONFIG, CONTROL_WORKFLOW, CONTROL_RECEIPT].sort();
 const esc = (path) => path.split("/").map(encodeURIComponent).join("/");
 
@@ -304,13 +319,15 @@ export function renderControlReceipt(slug, sourceBranch, release, fileHashes) {
 	);
 }
 
-export function controlFiles(slug, sourceBranch, release, upstream, baseConfig = null) {
+export function controlFiles(slug, sourceBranch, release, upstream, baseConfig = null, receiptPath = CONTROL_RECEIPT) {
+	if (![CONTROL_RECEIPT, SUBMODULE_CONTROL_RECEIPT].includes(receiptPath))
+		throw new Error("Unknown installation receipt location");
 	const config = renderControlConfig(slug, sourceBranch, release, upstream, baseConfig);
 	const workflow = renderControlWorkflow(slug, release, upstream);
 	return {
 		[CONTROL_CONFIG]: config,
 		[CONTROL_WORKFLOW]: workflow,
-		[CONTROL_RECEIPT]: renderControlReceipt(slug, sourceBranch, release, {
+		[receiptPath]: renderControlReceipt(slug, sourceBranch, release, {
 			[CONTROL_CONFIG]: digestOf(config),
 			[CONTROL_WORKFLOW]: digestOf(workflow),
 		}),
@@ -380,16 +397,32 @@ export async function readLegacyControl({ slug, sourceBranch, token, api }) {
 }
 
 /** Never delete before a validated, lossless default-branch installation is visible. */
-export async function retireLegacyControl({ slug, sourceBranch, upstream, token, api, mainFiles, legacy }) {
+export async function retireLegacyControl({
+	slug,
+	sourceBranch,
+	upstream,
+	token,
+	api,
+	mainFiles,
+	legacy,
+	receiptPath = CONTROL_RECEIPT,
+}) {
 	if (!legacy) return "absent";
 	const receipt = verifyControlReceipt(
-		mainFiles[CONTROL_RECEIPT],
+		mainFiles[receiptPath],
 		mainFiles[CONTROL_CONFIG],
 		mainFiles[CONTROL_WORKFLOW],
 		slug,
 		sourceBranch,
 	);
-	const expected = controlFiles(slug, sourceBranch, receipt.release, upstream, legacy.files[CONTROL_CONFIG]);
+	const expected = controlFiles(
+		slug,
+		sourceBranch,
+		receipt.release,
+		upstream,
+		legacy.files[CONTROL_CONFIG],
+		receiptPath,
+	);
 	if (
 		expected[CONTROL_CONFIG] !== mainFiles[CONTROL_CONFIG] ||
 		expected[CONTROL_WORKFLOW] !== mainFiles[CONTROL_WORKFLOW] ||
@@ -408,4 +441,54 @@ export async function retireLegacyControl({ slug, sourceBranch, upstream, token,
 	if (latest?.object?.sha !== legacy.sha) return "retained: branch changed";
 	await api("DELETE", endpoint + "/git/refs/heads/" + LEGACY_CONTROL_BRANCH, token);
 	return "retired";
+}
+
+/**
+ * Retire only historical DarkFactory release branches whose exact head belongs
+ * to a closed/merged, narrowly scoped install PR. Never touch user work,
+ * arbitrary darkfactory/* refs or branches with unreviewed changes.
+ */
+export async function retireLegacyReleaseBranches({ slug, token, api }) {
+	const endpoint = "/repos/" + slug;
+	const refs = await api("GET", endpoint + "/git/matching-refs/heads/darkfactory/", token);
+	if (!Array.isArray(refs)) throw new Error("Cannot enumerate legacy release branches for " + slug);
+	const results = [];
+	for (const ref of refs) {
+		const name = String(ref.ref || "").replace(/^refs\/heads\//, "");
+		if (!/^darkfactory\/release-v[0-9][A-Za-z0-9.+-]*$/.test(name)) continue;
+		const owner = slug.split("/")[0];
+		const prs = await api(
+			"GET",
+			endpoint + "/pulls?state=all&head=" + encodeURIComponent(owner + ":" + name) + "&per_page=100",
+			token,
+		);
+		if (!Array.isArray(prs) || prs.length === 0) {
+			results.push({ branch: name, disposition: "retained: no verified pull request" });
+			continue;
+		}
+		const pr = prs.find((value) => value.head?.sha === ref.object?.sha);
+		if (!pr || pr.state !== "closed") {
+			results.push({ branch: name, disposition: "retained: unreviewed or still open" });
+			continue;
+		}
+		const files = await api("GET", endpoint + "/pulls/" + pr.number + "/files?per_page=100", token);
+		const owned = new Set([DEFAULT_BRIDGE, CONTROL_CONFIG]);
+		if (
+			!Array.isArray(files) ||
+			files.length === 0 ||
+			files.length > owned.size ||
+			files.some((entry) => !owned.has(entry.filename))
+		) {
+			results.push({ branch: name, disposition: "retained: unowned changes" });
+			continue;
+		}
+		const check = await api("GET", endpoint + "/git/ref/heads/" + name, token, undefined, true);
+		if (check?.object?.sha !== ref.object.sha) {
+			results.push({ branch: name, disposition: "retained: branch moved" });
+			continue;
+		}
+		await api("DELETE", endpoint + "/git/refs/heads/" + name, token);
+		results.push({ branch: name, disposition: "retired" });
+	}
+	return results;
 }
