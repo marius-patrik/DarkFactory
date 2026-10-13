@@ -236,8 +236,7 @@ export class BoardAutomation {
 		// During self-hosted cutover, the producer must not mutate consumer issues,
 		// status labels, or board membership through its legacy scheduled sweep.
 		// Consumer onboarding is a separately authorized fleet operation.
-		if (current === "marius-patrik/DarkFactory" && this.#env.DF_FLEET_CONSUMERS_ENABLED === "0")
-			return repos;
+		if (current === "marius-patrik/DarkFactory" && this.#env.DF_FLEET_CONSUMERS_ENABLED === "0") return repos;
 
 		const installed = await this.installedRepositories();
 		for (const repo of installed.length > 0 ? installed : (this.declaration?.installedOn ?? [])) {
