@@ -155,7 +155,7 @@ Human authorization and machine automation authority remain distinct. Secret-bea
 **Status**: Accepted
 ### Decision
 - Every consumer owns its canonical `repo.dfconfig`, sealed installation receipt and
-  managed GitHub Actions workflows on its default branch; DarkFactory uses the
+  managed GitHub Actions workflows on its default branch; when `.darkfactory` is\n  a submodule or symlink, its receipt is stored under `.github` without touching\n  the existing entry. DarkFactory uses the
   same layout. Do not create dedicated persistent management branches.
 - The event-triggered workflow uses a same-commit local reusable workflow.
   Released df executables are SHA-256-verified and shared upstream governance
