@@ -462,8 +462,10 @@ export async function refreshPendingInstallation({ slug, base, pending, changes,
 			break;
 		}
 	}
-	if (identical) return { kind: "current", sha: head.object.sha };
 	const baseRef = await api("GET", endpoint + "/git/ref/heads/" + escaped(base), token);
+	const proposalCommit = await api("GET", endpoint + "/git/commits/" + head.object.sha, token);
+	if (identical && proposalCommit.parents?.[0]?.sha === baseRef.object.sha)
+		return { kind: "current", sha: head.object.sha };
 	const baseCommit = await api("GET", endpoint + "/git/commits/" + baseRef.object.sha, token);
 	const tree = await api("POST", endpoint + "/git/trees", token, {
 		base_tree: baseCommit.tree.sha,
