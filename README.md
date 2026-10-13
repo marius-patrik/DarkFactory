@@ -371,14 +371,10 @@ The standard installation includes official capabilities while allowing third-pa
 
 ## 17. Consumer/fleet model
 
-The intended fleet contains six repositories identified by stable GitHub repository identity:
-
-1. DarkFactory;
-2. omnis;
-3. ChessWithQuests;
-4. OdbornaPrace-paper;
-5. template-OdbornaPrace;
-6. OdbornaPrace-mono.
+The managed fleet is discovered from GitHub App installations by stable repository identity.
+It includes all active, eligible consumer repositories and the producer; retired
+`*-old` and Agent OS repositories are explicitly excluded. Repositories outside
+the App installation are reported instead of silently skipped.
 
 Consumers receive released df and managed project-specific setup. They do not receive copied DarkFactory source trees and do not rebuild the shared React application.
 
