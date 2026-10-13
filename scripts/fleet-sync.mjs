@@ -421,34 +421,39 @@ async function reconcile(repo, release, token) {
 	for (const path of [CONTROL_CONFIG, "config.dfconfig", ".dfconfig", CONTROL_WORKFLOW, receiptPath, DEFAULT_BRIDGE]) {
 		mainFiles[path] = await readFile(slug, path, base, token);
 	}
-	const { changes, conflicts } = planMainInstallation({
-		slug,
-		base,
-		release,
-		upstream: UPSTREAM,
-		mainFiles,
-		legacy,
-		receiptPath,
-	});
-	if (!changes.length && !conflicts.length) {
-		if (DRY_RUN) return "dry-run";
-		let outcome = "absent";
-		if (legacy)
-			outcome = await retireLegacyControl({
-				slug,
-				sourceBranch: base,
-				upstream: UPSTREAM,
-				token,
-				api,
-				mainFiles: Object.fromEntries(Object.entries(mainFiles).map(([path, value]) => [path, value?.content ?? null])),
-				legacy,
-				receiptPath,
-			});
-		console.log(slug + ": legacy control branch " + outcome);
-		const oldReleases = await retireLegacyReleaseBranches({ slug, token, api });
-		if (oldReleases.length) console.log(slug + ": legacy release branch audit " + JSON.stringify(oldReleases));
-		return outcome === "retired" || oldReleases.some((item) => item.disposition === "retired") ? "retired" : "current";
+	// Retirement is independent of release updates: a verified installed release
+	// on main is enough to retire obsolete legacy refs even if another release
+	// has since appeared. No consumer source or unreviewed work is removed.
+	let retired = false;
+	if (mainFiles[receiptPath]?.content) {
+		try {
+			verifyControlReceipt(
+				mainFiles[receiptPath].content, mainFiles[CONTROL_CONFIG]?.content,
+				mainFiles[CONTROL_WORKFLOW]?.content, slug, base,
+			);
+			if (!DRY_RUN) {
+				if (legacy) {
+					const outcome = await retireLegacyControl({
+						slug, sourceBranch: base, upstream: UPSTREAM, token, api,
+						mainFiles: Object.fromEntries(Object.entries(mainFiles).map(([path, value]) => [path, value?.content ?? null])),
+						legacy, receiptPath,
+					});
+					console.log(slug + ": legacy control branch " + outcome);
+					retired ||= outcome === "retired";
+				}
+				const oldReleases = await retireLegacyReleaseBranches({ slug, token, api });
+				if (oldReleases.length)
+					console.log(slug + ": legacy release branch audit " + JSON.stringify(oldReleases));
+				retired ||= oldReleases.some((item) => item.disposition === "retired");
+			}
+		} catch (error) {
+			console.log(slug + ": legacy retirement preserved after verification failure: " + String(error));
+		}
 	}
+	const { changes, conflicts } = planMainInstallation({
+		slug, base, release, upstream: UPSTREAM, mainFiles, legacy, receiptPath,
+	});
+	if (!changes.length && !conflicts.length) return retired ? "retired" : "current";
 	if (DRY_RUN) {
 		console.log("[dry-run] " + slug + ": " + JSON.stringify({ changes: changes.map((x) => x.path), conflicts }));
 		return "dry-run";
