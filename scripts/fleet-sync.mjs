@@ -406,6 +406,80 @@ export async function retireMergedProposalRef({ api, endpoint, slug, branch, tok
 	return "retired";
 }
 
+/**
+ * Keep exactly one live installation review per consumer, repinning in place.
+ * Before rebuilding, confirm the PR contains only installer-owned paths; use
+ * the current default-branch source as the new commit's parent and preserve all
+ * non-installer files. Never force-push if a reviewer added unrelated changes.
+ */
+export async function refreshPendingInstallation({ slug, base, pending, changes, release, token, api }) {
+	const branch = pending.head?.ref;
+	const endpoint = "/repos/" + slug;
+	if (
+		!/^df-main\/v[0-9][A-Za-z0-9.+-]*$/.test(branch ?? "") ||
+		pending.user?.login !== "darkfactory-pipeline[bot]" ||
+		pending.head?.repo?.full_name?.toLowerCase() !== slug.toLowerCase() ||
+		pending.base?.ref !== base ||
+		pending.state !== "open"
+	) {
+		throw new Error("Not a verified same-repository DarkFactory installation review");
+	}
+	const allowed = new Set([
+		CONTROL_CONFIG,
+		CONTROL_WORKFLOW,
+		CONTROL_RECEIPT,
+		SUBMODULE_CONTROL_RECEIPT,
+		DEFAULT_BRIDGE,
+	]);
+	const files = await api("GET", endpoint + "/pulls/" + pending.number + "/files?per_page=100", token);
+	if (
+		!Array.isArray(files) ||
+		files.length === 0 ||
+		files.length > 4 ||
+		files.some((file) => !allowed.has(file.filename))
+	) {
+		throw new Error("Existing installation PR has unowned edits; manual review required");
+	}
+	const head = await api("GET", endpoint + "/git/ref/heads/" + escaped(branch), token);
+	if (head?.object?.sha !== pending.head.sha) throw new Error("Installation proposal changed during inspection");
+	// Already pinned to this release and identical byte-for-byte: no new commit.
+	let identical = true;
+	for (const { path, content } of changes) {
+		const file = await api(
+			"GET",
+			endpoint + "/contents/" + escaped(path) + "?ref=" + encodeURIComponent(branch),
+			token,
+			undefined,
+			true,
+		);
+		if (
+			!file ||
+			file.type !== "file" ||
+			file.encoding !== "base64" ||
+			Buffer.from(file.content, "base64").toString("utf8") !== content
+		) {
+			identical = false;
+			break;
+		}
+	}
+	if (identical) return { kind: "current", sha: head.object.sha };
+	const baseRef = await api("GET", endpoint + "/git/ref/heads/" + escaped(base), token);
+	const baseCommit = await api("GET", endpoint + "/git/commits/" + baseRef.object.sha, token);
+	const tree = await api("POST", endpoint + "/git/trees", token, {
+		base_tree: baseCommit.tree.sha,
+		tree: changes.map(({ path, content }) => ({ path, mode: "100644", type: "blob", content })),
+	});
+	const commit = await api("POST", endpoint + "/git/commits", token, {
+		message: "chore(df): repin reviewed main installation to " + release.tag,
+		tree: tree.sha,
+		parents: [baseRef.object.sha],
+	});
+	const still = await api("GET", endpoint + "/git/ref/heads/" + escaped(branch), token);
+	if (still?.object?.sha !== head.object.sha) throw new Error("Installation proposal changed during rebase");
+	await api("PATCH", endpoint + "/git/refs/heads/" + branch, token, { sha: commit.sha, force: true });
+	return { kind: "updated", sha: commit.sha };
+}
+
 async function reconcile(repo, release, token) {
 	const slug = repo.full_name;
 	if (slug.toLowerCase() === UPSTREAM.toLowerCase()) return "self-main";
@@ -482,14 +556,17 @@ async function reconcile(repo, release, token) {
 			(item) => /^df-main\/v[0-9]/.test(item.head?.ref ?? "") && item.user?.login === "darkfactory-pipeline[bot]",
 		);
 		if (pending) {
-			console.log(
-				slug +
-					": existing installation review " +
-					pending.html_url +
-					"; update the existing PR rather than opening a second proposal for " +
-					release.tag,
-			);
-			return "pending";
+			const result = await refreshPendingInstallation({
+				slug,
+				base,
+				pending,
+				changes,
+				release,
+				token,
+				api,
+			});
+			console.log(slug + ": installation review " + pending.html_url + ": " + result.kind + " for " + release.tag);
+			return "pending-" + result.kind;
 		}
 	}
 	const issue = await issueFor(
