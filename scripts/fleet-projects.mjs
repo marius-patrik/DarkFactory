@@ -8,14 +8,18 @@ import { api, appJwt, isFleetExcluded, pages } from "./fleet-sync.mjs";
 export const GLOBAL_BOARD = "Global";
 
 export function isProjectsQuotaExceeded(error) {
-	return /(?:graphql_rate_limit|API rate limit already exceeded|GraphQL quota exhausted|secondary rate limit|rate limit reached)/i.test(String(error));
+	return /(?:graphql_rate_limit|API rate limit already exceeded|GraphQL quota exhausted|secondary rate limit|rate limit reached)/i.test(
+		String(error),
+	);
 }
 
 export function reportQuotaDeferral(error, env = process.env) {
-	const note = "DarkFactory Projects v2 reconciliation deferred: the owner-wide GitHub GraphQL quota is exhausted. No other repositories were modified; retry on the next scheduled self-only fleet reconciliation.";
+	const note =
+		"DarkFactory Projects v2 reconciliation deferred: the owner-wide GitHub GraphQL quota is exhausted. No other repositories were modified; retry on the next scheduled self-only fleet reconciliation.";
 	console.warn(note);
 	console.warn(String(error));
-	if (env.GITHUB_STEP_SUMMARY) appendFileSync(env.GITHUB_STEP_SUMMARY, "### Projects v2 — deferred (quota)\\n" + note + "\\n");
+	if (env.GITHUB_STEP_SUMMARY)
+		appendFileSync(env.GITHUB_STEP_SUMMARY, "### Projects v2 — deferred (quota)\\n" + note + "\\n");
 	return { deferred: true, reason: "GraphQL quota" };
 }
 export function projectsFor(repoName) {
