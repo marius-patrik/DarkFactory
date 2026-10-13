@@ -150,7 +150,7 @@ Credential/account updates are transactionally serialized. Multi-file logical cr
 ### Consequences
 Human authorization and machine automation authority remain distinct. Secret-bearing machine state never enters static/browser artifacts, and concurrent/replicated credential operations converge without resurrecting stale secrets.
 
-## ADR-0022 — Default-branch consumer installations
+## ADR-0029 — Default-branch consumer installations
 
 **Status**: Accepted
 ### Decision
