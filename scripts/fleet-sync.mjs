@@ -380,7 +380,7 @@ async function reconcile(repo, release, token) {
 	const root = await api("GET", endpoint + "/git/trees/" + commit.tree.sha, token);
 	if (!Array.isArray(root?.tree)) throw new Error("Cannot inspect root layout: " + slug);
 	const dfEntry = root.tree.find((entry) => entry.path === ".darkfactory");
-	const receiptPath = dfEntry?.mode === "160000" ? SUBMODULE_CONTROL_RECEIPT : CONTROL_RECEIPT;
+	const receiptPath = dfEntry && dfEntry.type !== "tree" ? SUBMODULE_CONTROL_RECEIPT : CONTROL_RECEIPT;
 	const mainFiles = {};
 	for (const path of [
 		CONTROL_CONFIG,
