@@ -1,0 +1,24 @@
+name: Format Fleet Retirement (self-removing)
+on:
+  push:
+    branches: [fix/df-fleet-retire-merged-proposals]
+permissions:
+  contents: write
+jobs:
+  format:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix/df-fleet-retire-merged-proposals
+          persist-credentials: true
+      - uses: oven-sh/setup-bun@v2
+      - run: bun install --frozen-lockfile
+      - run: |
+          bunx biome format --write scripts/fleet-control.mjs scripts/fleet-sync.mjs scripts/fleet-control.test.mjs scripts/fleet-sync.test.mjs
+          bunx biome lint --write scripts/fleet-control.mjs scripts/fleet-sync.mjs scripts/fleet-control.test.mjs scripts/fleet-sync.test.mjs || true
+      - run: |
+          git rm .github/workflows/df-fleet-retirement-format.yml
+          git add scripts/fleet-control.mjs scripts/fleet-sync.mjs scripts/fleet-control.test.mjs scripts/fleet-sync.test.mjs
+          git -c user.name=github-actions\[bot\] -c user.email=41898282+github-actions\[bot\]@users.noreply.github.com commit -m "style(fleet): format guarded branch retirement and setup" 
+          git push origin HEAD:fix/df-fleet-retire-merged-proposals
