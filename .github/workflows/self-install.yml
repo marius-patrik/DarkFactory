@@ -3,6 +3,10 @@ name: Verify DarkFactory Self-Installation
 on:
   pull_request:
     paths:
+      - "repo.dfconfig"
+      - ".darkfactory/installation.json"
+      - ".github/workflows/darkfactory-control.yml"
+      - ".github/workflows/darkfactory-self.yml"
       - "scripts/fleet-control.mjs"
       - "scripts/fleet-sync.mjs"
       - "scripts/self-install-check.mjs"
@@ -15,7 +19,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   self-install:
@@ -24,10 +28,19 @@ jobs:
     steps:
       - name: Checkout DarkFactory source
         uses: actions/checkout@v4
-      - name: Checkout isolated managed branch
-        uses: actions/checkout@v4
         with:
-          ref: darkfactory
-          path: .darkfactory-managed
-      - name: Verify sealed control-plane content and board configuration
-        run: node scripts/self-install-check.mjs .darkfactory-managed
+          fetch-depth: 0
+      - name: Verify source-owned installation on main
+        run: node scripts/self-install-check.mjs .
+      - name: Retire merged control branch
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          branch_sha=$(gh api "repos/$GITHUB_REPOSITORY/git/ref/heads/darkfactory" --jq ".object.sha" 2>/dev/null || true)
+          if [ -n "$branch_sha" ]; then
+            git cat-file -e "$branch_sha^{commit}" || git fetch origin "$branch_sha"
+            git merge-base --is-ancestor "$branch_sha" HEAD || { echo "Refusing to remove an unmerged control branch" >&2; exit 1; }
+            gh api -X DELETE "repos/$GITHUB_REPOSITORY/git/refs/heads/darkfactory"
+          fi

@@ -248,6 +248,10 @@ async function issueFor(slug, release, changes, conflicts, token) {
 }
 async function reconcile(repo, release, token) {
 	const slug = repo.full_name;
+	if (slug.toLowerCase() === UPSTREAM.toLowerCase()) {
+		console.log(slug + ": producer installation belongs to main; no isolated branch is created");
+		return "self-main";
+	}
 	const base = repo.default_branch;
 	if (!base) throw new Error(slug + " has no default branch");
 
@@ -323,10 +327,6 @@ async function reconcile(repo, release, token) {
 	});
 	console.log(slug + ": control branch " + control.kind);
 
-	// DarkFactory itself is a producer, not another workflow caller. Its main
-	// branch already owns the real workflows; only its managed state lives on
-	// the separate control branch. No self-referential bootstrap is installed.
-	if (slug.toLowerCase() === UPSTREAM.toLowerCase()) return "self-" + control.kind;
 
 	if (changes.length === 0 && conflicts.length === 0) return "control-" + control.kind;
 	const issue = await issueFor(
