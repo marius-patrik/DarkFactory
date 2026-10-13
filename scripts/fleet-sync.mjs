@@ -409,7 +409,7 @@ export async function retireMergedProposalRef({ api, endpoint, slug, branch, tok
 /**
  * Keep exactly one live installation review per consumer, repinning in place.
  * Before rebuilding, confirm the PR contains only installer-owned paths; use
- * the current default-branch source as the new commit's parent and preserve all
+ * the current default-branch tree plus both commit parents and preserve all
  * non-installer files. Never force-push if a reviewer added unrelated changes.
  */
 export async function refreshPendingInstallation({ slug, base, pending, changes, release, token, api }) {
@@ -464,7 +464,7 @@ export async function refreshPendingInstallation({ slug, base, pending, changes,
 	}
 	const baseRef = await api("GET", endpoint + "/git/ref/heads/" + escaped(base), token);
 	const proposalCommit = await api("GET", endpoint + "/git/commits/" + head.object.sha, token);
-	if (identical && proposalCommit.parents?.[0]?.sha === baseRef.object.sha)
+	if (identical && proposalCommit.parents?.some((parent) => parent.sha === baseRef.object.sha))
 		return { kind: "current", sha: head.object.sha };
 	const baseCommit = await api("GET", endpoint + "/git/commits/" + baseRef.object.sha, token);
 	const tree = await api("POST", endpoint + "/git/trees", token, {
@@ -474,11 +474,11 @@ export async function refreshPendingInstallation({ slug, base, pending, changes,
 	const commit = await api("POST", endpoint + "/git/commits", token, {
 		message: "chore(df): repin reviewed main installation to " + release.tag,
 		tree: tree.sha,
-		parents: [baseRef.object.sha],
+		parents: [head.object.sha, baseRef.object.sha],
 	});
 	const still = await api("GET", endpoint + "/git/ref/heads/" + escaped(branch), token);
 	if (still?.object?.sha !== head.object.sha) throw new Error("Installation proposal changed during rebase");
-	await api("PATCH", endpoint + "/git/refs/heads/" + branch, token, { sha: commit.sha, force: true });
+	await api("PATCH", endpoint + "/git/refs/heads/" + branch, token, { sha: commit.sha, force: false });
 	return { kind: "updated", sha: commit.sha };
 }
 
