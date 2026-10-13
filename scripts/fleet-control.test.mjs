@@ -2,104 +2,53 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import {
 	BRIDGE_MARKER,
-	CONTROL_BRANCH,
-	CONTROL_MARKER,
+	CONTROL_CONFIG,
+	CONTROL_RECEIPT,
 	CONTROL_WORKFLOW,
 	DEFAULT_BRIDGE,
 	controlFiles,
-	reconcileControlBranch,
 	digestOf,
 	inspectManaged,
+	readLegacyControl,
 	renderControlConfig,
 	renderControlWorkflow,
 	renderDefaultBridge,
+	renderLegacyDefaultBridge,
+	retireLegacyControl,
+	verifyControlReceipt,
 	verifyRelease,
 } from "./fleet-control.mjs";
 
-const release = { tag: "v0.288.1", sha: "a".repeat(40), digest: "b".repeat(64) };
+const release = { tag: "v0.290.0", sha: "a".repeat(40), digest: "b".repeat(64) };
+const slug = "marius-patrik/OASIS";
 
-test("separate control branch and one default branch Actions event bridge", () => {
-	assert.equal(CONTROL_BRANCH, "darkfactory");
-	assert.equal(CONTROL_WORKFLOW, ".github/workflows/darkfactory-control.yml");
-	assert.equal(DEFAULT_BRIDGE, ".github/workflows/darkfactory.yml");
-	const bridge = renderDefaultBridge("marius-patrik/data-gemini");
+test("the event bridge only calls the same-commit local workflow on main", () => {
+	const bridge = renderDefaultBridge(slug);
 	assert.ok(bridge.startsWith(BRIDGE_MARKER));
-	assert.match(bridge, /uses: marius-patrik\/data-gemini\/\.github\/workflows\/darkfactory-control\.yml@darkfactory/);
-	assert.match(bridge, /  issues:/);
-	assert.match(bridge, /  pull_request:/);
-	assert.match(bridge, /  schedule:/);
-	assert.match(bridge, /  workflow_dispatch:/);
-	assert.doesNotMatch(bridge, /curl |ci matrix|ci quality|repo\.dfconfig/);
+	assert.match(bridge, /uses: \.\/\.github\/workflows\/darkfactory-control\.yml/);
+	assert.doesNotMatch(bridge, /@darkfactory|ref: darkfactory|\.darkfactory-managed/);
+	assert.match(bridge, / {2}issues:/);
+	assert.match(bridge, / {2}pull_request:/);
+	assert.match(bridge, / {2}schedule:/);
+	assert.match(bridge, / {2}workflow_dispatch:/);
+	assert.doesNotMatch(bridge, /curl |ci matrix|ci quality/);
+	const legacy = renderLegacyDefaultBridge(slug);
+	assert.match(legacy, /@darkfactory/);
+	assert.notEqual(legacy, bridge);
 });
 
-test("control manifest contains scoped project and single common Global project", () => {
-	const config = JSON.parse(renderControlConfig("marius-patrik/Omnis", "main", release));
-	assert.deepEqual(config.repo.board, { global: "Global", boards: ["Global", "Omnis"] });
-	assert.equal(config.repo.identity.default_branch, "main");
-	assert.equal(config.repo.upstream.ref, release.sha);
-});
-
-test("self-hosted producer remains its own upstream and retains full config", () => {
-	const full = {
-		repo: {
-			identity: { owner: "marius-patrik", repo: "DarkFactory", agent_slug: "factory-agent" },
-			app: { app_id: 1234, private_key_secret: "DARKFACTORY_APP_PRIVATE_KEY" },
-			release: { package: "df" },
-			board: { boards: ["Global", "DarkFactory", "Legacy"] },
-		},
-		docs: { home: "README.md" },
-		providers: { default: "some-provider" },
-	};
-	const config = JSON.parse(
-		renderControlConfig(
-			"marius-patrik/DarkFactory",
-			"main",
-			release,
-			"marius-patrik/DarkFactory",
-			JSON.stringify(full),
-		),
-	);
-	assert.deepEqual(config.repo.upstream, { repo: null, ref: null });
-	assert.deepEqual(config.repo.board, { global: "Global", boards: ["Global", "DarkFactory"] });
-	assert.equal(config.repo.identity.agent_slug, "factory-agent");
-	assert.equal(config.repo.app.app_id, 1234);
-	assert.deepEqual(config.docs, full.docs);
-	assert.deepEqual(config.providers, full.providers);
-});
-
-test("controller executes real released quality and pinned governance jobs", () => {
-	const c = renderControlWorkflow("marius-patrik/Omnis", release);
-	assert.ok(c.startsWith(CONTROL_MARKER));
-	assert.match(c, /sha256sum --check/);
-	assert.match(c, / ci matrix --repo /);
-	assert.match(c, /name: Run detected quality action/);
-	assert.match(c, /needs: \[detect, execute-quality\]/);
-	assert.match(c, /has-actions:/);
-	assert.match(c, /agent\.yml@a{40}/);
-	assert.match(c, /verify-pr-issue\.yml@a{40}/);
-	assert.match(c, /pr-approval-automerge\.yml@a{40}/);
-});
-
-test("modified and unmanaged managed files are not silently overwritten", () => {
-	const old = renderDefaultBridge("marius-patrik/Omnis");
-	assert.equal(inspectManaged(null, old, BRIDGE_MARKER).kind, "create");
-	assert.equal(inspectManaged(old, old, BRIDGE_MARKER).kind, "current");
-	assert.equal(inspectManaged(old + "# edited\n", old, BRIDGE_MARKER).kind, "review");
-	assert.equal(inspectManaged("name: Custom\n", old, BRIDGE_MARKER).kind, "conflict");
-});
-
-test("invalid release metadata is never installed", () => {
-	assert.throws(() => verifyRelease({ ...release, sha: "main" }), /Invalid pinned release/);
-	assert.throws(() => renderControlConfig("bad", "main", release), /Invalid repository slug/);
-	assert.throws(
-		() => renderControlWorkflow("marius-patrik/OASIS", { ...release, digest: "unknown" }),
-		/Invalid pinned release/,
-	);
-});
-
-test("generated management workflows are valid YAML and execute only pinned control", () => {
-	const workflow = Bun.YAML.parse(renderControlWorkflow("marius-patrik/OASIS", release));
-	const bridge = Bun.YAML.parse(renderDefaultBridge("marius-patrik/OASIS", "main"));
+test("control workflow uses main checkout, released quality and immutable governance refs", () => {
+	const rendered = renderControlWorkflow(slug, release);
+	assert.match(rendered, /sha256sum --check/);
+	assert.match(rendered, / ci matrix --repo /);
+	assert.match(rendered, /Run detected quality action/);
+	assert.match(rendered, /needs: \[detect, execute-quality\]/);
+	assert.match(rendered, /agent\.yml@a{40}/);
+	assert.match(rendered, /verify-pr-issue\.yml@a{40}/);
+	assert.match(rendered, /pr-approval-automerge\.yml@a{40}/);
+	assert.doesNotMatch(rendered, /ref: darkfactory|\.darkfactory-managed/);
+	const workflow = Bun.YAML.parse(rendered);
+	const bridge = Bun.YAML.parse(renderDefaultBridge(slug));
 	assert.ok(Object.hasOwn(workflow.on, "workflow_call"));
 	assert.deepEqual(Object.keys(workflow.jobs).sort(), [
 		"agent",
@@ -109,57 +58,141 @@ test("generated management workflows are valid YAML and execute only pinned cont
 		"issue-binding",
 		"quality",
 	]);
-	assert.ok(Object.hasOwn(bridge.on, "issues"));
-	assert.ok(bridge.on.schedule);
-	assert.equal(bridge.jobs.governed.uses, "marius-patrik/OASIS/.github/workflows/darkfactory-control.yml@darkfactory");
-	assert.match(workflow.jobs.quality.if, /github\.event_name/);
-	assert.ok(workflow.jobs.detect.steps.some((step) => step.with?.ref === "darkfactory"));
-	assert.ok(workflow.jobs["execute-quality"].steps.some((step) => step.with?.ref === "darkfactory"));
-	assert.match(renderControlWorkflow("marius-patrik/OASIS", release), /ci matrix --repo/);
-	assert.match(renderControlWorkflow("marius-patrik/OASIS", release), /DF_ACTION_COMMAND/);
+	assert.equal(bridge.jobs.governed.uses, "./.github/workflows/darkfactory-control.yml");
+	assert.ok(workflow.jobs.detect.steps.every((step) => step.with?.ref !== "darkfactory"));
+	assert.ok(workflow.jobs["execute-quality"].steps.every((step) => step.with?.ref !== "darkfactory"));
 });
 
-test("initial controller install creates a source-free tree, never modifies main", async () => {
-	const requests = [];
-	const release = { tag: "v0.288.1", sha: "a".repeat(40), digest: "b".repeat(64) };
-	async function api(method, path, _token, data) {
-		requests.push({ method, path, data });
-		if (method === "GET" && path.endsWith("/git/ref/heads/darkfactory")) return null;
-		if (method === "GET" && path.includes("/git/matching-refs/")) return [];
-		if (method === "GET" && path.endsWith("/git/ref/heads/main")) return { object: { sha: "c".repeat(40) } };
-		if (method === "POST" && path.endsWith("/git/trees")) return { sha: "d".repeat(40) };
-		if (method === "POST" && path.endsWith("/git/commits")) return { sha: "e".repeat(40) };
-		if (method === "POST" && path.endsWith("/git/refs")) return {};
-		throw new Error("Unexpected API invocation: " + method + " " + path);
-	}
-	const outcome = await reconcileControlBranch({
-		slug: "marius-patrik/data-gemini",
-		sourceBranch: "main",
-		release,
-		token: "fake",
-		api,
-		upstream: "marius-patrik/DarkFactory",
-	});
-	assert.equal(outcome.kind, "created");
-	const tree = requests.find((call) => call.method === "POST" && call.path.endsWith("/git/trees"));
-	assert.deepEqual(tree.data.tree.map((file) => file.path).sort(), [
-		".darkfactory/installation.json",
-		".github/workflows/darkfactory-control.yml",
-		"repo.dfconfig",
-	]);
-	assert.equal(tree.data.base_tree, undefined, "never import user source files into the control branch");
-	const commit = requests.find((call) => call.method === "POST" && call.path.endsWith("/git/commits"));
-	assert.deepEqual(commit.data.parents, ["c".repeat(40)]);
-	assert.ok(!requests.some((call) => call.method === "PATCH" || call.method === "DELETE"));
-});
-
-test("receipt hashes pin installed source independently of future renderer versions", () => {
-	const files = controlFiles("marius-patrik/Omnis", "main", release, "marius-patrik/DarkFactory");
-	const receipt = JSON.parse(files[".darkfactory/installation.json"]);
-	assert.equal(receipt.schema, 2);
-	assert.equal(receipt.fileHashes["repo.dfconfig"], digestOf(files["repo.dfconfig"]));
-	assert.equal(
-		receipt.fileHashes[".github/workflows/darkfactory-control.yml"],
-		digestOf(files[".github/workflows/darkfactory-control.yml"]),
+test("generated manifest keeps caller's other domains and scopes the boards", () => {
+	const full = {
+		repo: {
+			identity: { owner: "marius-patrik", repo: "OASIS", agent_slug: "agent-1" },
+			protection: { lanes: [{ branch: "main" }] },
+			app: { app_id: 1234 },
+		},
+		docs: { home: "README.md" },
+		providers: { default: "example" },
+	};
+	const config = JSON.parse(
+		renderControlConfig(slug, "main", release, "marius-patrik/DarkFactory", JSON.stringify(full)),
 	);
+	assert.equal(config.repo.identity.agent_slug, "agent-1");
+	assert.deepEqual(config.repo.board, { global: "Global", boards: ["Global", "OASIS"] });
+	assert.equal(config.repo.upstream.ref, release.sha);
+	assert.deepEqual(config.repo.protection, full.repo.protection);
+	assert.deepEqual(config.docs, full.docs);
+	assert.deepEqual(config.providers, full.providers);
+});
+
+test("receipt validates owner, SHA-256 bytes and canonical source branch", () => {
+	const files = controlFiles(slug, "main", release, "marius-patrik/DarkFactory");
+	const receipt = JSON.parse(files[CONTROL_RECEIPT]);
+	assert.equal(receipt.schema, 2);
+	assert.equal(receipt.fileHashes[CONTROL_CONFIG], digestOf(files[CONTROL_CONFIG]));
+	assert.equal(receipt.fileHashes[CONTROL_WORKFLOW], digestOf(files[CONTROL_WORKFLOW]));
+	assert.equal(
+		verifyControlReceipt(files[CONTROL_RECEIPT], files[CONTROL_CONFIG], files[CONTROL_WORKFLOW], slug, "main").slug,
+		slug,
+	);
+	assert.throws(
+		() =>
+			verifyControlReceipt(files[CONTROL_RECEIPT], files[CONTROL_CONFIG] + "\n", files[CONTROL_WORKFLOW], slug, "main"),
+		/modified or missing/,
+	);
+	assert.throws(
+		() =>
+			verifyControlReceipt(
+				files[CONTROL_RECEIPT],
+				files[CONTROL_CONFIG],
+				files[CONTROL_WORKFLOW],
+				"other/name",
+				"main",
+			),
+		/mismatch/,
+	);
+});
+
+function legacyFixture(extraPath = null, changedReceipt = false) {
+	const files = controlFiles(slug, "main", release, "marius-patrik/DarkFactory");
+	if (changedReceipt) files[CONTROL_CONFIG] += "# tampered\n";
+	const requests = [];
+	async function api(method, path, _token, body, optional) {
+		requests.push({ method, path, body, optional });
+		if (method === "GET" && path.endsWith("/git/ref/heads/darkfactory")) return { object: { sha: "c".repeat(40) } };
+		if (method === "GET" && path.includes("/git/commits/")) return { tree: { sha: "d".repeat(40) } };
+		if (method === "GET" && path.includes("/git/trees/"))
+			return {
+				truncated: false,
+				tree: Object.keys(files)
+					.concat(extraPath ? [extraPath] : [])
+					.map((key) => ({ path: key, type: "blob" })),
+			};
+		if (method === "GET" && path.includes("/contents/")) {
+			const filename = path.split("/contents/")[1].split("?")[0];
+			return { type: "file", encoding: "base64", content: Buffer.from(files[filename]).toString("base64") };
+		}
+		if (method === "GET" && path.includes("/pulls?state=open")) return [];
+		if (method === "DELETE" && path.endsWith("/git/refs/heads/darkfactory")) return null;
+		throw new Error("Unexpected request: " + method + " " + path);
+	}
+	return { files, api, requests };
+}
+
+test("old control branch is read without modifying refs, and extra files refuse migration", async () => {
+	const fixture = legacyFixture();
+	const state = await readLegacyControl({ slug, sourceBranch: "main", token: "test", api: fixture.api });
+	assert.equal(state.files[CONTROL_CONFIG], fixture.files[CONTROL_CONFIG]);
+	assert.equal(fixture.requests.filter((call) => call.method !== "GET").length, 0);
+	const extra = legacyFixture("README.md");
+	await assert.rejects(
+		readLegacyControl({ slug, sourceBranch: "main", token: "test", api: extra.api }),
+		/unowned paths/,
+	);
+	const tampered = legacyFixture(null, true);
+	await assert.rejects(
+		readLegacyControl({ slug, sourceBranch: "main", token: "test", api: tampered.api }),
+		/modified or missing/,
+	);
+});
+
+test("delete old control only after matching sealed main, with no reviews and unchanged ref", async () => {
+	const fixture = legacyFixture();
+	const legacy = await readLegacyControl({ slug, sourceBranch: "main", token: "test", api: fixture.api });
+	const same = {
+		...controlFiles(slug, "main", release, "marius-patrik/DarkFactory", fixture.files[CONTROL_CONFIG]),
+		[DEFAULT_BRIDGE]: renderDefaultBridge(slug),
+	};
+	const result = await retireLegacyControl({
+		slug,
+		sourceBranch: "main",
+		upstream: "marius-patrik/DarkFactory",
+		token: "test",
+		api: fixture.api,
+		mainFiles: same,
+		legacy,
+	});
+	assert.equal(result, "retired");
+	assert.equal(fixture.requests.filter((call) => call.method === "DELETE").length, 1);
+	const other = legacyFixture();
+	const old = await readLegacyControl({ slug, sourceBranch: "main", token: "test", api: other.api });
+	const retained = await retireLegacyControl({
+		slug,
+		sourceBranch: "main",
+		upstream: "marius-patrik/DarkFactory",
+		token: "test",
+		api: other.api,
+		mainFiles: { ...same, [DEFAULT_BRIDGE]: "edited" },
+		legacy: old,
+	});
+	assert.match(retained, /retained/);
+	assert.equal(other.requests.filter((call) => call.method === "DELETE").length, 0);
+});
+
+test("user customization, alternate upstream or invalid release is never silently overwritten", () => {
+	const old = renderDefaultBridge(slug);
+	assert.equal(inspectManaged(null, old, BRIDGE_MARKER).kind, "create");
+	assert.equal(inspectManaged(old + "# custom\n", old, BRIDGE_MARKER).kind, "review");
+	assert.equal(inspectManaged("name: User custom\n", old, BRIDGE_MARKER).kind, "conflict");
+	assert.throws(() => verifyRelease({ ...release, sha: "main" }), /Invalid pinned release/);
+	assert.throws(() => renderControlConfig("bad", "main", release), /Invalid repository slug/);
 });

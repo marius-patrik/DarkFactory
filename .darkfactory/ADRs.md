@@ -150,6 +150,28 @@ Credential/account updates are transactionally serialized. Multi-file logical cr
 ### Consequences
 Human authorization and machine automation authority remain distinct. Secret-bearing machine state never enters static/browser artifacts, and concurrent/replicated credential operations converge without resurrecting stale secrets.
 
+## ADR-0029 — Default-branch consumer installations
+
+**Status**: Accepted
+### Decision
+- Every consumer owns its canonical `repo.dfconfig`, sealed installation receipt and
+  managed GitHub Actions workflows on its default branch; DarkFactory uses the
+  same layout. Do not create dedicated persistent management branches.
+- The event-triggered workflow uses a same-commit local reusable workflow.
+  Released df executables are SHA-256-verified and shared upstream governance
+  workflow calls are pinned to immutable release commits.
+- Installation and upgrade changes arrive as one coherent, reviewable PR on a
+  temporary feature branch. Existing project CI and user-managed configuration
+  must not be overwritten by an installer.
+- A previous `darkfactory` branch can be retired only after validating its
+  ownership receipt, verifying an equivalent sealed default-branch installation
+  and confirming the branch is unchanged and has no outstanding review.
+  Unexpected or divergent content is escalated for an owner decision.
+
+### Consequences
+There is one versioned source of truth per consumer, no hidden per-repository
+branch dependency at runtime and no automatic deletion of unverified work.
+
 ## ADR-0021 — Repository declarations, runtime detection and capability-resolved actions
 
 **Status**: Accepted

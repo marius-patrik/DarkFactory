@@ -371,18 +371,29 @@ The standard installation includes official capabilities while allowing third-pa
 
 ## 17. Consumer/fleet model
 
-The intended fleet contains six repositories identified by stable GitHub repository identity:
-
-1. DarkFactory;
-2. omnis;
-3. ChessWithQuests;
-4. OdbornaPrace-paper;
-5. template-OdbornaPrace;
-6. OdbornaPrace-mono.
+The managed fleet is discovered from GitHub App installations by stable repository identity.
+It includes all active, eligible consumer repositories and the producer; retired
+`*-old` and Agent OS repositories are explicitly excluded. Repositories outside
+the App installation are reported instead of silently skipped.
 
 Consumers receive released df and managed project-specific setup. They do not receive copied DarkFactory source trees and do not rebuild the shared React application.
 
 Capabilities should handle project/repository-specific setup wherever possible, including quality actions, docs, hooks, release and workflow configuration.
+
+All consumers, like DarkFactory itself, keep **one canonical configuration and their managed
+GitHub Actions workflows on the repository default branch**. A permanent `darkfactory`
+control branch is not part of installation. The small event workflow calls the
+same-commit local reusable workflow; released engine artifacts and upstream
+governance workflows remain independently pinned to immutable release SHAs.
+
+Install/update proposes an atomic, reviewable PR with `repo.dfconfig`,
+`.darkfactory/installation.json`, `.github/workflows/darkfactory-control.yml`
+and `.github/workflows/darkfactory.yml`. The receipt fingerprints the first
+two. Consumer-owned CI, settings and custom configuration are preserved.
+Unexpected changes or conflicting configuration stop automated installation
+and require explicit review. The obsolete control branch is deleted only
+after a sealed equivalent installation exists on the default branch; review
+branches remain temporary and follow normal merge protection.
 
 Install/update is idempotent and drift-aware.
 

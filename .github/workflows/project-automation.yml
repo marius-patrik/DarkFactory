@@ -52,8 +52,6 @@ jobs:
       # The secrets context cannot be read from a step-level `if`, so the test
       # is hoisted to the job, where it can.
       HAS_APP_KEY: ${{ secrets.DARKFACTORY_APP_PRIVATE_KEY != '' }}
-      # The producer stays self-only; other repos retain their own setups until rollout is authorized.
-      DF_FLEET_CONSUMERS_ENABLED: "0"
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -66,16 +64,8 @@ jobs:
           ref: ${{ inputs.pipeline-ref }}
           path: .darkfactory-pipeline
 
-      - name: Checkout consumer-managed repository configuration
-        if: github.repository != 'marius-patrik/DarkFactory'
-        uses: actions/checkout@v4
-        with:
-          ref: darkfactory
-          path: .darkfactory-managed
-
-      - name: Load canonical consumer configuration
-        if: github.repository != 'marius-patrik/DarkFactory'
-        run: cp "$GITHUB_WORKSPACE/.darkfactory-managed/repo.dfconfig" "$GITHUB_WORKSPACE/repo.dfconfig"
+      # The caller's source checkout already contains its canonical repo.dfconfig.
+      # No second branch or out-of-band managed configuration is involved.
 
       - name: Mint an installation token for the App
         # Issue and pull request work belongs to the App, which has its own rate limit. Only
