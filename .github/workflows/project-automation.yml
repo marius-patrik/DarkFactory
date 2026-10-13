@@ -66,18 +66,10 @@ jobs:
           ref: ${{ inputs.pipeline-ref }}
           path: .darkfactory-pipeline
 
-      - name: Checkout consumer-managed repository configuration
-        if: github.repository != 'marius-patrik/DarkFactory'
-        uses: actions/checkout@v4
-        with:
-          ref: darkfactory
-          path: .darkfactory-managed
+      # The caller's source checkout already contains its canonical repo.dfconfig.
+      # No second branch or out-of-band managed configuration is involved.
 
-      - name: Load canonical consumer configuration
-        if: github.repository != 'marius-patrik/DarkFactory'
-        run: cp "$GITHUB_WORKSPACE/.darkfactory-managed/repo.dfconfig" "$GITHUB_WORKSPACE/repo.dfconfig"
-
-      - name: Mint an installation token for the App
+       - name: Mint an installation token for the App
         # Issue and pull request work belongs to the App, which has its own rate limit. Only
         # Projects v2 needs a person's token, because GitHub scopes project permissions to
         # organisations and these boards are user-owned.
