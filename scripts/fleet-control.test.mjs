@@ -47,6 +47,10 @@ test("control workflow uses main checkout, released quality and immutable govern
 	assert.match(rendered, /verify-pr-issue\.yml@a{40}/);
 	assert.match(rendered, /pr-approval-automerge\.yml@a{40}/);
 	assert.doesNotMatch(rendered, /ref: darkfactory|\.darkfactory-managed/);
+	assert.match(rendered, /name: Install inferred Python quality tooling/);
+	assert.match(rendered, /python -m pip install pytest/);
+	assert.match(rendered, /python -m pip install black/);
+	assert.match(rendered, /DF_ACTION_COMMAND/);
 	const workflow = Bun.YAML.parse(rendered);
 	const bridge = Bun.YAML.parse(renderDefaultBridge(slug));
 	assert.ok(Object.hasOwn(workflow.on, "workflow_call"));
