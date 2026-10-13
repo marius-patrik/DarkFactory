@@ -236,12 +236,19 @@ test("merge config sources imports missing branch fields but never overwrites co
 
 test("a consumer-owned .darkfactory gitlink installs the receipt in .github without modifying the submodule", () => {
 	const result = planMainInstallation({
-		slug, base: "main", release: next, upstream: "marius-patrik/DarkFactory",
-		mainFiles: {}, legacy: null, receiptPath: SUBMODULE_CONTROL_RECEIPT,
+		slug,
+		base: "main",
+		release: next,
+		upstream: "marius-patrik/DarkFactory",
+		mainFiles: {},
+		legacy: null,
+		receiptPath: SUBMODULE_CONTROL_RECEIPT,
 	});
 	assert.deepEqual(result.conflicts, []);
-	assert.deepEqual(result.changes.map((x) => x.path).sort(),
-		[CONTROL_CONFIG, SUBMODULE_CONTROL_RECEIPT, CONTROL_WORKFLOW, DEFAULT_BRIDGE].sort());
+	assert.deepEqual(
+		result.changes.map((x) => x.path).sort(),
+		[CONTROL_CONFIG, SUBMODULE_CONTROL_RECEIPT, CONTROL_WORKFLOW, DEFAULT_BRIDGE].sort(),
+	);
 	assert.ok(!result.changes.some((x) => x.path.startsWith(".darkfactory/")));
 	const receipt = result.changes.find((x) => x.path === SUBMODULE_CONTROL_RECEIPT);
 	assert.equal(JSON.parse(receipt.content).fileHashes[CONTROL_CONFIG].length, 64);

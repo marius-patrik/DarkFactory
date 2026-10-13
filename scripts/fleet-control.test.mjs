@@ -222,7 +222,10 @@ test("legacy release cleanup refuses unowned and open refs and deletes only veri
 		throw Error("unexpected " + method + " " + path);
 	}
 	const result = await retireLegacyReleaseBranches({ slug, token: "token", api });
-	assert.deepEqual(result.map((x) => x.disposition), ["retired", "retained: unreviewed or still open"]);
+	assert.deepEqual(
+		result.map((x) => x.disposition),
+		["retired", "retained: unreviewed or still open"],
+	);
 	assert.equal(calls.filter(([method]) => method === "DELETE").length, 1);
 	assert.ok(!calls.some(([, path]) => path.endsWith("/experiment")));
 });

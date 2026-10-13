@@ -397,7 +397,16 @@ export async function readLegacyControl({ slug, sourceBranch, token, api }) {
 }
 
 /** Never delete before a validated, lossless default-branch installation is visible. */
-export async function retireLegacyControl({ slug, sourceBranch, upstream, token, api, mainFiles, legacy, receiptPath = CONTROL_RECEIPT }) {
+export async function retireLegacyControl({
+	slug,
+	sourceBranch,
+	upstream,
+	token,
+	api,
+	mainFiles,
+	legacy,
+	receiptPath = CONTROL_RECEIPT,
+}) {
 	if (!legacy) return "absent";
 	const receipt = verifyControlReceipt(
 		mainFiles[receiptPath],
@@ -406,7 +415,14 @@ export async function retireLegacyControl({ slug, sourceBranch, upstream, token,
 		slug,
 		sourceBranch,
 	);
-	const expected = controlFiles(slug, sourceBranch, receipt.release, upstream, legacy.files[CONTROL_CONFIG], receiptPath);
+	const expected = controlFiles(
+		slug,
+		sourceBranch,
+		receipt.release,
+		upstream,
+		legacy.files[CONTROL_CONFIG],
+		receiptPath,
+	);
 	if (
 		expected[CONTROL_CONFIG] !== mainFiles[CONTROL_CONFIG] ||
 		expected[CONTROL_WORKFLOW] !== mainFiles[CONTROL_WORKFLOW] ||
@@ -441,8 +457,11 @@ export async function retireLegacyReleaseBranches({ slug, token, api }) {
 		const name = String(ref.ref || "").replace(/^refs\/heads\//, "");
 		if (!/^darkfactory\/release-v[0-9][A-Za-z0-9.+-]*$/.test(name)) continue;
 		const owner = slug.split("/")[0];
-		const prs = await api("GET", endpoint + "/pulls?state=all&head=" +
-			encodeURIComponent(owner + ":" + name) + "&per_page=100", token);
+		const prs = await api(
+			"GET",
+			endpoint + "/pulls?state=all&head=" + encodeURIComponent(owner + ":" + name) + "&per_page=100",
+			token,
+		);
 		if (!Array.isArray(prs) || prs.length === 0) {
 			results.push({ branch: name, disposition: "retained: no verified pull request" });
 			continue;
@@ -454,8 +473,12 @@ export async function retireLegacyReleaseBranches({ slug, token, api }) {
 		}
 		const files = await api("GET", endpoint + "/pulls/" + pr.number + "/files?per_page=100", token);
 		const owned = new Set([DEFAULT_BRIDGE, CONTROL_CONFIG]);
-		if (!Array.isArray(files) || files.length === 0 || files.length > owned.size ||
-			files.some((entry) => !owned.has(entry.filename))) {
+		if (
+			!Array.isArray(files) ||
+			files.length === 0 ||
+			files.length > owned.size ||
+			files.some((entry) => !owned.has(entry.filename))
+		) {
 			results.push({ branch: name, disposition: "retained: unowned changes" });
 			continue;
 		}

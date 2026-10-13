@@ -304,7 +304,15 @@ export function mergeConfigSources(mainText, legacyText) {
  * Produce a single atomic default-branch PR. Never stage a partial installation
  * whose receipt would attest to files that were never installed.
  */
-export function planMainInstallation({ slug, base, release, upstream, mainFiles, legacy, receiptPath = CONTROL_RECEIPT }) {
+export function planMainInstallation({
+	slug,
+	base,
+	release,
+	upstream,
+	mainFiles,
+	legacy,
+	receiptPath = CONTROL_RECEIPT,
+}) {
 	const conflicts = [];
 	const changes = [];
 	const current = (path) => mainFiles[path]?.content ?? null;
@@ -383,14 +391,7 @@ async function reconcile(repo, release, token) {
 	const dfEntry = root.tree.find((entry) => entry.path === ".darkfactory");
 	const receiptPath = dfEntry && dfEntry.type !== "tree" ? SUBMODULE_CONTROL_RECEIPT : CONTROL_RECEIPT;
 	const mainFiles = {};
-	for (const path of [
-		CONTROL_CONFIG,
-		"config.dfconfig",
-		".dfconfig",
-		CONTROL_WORKFLOW,
-		receiptPath,
-		DEFAULT_BRIDGE,
-	]) {
+	for (const path of [CONTROL_CONFIG, "config.dfconfig", ".dfconfig", CONTROL_WORKFLOW, receiptPath, DEFAULT_BRIDGE]) {
 		mainFiles[path] = await readFile(slug, path, base, token);
 	}
 	const { changes, conflicts } = planMainInstallation({
@@ -405,21 +406,21 @@ async function reconcile(repo, release, token) {
 	if (!changes.length && !conflicts.length) {
 		if (DRY_RUN) return "dry-run";
 		let outcome = "absent";
-		if (legacy) outcome = await retireLegacyControl({
-			slug,
-			sourceBranch: base,
-			upstream: UPSTREAM,
-			token,
-			api,
-			mainFiles: Object.fromEntries(Object.entries(mainFiles).map(([path, value]) => [path, value?.content ?? null])),
-			legacy,
-			receiptPath,
-		});
+		if (legacy)
+			outcome = await retireLegacyControl({
+				slug,
+				sourceBranch: base,
+				upstream: UPSTREAM,
+				token,
+				api,
+				mainFiles: Object.fromEntries(Object.entries(mainFiles).map(([path, value]) => [path, value?.content ?? null])),
+				legacy,
+				receiptPath,
+			});
 		console.log(slug + ": legacy control branch " + outcome);
 		const oldReleases = await retireLegacyReleaseBranches({ slug, token, api });
 		if (oldReleases.length) console.log(slug + ": legacy release branch audit " + JSON.stringify(oldReleases));
-		return outcome === "retired" || oldReleases.some((item) => item.disposition === "retired")
-			? "retired" : "current";
+		return outcome === "retired" || oldReleases.some((item) => item.disposition === "retired") ? "retired" : "current";
 	}
 	if (DRY_RUN) {
 		console.log("[dry-run] " + slug + ": " + JSON.stringify({ changes: changes.map((x) => x.path), conflicts }));
@@ -429,12 +430,16 @@ async function reconcile(repo, release, token) {
 	// because a newer upstream release appeared while the first awaits review.
 	if (changes.length) {
 		const pending = (await pages("/repos/" + slug + "/pulls?state=open", token)).find(
-			(item) => /^df-main\/v[0-9]/.test(item.head?.ref ?? "") &&
-				item.user?.login === "darkfactory-pipeline[bot]",
+			(item) => /^df-main\/v[0-9]/.test(item.head?.ref ?? "") && item.user?.login === "darkfactory-pipeline[bot]",
 		);
 		if (pending) {
-			console.log(slug + ": existing installation review " + pending.html_url +
-				"; update the existing PR rather than opening a second proposal for " + release.tag);
+			console.log(
+				slug +
+					": existing installation review " +
+					pending.html_url +
+					"; update the existing PR rather than opening a second proposal for " +
+					release.tag,
+			);
 			return "pending";
 		}
 	}
