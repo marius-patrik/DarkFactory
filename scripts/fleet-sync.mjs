@@ -1,7 +1,6 @@
 import { createSign } from "node:crypto";
 import { pathToFileURL } from "node:url";
 import {
-	BRIDGE_MARKER,
 	CONTROL_CONFIG,
 	CONTROL_RECEIPT,
 	CONTROL_WORKFLOW,
@@ -19,8 +18,6 @@ import {
 const API = "https://api.github.com";
 const OWNER = process.env.DF_FLEET_OWNER || "marius-patrik";
 const UPSTREAM = `${OWNER}/DarkFactory`;
-const WORKFLOW = ".github/workflows/darkfactory.yml";
-const CONFIGS = ["repo.dfconfig", "config.dfconfig", ".dfconfig"];
 const MARKER = "# df-fleet-managed: 2";
 const LEGACY_MARKER = "# df-fleet-managed: 1";
 const ISSUE_MARKER = "<!-- darkfactory-fleet-release: ";
@@ -496,8 +493,7 @@ async function main() {
 			r.full_name?.split("/")[0]?.toLowerCase() === OWNER.toLowerCase() &&
 			!r.archived &&
 			!r.disabled &&
-			!isFleetExcluded(r.full_name) &&
-			true,
+			!isFleetExcluded(r.full_name),
 	);
 	console.log(
 		`Selected ${eligible.length} eligible repositories (producer on main; all active consumers), released df ${selected.tag}`,
@@ -522,8 +518,7 @@ async function main() {
 				!r.disabled &&
 				!isFleetExcluded(r.full_name) &&
 				r.full_name?.toLowerCase() !== UPSTREAM.toLowerCase() &&
-				!available.has(r.full_name.toLowerCase()) &&
-				true,
+				!available.has(r.full_name.toLowerCase()),
 		)
 		.map((r) => r.full_name);
 	if (missing.length) failures.push(`Grant App access to: ${missing.join(", ")}`);
