@@ -339,6 +339,8 @@ test("repin the only verified installer review from latest default branch withou
 		if (method === "GET" && path.endsWith("/contents/repo.dfconfig?ref=" + encodeURIComponent(branch)))
 			return { type: "file", encoding: "base64", content: Buffer.from("old").toString("base64") };
 		if (method === "GET" && path.endsWith("/git/ref/heads/main")) return { object: { sha: mainSHA } };
+		if (method === "GET" && path.endsWith("/git/commits/" + oldSHA))
+			return { parents: [{ sha: "z".repeat(40) }] };
 		if (method === "GET" && path.endsWith("/git/commits/" + mainSHA)) return { tree: { sha: "c".repeat(40) } };
 		if (method === "POST" && path.endsWith("/git/trees")) return { sha: "d".repeat(40) };
 		if (method === "POST" && path.endsWith("/git/commits")) return { sha: "e".repeat(40) };
