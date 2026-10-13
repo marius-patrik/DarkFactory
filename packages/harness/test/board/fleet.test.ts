@@ -30,6 +30,11 @@ describe("the fleet board automation reconciles", () => {
 	const automation = (d: BoardDeclaration, env: Record<string, string | undefined> = {}) =>
 		new BoardAutomation({ declaration: d, env: { GITHUB_REPOSITORY: "marius-patrik/DarkFactory", ...env } });
 
+	it("restricts producer board reconciliation to DarkFactory during the self-hosted cutover", async () => {
+		const scanned = await automation(declaration(), { DF_FLEET_CONSUMERS_ENABLED: "0" }).repositoriesToScan();
+		expect(scanned).toEqual(["marius-patrik/DarkFactory"]);
+	});
+
 	it("scans this repository plus every other it is installed on", async () => {
 		const scanned = await automation(declaration()).repositoriesToScan();
 
