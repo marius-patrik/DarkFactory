@@ -327,7 +327,6 @@ async function reconcile(repo, release, token) {
 	});
 	console.log(slug + ": control branch " + control.kind);
 
-
 	if (changes.length === 0 && conflicts.length === 0) return "control-" + control.kind;
 	const issue = await issueFor(
 		slug,
