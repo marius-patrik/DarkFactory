@@ -1,6 +1,12 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { isProjectsQuotaExceeded, managedRepositories, projectsFor, registerProjectTitle, selectedManagedProject } from "./fleet-projects.mjs";
+import {
+	isProjectsQuotaExceeded,
+	managedRepositories,
+	projectsFor,
+	registerProjectTitle,
+	selectedManagedProject,
+} from "./fleet-projects.mjs";
 
 test("distinguishes exhausted owner GraphQL budget from normal failures", () => {
 	assert.equal(
@@ -38,7 +44,8 @@ test("unrelated duplicated project titles do not prevent managed board reconcili
 		{ id: "global", title: "Global" },
 		{ id: "features-2", title: "Features" },
 		{ id: "consumer", title: "OASIS" },
-	]) registerProjectTitle(index, project);
+	])
+		registerProjectTitle(index, project);
 	assert.equal(selectedManagedProject(index, "Global")?.id, "global");
 	assert.equal(selectedManagedProject(index, "OASIS")?.id, "consumer");
 	assert.equal(selectedManagedProject(index, "Missing"), undefined);
