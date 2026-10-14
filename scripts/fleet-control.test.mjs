@@ -54,6 +54,8 @@ test("control workflow uses main checkout, released quality and immutable govern
 	assert.match(rendered, /DF_ACTION_COMMAND/);
 	assert.match(rendered, /npm install --no-package-lock/);
 	assert.ok(rendered.includes("node_modules/.bin"));
+	assert.match(rendered, /bash -c "\$DF_ACTION_COMMAND"/);
+	assert.doesNotMatch(rendered, /bash -lc/);
 	assert.match(rendered, /! -f package-lock.json/);
 	const workflow = Bun.YAML.parse(rendered);
 	const bridge = Bun.YAML.parse(renderDefaultBridge(slug));
