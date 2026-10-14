@@ -54,6 +54,17 @@ async function graph(token, query, variables = {}) {
 	return result.data;
 }
 
+export function registerProjectTitle(index, project) {
+	if (index.has(project.title)) index.set(project.title, null);
+	else index.set(project.title, project);
+}
+
+export function selectedManagedProject(index, title) {
+	const project = index.get(title);
+	if (index.has(title) && !project) throw new Error("Ambiguous duplicate managed Project: " + title);
+	return project;
+}
+
 async function readOwnerProjects(login, token) {
 	const byTitle = new Map();
 	let ownerId = null,
@@ -68,8 +79,7 @@ async function readOwnerProjects(login, token) {
 		if (!user?.id) throw new Error("Projects owner " + login + " cannot be resolved");
 		ownerId = user.id;
 		for (const project of user.projectsV2.nodes ?? []) {
-			if (byTitle.has(project.title)) throw new Error("Ambiguous duplicate Project: " + project.title);
-			byTitle.set(project.title, project);
+			registerProjectTitle(byTitle, project);
 		}
 		cursor = user.projectsV2.pageInfo.hasNextPage ? user.projectsV2.pageInfo.endCursor : null;
 		if (cursor === "") throw new Error("Project listing cannot advance");
@@ -78,7 +88,7 @@ async function readOwnerProjects(login, token) {
 }
 
 async function ensureProject(title, ownerId, projects, token) {
-	let project = projects.get(title);
+	let project = selectedManagedProject(projects, title);
 	if (project?.closed) throw new Error("Project " + title + " is closed; refusing to replace it");
 	if (project) return project;
 	const data = await graph(

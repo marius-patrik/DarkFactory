@@ -1,6 +1,12 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { isProjectsQuotaExceeded, managedRepositories, projectsFor } from "./fleet-projects.mjs";
+import {
+	isProjectsQuotaExceeded,
+	managedRepositories,
+	projectsFor,
+	registerProjectTitle,
+	selectedManagedProject,
+} from "./fleet-projects.mjs";
 
 test("distinguishes exhausted owner GraphQL budget from normal failures", () => {
 	assert.equal(
@@ -29,4 +35,19 @@ test("producer-only reconciliation preserves scope until explicit authorization"
 		["marius-patrik/DarkFactory", "marius-patrik/OASIS"],
 	);
 	assert.deepEqual(projectsFor("DarkFactory"), ["Global", "DarkFactory"]);
+});
+
+test("unrelated duplicated project titles do not prevent managed board reconciliation", () => {
+	const index = new Map();
+	for (const project of [
+		{ id: "features-1", title: "Features" },
+		{ id: "global", title: "Global" },
+		{ id: "features-2", title: "Features" },
+		{ id: "consumer", title: "OASIS" },
+	])
+		registerProjectTitle(index, project);
+	assert.equal(selectedManagedProject(index, "Global")?.id, "global");
+	assert.equal(selectedManagedProject(index, "OASIS")?.id, "consumer");
+	assert.equal(selectedManagedProject(index, "Missing"), undefined);
+	assert.throws(() => selectedManagedProject(index, "Features"), /Ambiguous duplicate managed Project/);
 });
