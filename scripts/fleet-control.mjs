@@ -478,11 +478,19 @@ export async function retireLegacyReleaseBranches({ slug, token, api }) {
 		}
 		const files = await api("GET", endpoint + "/pulls/" + pr.number + "/files?per_page=100", token);
 		const owned = new Set([DEFAULT_BRIDGE, CONTROL_CONFIG]);
+		// Early installers also edited existing consumer CI. Those changes belong
+		// to the repository, but a fully merged installation PR proves its exact
+		// head was reviewed and integrated (including squash/merge workflows).
+		// Closed-but-unmerged reviews receive no such exception.
+		const mergedReleaseInstall =
+			Boolean(pr.merged_at) &&
+			pr.head?.ref === name &&
+			pr.base?.repo?.full_name?.toLowerCase() === slug.toLowerCase() &&
+			/^chore\(df\): install released DarkFactory v[0-9]/.test(pr.title ?? "");
 		if (
 			!Array.isArray(files) ||
 			files.length === 0 ||
-			files.length > owned.size ||
-			files.some((entry) => !owned.has(entry.filename))
+			(!mergedReleaseInstall && (files.length > owned.size || files.some((entry) => !owned.has(entry.filename))))
 		) {
 			results.push({ branch: name, disposition: "retained: unowned changes" });
 			continue;

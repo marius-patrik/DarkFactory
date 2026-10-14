@@ -234,3 +234,69 @@ test("legacy release cleanup refuses unowned and open refs and deletes only veri
 	assert.equal(calls.filter(([method]) => method === "DELETE").length, 1);
 	assert.ok(!calls.some(([, path]) => path.endsWith("/experiment")));
 });
+
+test("a fully merged historical install branch is removable even when its merged PR changed old CI", async () => {
+	const branch = "darkfactory/release-v0.3.3";
+	const sha = "c".repeat(40);
+	const calls = [];
+	async function api(method, path) {
+		calls.push({ method, path });
+		if (path.endsWith("/matching-refs/heads/darkfactory/")) return [{ ref: "refs/heads/" + branch, object: { sha } }];
+		if (path.includes("/pulls?state=all&head="))
+			return [
+				{
+					number: 2,
+					state: "closed",
+					merged_at: "2026-10-11T12:00:00Z",
+					head: { sha, ref: branch },
+					base: { repo: { full_name: slug } },
+					title: "chore(df): install released DarkFactory v0.3.3",
+				},
+			];
+		if (path.endsWith("/pulls/2/files?per_page=100"))
+			return [
+				{ filename: ".github/workflows/ci.yml" },
+				{ filename: ".github/workflows/darkfactory.yml" },
+				{ filename: "repo.dfconfig" },
+			];
+		if (method === "GET" && path.endsWith("/git/ref/heads/" + branch)) return { object: { sha } };
+		if (method === "DELETE" && path.endsWith("/git/refs/heads/" + branch)) return null;
+		throw Error("Unexpected API " + method + " " + path);
+	}
+	const result = await retireLegacyReleaseBranches({ slug, token: "test", api });
+	assert.deepEqual(
+		result.map((x) => x.disposition),
+		["retired"],
+	);
+	assert.equal(calls.filter((x) => x.method === "DELETE").length, 1);
+});
+
+test("legacy installer ref with extra CI changes must remain if its PR did not merge", async () => {
+	const branch = "darkfactory/release-v0.3.3";
+	const sha = "d".repeat(40);
+	const calls = [];
+	async function api(method, path) {
+		calls.push({ method, path });
+		if (path.endsWith("/matching-refs/heads/darkfactory/")) return [{ ref: "refs/heads/" + branch, object: { sha } }];
+		if (path.includes("/pulls?state=all&head="))
+			return [
+				{
+					number: 2,
+					state: "closed",
+					merged_at: null,
+					head: { sha, ref: branch },
+					base: { repo: { full_name: slug } },
+					title: "chore(df): install released DarkFactory v0.3.3",
+				},
+			];
+		if (path.endsWith("/pulls/2/files?per_page=100"))
+			return [{ filename: ".github/workflows/ci.yml" }, { filename: "repo.dfconfig" }];
+		throw Error("Unexpected mutation " + method + " " + path);
+	}
+	const result = await retireLegacyReleaseBranches({ slug, token: "test", api });
+	assert.deepEqual(
+		result.map((x) => x.disposition),
+		["retained: unowned changes"],
+	);
+	assert.equal(calls.filter((x) => x.method === "DELETE").length, 0);
+});
