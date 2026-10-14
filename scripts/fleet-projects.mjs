@@ -68,8 +68,10 @@ async function readOwnerProjects(login, token) {
 		if (!user?.id) throw new Error("Projects owner " + login + " cannot be resolved");
 		ownerId = user.id;
 		for (const project of user.projectsV2.nodes ?? []) {
-			if (byTitle.has(project.title)) throw new Error("Ambiguous duplicate Project: " + project.title);
-			byTitle.set(project.title, project);
+			// Unrelated projects can share titles. Only a requested board title
+			// must be unique; retain that ambiguity until the board is selected.
+			if (byTitle.has(project.title)) byTitle.set(project.title, null);
+			else byTitle.set(project.title, project);
 		}
 		cursor = user.projectsV2.pageInfo.hasNextPage ? user.projectsV2.pageInfo.endCursor : null;
 		if (cursor === "") throw new Error("Project listing cannot advance");
@@ -79,6 +81,8 @@ async function readOwnerProjects(login, token) {
 
 async function ensureProject(title, ownerId, projects, token) {
 	let project = projects.get(title);
+	if (projects.has(title) && !project)
+		throw new Error("Ambiguous duplicate managed Project: " + title);
 	if (project?.closed) throw new Error("Project " + title + " is closed; refusing to replace it");
 	if (project) return project;
 	const data = await graph(
