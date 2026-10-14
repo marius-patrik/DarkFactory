@@ -6,6 +6,7 @@ import {
 	mergeConfigSources,
 	planMainInstallation,
 	retireMergedProposalRef,
+	refreshPendingInstallation,
 	isFleetExcluded,
 	renderConfig,
 	renderLegacyWorkflow,
@@ -315,4 +316,79 @@ test("closed-unmerged installer review cannot be silently deleted", async () => 
 	});
 	assert.match(outcome, /retained/);
 	assert.ok(!calls.includes("DELETE"));
+});
+
+test("repin the only verified installer review from latest default branch without changing user files", async () => {
+	const slug = "marius-patrik/OASIS",
+		branch = "df-main/v0.291.0";
+	const oldSHA = "a".repeat(40),
+		mainSHA = "b".repeat(40);
+	const calls = [];
+	const pending = {
+		state: "open",
+		number: 42,
+		head: { ref: branch, sha: oldSHA, repo: { full_name: slug } },
+		base: { ref: "main" },
+		user: { login: "darkfactory-pipeline[bot]" },
+	};
+	async function api(method, path, _token, data) {
+		calls.push({ method, path, data });
+		if (method === "GET" && path.endsWith("/pulls/42/files?per_page=100"))
+			return [{ filename: CONTROL_CONFIG }, { filename: CONTROL_WORKFLOW }];
+		if (method === "GET" && path.endsWith("/git/ref/heads/" + branch)) return { object: { sha: oldSHA } };
+		if (method === "GET" && path.endsWith("/contents/repo.dfconfig?ref=" + encodeURIComponent(branch)))
+			return { type: "file", encoding: "base64", content: Buffer.from("old").toString("base64") };
+		if (method === "GET" && path.endsWith("/git/ref/heads/main")) return { object: { sha: mainSHA } };
+		if (method === "GET" && path.endsWith("/git/commits/" + oldSHA)) return { parents: [{ sha: "z".repeat(40) }] };
+		if (method === "GET" && path.endsWith("/git/commits/" + mainSHA)) return { tree: { sha: "c".repeat(40) } };
+		if (method === "POST" && path.endsWith("/git/trees")) return { sha: "d".repeat(40) };
+		if (method === "POST" && path.endsWith("/git/commits")) return { sha: "e".repeat(40) };
+		if (method === "PATCH" && path.endsWith("/git/refs/heads/" + branch)) return {};
+		throw Error("Unexpected API " + method + " " + path);
+	}
+	const result = await refreshPendingInstallation({
+		slug,
+		base: "main",
+		pending,
+		changes: [{ path: CONTROL_CONFIG, content: "new" }],
+		release: next,
+		token: "token",
+		api,
+	});
+	assert.equal(result.kind, "updated");
+	assert.deepEqual(calls.find((x) => x.method === "POST" && x.path.endsWith("/git/commits")).data.parents, [
+		oldSHA,
+		mainSHA,
+	]);
+	assert.equal(calls.find((x) => x.method === "POST" && x.path.endsWith("/git/trees")).data.base_tree, "c".repeat(40));
+	assert.ok(calls.some((x) => x.method === "PATCH" && x.data.force === false));
+});
+
+test("repinning never replaces a PR containing unrelated edits", async () => {
+	const slug = "marius-patrik/OASIS";
+	const pending = {
+		state: "open",
+		number: 42,
+		head: { ref: "df-main/v0.291.0", sha: "a".repeat(40), repo: { full_name: slug } },
+		base: { ref: "main" },
+		user: { login: "darkfactory-pipeline[bot]" },
+	};
+	const calls = [];
+	async function api(method) {
+		calls.push(method);
+		return [{ filename: "README.md" }, { filename: CONTROL_CONFIG }];
+	}
+	await assert.rejects(
+		refreshPendingInstallation({
+			slug,
+			base: "main",
+			pending,
+			changes: [{ path: CONTROL_CONFIG, content: "new" }],
+			release: next,
+			token: "token",
+			api,
+		}),
+		/unowned edits/,
+	);
+	assert.deepEqual(calls, ["GET"]);
 });
