@@ -71,6 +71,17 @@ jobs:
           '
           test -f "$RUNNER_TEMP/df-workspace/write-probe"
 
+      - name: Dispatch an issue through the real CLI with isolated GitHub and model mocks
+        run: |
+          cp .github/scripts/agent-dispatch-preload.ts "$RUNNER_TEMP/df-workspace/dispatch-preload.ts"
+          printf '%s' '{"action":"opened","issue":{"number":77,"labels":[]},"repository":{"full_name":"marius-patrik/DarkFactory"}}'             > "$RUNNER_TEMP/df-workspace/event.json"
+          docker run --rm             -v "$RUNNER_TEMP/df-workspace:/workspace"             -e BUN_OPTIONS="--preload=/workspace/dispatch-preload.ts"             -e GH_TOKEN=ci-fixture-token             -e GITHUB_REPOSITORY=marius-patrik/DarkFactory             -e GITHUB_EVENT_NAME=issues             -e GITHUB_EVENT_PATH=/workspace/event.json             darkfactory-agent:nix dispatch
+          test -f "$RUNNER_TEMP/df-workspace/dispatch-observed.ndjson"
+          grep -q '"kind":"model"' "$RUNNER_TEMP/df-workspace/dispatch-observed.ndjson"
+          grep -q '"method":"GET","path":"/repos/marius-patrik/DarkFactory/issues/77"'             "$RUNNER_TEMP/df-workspace/dispatch-observed.ndjson"
+          grep -q '"method":"POST","path":"/repos/marius-patrik/DarkFactory/issues/77/comments"'             "$RUNNER_TEMP/df-workspace/dispatch-observed.ndjson"
+          grep -q 'DarkFactory Agent Interpretation' "$RUNNER_TEMP/df-workspace/dispatch-observed.ndjson"
+
       - name: Real dispatch rejects invalid event
         run: |
           printf '%s' '{invalid json' > "$RUNNER_TEMP/df-workspace/event.json"
