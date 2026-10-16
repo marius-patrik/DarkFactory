@@ -96,7 +96,7 @@ let
       Entrypoint = [ "${entrypoint}/bin/df-agent-entrypoint" ];
       Env = [
         "HOME=/home/agent"
-        "PATH=${path}:/bin"
+        "PATH=${df}/bin:${path}:/bin"
         "SSL_CERT_FILE=${pkgs.cacert}/etc/ssl/certs/ca-bundle.crt"
         "DF_SOURCE=${agentRuntime}/share/darkfactory/packages/cli/src/cli.ts"
       ];

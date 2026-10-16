@@ -63,6 +63,8 @@ jobs:
             touch /workspace/write-probe
             git init -q /workspace/fixture
             git -C /workspace/fixture status --short
+            command -v df
+            df --version | grep "^df "
             command -v gh
             command -v secret-tool
             command -v dbus-run-session
