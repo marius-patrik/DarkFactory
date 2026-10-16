@@ -114,7 +114,7 @@ describe("the packaging smoke agrees with the packager about the native module",
 	// `packagingSmoke` required one. All five release targets failed on
 	// `Packaged pi-tui native module is missing for <platform>-<arch>`, and pi-tui 0.85.1 ships no
 	// `linux/` directory at all, so on Linux there was nothing to find by design.
-	const cli = readFileSync(join(repoRoot, "packages/harness/src/cli.ts"), "utf8");
+	const cli = readFileSync(join(repoRoot, "packages/cli/src/cli.ts"), "utf8");
 	const assets = readFileSync(join(repoRoot, "packages/harness/scripts/package-assets.ts"), "utf8");
 
 	it("the packager treats the native module as optional", () => {

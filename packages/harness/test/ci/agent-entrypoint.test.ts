@@ -93,6 +93,6 @@ describe("the agent image's entrypoint", () => {
 
 	it("keeps the wrapper the PATH contract resolves through", () => {
 		expect(dockerfile).toContain("scripts/df-wrapper.sh");
-		expect(dockerfile).toContain("ENV DF_SOURCE=/opt/darkfactory/packages/harness/src/cli.ts");
+		expect(dockerfile).toContain("ENV DF_SOURCE=/opt/darkfactory/packages/cli/src/cli.ts");
 	});
 });

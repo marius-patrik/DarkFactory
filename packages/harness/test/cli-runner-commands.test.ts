@@ -2,21 +2,10 @@ import { afterAll, beforeAll, describe, expect, it } from "bun:test";
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { main } from "../src/cli.ts";
+import { main } from "../../cli/src/cli.ts";
 import { RUNNER_COMMANDS } from "../src/pipeline/main.ts";
 
-/**
- * The agent image runs `df`, so every command the image needs must be a `df` command.
- *
- * `nix/entrypoint.sh` refused to translate `docker run darkfactory-agent dispatch` into
- * `graph dispatch`, on the grounds that a shim printing a plan and exiting 0 turns a loud failure into
- * a silent one: the agent run would be skipped rather than reported. Its comment records that the image
- * was "sequenced after #1148" and that `docker/Dockerfile.agent` was "left in place until then".
- *
- * That is the claim this file checks. A command in `main.ts` and absent from `df` is an image that
- * cannot start, and nothing else would notice: the runner's own tests call `runnerMain` directly, so
- * they pass whether or not the CLI can reach it.
- */
+/** The agent image runs the production df CLI, which must expose every governed runner command. */
 
 /** The commands the image's entrypoint and workflows name. */
 const REQUIRED = [

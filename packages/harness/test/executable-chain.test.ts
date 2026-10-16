@@ -1,5 +1,5 @@
 import { expect, test } from "bun:test";
-import { executableChainFor } from "../src/cli.ts";
+import { executableChainFor } from "../../cli/src/cli.ts";
 import type { RankedCandidate } from "../src/router/types.ts";
 
 const candidate = (provider: string, model: string) => ({ provider, model, account: "plskynech" });
