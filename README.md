@@ -150,6 +150,17 @@ Generated documentation sites and JSON content graphs are CI outputs and must no
 
 DarkFactory-owned state, result, review and audit artifacts use established structured formats such as JSON or Markdown with explicit schemas where needed. The schema for each persisted artifact must be explicit and machine-verifiable.
 
+### 7.4 Native tool configuration projections
+
+When a Python or documentation tool requires a native configuration file, a repository can opt into a **single authored configuration** under `repo.dfconfig`:
+
+- `repo.environment.native_pyproject` is a JSON object of TOML tables. For example, `{ "build-system": { "requires": ["setuptools>=69"], "build-backend": "setuptools.build_meta" }, "project": { "name": "example", "dynamic": ["version"] }, "tool": { "setuptools_scm": {} } }` renders native `pyproject.toml`. TOML table nesting, primitive scalars, lists and inline objects are supported. Unknown tool metadata is preserved declaratively.
+- `docs.native_properdocs` is a JSON object of native ProperDocs/MkDocs keys, including `theme`, `plugins`, `hooks` and `markdown_extensions`. `site_name` and `site_description` derive exclusively from `docs.site.name` and `docs.site.description`; manually duplicating them in the projection is rejected. The generated `properdocs.yml` uses JSON syntax, which is valid YAML.
+- `df ci native-config` checks for exact rendered content. `df ci native-config --write` and the workflow installer/update may write **only absent files or unchanged, previously sealed outputs**. User-owned files, modified generated files and symlinks are never overwritten, including by `--force`. When projections are declared, `df ci matrix` fails on native-config drift.
+- The projection is deterministic and carries a SHA-256 of its generated body. It does not execute custom configuration code, infer undocumented tool options, provision docs hooks/themes, or replace language-specific build and strict-docs tests. Those files and dependencies must exist and remain covered by executable CI actions.
+
+Without either declaration, native tool files remain entirely consumer-owned and the installer does not touch them. Converting an existing `pyproject.toml` or `properdocs.yml` requires a reviewed semantic-equivalence check before adopting generated ownership; there is no implicit migration.
+
 ## 8. Governed Request lifecycle
 
 The final Request lifecycle is:
