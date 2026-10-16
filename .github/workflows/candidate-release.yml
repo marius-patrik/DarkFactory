@@ -58,6 +58,7 @@ jobs:
   consumer-dsh-stack-quality:
     name: Validate actual dsh-stack PR 355 quality with one candidate runner
     needs: build
+    if: always()
     runs-on: ubuntu-24.04
     timeout-minutes: 60
     steps:
