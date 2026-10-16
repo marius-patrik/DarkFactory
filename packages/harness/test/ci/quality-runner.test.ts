@@ -100,8 +100,12 @@ describe("single-runner quality scheduler", () => {
 	});
 
 	it("rejects a nonpositive or nonfinite per-command timeout", async () => {
-		await expect(executeQualityPlan("/tmp/df-quality", [action("a", "test")], { timeoutMs: 0 })).rejects.toThrow("timeout");
-		await expect(executeQualityPlan("/tmp/df-quality", [action("a", "test")], { timeoutMs: Number.POSITIVE_INFINITY })).rejects.toThrow("timeout");
+		await expect(executeQualityPlan("/tmp/df-quality", [action("a", "test")], { timeoutMs: 0 })).rejects.toThrow(
+			"timeout",
+		);
+		await expect(
+			executeQualityPlan("/tmp/df-quality", [action("a", "test")], { timeoutMs: Number.POSITIVE_INFINITY }),
+		).rejects.toThrow("timeout");
 	});
 
 	it("rejects duplicate identity, unsafe paths, empty plans and conflicting installers", async () => {
