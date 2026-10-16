@@ -59,11 +59,25 @@ let
     exec ${pkgs.bun}/bin/bun ${agentRuntime}/share/darkfactory/packages/cli/src/cli.ts "$@"
   '';
 
+  # Container images have no system-level D-Bus configuration. The session bus
+  # must use an explicit reproducible policy rather than an absent /etc default.
+  sessionBusConfig = pkgs.writeText "darkfactory-dbus-session.conf" ''
+    <busconfig>
+      <type>session</type>
+      <listen>unix:tmpdir=/tmp</listen>
+      <standard_session_servicedirs/>
+      <policy context="default">
+        <allow send_destination="*"/>
+        <allow own="*"/>
+      </policy>
+    </busconfig>
+  '';
+
   entrypoint = pkgs.writeShellScriptBin "df-agent-entrypoint" ''
     set -eu
     : "''${HOME:=/home/agent}"
     export HOME
-    exec ${pkgs.dbus}/bin/dbus-run-session -- ${df}/bin/df "$@"
+    exec ${pkgs.dbus}/bin/dbus-run-session --config-file=${sessionBusConfig} -- ${df}/bin/df "$@"
   '';
 
   tools = with pkgs; [
@@ -77,7 +91,8 @@ let
     tag = "nix";
     contents = tools ++ [ df entrypoint agentRuntime ];
     extraCommands = ''
-      mkdir -p bin etc/ssl/certs home/agent/.config workspace
+      mkdir -p bin etc/ssl/certs home/agent/.config workspace tmp
+      chmod 1777 tmp
       printf '%s\n' \
         'root:x:0:0:root:/root:/bin/bash' \
         'agent:x:1001:1001:DarkFactory agent:/home/agent:/bin/bash' \
@@ -96,6 +111,7 @@ let
       Entrypoint = [ "${entrypoint}/bin/df-agent-entrypoint" ];
       Env = [
         "HOME=/home/agent"
+        "XDG_DATA_DIRS=${pkgs.gnome-keyring}/share:${pkgs.dbus}/share"
         "PATH=${df}/bin:${path}:/bin"
         "SSL_CERT_FILE=${pkgs.cacert}/etc/ssl/certs/ca-bundle.crt"
         "DF_SOURCE=${agentRuntime}/share/darkfactory/packages/cli/src/cli.ts"
