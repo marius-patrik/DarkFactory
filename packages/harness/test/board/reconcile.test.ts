@@ -651,6 +651,7 @@ describe("which boards a run writes to", () => {
 	function automation(options: {
 		projects?: { id: string; number: number; title: string }[];
 		cliProjects?: unknown;
+		graphqlError?: boolean;
 		env?: Record<string, string | undefined>;
 		declared?: BoardDeclaration | null;
 		cli?: (args: readonly string[]) => string;
@@ -661,6 +662,7 @@ describe("which boards a run writes to", () => {
 				/(?:query|mutation) (\w+)/,
 			)?.[1];
 			if (operation === "GetProjects") {
+				if (options.graphqlError) return { body: { errors: [{ message: "GraphQL transport unavailable" }] } };
 				return { body: { data: { user: { projectsV2: { nodes: options.projects ?? [] } } } } };
 			}
 			return { body: { data: {} } };
@@ -705,27 +707,61 @@ describe("which boards a run writes to", () => {
 		expect(boards.run.failures.some((failure) => failure.includes("DarkFactory"))).toBe(true);
 	});
 
-	test("discovery falls back to the CLI when the API answers with nothing", async () => {
+	test("CLI fallback rejects two open managed Projects with one title rather than selecting the last", async () => {
 		const boards = automation({
-			projects: [],
+			graphqlError: true,
 			cliProjects: [
-				{ title: "DarkFactory", number: 11 },
-				{ title: "Global", number: 17 },
+				{ title: "DarkFactory", number: 11, closed: false },
+				{ title: "DarkFactory", number: 21, closed: false },
+				{ title: "Global", number: 17, closed: false },
+			],
+		});
+		expect(await boards.resolveBoards()).toEqual([]);
+		expect(
+			boards.run.failures.some((failure) => failure.includes("Ambiguous duplicate managed project: DarkFactory")),
+		).toBe(true);
+	});
+
+	test("CLI fallback ignores closed and unrelated duplicate Projects while selecting unique active boards", async () => {
+		const boards = automation({
+			graphqlError: true,
+			cliProjects: [
+				{ title: "DarkFactory", number: 11, closed: false },
+				{ title: "DarkFactory", number: 21, closed: true },
+				{ title: "Features", number: 31, closed: false },
+				{ title: "Features", number: 32, closed: false },
+				{ title: "Global", number: 17, closed: false },
 			],
 		});
 		expect(await boards.resolveBoards()).toEqual([11, 17]);
+		expect(boards.run.failures).toEqual([]);
 	});
 
-	test("a rate limit while resolving boards pauses instead of reporting a failure", async () => {
+	test("a successful empty inventory cannot be repopulated from a stale CLI listing", async () => {
+		const boards = automation({
+			projects: [],
+			cliProjects: [
+				{ title: "DarkFactory", number: 11, closed: true },
+				{ title: "Global", number: 17, closed: true },
+			],
+		});
+		expect(await boards.resolveBoards()).toEqual([]);
+		expect(boards.run.failures.some((failure) => failure.includes("DarkFactory"))).toBe(true);
+		expect(boards.run.failures.some((failure) => failure.includes("Global"))).toBe(true);
+	});
+
+	test("GraphQL discovered absence does not call CLI or claim a rate-limit failure", async () => {
+		let calls = 0;
 		const boards = automation({
 			projects: [],
 			cli: () => {
-				throw new Error("gh project list exited with status 1 (unknown owner type)");
+				calls++;
+				throw new Error("gh project list exited with status 1");
 			},
 		});
 		expect(await boards.resolveBoards()).toEqual([]);
-		expect(boards.run.rateLimited).toBe(true);
-		expect(boards.run.failures).toEqual([]);
+		expect(calls).toBe(0);
+		expect(boards.run.rateLimited).toBe(false);
 	});
 
 	test("a repository whose declaration cannot be read falls back to the project number", async () => {
