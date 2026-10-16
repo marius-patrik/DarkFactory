@@ -33,6 +33,20 @@ export async function resolveDetectedQuality(
 	return { evidence, resolution, matrix: qualityMatrix(resolution) };
 }
 
+/**
+ * A GitHub green check must prove that at least one real action was executed,
+ * and that every required package action was covered or explicitly exempted.
+ * An empty matrix is not success, and executable rows cannot hide missing ones.
+ */
+export function assertQualityCoverage(state: DetectedQualityState): void {
+	if (state.resolution.gaps.length > 0) {
+		const uncovered = state.resolution.gaps.map((gap) => `${gap.packageId}:${gap.kind}`).join(", ");
+		throw new Error(`Uncovered required quality actions: ${uncovered}`);
+	}
+	if (state.matrix.length === 0)
+		throw new Error("No executable quality actions detected; refusing a vacuous green quality check");
+}
+
 /** Result of one detected executable quality action. */
 interface DetectedQualityExecution {
 	packageId: string;
