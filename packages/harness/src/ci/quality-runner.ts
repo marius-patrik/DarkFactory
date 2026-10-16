@@ -65,7 +65,9 @@ export async function executeQualityPlan(
 		(async (command, cwd, timeout, environment) => {
 			const env = { ...process.env, ...environment };
 			// Package-local and manager-root tools are both accessible without a second install.
-			const envPath = [join(cwd, "node_modules", ".bin"), join(root, "node_modules", ".bin"), env.PATH ?? ""].join(delimiter);
+			const envPath = [join(cwd, "node_modules", ".bin"), join(root, "node_modules", ".bin"), env.PATH ?? ""].join(
+				delimiter,
+			);
 			return runVerify({ command, worktree: cwd, timeoutMs: timeout, env: { ...env, PATH: envPath } });
 		});
 	function safeDirectory(path: string): string {
@@ -130,7 +132,9 @@ export async function executeQualityPlan(
 	// Explicit Python version rows must actually use that interpreter. Give every
 	// declared version an isolated environment: executing all 3.10-3.13 rows
 	// under the last globally installed Python is a false-green CI result.
-	const versions = [...new Set(actions.filter((action) => action.ecosystem === "python" && action.version).map((a) => a.version!))];
+	const versions = [
+		...new Set(actions.filter((action) => action.ecosystem === "python" && action.version).map((a) => a.version!)),
+	];
 	const pythonEnvs = new Map<string, NodeJS.ProcessEnv>();
 	const unavailableVersions = new Map<string, string>();
 	const pythonTemp = versions.length > 0 ? await mkdtemp(join(tmpdir(), "df-python-quality-")) : null;
@@ -140,7 +144,11 @@ export async function executeQualityPlan(
 	try {
 		for (const version of versions) {
 			const home = join(pythonTemp!, "python-" + version);
-			const executable = join(home, process.platform === "win32" ? "Scripts" : "bin", process.platform === "win32" ? "python.exe" : "python");
+			const executable = join(
+				home,
+				process.platform === "win32" ? "Scripts" : "bin",
+				process.platform === "win32" ? "python.exe" : "python",
+			);
 			const environment: NodeJS.ProcessEnv = {
 				PATH: [join(home, process.platform === "win32" ? "Scripts" : "bin"), process.env.PATH ?? ""].join(delimiter),
 				VIRTUAL_ENV: home,
@@ -171,48 +179,57 @@ export async function executeQualityPlan(
 				continue;
 			}
 			log(`SETUP ${relative(root, setup.cwd) || "."}: ${setup.command}`);
-			const result = await tryExecute(setup.command, setup.cwd, setup.pythonVersion ? pythonEnvs.get(setup.pythonVersion) : undefined);
+			const result = await tryExecute(
+				setup.command,
+				setup.cwd,
+				setup.pythonVersion ? pythonEnvs.get(setup.pythonVersion) : undefined,
+			);
 			if (result.exitCode !== 0) {
 				const message = `setup failed (exit ${result.exitCode}): ${setup.command}\\n${result.outputTail}`;
 				failedSetups.set(key, message);
 				log(`FAIL ${message}`);
 			}
 		}
-	const results: QualityActionResult[] = new Array(actions.length);
-	const work = [...lanes.values()];
-	let cursor = 0;
-	async function worker(): Promise<void> {
-		while (cursor < work.length) {
-			const lane = work[cursor++];
-			if (!lane) continue;
-			for (const { action, index } of lane.actions) {
-				const blocked = (action.ecosystem === "python" && action.version ? unavailableVersions.get(action.version) : undefined)
-					?? (lane.setupKey ? failedSetups.get(lane.setupKey) : undefined);
-				if (blocked) {
-					results[index] = { id: action.id, command: action.command, cwd: action.cwd, blocked };
-					log(`BLOCKED ${action.id}: ${blocked}`);
-					continue;
+		const results: QualityActionResult[] = new Array(actions.length);
+		const work = [...lanes.values()];
+		let cursor = 0;
+		async function worker(): Promise<void> {
+			while (cursor < work.length) {
+				const lane = work[cursor++];
+				if (!lane) continue;
+				for (const { action, index } of lane.actions) {
+					const blocked =
+						(action.ecosystem === "python" && action.version ? unavailableVersions.get(action.version) : undefined) ??
+						(lane.setupKey ? failedSetups.get(lane.setupKey) : undefined);
+					if (blocked) {
+						results[index] = { id: action.id, command: action.command, cwd: action.cwd, blocked };
+						log(`BLOCKED ${action.id}: ${blocked}`);
+						continue;
+					}
+					const outcome = await tryExecute(
+						action.command,
+						safeDirectory(action.cwd),
+						action.ecosystem === "python" && action.version ? pythonEnvs.get(action.version) : undefined,
+					);
+					results[index] = { id: action.id, command: action.command, cwd: action.cwd, result: outcome };
+					log(`${outcome.exitCode === 0 ? "PASS" : "FAIL"} ${action.id} (exit ${outcome.exitCode})`);
+					if (outcome.exitCode !== 0) log(outcome.outputTail);
 				}
-				const outcome = await tryExecute(action.command, safeDirectory(action.cwd), action.ecosystem === "python" && action.version ? pythonEnvs.get(action.version) : undefined);
-				results[index] = { id: action.id, command: action.command, cwd: action.cwd, result: outcome };
-				log(`${outcome.exitCode === 0 ? "PASS" : "FAIL"} ${action.id} (exit ${outcome.exitCode})`);
-				if (outcome.exitCode !== 0) log(outcome.outputTail);
 			}
 		}
-	}
-	await Promise.all(Array.from({ length: Math.min(requested, work.length) }, () => worker()));
-	const summary: QualitySummary = {
-		planned: actions.length,
-		executed: results.filter((entry) => entry?.result !== undefined).length,
-		passed: results.filter((entry) => entry?.result?.exitCode === 0).length,
-		failed: results.filter((entry) => entry?.result && entry.result.exitCode !== 0).length,
-		blocked: results.filter((entry) => entry?.blocked !== undefined).length,
-		results,
-	};
-	if (summary.executed + summary.blocked !== summary.planned) {
-		throw new Error(`Quality coverage discrepancy: ${JSON.stringify(summary)}`);
-	}
-	return summary;
+		await Promise.all(Array.from({ length: Math.min(requested, work.length) }, () => worker()));
+		const summary: QualitySummary = {
+			planned: actions.length,
+			executed: results.filter((entry) => entry?.result !== undefined).length,
+			passed: results.filter((entry) => entry?.result?.exitCode === 0).length,
+			failed: results.filter((entry) => entry?.result && entry.result.exitCode !== 0).length,
+			blocked: results.filter((entry) => entry?.blocked !== undefined).length,
+			results,
+		};
+		if (summary.executed + summary.blocked !== summary.planned) {
+			throw new Error(`Quality coverage discrepancy: ${JSON.stringify(summary)}`);
+		}
+		return summary;
 	} finally {
 		if (pythonTemp) await rm(pythonTemp, { recursive: true, force: true });
 	}
