@@ -85,8 +85,12 @@ jobs:
           sha256sum --check df-linux-x64.sha256
           mkdir -p "$RUNNER_TEMP/candidate-df"
           tar -xzf df-linux-x64.tar.gz -C "$RUNNER_TEMP/candidate-df"
+          set +e
           "$RUNNER_TEMP/candidate-df/df-linux-x64" ci matrix --repo "$GITHUB_WORKSPACE/consumer" > "$RUNNER_TEMP/consumer-quality.json"
-          jq '{actions:(.matrix | length), ecosystems, unresolved:(.gaps | length)}' "$RUNNER_TEMP/consumer-quality.json"
+          RC=$?
+          set -e
+          jq '{actions:(.matrix | length), ecosystems, unresolved:(.gaps | length), gaps: [.gaps[] | {packageId, kind, reason, description}]}' "$RUNNER_TEMP/consumer-quality.json"
+          test "$RC" -eq 0
           test "$(jq '.matrix | length' "$RUNNER_TEMP/consumer-quality.json")" -gt 0
           test "$(jq '.gaps | length' "$RUNNER_TEMP/consumer-quality.json")" -eq 0
       - name: Run all applicable consumer quality actions in one job
