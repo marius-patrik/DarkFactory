@@ -49,7 +49,10 @@ function pushPathFilter(workflow: string): string[] {
  */
 const REMAINING_PYTHON_STEPS: Record<string, string[]> = {
 	"ci.yml": ["quality / Install Python package managers"],
-	"darkfactory-control.yml": ["execute-quality / (unnamed)", "execute-quality / Install inferred Python quality tooling"],
+	"darkfactory-control.yml": [
+		"execute-quality / (unnamed)",
+		"execute-quality / Install inferred Python quality tooling",
+	],
 };
 
 /** The steps moved off Python, and the command each one runs instead. */
