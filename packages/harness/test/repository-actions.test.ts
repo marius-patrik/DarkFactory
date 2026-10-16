@@ -97,6 +97,31 @@ describe("repository evidence and capability actions", () => {
 		expect(matrix.some((entry) => entry.packageId === "lean:proofs" && entry.kind === "test")).toBe(true);
 	});
 
+	test("tool-only Python metadata installs declared dev tools, not a nonexistent editable package", async () => {
+		const root = await mkdtemp(join(tmpdir(), "df-python-tool-config-"));
+		roots.push(root);
+		await writeFile(join(root, "pyproject.toml"), '[tool.pytest.ini_options]\ntestpaths = ["tests"]\n');
+		await writeFile(join(root, "requirements-dev.txt"), "pytest>=8\nblack>=24\n");
+		const detected = await detectRepositoryEvidence(root);
+		const entry = detected.packages.find((pkg) => pkg.id === "python:.")!;
+		expect(entry.pythonSetupKind).toBe("requirements-dev");
+		const resolved = resolveRepositoryActions(detected, [codeCapability]);
+		expect(resolved.packages.find((pkg) => pkg.package.id === "python:.")?.actions.setup.command).toBe(
+			"python -m pip install -r requirements-dev.txt",
+		);
+	});
+
+	test("genuine Python project metadata retains editable installation", async () => {
+		const root = await fixture();
+		const detected = await detectRepositoryEvidence(root);
+		const entry = detected.packages.find((pkg) => pkg.id === "python:python")!;
+		expect(entry.pythonSetupKind).toBe("editable");
+		const resolved = resolveRepositoryActions(detected, [codeCapability]);
+		expect(resolved.packages.find((pkg) => pkg.package.id === "python:python")?.actions.setup.command).toBe(
+			"python -m pip install -e .",
+		);
+	});
+
 	test("does not silently fall back when an action is unsupported", async () => {
 		const root = await fixture();
 		const evidence = await detectRepositoryEvidence(root);
