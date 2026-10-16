@@ -5,6 +5,7 @@ import { GitHubRepository } from "../github/repository.ts";
 import { assertQualityCoverage, resolveDetectedQuality } from "./detected.ts";
 import { runCiDoctor } from "./doctor.ts";
 import { installWorkflows, updateWorkflows } from "./installer.ts";
+import { reconcileNativeConfigs } from "./native-config.ts";
 import { applyBranchProtection, computeRequiredChecks, verifyBranchProtection } from "./protection.ts";
 import { getCheckStatus, getRunLogs, getWorkflowRuns, rerunWorkflowRun } from "./status.ts";
 
@@ -45,7 +46,17 @@ export async function runCiCli(args: string[], context: CiCliContext = {}): Prom
 	const isJson = hasFlag(args, "--json");
 
 	switch (subcommand) {
+		case "native-config": {
+			const statuses = await reconcileNativeConfigs(repoPath, hasFlag(args, "--write"));
+			log(JSON.stringify(statuses, null, 2));
+			const drift = statuses.filter((item) => item.state !== "in_sync");
+			if (drift.length > 0)
+				error("Native tool config drift: " + drift.map((item) => item.file + " (" + item.state + ")").join(", "));
+			return drift.length > 0 ? 1 : 0;
+		}
+
 		case "matrix": {
+			const native = await reconcileNativeConfigs(repoPath);
 			const state = await resolveDetectedQuality(repoPath, getOption(args, "--capabilities-root"));
 			log(
 				JSON.stringify(
@@ -67,10 +78,21 @@ export async function runCiCli(args: string[], context: CiCliContext = {}): Prom
 				error(cause instanceof Error ? cause.message : String(cause));
 				return 1;
 			}
+			const drift = native.filter((item) => item.state !== "in_sync");
+			if (drift.length > 0) {
+				error("Native tool config drift: " + drift.map((item) => item.file + " (" + item.state + ")").join(", "));
+				return 1;
+			}
 			return 0;
 		}
 
 		case "quality": {
+			const native = await reconcileNativeConfigs(repoPath);
+			const drift = native.filter((item) => item.state !== "in_sync");
+			if (drift.length > 0) {
+				error("Native tool config drift: " + drift.map((item) => item.file + " (" + item.state + ")").join(", "));
+				return 1;
+			}
 			const state = await resolveDetectedQuality(repoPath, getOption(args, "--capabilities-root"));
 			try {
 				assertQualityCoverage(state);
@@ -348,7 +370,7 @@ export async function runCiCli(args: string[], context: CiCliContext = {}): Prom
 		}
 		default:
 			log(`df ci commands:
-  df ci matrix  [--repo <path>] [--capabilities-root <path>]
+  df ci native-config [--repo <path>] [--write]\n  df ci matrix  [--repo <path>] [--capabilities-root <path>]
   df ci quality [--repo <path>] [--capabilities-root <path>] [--workers 1..32] [--json]
   df ci install [--repo <path>] [--dry-run] [--force]
   df ci update  [--repo <path>] [--dry-run] [--force]
