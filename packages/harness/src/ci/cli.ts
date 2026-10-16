@@ -6,7 +6,6 @@ import { resolveDetectedQuality } from "./detected.ts";
 import { runCiDoctor } from "./doctor.ts";
 import { reconcileNativeConfigs } from "./native-config.ts";
 import { installWorkflows, updateWorkflows } from "./installer.ts";
-import { reconcileNativeConfigs } from "./native-config.ts";
 import { applyBranchProtection, computeRequiredChecks, verifyBranchProtection } from "./protection.ts";
 import { getCheckStatus, getRunLogs, getWorkflowRuns, rerunWorkflowRun } from "./status.ts";
 

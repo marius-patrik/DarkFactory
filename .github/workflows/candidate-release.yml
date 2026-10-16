@@ -74,4 +74,3 @@ jobs:
           docker run --rm darkfactory-agent:candidate providers > "$RUNNER_TEMP/df-container-providers.txt"
           test -s "$RUNNER_TEMP/df-container-providers.txt"
           test "$(docker run --rm --entrypoint id darkfactory-agent:candidate -u)" = "1001"
-
