@@ -373,8 +373,7 @@ async function scan(
 	}
 	for (const entry of entries) {
 		if (!entry.isDirectory()) continue;
-		// Agent plugin bundles vendor installed packages into their runtime payload.
-		// These are not source packages of the consumer and must never get CI jobs.
+		// Packaged Codex extension dependencies are not consumer source packages.
 		if (rel === ".codex-plugin" && entry.name === "runtime") continue;
 		if (
 			[

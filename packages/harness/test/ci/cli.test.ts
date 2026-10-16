@@ -38,7 +38,7 @@ describe("df ci CLI commands", () => {
 			});
 			expect(code).toBe(1);
 			expect(JSON.parse(output.join("\\n")).matrix).toEqual([]);
-			expect(errors.join("\\n")).toContain("No executable quality actions");
+			expect(errors.join("\\n")).toContain("Quality plan incomplete");
 		} finally {
 			await rm(temp, { recursive: true, force: true });
 		}
@@ -58,7 +58,7 @@ describe("df ci CLI commands", () => {
 			expect(matrix.matrix.length).toBeGreaterThan(0);
 			expect(matrix.gaps.some((gap: { kind: string }) => gap.kind === "test")).toBe(true);
 			expect(code).toBe(1);
-			expect(errors.join("\\n")).toContain("Uncovered required quality actions");
+			expect(errors.join("\\n")).toContain("Quality plan incomplete");
 		} finally {
 			await rm(temp, { recursive: true, force: true });
 		}

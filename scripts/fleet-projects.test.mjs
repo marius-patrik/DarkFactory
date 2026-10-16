@@ -53,24 +53,6 @@ test("unrelated duplicated project titles do not prevent managed board reconcili
 	assert.throws(() => selectedManagedProject(index, "Features"), /Ambiguous duplicate managed Project/);
 });
 
-test("closed Projects are historical and never shadow the live managed board", () => {
-	const index = new Map();
-	registerProjectTitle(index, { id: "closed-one", title: "dsh-stack", closed: true });
-	assert.equal(selectedManagedProject(index, "dsh-stack"), undefined);
-	registerProjectTitle(index, { id: "open", title: "dsh-stack", closed: false });
-	registerProjectTitle(index, { id: "closed-two", title: "dsh-stack", closed: true });
-	assert.equal(selectedManagedProject(index, "dsh-stack")?.id, "open");
-});
-
-test("two active boards with a managed title remain a fatal ambiguity", () => {
-	const index = new Map();
-	registerProjectTitle(index, { id: "one", title: "Global", closed: false });
-	registerProjectTitle(index, { id: "retired", title: "Global", closed: true });
-	assert.equal(selectedManagedProject(index, "Global")?.id, "one");
-	registerProjectTitle(index, { id: "two", title: "Global", closed: false });
-	assert.throws(() => selectedManagedProject(index, "Global"), /Ambiguous duplicate managed Project: Global/);
-});
-
 test("reuses REST project IDs instead of querying shared GraphQL inventory", async () => {
 	const records = new Map([
 		["DarkFactory", { title: "DarkFactory", id: "PVT_kwDOabc", number: 31, closed: false }],
@@ -106,4 +88,22 @@ test("missing REST project node ids fail closed without creating duplicate board
 		),
 		/lacks a GraphQL node id/,
 	);
+});
+
+test("closed Projects are historical and never shadow the live managed board", () => {
+	const index = new Map();
+	registerProjectTitle(index, { id: "closed-one", title: "dsh-stack", closed: true });
+	assert.equal(selectedManagedProject(index, "dsh-stack"), undefined);
+	registerProjectTitle(index, { id: "open", title: "dsh-stack", closed: false });
+	registerProjectTitle(index, { id: "closed-two", title: "dsh-stack", closed: true });
+	assert.equal(selectedManagedProject(index, "dsh-stack")?.id, "open");
+});
+
+test("two active boards with a managed title remain a fatal ambiguity", () => {
+	const index = new Map();
+	registerProjectTitle(index, { id: "one", title: "Global", closed: false });
+	registerProjectTitle(index, { id: "retired", title: "Global", closed: true });
+	assert.equal(selectedManagedProject(index, "Global")?.id, "one");
+	registerProjectTitle(index, { id: "two", title: "Global", closed: false });
+	assert.throws(() => selectedManagedProject(index, "Global"), /Ambiguous duplicate managed Project: Global/);
 });

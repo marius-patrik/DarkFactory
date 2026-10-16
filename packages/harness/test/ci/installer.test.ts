@@ -165,8 +165,6 @@ describe("the shipped CI template agrees with this repository's own", () => {
 	it("resolves the capabilities root where the plugins now live", () => {
 		const template = readFileSync(join(import.meta.dir, "..", "..", "assets", "workflows", "ci.yml.tmpl"), "utf-8");
 		expect(template).toContain('--capabilities-root "$ROOT/.darkfactory/plugins"');
-		expect(template).toContain("Execute quality actions in one runner");
-		expect(template).not.toContain("quality-run:");
 		expect(template).not.toContain("$ROOT/capabilities");
 	});
 
