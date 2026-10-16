@@ -185,21 +185,37 @@ export function inspectConfig(source, slug, branch, sha) {
 }
 
 const escaped = (path) => path.split("/").map(encodeURIComponent).join("/");
+// Repository reads can hit intermittent GitHub 5xx responses (notably deleted
+// legacy branch refs). Retrying safe GETs is valid; never replay ambiguous writes.
 export async function api(method, path, token, data, optional = false) {
-	const result = await fetch(API + path, {
-		method,
-		headers: {
-			Accept: "application/vnd.github+json",
-			Authorization: `Bearer ${token}`,
-			"X-GitHub-Api-Version": "2022-11-28",
-			"User-Agent": "darkfactory-fleet-sync",
-			...(data === undefined ? {} : { "Content-Type": "application/json" }),
-		},
-		...(data === undefined ? {} : { body: JSON.stringify(data) }),
-	});
-	if (optional && result.status === 404) return null;
-	if (!result.ok) throw new Error(`${method} ${path}: HTTP ${result.status} ${(await result.text()).slice(0, 350)}`);
-	return result.status === 204 ? null : result.json();
+	const maxAttempts = method === "GET" ? 3 : 1;
+	for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+		let result;
+		try {
+			result = await fetch(API + path, {
+				method,
+				headers: {
+					Accept: "application/vnd.github+json",
+					Authorization: `Bearer ${token}`,
+					"X-GitHub-Api-Version": "2022-11-28",
+					"User-Agent": "darkfactory-fleet-sync",
+					...(data === undefined ? {} : { "Content-Type": "application/json" }),
+				},
+				...(data === undefined ? {} : { body: JSON.stringify(data) }),
+			});
+		} catch (error) {
+			if (attempt === maxAttempts) throw error;
+			await new Promise((resolve) => setTimeout(resolve, 200 * attempt));
+			continue;
+		}
+		if (optional && result.status === 404) return null;
+		if (method === "GET" && [500, 502, 503, 504].includes(result.status) && attempt < maxAttempts) {
+			await new Promise((resolve) => setTimeout(resolve, 200 * attempt));
+			continue;
+		}
+		if (!result.ok) throw new Error(`${method} ${path}: HTTP ${result.status} ${(await result.text()).slice(0, 350)}`);
+		return result.status === 204 ? null : result.json();
+	}
 }
 export async function pages(path, token, select = (value) => value) {
 	const out = [];

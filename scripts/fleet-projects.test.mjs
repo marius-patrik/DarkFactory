@@ -4,6 +4,7 @@ import {
 	isProjectsQuotaExceeded,
 	managedRepositories,
 	projectsFor,
+	readOwnerProjects,
 	registerProjectTitle,
 	selectedManagedProject,
 } from "./fleet-projects.mjs";
@@ -50,4 +51,59 @@ test("unrelated duplicated project titles do not prevent managed board reconcili
 	assert.equal(selectedManagedProject(index, "OASIS")?.id, "consumer");
 	assert.equal(selectedManagedProject(index, "Missing"), undefined);
 	assert.throws(() => selectedManagedProject(index, "Features"), /Ambiguous duplicate managed Project/);
+});
+
+test("closed Projects are historical and never shadow the live managed board", () => {
+	const index = new Map();
+	registerProjectTitle(index, { id: "closed-one", title: "dsh-stack", closed: true });
+	assert.equal(selectedManagedProject(index, "dsh-stack"), undefined);
+	registerProjectTitle(index, { id: "open", title: "dsh-stack", closed: false });
+	registerProjectTitle(index, { id: "closed-two", title: "dsh-stack", closed: true });
+	assert.equal(selectedManagedProject(index, "dsh-stack")?.id, "open");
+});
+
+test("two active boards with a managed title remain a fatal ambiguity", () => {
+	const index = new Map();
+	registerProjectTitle(index, { id: "one", title: "Global", closed: false });
+	registerProjectTitle(index, { id: "retired", title: "Global", closed: true });
+	assert.equal(selectedManagedProject(index, "Global")?.id, "one");
+	registerProjectTitle(index, { id: "two", title: "Global", closed: false });
+	assert.throws(() => selectedManagedProject(index, "Global"), /Ambiguous duplicate managed Project: Global/);
+});
+
+test("reuses REST project IDs instead of querying shared GraphQL inventory", async () => {
+	const records = new Map([
+		["DarkFactory", { title: "DarkFactory", id: "PVT_kwDOabc", number: 31, closed: false }],
+		["Global", { title: "Global", id: "PVT_kwDOdef", number: 21, closed: false }],
+	]);
+	const seen = [];
+	const read = async (owner, token) => {
+		seen.push({ type: "projects", owner, token });
+		return records;
+	};
+	const rest = async (method, path, token) => {
+		seen.push({ type: "owner", method, path, token });
+		return { node_id: "MDQ6VXNlcjE=" };
+	};
+	const result = await readOwnerProjects("marius-patrik", "owner-pat", "app-token", read, rest);
+	assert.equal(result.ownerId, "MDQ6VXNlcjE=");
+	assert.deepEqual([...result.byTitle.keys()], ["DarkFactory", "Global"]);
+	assert.equal(result.byTitle.get("Global").id, "PVT_kwDOdef");
+	assert.deepEqual(seen, [
+		{ type: "projects", owner: "marius-patrik", token: "owner-pat" },
+		{ type: "owner", method: "GET", path: "/users/marius-patrik", token: "app-token" },
+	]);
+});
+
+test("missing REST project node ids fail closed without creating duplicate boards", async () => {
+	await assert.rejects(
+		readOwnerProjects(
+			"marius-patrik",
+			"owner-pat",
+			"app-token",
+			async () => new Map([["Global", { title: "Global", id: null, number: 21, closed: false }]]),
+			async () => ({ node_id: "MDQ6VXNlcjE=" }),
+		),
+		/lacks a GraphQL node id/,
+	);
 });
