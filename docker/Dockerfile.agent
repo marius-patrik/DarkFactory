@@ -1,13 +1,12 @@
 # Containerized df CI Agent
 # Provides full parity between local execution and GitHub Actions CI.
 
-FROM python:3.12-slim-bookworm
+FROM debian:bookworm-slim
 
 LABEL maintainer="marius-patrik"
-LABEL description="Containerized df agent environment with Python 3.12, Bun, dev tools, and GitHub CLI."
+LABEL description="Containerized df agent environment with Bun, developer tools, and GitHub CLI."
 
 ENV DEBIAN_FRONTEND=noninteractive
-ENV PYTHONUNBUFFERED=1
 
 # 1. Install base utilities, D-Bus, Secret Service, unzip (for the Bun installer),
 # and GitHub CLI
@@ -59,7 +58,7 @@ COPY scripts/ /opt/darkfactory/scripts/
 RUN cd /opt/darkfactory && bun install --frozen-lockfile
 # ENV, not a profile script: the runner invokes `df` from a constructed environment, so a value
 # only a login shell reads would leave every agent call without a runtime to dispatch to.
-ENV DF_SOURCE=/opt/darkfactory/packages/harness/src/cli.ts
+ENV DF_SOURCE=/opt/darkfactory/packages/cli/src/cli.ts
 RUN cp /opt/darkfactory/scripts/df-wrapper.sh /usr/local/bin/df \
     && chmod +x /usr/local/bin/df \
     && df providers >/dev/null
@@ -75,9 +74,7 @@ RUN set -eux; \
 
 # 4. Project workspace
 #
-# `pyproject.toml` and `requirements-dev.txt` were deleted with the Python removal, so there is
-# nothing to pip install. A consumer repository that brings its own Python ecosystem installs into
-# this workspace at container start; the image itself no longer carries one.
+# Consumer-specific language toolchains are installed by their owning repositories when required.
 WORKDIR /workspace
 
 # 5. Create the unprivileged user the agent runs as
@@ -97,8 +94,7 @@ RUN groupadd --gid ${AGENT_GID} agent \
 ENV HOME=/home/agent
 
 # 6. The delivery workflows run in the runner context, not in this container, so the pipeline
-# scripts that used to be copied here are not. `.github/scripts/` was deleted with the Python
-# removal; the subagents are reached through `df` and `packages/harness/src/cli.ts` instead.
+# scripts are not copied into the container. Agent tasks execute through `df`.
 
 # Everything below runs unprivileged. Placed after the installs so package managers still have
 # the root they need at build time.
@@ -110,11 +106,8 @@ USER agent
 # it, so anything the agent image can do is something `df` can do: `docker run darkfactory-agent
 # dispatch` appends `dispatch` to this entrypoint, and `df dispatch` runs it.
 #
-# The nine runner commands (dispatch, interpret, plan, implement, self-review, self-review-fix,
-# plan-alignment, respond, token-refresh) are cases in `df`'s own switch, not a separate process. That
-# is the point at which `nix/entrypoint.sh`'s blocker is satisfied: it refused to translate `dispatch`
-# into `graph dispatch` because a shim printing a plan and exiting 0 turns a loud failure into a
-# silent one. The answer was a real `df dispatch`, not a better shim.
+# The CLI delegates governed agent commands to the TypeScript pipeline runner.
+# `df dispatch` executes the workflow; graph planning alone does not.
 #
 # `dbus-run-session` still wraps it, because the credential store is a D-Bus client and dropping the
 # wrapper removes the session bus rather than the dependency.

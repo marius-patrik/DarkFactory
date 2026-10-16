@@ -24,7 +24,7 @@
     "typescript": "5.9.2"
   },
   "bin": {
-    "df": "packages/harness/src/cli.ts"
+    "df": "packages/cli/src/cli.ts"
   },
   "dependencies": {
     "@earendil-works/pi-agent-core": "0.85.1",

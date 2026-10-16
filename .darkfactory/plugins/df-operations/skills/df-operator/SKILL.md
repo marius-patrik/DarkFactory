@@ -34,7 +34,7 @@ df models --provider <provider> --refresh
 
 ## Routing
 
-`df route` tells you which chain a task would take before you commit to running it. It accepts `--kind`, `--size`, and `--need` flags that feed into the router input. The allowed values come from `routerInput` in `packages/harness/src/cli.ts`:
+`df route` tells you which chain a task would take before you commit to running it. It accepts `--kind`, `--size`, and `--need` flags that feed into the router input. The allowed values come from `routerInput` in `packages/cli/src/cli.ts`:
 
 - `--kind` must be one of: `plan`, `implement`, `review`, `fix`, `summarize`, `classify`, `chat`, `image`, `video`
 - `--size` must be one of: `small`, `medium`, `large`
