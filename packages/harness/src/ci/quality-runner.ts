@@ -104,7 +104,7 @@ export async function executeQualityPlan(
 		if (seenIds.has(action.id)) throw new Error(`Duplicate quality action ID: ${action.id}`);
 		seenIds.add(action.id);
 		if (!action.command?.trim()) throw new Error(`Missing command for ${action.id}`);
-		if (action.version && (action.ecosystem !== "python" || !/^3\\.\\d{1,2}(?:\\.\\d{1,2})?$/.test(action.version)))
+		if (action.version && (action.ecosystem !== "python" || !/^3\.\d{1,2}(?:\.\d{1,2})?$/.test(action.version)))
 			throw new Error(`Unverified interpreter/runtime version for ${action.id}: ${action.version}`);
 		safeDirectory(action.cwd);
 		let setupKey: string | undefined;
