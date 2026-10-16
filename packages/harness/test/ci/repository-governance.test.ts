@@ -80,6 +80,9 @@ const NOT_CALLABLE = [
 	// Self-hosted event bridges are producer-only, not reusable consumer workflows.
 	"darkfactory-self.yml",
 	"self-install.yml",
+	// Producer-only release-candidate checks are not part of consumer workflow APIs.
+	"candidate-release.yml",
+	"quality-python-versions.yml",
 ];
 
 /** Workflows that write to GitHub on the pipeline's behalf and must therefore authenticate as the App. */
