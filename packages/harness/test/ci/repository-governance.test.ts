@@ -49,6 +49,9 @@ const EXPECTED_WORKFLOWS = [
 	// Producer-only event bridges and verification workflows are never called by consumers.
 	"darkfactory-self.yml",
 	"self-install.yml",
+	// Candidate builds are intentionally producer/PR-local; consumers must use released assets.
+	"candidate-release.yml",
+	"quality-python-versions.yml",
 ];
 
 /** Issue chooser and templates. */
