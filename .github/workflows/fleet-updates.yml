@@ -61,6 +61,10 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
+      - name: Inspect managed Projects via REST without consuming GraphQL quota
+        env:
+          GH_PROJECT_TOKEN: ${{ secrets.GH_PROJECT_TOKEN }}
+        run: node scripts/self-projects-rest.mjs
       - name: Reconcile every managed repository board and the shared Global board
         env:
           DARKFACTORY_APP_PRIVATE_KEY: ${{ secrets.DARKFACTORY_APP_PRIVATE_KEY }}

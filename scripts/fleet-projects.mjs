@@ -4,6 +4,7 @@
 import { pathToFileURL } from "node:url";
 import { appendFileSync } from "node:fs";
 import { api, appJwt, isFleetExcluded, pages } from "./fleet-sync.mjs";
+import { readProjectsRest } from "./self-projects-rest.mjs";
 
 export const GLOBAL_BOARD = "Global";
 
@@ -65,26 +66,29 @@ export function selectedManagedProject(index, title) {
 	return project;
 }
 
-async function readOwnerProjects(login, token) {
+export async function readOwnerProjects(
+	login,
+	token,
+	appToken,
+	read = readProjectsRest,
+	rest = api,
+	managedTitles = null,
+) {
+	// Projects v2 list reads use the REST API (supported for classic user PATs)
+	// instead of spending shared GraphQL quota on every listing page. This also
+	// works while GraphQL is exhausted, and never treats 403 as an empty board.
+	const [projects, user] = await Promise.all([
+		read(login, token, undefined, managedTitles),
+		rest("GET", "/users/" + encodeURIComponent(login), appToken),
+	]);
+	if (!user?.node_id) throw new Error("Could not resolve owner GraphQL id via REST");
 	const byTitle = new Map();
-	let ownerId = null,
-		cursor = null;
-	do {
-		const data = await graph(
-			token,
-			"query($login:String!,$after:String){user(login:$login){id projectsV2(first:100,after:$after){pageInfo{hasNextPage endCursor} nodes{id number title closed}}}}",
-			{ login, after: cursor },
-		);
-		const user = data.user;
-		if (!user?.id) throw new Error("Projects owner " + login + " cannot be resolved");
-		ownerId = user.id;
-		for (const project of user.projectsV2.nodes ?? []) {
-			registerProjectTitle(byTitle, project);
-		}
-		cursor = user.projectsV2.pageInfo.hasNextPage ? user.projectsV2.pageInfo.endCursor : null;
-		if (cursor === "") throw new Error("Project listing cannot advance");
-	} while (cursor);
-	return { ownerId, byTitle };
+	for (const [title, project] of projects) {
+		if (!project.id || typeof project.id !== "string")
+			throw new Error("Project " + title + " lacks a GraphQL node id; refusing to create duplicate boards");
+		byTitle.set(title, { id: project.id, number: project.number, title, closed: project.closed });
+	}
+	return { ownerId: user.node_id, byTitle };
 }
 
 async function ensureProject(title, ownerId, projects, token) {
@@ -198,7 +202,10 @@ export async function runFleetProjects(env = process.env) {
 	).filter((repo) => env.DF_FLEET_CONSUMERS_ENABLED === "1" || repo.full_name.toLowerCase() === upstream.toLowerCase());
 	if (!repositories.some((r) => r.full_name.toLowerCase() === upstream.toLowerCase()))
 		throw new Error("Self-hosted DarkFactory repo missing from App installation");
-	const { ownerId, byTitle } = await readOwnerProjects(owner, env.GH_PROJECT_TOKEN);
+	const { ownerId, byTitle } = await readOwnerProjects(owner, env.GH_PROJECT_TOKEN, appToken, readProjectsRest, api, [
+		GLOBAL_BOARD,
+		...repositories.map((repo) => repo.name || repo.full_name.split("/")[1]),
+	]);
 	const global = await ensureProject(GLOBAL_BOARD, ownerId, byTitle, env.GH_PROJECT_TOKEN);
 	const links = new Map(),
 		items = new Map();
