@@ -1,6 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import {
+	api as githubApi,
 	inspectConfig,
 	inspectWorkflow,
 	mergeConfigSources,
@@ -391,4 +392,63 @@ test("repinning never replaces a PR containing unrelated edits", async () => {
 		/unowned edits/,
 	);
 	assert.deepEqual(calls, ["GET"]);
+});
+
+test("intermittent GitHub branch-read HTTP 500 is retried without treating the branch as absent", async () => {
+	const original = globalThis.fetch;
+	let calls = 0;
+	globalThis.fetch = async () => {
+		calls++;
+		if (calls === 1) return new Response("server error", { status: 500 });
+		return new Response(JSON.stringify({ object: { sha: "a".repeat(40) } }), { status: 200 });
+	};
+	try {
+		const result = await githubApi(
+			"GET",
+			"/repos/marius-patrik/Omnis/git/ref/heads/darkfactory",
+			"fake",
+			undefined,
+			true,
+		);
+		assert.equal(result.object.sha, "a".repeat(40));
+		assert.equal(calls, 2);
+	} finally {
+		globalThis.fetch = original;
+	}
+});
+
+test("an absent legacy ref remains absent without retries", async () => {
+	const original = globalThis.fetch;
+	let calls = 0;
+	globalThis.fetch = async () => {
+		calls++;
+		return new Response("missing", { status: 404 });
+	};
+	try {
+		assert.equal(
+			await githubApi("GET", "/repos/marius-patrik/Omnis/git/ref/heads/darkfactory", "fake", undefined, true),
+			null,
+		);
+		assert.equal(calls, 1);
+	} finally {
+		globalThis.fetch = original;
+	}
+});
+
+test("ambiguous GitHub mutations are never retried after HTTP 500", async () => {
+	const original = globalThis.fetch;
+	let calls = 0;
+	globalThis.fetch = async () => {
+		calls++;
+		return new Response("server error", { status: 500 });
+	};
+	try {
+		await assert.rejects(
+			githubApi("POST", "/repos/marius-patrik/Omnis/issues", "fake", { title: "sample" }),
+			/POST.*HTTP 500/,
+		);
+		assert.equal(calls, 1);
+	} finally {
+		globalThis.fetch = original;
+	}
 });
