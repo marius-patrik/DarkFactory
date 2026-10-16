@@ -9,7 +9,12 @@ let
     nativeBuildInputs = [ pkgs.bun pkgs.coreutils ];
     outputHashAlgo = "sha256";
     outputHashMode = "recursive";
-    outputHash = lib.fakeHash;
+    outputHash =
+      if pkgs.stdenv.hostPlatform.system == "x86_64-linux"
+      then "sha256-DKGa0FolMPTdJi8EriHakRiP+DtPO9m6yh5kazS+Ho0="
+      else if pkgs.stdenv.hostPlatform.system == "aarch64-linux"
+      then "sha256-aaouyVlhUyWNsuGNl6vfUfBwULriQZcQk/hRCrlH/hU="
+      else throw "Unsupported DarkFactory agent platform";
 
     installPhase = ''
       runHook preInstall

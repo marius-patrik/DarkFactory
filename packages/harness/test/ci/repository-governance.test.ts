@@ -404,10 +404,12 @@ describe("agent.yml", () => {
 		}
 	});
 
-	it("test_the_agent_image_is_built_from_the_pipeline: consumers run the same runner", () => {
-		const build = steps(agent, "run-agent").find((step) => step.name === "Build agent container");
-		expect(build?.run).toContain('CONTEXT=".darkfactory-pipeline"');
-		expect(build?.run).toContain("$CONTEXT/docker/Dockerfile.agent");
+	it("test_the_agent_image_is_built_from_the_pipeline: consumers run the same Nix image", () => {
+		const build = steps(agent, "run-agent").find((step) => step.name === "Build and load Nix agent image");
+		expect(build?.run).toContain('CONTEXT="./.darkfactory-pipeline"');
+		expect(build?.run).toContain('nix build "$CONTEXT#agentImage"');
+		expect(build?.run).toContain("docker load -i");
+		expect(build?.run).not.toContain("Dockerfile.agent");
 	});
 
 	it("test_bot_comments_do_not_start_an_agent_container: a bot comment is dropped before the build", () => {
