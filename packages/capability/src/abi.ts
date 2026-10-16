@@ -137,6 +137,8 @@ export interface CapabilityPackageContext {
 	domains: readonly string[];
 	scripts: readonly string[];
 	apiEntryPoints: readonly string[];
+	/** Setup strategy inferred from Python package metadata; not from tool config alone. */
+	pythonSetupKind?: "editable" | "requirements" | "requirements-dev" | "none";
 }
 
 /** Deterministic repository action kinds shared by doctor, CI, verification and docs. */

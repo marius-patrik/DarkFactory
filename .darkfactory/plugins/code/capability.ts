@@ -64,7 +64,7 @@ function pythonCommand(pkg: CapabilityPackageContext, command: string): string {
 	}
 }
 
-function pythonSetup(pkg: CapabilityPackageContext): string {
+function pythonSetup(pkg: CapabilityPackageContext): string | undefined {
 	switch (pkg.packageManager) {
 		case "uv":
 			return "uv sync --frozen";
@@ -73,9 +73,18 @@ function pythonSetup(pkg: CapabilityPackageContext): string {
 		case "pipenv":
 			return "pipenv sync --dev";
 		default:
-			return pkg.manifest === "requirements.txt"
-				? "python -m pip install -r requirements.txt"
-				: "python -m pip install -e .";
+			switch (pkg.pythonSetupKind) {
+				case "requirements-dev":
+					return "python -m pip install -r requirements-dev.txt";
+				case "requirements":
+					return "python -m pip install -r requirements.txt";
+				case "none":
+					return undefined;
+				default:
+					return pkg.manifest === "requirements.txt"
+						? "python -m pip install -r requirements.txt"
+						: "python -m pip install -e .";
+			}
 	}
 }
 
