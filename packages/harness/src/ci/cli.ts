@@ -2,8 +2,9 @@ import { requiredChecksForDetectedQuality } from "../../../capability/src/action
 import { executeQualityPlan } from "./quality-runner.ts";
 import { GitHubClient } from "../github/client.ts";
 import { GitHubRepository } from "../github/repository.ts";
-import { assertQualityCoverage, resolveDetectedQuality } from "./detected.ts";
+import { resolveDetectedQuality } from "./detected.ts";
 import { runCiDoctor } from "./doctor.ts";
+import { reconcileNativeConfigs } from "./native-config.ts";
 import { installWorkflows, updateWorkflows } from "./installer.ts";
 import { reconcileNativeConfigs } from "./native-config.ts";
 import { applyBranchProtection, computeRequiredChecks, verifyBranchProtection } from "./protection.ts";
@@ -72,10 +73,10 @@ export async function runCiCli(args: string[], context: CiCliContext = {}): Prom
 					2,
 				),
 			);
-			try {
-				assertQualityCoverage(state);
-			} catch (cause) {
-				error(cause instanceof Error ? cause.message : String(cause));
+			if (state.matrix.length === 0 || state.resolution.gaps.length > 0) {
+				error(
+					`Quality plan incomplete: ${state.matrix.length} executable actions, ${state.resolution.gaps.length} unresolved required actions`,
+				);
 				return 1;
 			}
 			const drift = native.filter((item) => item.state !== "in_sync");
@@ -94,10 +95,12 @@ export async function runCiCli(args: string[], context: CiCliContext = {}): Prom
 				return 1;
 			}
 			const state = await resolveDetectedQuality(repoPath, getOption(args, "--capabilities-root"));
-			try {
-				assertQualityCoverage(state);
-			} catch (cause) {
-				error(cause instanceof Error ? cause.message : String(cause));
+			if (state.matrix.length === 0 || state.resolution.gaps.length > 0) {
+				error(
+					`Quality plan incomplete: ${state.matrix.length} executable actions, ${state.resolution.gaps.length} unresolved required actions`,
+				);
+				for (const gap of state.resolution.gaps)
+					error(`GAP ${gap.packageId} ${gap.kind}: ${gap.reason ?? gap.description}`);
 				return 1;
 			}
 			const workerArg = getOption(args, "--workers");

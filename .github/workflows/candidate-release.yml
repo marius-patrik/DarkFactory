@@ -1,0 +1,77 @@
+name: Verify Source-Free Candidate
+on:
+  pull_request:
+    paths:
+      - "packages/**"
+      - ".darkfactory/plugins/**"
+      - "scripts/**"
+      - ".github/workflows/candidate-release.yml"
+      - "bun.lock"
+      - "package.json"
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: candidate-release-${{ github.event.pull_request.head.sha || github.sha }}
+  cancel-in-progress: true
+jobs:
+  targets:
+    runs-on: ubuntu-24.04
+    outputs:
+      matrix: ${{ steps.targets.outputs.matrix }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6
+      - id: targets
+        run: |
+          bun packages/harness/scripts/release-targets.ts > "$RUNNER_TEMP/candidate-targets.json"
+          echo "matrix=$(jq -c . "$RUNNER_TEMP/candidate-targets.json")" >> "$GITHUB_OUTPUT"
+  build:
+    needs: targets
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJSON(needs.targets.outputs.matrix) }}
+    runs-on: ${{ matrix.runner }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6
+      - run: bun install --frozen-lockfile
+      - name: Build native source-free artifact
+        run: bun run build --target=${{ matrix.target }}
+      - name: Execute packaged artifact and verify SHA-256
+        run: bun packages/harness/scripts/verify-target.ts --target ${{ matrix.target }}
+      - name: Retain candidate bytes for provenance inspection
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: candidate-${{ matrix.target }}
+          path: |
+            packages/harness/dist/${{ matrix.asset }}
+            packages/harness/dist/${{ matrix.asset }}.tar.gz
+            packages/harness/dist/${{ matrix.asset }}.sha256
+          if-no-files-found: error
+          retention-days: 3
+
+
+  docker-agent-smoke:
+    name: Build and run the unprivileged agent container
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - name: Build the actual agent Dockerfile
+        run: docker build --progress=plain -f docker/Dockerfile.agent -t darkfactory-agent:candidate .
+      - name: Execute published CLI contract as an unprivileged user
+        run: |
+          set -euo pipefail
+          docker run --rm darkfactory-agent:candidate --help > "$RUNNER_TEMP/df-container-help.txt"
+          grep -q 'providers' "$RUNNER_TEMP/df-container-help.txt"
+          docker run --rm darkfactory-agent:candidate providers > "$RUNNER_TEMP/df-container-providers.txt"
+          test -s "$RUNNER_TEMP/df-container-providers.txt"
+          test "$(docker run --rm --entrypoint id darkfactory-agent:candidate -u)" = "1001"
+
