@@ -14,7 +14,7 @@ const shellPath = (path: string) =>
 		: path;
 
 describe("Unix df wrapper", () => {
-	test("uses DF_BIN for DarkFactory subcommands and a later PATH df for flags and non-interactive bare calls", async () => {
+	test("routes every command through DF_BIN without falling back to the system disk utility", async () => {
 		if (process.platform === "win32" && !Bun.which("sh")) return;
 		const root = await mkdtemp(join(tmpdir(), "df-wrapper-test-"));
 		roots.push(root);
@@ -49,11 +49,12 @@ describe("Unix df wrapper", () => {
 			return { out: await new Response(child.stdout).text(), exit: await child.exited };
 		};
 		expect(await invoke(["run", "hello"])).toEqual({ out: "dark:run hello\n", exit: 0 });
-		expect(await invoke(["--human-readable"])).toEqual({ out: "system:--human-readable\n", exit: 0 });
-		expect(await invoke([])).toEqual({ out: "system:\n", exit: 0 });
+		expect(await invoke(["dispatch"])).toEqual({ out: "dark:dispatch\n", exit: 0 });
+		expect(await invoke(["--human-readable"])).toEqual({ out: "dark:--human-readable\n", exit: 0 });
+		expect(await invoke([])).toEqual({ out: "dark:\n", exit: 0 });
 	});
 
-	/** Stages the wrapper plus a fake system df, and returns a spawn helper. */
+	/** Stages the wrapper and an unrelated system disk utility to detect accidental delegation. */
 	const stage = async (options: { binary?: boolean; source?: boolean; bun?: boolean }) => {
 		const root = await mkdtemp(join(tmpdir(), "df-wrapper-test-"));
 		roots.push(root);
@@ -134,9 +135,9 @@ describe("Unix df wrapper", () => {
 		expect(result.err).toContain("install:df");
 	});
 
-	test("disk-free flags still reach the system df when no runtime is installed", async () => {
+	test("without an installed runtime, unknown flags fail closed instead of invoking another df", async () => {
 		if (process.platform === "win32" && !Bun.which("sh")) return;
 		const { invoke } = await stage({});
-		expect(await invoke(["--human-readable"])).toMatchObject({ out: "system:--human-readable\n", exit: 0 });
+		expect(await invoke(["--human-readable"])).toMatchObject({ exit: 127 });
 	});
 });

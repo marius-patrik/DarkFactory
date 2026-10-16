@@ -86,7 +86,7 @@ Lightweight models can serve appropriate work without consuming scarce high-capa
 ### Decision
 DarkFactory executes delivery as a declarative graph of agent, gate, automation and check-reference nodes with explicit edges and loop semantics.
 Planning, implementation, review/fix, alignment and deterministic effects are orchestrated by the graph/runtime. Static CI checks may remain external and are observed through check-reference nodes.
-The graph is the final execution owner. It is not yet the deployed one: the agent container's entrypoint is the Python runner, and no workflow or workflow template invokes `df graph dispatch`. Hand-over happens when the graph represents the behaviour the Python runner currently provides, which is the condition ADR-0022 sets for removing it. Until then the graph runtime, `packages/harness/assets/graph.darkfactory.json` and the `df graph` subcommands are real and validated, but the Python runner remains the current orchestrator of agent stages.
+The agent container invokes `df dispatch`, which delegates to the runner in `packages/harness/src/pipeline/main.ts`. The declarative graph is bundled and validated; production stage transitions must be verified against the graph contract.
 Execution is serializable per durable run identity. Concurrent ingress for the same run cannot execute the same transition concurrently or overwrite a newer persisted transition. External effects are separately serialized by deterministic effect identity and reconciled after ambiguous interruption.
 ### Consequences
 Execution state is durable and resumable. Workflow topology has one declarative source rather than duplicated script orchestration, and duplicate/out-of-order ingress cannot create duplicate logical mutations.
@@ -122,12 +122,14 @@ DarkFactory is a root Bun workspace with stable first-party package boundaries:
 - `@darkfactory/keychain`
 - `@darkfactory/auth`
 - `@darkfactory/docs`
+- `@darkfactory/plugins`
+- `@darkfactory/harness`
 - `@darkfactory/cli`
 - `@darkfactory/web`
-Agentic/product behavior is implemented as versioned capabilities under `.darkfactory/plugins/`. Core owns execution mechanisms; capabilities own behavior.
-Each concern has one final implementation owner. Final packages do not forward implementation to a deletion-bound legacy tree, and duplicate internal registries/state/config/command owners are not maintained for migration convenience.
+Agentic/product behavior is implemented as versioned capabilities under `.darkfactory/plugins/`. Core owns reusable mechanisms, harness owns runtime orchestration and the governed agent workflow, and capabilities own feature/domain behavior. CLI owns the public command/TUI interface without duplicating harness runtime execution.
+Each concern has one final implementation owner. The existing TypeScript harness is retained as a final package; working code is not relocated solely to remove `packages/harness/`. Any duplicated registries, state, configuration, commands, routing, and engine implementations must be consolidated at their actual authoritative owner.
 ### Consequences
-Package dependencies remain acyclic and browser-safe boundaries are explicit. Official and third-party capabilities use the same ABI/loader. No monolithic harness package is part of the public architecture, and internal historical architecture is not a compatibility surface.
+Package dependencies remain acyclic and browser-safe boundaries are explicit. Official and third-party capabilities use the same ABI/loader. Harness is an explicit supported package rather than deletion-bound legacy code. Historical implementation shape is not a compatibility contract.
 
 ## ADR-0019 — GitHub backs the web control plane
 
@@ -203,7 +205,7 @@ DarkFactory implementation targets the final architecture directly.
 - Previous internal architecture is not a compatibility target and is never kept "just in case".
 - Dead/unreachable code, stale configuration, unused assets, obsolete tests, superseded docs and transitional adapters are deleted rather than documented or tested into permanence.
 - Shared mechanisms are abstracted once at the lowest stable owner when repetition represents the same invariant; speculative abstraction and API widening solely for tests are avoided.
-- Legacy DarkFactory Python and deletion-bound harness ownership are removed once their required behavior is represented by final owners; they are not maintained as parity/fallback paths.
+- The TypeScript harness owns agent runtime and orchestration. Preserve functional implementations at their owning package boundary and consolidate genuinely duplicated or superseded behavior.
 - Independent final-product work proceeds concurrently whenever consumed interfaces are stable.
 - Tightly coupled final completion work may be consolidated into one owner-approved Request/Planning record and one integration PR instead of being artificially split into child delivery PRs.
 - Before that final integration PR merges, an unpublished source-free release candidate built from its exact head/tree is validated through the complete DarkFactory acceptance and declared consumer-fleet acceptance.

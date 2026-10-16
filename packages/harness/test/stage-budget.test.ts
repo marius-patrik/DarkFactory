@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { parseDurationMs } from "../src/cli.ts";
+import { parseDurationMs } from "../../cli/src/cli.ts";
 import type { HarnessRuntime } from "../src/harness/runtime.ts";
 import { FailoverSupervisor, type HarnessEvent, type RunDeadline, RunTimeoutError } from "../src/harness/supervisor.ts";
 import type { LimitLedger } from "../src/limits/ledger.ts";
