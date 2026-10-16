@@ -25,6 +25,8 @@ interface RunVerifyOptions {
 	command: string;
 	/** Milliseconds before the whole process tree is killed. */
 	timeoutMs: number;
+	/** Optional command environment for workspace tools. */
+	env?: NodeJS.ProcessEnv;
 	/** Characters of output to keep; default 4096. */
 	tailBytes?: number;
 }
@@ -58,7 +60,13 @@ function killTree(child: ChildProcess): void {
  * @returns Exit code, timeout flag and the tail of the combined output.
  * @throws Error when `worktree` is empty.
  */
-export function runVerify({ worktree, command, timeoutMs, tailBytes = 4096 }: RunVerifyOptions): Promise<VerifyResult> {
+export function runVerify({
+	worktree,
+	command,
+	timeoutMs,
+	tailBytes = 4096,
+	env,
+}: RunVerifyOptions): Promise<VerifyResult> {
 	if (!worktree) throw new Error("runVerify requires an explicit worktree directory");
 	return new Promise((resolve) => {
 		let output = "";
@@ -77,6 +85,7 @@ export function runVerify({ worktree, command, timeoutMs, tailBytes = 4096 }: Ru
 			cwd: worktree,
 			shell: true,
 			windowsHide: true,
+			...(env ? { env } : {}),
 			// Its own process group on POSIX, so the timeout can kill the whole tree.
 			detached: process.platform !== "win32",
 		});
