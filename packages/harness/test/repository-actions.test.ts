@@ -151,3 +151,24 @@ describe("the pinned runtime checkout is not the consumer's content", () => {
 		}
 	});
 });
+
+test("consumer discovery excludes packaged Codex extension runtimes while retaining source plugins", async () => {
+	const root = await mkdtemp(join(tmpdir(), "df-vendored-agent-scan-"));
+	try {
+		await writeFile(join(root, "package.json"), JSON.stringify({ name: "source-root" }));
+		await mkdir(join(root, ".codex-plugin", "runtime", "modules"), { recursive: true });
+		await writeFile(
+			join(root, ".codex-plugin", "runtime", "modules", "package.json"),
+			JSON.stringify({ name: "vendored-copy", scripts: { test: "bun test" } }),
+		);
+		await mkdir(join(root, ".codex-plugin", "source"), { recursive: true });
+		await writeFile(join(root, ".codex-plugin", "source", "package.json"), JSON.stringify({ name: "plugin-source" }));
+		await mkdir(join(root, "packages", "cli"), { recursive: true });
+		await writeFile(join(root, "packages", "cli", "package.json"), JSON.stringify({ name: "app-cli" }));
+
+		const evidence = await detectRepositoryEvidence(root);
+		expect(evidence.packages.map((entry) => entry.path)).toEqual([".", ".codex-plugin/source", "packages/cli"]);
+	} finally {
+		await rm(root, { recursive: true, force: true });
+	}
+});
