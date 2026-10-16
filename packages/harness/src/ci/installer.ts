@@ -1,6 +1,7 @@
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { detectRepositoryEvidence } from "../../../core/src/repository-evidence.ts";
+import { reconcileNativeConfigs, type NativeConfigStatus } from "./native-config.ts";
 import {
 	renderWorkflowTemplate,
 	STANDARD_WORKFLOW_TEMPLATES,
@@ -14,6 +15,7 @@ interface InstallOptions {
 	templates?: readonly string[];
 }
 interface InstallReport {
+	nativeConfigs?: NativeConfigStatus[];
 	installed: string[];
 	skippedModified: string[];
 	skippedUnmanaged: string[];
@@ -25,6 +27,7 @@ interface UpdateOptions {
 	templates?: readonly string[];
 }
 interface UpdateReport {
+	nativeConfigs?: NativeConfigStatus[];
 	updated: string[];
 	upToDate: string[];
 	skippedModified: string[];
@@ -89,11 +92,22 @@ export async function checkWorkflowsDrift(
 		}
 	}
 
+	for (const item of await reconcileNativeConfigs(repoDir)) {
+		results.push({ file: item.file, status: item.state, details: item.message });
+	}
 	return results;
 }
 
 export async function installWorkflows(repoDir = process.cwd(), options: InstallOptions = {}): Promise<InstallReport> {
 	const dryRun = options.dryRun === true;
+	const nativeConfigs = await reconcileNativeConfigs(repoDir, !dryRun);
+	if (!dryRun) {
+		const conflicts = nativeConfigs.filter((item) => item.state !== "in_sync");
+		if (conflicts.length > 0)
+			throw new Error(
+				"Cannot overwrite user-owned native configuration: " + conflicts.map((item) => item.file).join(", "),
+			);
+	}
 	const force = options.force === true;
 	const templates = options.templates ?? STANDARD_WORKFLOW_TEMPLATES;
 	const context = await resolveTemplateContext(repoDir);
@@ -133,6 +147,7 @@ export async function installWorkflows(repoDir = process.cwd(), options: Install
 	}
 
 	return {
+		...(nativeConfigs.length > 0 ? { nativeConfigs } : {}),
 		installed: [...installed],
 		skippedModified: [...skippedModified],
 		skippedUnmanaged: [...skippedUnmanaged],
@@ -142,6 +157,14 @@ export async function installWorkflows(repoDir = process.cwd(), options: Install
 
 export async function updateWorkflows(repoDir = process.cwd(), options: UpdateOptions = {}): Promise<UpdateReport> {
 	const dryRun = options.dryRun === true;
+	const nativeConfigs = await reconcileNativeConfigs(repoDir, !dryRun);
+	if (!dryRun) {
+		const conflicts = nativeConfigs.filter((item) => item.state !== "in_sync");
+		if (conflicts.length > 0)
+			throw new Error(
+				"Cannot overwrite user-owned native configuration: " + conflicts.map((item) => item.file).join(", "),
+			);
+	}
 	const force = options.force === true;
 	const templates = options.templates ?? STANDARD_WORKFLOW_TEMPLATES;
 	const context = await resolveTemplateContext(repoDir);
@@ -187,6 +210,7 @@ export async function updateWorkflows(repoDir = process.cwd(), options: UpdateOp
 	}
 
 	return {
+		...(nativeConfigs.length > 0 ? { nativeConfigs } : {}),
 		updated,
 		upToDate,
 		skippedModified,
