@@ -39,7 +39,7 @@ function pushPathFilter(workflow: string): string[] {
 /**
  * The steps that still shell out to Python, and why each one is still here.
  *
- * This list went from nine entries to one. Everything that shelled out to the pipeline's own Python
+ * This inventory names Python used for consumer ecosystems, not the DarkFactory engine. Everything that shelled out to the pipeline's own Python
  * has moved to `bun` or `jq`, and the two that shelled out to a *deleted* script now name the
  * TypeScript that replaced it.
  *
@@ -49,7 +49,10 @@ function pushPathFilter(workflow: string): string[] {
  */
 const REMAINING_PYTHON_STEPS: Record<string, string[]> = {
 	"ci.yml": ["quality-run / Install Python package manager"],
-	"darkfactory-control.yml": ["execute-quality / (unnamed)"],
+	"darkfactory-control.yml": [
+		"execute-quality / (unnamed)",
+		"execute-quality / Install inferred Python quality tooling",
+	],
 };
 
 /** The steps moved off Python, and the command each one runs instead. */
