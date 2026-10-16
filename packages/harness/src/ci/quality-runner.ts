@@ -1,5 +1,6 @@
-import { availableParallelism } from "node:os";
+import { availableParallelism, tmpdir } from "node:os";
 import { existsSync, realpathSync } from "node:fs";
+import { mkdtemp, rm } from "node:fs/promises";
 import { delimiter, isAbsolute, join, relative, resolve, sep } from "node:path";
 import { runVerify, type VerifyResult } from "../workspace/runVerify.ts";
 
@@ -45,7 +46,7 @@ export async function executeQualityPlan(
 	options: {
 		workers?: number;
 		timeoutMs?: number;
-		execute?: (command: string, cwd: string, timeoutMs: number) => Promise<VerifyResult>;
+		execute?: (command: string, cwd: string, timeoutMs: number, env?: NodeJS.ProcessEnv) => Promise<VerifyResult>;
 		log?: (message: string) => void;
 	} = {},
 ): Promise<QualitySummary> {
@@ -61,11 +62,11 @@ export async function executeQualityPlan(
 		throw new Error("Quality timeout must be a positive finite number");
 	const execute =
 		options.execute ??
-		(async (command, cwd, timeout) => {
-			const previous = process.env.PATH ?? "";
+		(async (command, cwd, timeout, environment) => {
+			const env = { ...process.env, ...environment };
 			// Package-local and manager-root tools are both accessible without a second install.
-			const envPath = [join(cwd, "node_modules", ".bin"), join(root, "node_modules", ".bin"), previous].join(delimiter);
-			return runVerify({ command, worktree: cwd, timeoutMs: timeout, env: { ...process.env, PATH: envPath } });
+			const envPath = [join(cwd, "node_modules", ".bin"), join(root, "node_modules", ".bin"), env.PATH ?? ""].join(delimiter);
+			return runVerify({ command, worktree: cwd, timeoutMs: timeout, env: { ...env, PATH: envPath } });
 		});
 	function safeDirectory(path: string): string {
 		const full = resolve(root, path);
@@ -84,9 +85,9 @@ export async function executeQualityPlan(
 		}
 		return full;
 	}
-	async function tryExecute(command: string, cwd: string): Promise<VerifyResult> {
+	async function tryExecute(command: string, cwd: string, environment?: NodeJS.ProcessEnv): Promise<VerifyResult> {
 		try {
-			return await execute(command, cwd, timeoutMs);
+			return await execute(command, cwd, timeoutMs, environment);
 		} catch (cause) {
 			return {
 				exitCode: 127,
@@ -97,20 +98,27 @@ export async function executeQualityPlan(
 	}
 
 	const seenIds = new Set<string>();
-	const setupByDirectory = new Map<string, { command: string; cwd: string }>();
+	const setupByDirectory = new Map<string, { command: string; cwd: string; pythonVersion?: string }>();
 	const lanes = new Map<string, { actions: { action: QualityAction; index: number }[]; setupKey?: string }>();
 	actions.forEach((action, index) => {
 		if (seenIds.has(action.id)) throw new Error(`Duplicate quality action ID: ${action.id}`);
 		seenIds.add(action.id);
 		if (!action.command?.trim()) throw new Error(`Missing command for ${action.id}`);
+		if (action.version && (action.ecosystem !== "python" || !/^3\\.\\d{1,2}(?:\\.\\d{1,2})?$/.test(action.version)))
+			throw new Error(`Unverified interpreter/runtime version for ${action.id}: ${action.version}`);
 		safeDirectory(action.cwd);
 		let setupKey: string | undefined;
 		if (action.setupCommand) {
-			setupKey = safeDirectory(action.setupCwd ?? action.cwd);
+			const cwd = safeDirectory(action.setupCwd ?? action.cwd);
+			setupKey = JSON.stringify([cwd, action.ecosystem === "python" ? (action.version ?? null) : null]);
 			const prior = setupByDirectory.get(setupKey);
 			if (prior && prior.command !== action.setupCommand)
-				throw new Error(`Conflicting dependency setup commands for ${setupKey}`);
-			setupByDirectory.set(setupKey, { command: action.setupCommand, cwd: setupKey });
+				throw new Error(`Conflicting dependency setup commands for ${cwd}`);
+			setupByDirectory.set(setupKey, {
+				command: action.setupCommand,
+				cwd,
+				...(action.ecosystem === "python" && action.version ? { pythonVersion: action.version } : {}),
+			});
 		}
 		const laneKey = `${action.packageId}\u0000${action.version ?? ""}`;
 		const lane = lanes.get(laneKey) ?? { actions: [], setupKey };
@@ -119,18 +127,57 @@ export async function executeQualityPlan(
 		lanes.set(laneKey, lane);
 	});
 
-	// Dependency installers may modify one shared workspace: never race installs.
-	const failedSetups = new Map<string, string>();
-	for (const [key, setup] of setupByDirectory) {
-		log(`SETUP ${relative(root, key) || "."}: ${setup.command}`);
-		const result = await tryExecute(setup.command, setup.cwd);
-		if (result.exitCode !== 0) {
-			const message = `setup failed (exit ${result.exitCode}): ${setup.command}\n${result.outputTail}`;
-			failedSetups.set(key, message);
-			log(`FAIL ${message}`);
-		}
+	// Explicit Python version rows must actually use that interpreter. Give every
+	// declared version an isolated environment: executing all 3.10-3.13 rows
+	// under the last globally installed Python is a false-green CI result.
+	const versions = [...new Set(actions.filter((action) => action.ecosystem === "python" && action.version).map((a) => a.version!))];
+	const pythonEnvs = new Map<string, NodeJS.ProcessEnv>();
+	const unavailableVersions = new Map<string, string>();
+	const pythonTemp = versions.length > 0 ? await mkdtemp(join(tmpdir(), "df-python-quality-")) : null;
+	function quoted(value: string): string {
+		return "'" + value.replaceAll("'", "'\\''") + "'";
 	}
-
+	try {
+		for (const version of versions) {
+			const home = join(pythonTemp!, "python-" + version);
+			const executable = join(home, process.platform === "win32" ? "Scripts" : "bin", process.platform === "win32" ? "python.exe" : "python");
+			const environment: NodeJS.ProcessEnv = {
+				PATH: [join(home, process.platform === "win32" ? "Scripts" : "bin"), process.env.PATH ?? ""].join(delimiter),
+				VIRTUAL_ENV: home,
+				PYTHONNOUSERSITE: "1",
+			};
+			const commands = [
+				`uv python install ${version}`,
+				`uv venv --seed --python ${version} ${quoted(home)}`,
+				`uv pip install --python ${quoted(executable)} pytest black ruff mypy flake8 isort`,
+				`python -c ${quoted(`import sys; assert sys.version_info[:2] == tuple(map(int, "${version}".split(".")[:2]))`)}`,
+			];
+			for (const command of commands) {
+				const result = await tryExecute(command, root, environment);
+				if (result.exitCode !== 0) {
+					const message = `Python ${version} provisioning failed (exit ${result.exitCode}): ${command}\\n${result.outputTail}`;
+					unavailableVersions.set(version, message);
+					log(`FAIL ${message}`);
+					break;
+				}
+			}
+			if (!unavailableVersions.has(version)) pythonEnvs.set(version, environment);
+		}
+		// Dependency installers may modify one shared workspace: never race installs.
+		const failedSetups = new Map<string, string>();
+		for (const [key, setup] of setupByDirectory) {
+			if (setup.pythonVersion && unavailableVersions.has(setup.pythonVersion)) {
+				failedSetups.set(key, unavailableVersions.get(setup.pythonVersion)!);
+				continue;
+			}
+			log(`SETUP ${relative(root, setup.cwd) || "."}: ${setup.command}`);
+			const result = await tryExecute(setup.command, setup.cwd, setup.pythonVersion ? pythonEnvs.get(setup.pythonVersion) : undefined);
+			if (result.exitCode !== 0) {
+				const message = `setup failed (exit ${result.exitCode}): ${setup.command}\\n${result.outputTail}`;
+				failedSetups.set(key, message);
+				log(`FAIL ${message}`);
+			}
+		}
 	const results: QualityActionResult[] = new Array(actions.length);
 	const work = [...lanes.values()];
 	let cursor = 0;
@@ -139,13 +186,14 @@ export async function executeQualityPlan(
 			const lane = work[cursor++];
 			if (!lane) continue;
 			for (const { action, index } of lane.actions) {
-				const blocked = lane.setupKey ? failedSetups.get(lane.setupKey) : undefined;
+				const blocked = (action.ecosystem === "python" && action.version ? unavailableVersions.get(action.version) : undefined)
+					?? (lane.setupKey ? failedSetups.get(lane.setupKey) : undefined);
 				if (blocked) {
 					results[index] = { id: action.id, command: action.command, cwd: action.cwd, blocked };
 					log(`BLOCKED ${action.id}: ${blocked}`);
 					continue;
 				}
-				const outcome = await tryExecute(action.command, safeDirectory(action.cwd));
+				const outcome = await tryExecute(action.command, safeDirectory(action.cwd), action.ecosystem === "python" && action.version ? pythonEnvs.get(action.version) : undefined);
 				results[index] = { id: action.id, command: action.command, cwd: action.cwd, result: outcome };
 				log(`${outcome.exitCode === 0 ? "PASS" : "FAIL"} ${action.id} (exit ${outcome.exitCode})`);
 				if (outcome.exitCode !== 0) log(outcome.outputTail);
@@ -165,4 +213,7 @@ export async function executeQualityPlan(
 		throw new Error(`Quality coverage discrepancy: ${JSON.stringify(summary)}`);
 	}
 	return summary;
+	} finally {
+		if (pythonTemp) await rm(pythonTemp, { recursive: true, force: true });
+	}
 }
