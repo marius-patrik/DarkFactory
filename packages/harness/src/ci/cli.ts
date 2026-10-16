@@ -1,7 +1,7 @@
 import { requiredChecksForDetectedQuality } from "../../../capability/src/actions.ts";
 import { GitHubClient } from "../github/client.ts";
 import { GitHubRepository } from "../github/repository.ts";
-import { resolveDetectedQuality, runDetectedQuality } from "./detected.ts";
+import { assertQualityCoverage, resolveDetectedQuality, runDetectedQuality } from "./detected.ts";
 import { runCiDoctor } from "./doctor.ts";
 import { installWorkflows, updateWorkflows } from "./installer.ts";
 import { applyBranchProtection, computeRequiredChecks, verifyBranchProtection } from "./protection.ts";
@@ -61,7 +61,13 @@ export async function runCiCli(args: string[], context: CiCliContext = {}): Prom
 					2,
 				),
 			);
-			return 0;
+			try {
+				assertQualityCoverage(state);
+				return 0;
+			} catch (cause) {
+				error(cause instanceof Error ? cause.message : String(cause));
+				return 1;
+			}
 		}
 
 		case "quality": {
