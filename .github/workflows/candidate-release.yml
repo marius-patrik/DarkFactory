@@ -203,7 +203,7 @@ jobs:
           docs = yaml.safe_load((root / 'mkdocs.yml').read_text(encoding='utf-8'))
           config = json.loads((root / 'repo.dfconfig').read_text(encoding='utf-8'))
           config['repo']['environment']['native_pyproject'] = py
-          config['docs']['site'] = {
+          config.setdefault('docs', {})['site'] = {
               'name': docs['site_name'],
               'description': docs['site_description'],
           }
