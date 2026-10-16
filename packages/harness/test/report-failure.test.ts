@@ -1,6 +1,8 @@
+import { readFileSync } from "node:fs";
 import { describe, expect, test } from "bun:test";
 import {
 	closeDuplicateFailures,
+	failureActionForConclusion,
 	FAILURE_LABEL,
 	failureBody,
 	failureMarker,
@@ -121,5 +123,52 @@ describe("resolving a failure", () => {
 		const { repo, closed } = fakeRepo();
 		expect(await resolveFailure(repo, "CI")).toBeNull();
 		expect(closed).toEqual([]);
+	});
+});
+
+describe("operational failure observer scope", () => {
+	test("only default-branch workflow_run events may create repository-wide failure issues", () => {
+		const workflow = Bun.YAML.parse(
+			readFileSync(new URL("../../../.github/workflows/report-failure.yml", import.meta.url), "utf8"),
+		) as { jobs: { report: { if: string } } };
+		const guard = workflow.jobs.report.if;
+		expect(guard).toContain("github.event_name != 'workflow_run'");
+		expect(guard).toContain("github.event.workflow_run.event != 'pull_request'");
+		expect(guard).toContain("github.event.workflow_run.head_branch == github.event.repository.default_branch");
+	});
+});
+
+describe("workflow conclusion classification", () => {
+	test("only a confirmed success resolves a real incident", () => {
+		const outcomes = new Map<string, ReturnType<typeof failureActionForConclusion>>([
+			["failure", "report"],
+			["success", "resolve"],
+			["cancelled", "ignore"],
+			["skipped", "ignore"],
+			["neutral", "ignore"],
+			["timed_out", "ignore"],
+			["action_required", "ignore"],
+			["stale", "ignore"],
+			["", "ignore"],
+		]);
+		for (const [conclusion, action] of outcomes) expect(failureActionForConclusion(conclusion)).toBe(action);
+		expect(failureActionForConclusion(null)).toBe("ignore");
+		expect(failureActionForConclusion(undefined)).toBe("ignore");
+	});
+
+	test("reusable callers can explicitly supply the observed event fields", () => {
+		const workflow = Bun.YAML.parse(
+			readFileSync(new URL("../../../.github/workflows/report-failure.yml", import.meta.url), "utf8"),
+		) as {
+			on: { workflow_call: { inputs: Record<string, unknown> } };
+			jobs: { report: { steps: { env?: Record<string, string> }[] } };
+		};
+		for (const key of ["workflow-name", "conclusion", "run-url", "run-id"])
+			expect(workflow.on.workflow_call.inputs).toHaveProperty(key);
+		const observed = workflow.jobs.report.steps.at(-1)?.env;
+		expect(observed?.WORKFLOW_NAME).toContain("inputs.workflow-name || github.event.workflow_run.name");
+		expect(observed?.CONCLUSION).toContain("inputs.conclusion || github.event.workflow_run.conclusion");
+		expect(observed?.RUN_URL).toContain("inputs.run-url || github.event.workflow_run.html_url");
+		expect(observed?.RUN_ID).toContain("inputs.run-id || github.event.workflow_run.id");
 	});
 });
