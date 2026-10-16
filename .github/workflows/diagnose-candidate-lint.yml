@@ -1,0 +1,15 @@
+name: Diagnose candidate lint errors
+on:
+  push:
+    branches: [integrate/final-fleet-2026-10-16]
+permissions:
+  contents: read
+jobs:
+  diagnose:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - uses: oven-sh/setup-bun@v2
+      - run: bun install --frozen-lockfile
+      - name: Show only all fatal Biome errors
+        run: bunx --bun biome lint . --diagnostic-level=error --max-diagnostics=1000
