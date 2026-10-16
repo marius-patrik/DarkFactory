@@ -6,7 +6,6 @@ import {
 	resolveDetectedRepositoryActions,
 } from "../../../capability/src/actions.ts";
 import { detectRepositoryEvidence, type RepositoryEvidence } from "../../../core/src/repository-evidence.ts";
-import { runVerify, type VerifyResult } from "../workspace/runVerify.ts";
 
 /** Canonical detected repository quality state consumed by df CI/operator surfaces. */
 export interface DetectedQualityState {
@@ -45,52 +44,4 @@ export function assertQualityCoverage(state: DetectedQualityState): void {
 	}
 	if (state.matrix.length === 0)
 		throw new Error("No executable quality actions detected; refusing a vacuous green quality check");
-}
-
-/** Result of one detected executable quality action. */
-interface DetectedQualityExecution {
-	packageId: string;
-	kind: "test" | "lint" | "format_check" | "typecheck";
-	supported: boolean;
-	command?: string;
-	reason?: string;
-	notApplicable?: { ecosystem: string; reason: string };
-	result?: VerifyResult;
-}
-
-/** Runs the supported detected test/lint/format/typecheck actions without inventing fallback commands. */
-export async function runDetectedQuality(
-	repoDir = process.cwd(),
-	options: { capabilitiesRoot?: string; timeoutMs?: number } = {},
-): Promise<DetectedQualityExecution[]> {
-	const state = await resolveDetectedQuality(repoDir, options.capabilitiesRoot);
-	const results: DetectedQualityExecution[] = [];
-	for (const entry of state.resolution.packages) {
-		for (const kind of ["test", "lint", "format_check", "typecheck"] as const) {
-			const action = entry.actions[kind];
-			if (!action.supported || !action.command) {
-				results.push({
-					packageId: entry.package.id,
-					kind,
-					supported: false,
-					...(action.reason ? { reason: action.reason } : {}),
-					...(action.notApplicable ? { notApplicable: action.notApplicable } : {}),
-				});
-				continue;
-			}
-			const worktree = resolve(repoDir, action.cwd);
-			results.push({
-				packageId: entry.package.id,
-				kind,
-				supported: true,
-				command: action.command,
-				result: await runVerify({
-					worktree,
-					command: action.command,
-					timeoutMs: options.timeoutMs ?? 15 * 60_000,
-				}),
-			});
-		}
-	}
-	return results;
 }
