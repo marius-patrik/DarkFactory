@@ -108,6 +108,62 @@ describe("single-runner quality scheduler", () => {
 		).rejects.toThrow("timeout");
 	});
 
+	it("provisions declared Python versions independently and executes under the requested interpreter", async () => {
+		const calls: { command: string; environment?: NodeJS.ProcessEnv }[] = [];
+		const versions = ["3.10", "3.13"];
+		const plan: QualityAction[] = versions.map((version) => ({
+			...action("python", "test", version),
+			ecosystem: "python",
+			packageManager: "pip",
+			setupCommand: "python -m pip install -e .",
+		}));
+		const summary = await executeQualityPlan("/tmp/df-python-quality", plan, {
+			execute: async (command, _cwd, _timeout, environment) => {
+				calls.push({ command, environment });
+				return success;
+			},
+		});
+		expect(summary).toMatchObject({ planned: 2, executed: 2, passed: 2, failed: 0, blocked: 0 });
+		for (const version of versions) {
+			expect(calls.some((call) => call.command === `uv python install ${version}`)).toBe(true);
+			expect(calls.some((call) => call.command.includes(`uv venv --seed --python ${version}`))).toBe(true);
+			expect(calls.some((call) => call.command.includes("uv pip install --python"))).toBe(true);
+		}
+		const installs = calls.filter((call) => call.command === "python -m pip install -e .");
+		expect(installs).toHaveLength(2);
+		expect(installs[0]?.environment?.VIRTUAL_ENV).not.toBe(installs[1]?.environment?.VIRTUAL_ENV);
+		expect(installs.every((call) => call.environment?.PATH?.startsWith(call.environment.VIRTUAL_ENV!))).toBe(true);
+	});
+
+	it("blocks a Python version after interpreter provisioning fails, while running independent packages", async () => {
+		const python: QualityAction = {
+			...action("python", "test", "3.10"),
+			ecosystem: "python",
+			packageManager: "pip",
+		};
+		const commands: string[] = [];
+		const result = await executeQualityPlan("/tmp/df-python-quality", [python, action("node", "test")], {
+			execute: async (command) => {
+				commands.push(command);
+				return command === "uv python install 3.10"
+					? { exitCode: 2, timedOut: false, outputTail: "python missing" }
+					: success;
+			},
+		});
+		expect(result).toMatchObject({ planned: 2, executed: 1, passed: 1, failed: 0, blocked: 1 });
+		expect(result.results[0]?.blocked).toContain("Python 3.10 provisioning failed");
+		expect(commands).not.toContain("uv venv --seed --python 3.10");
+	});
+
+	it("fails closed on unprovisioned non-Python and malformed Python version identities", async () => {
+		await expect(executeQualityPlan("/tmp/df-quality", [action("node", "test", "24")])).rejects.toThrow(
+			"Unverified interpreter/runtime version",
+		);
+		await expect(
+			executeQualityPlan("/tmp/df-quality", [{ ...action("python", "test", "3.10;rm -rf /"), ecosystem: "python" }]),
+		).rejects.toThrow("Unverified interpreter/runtime version");
+	});
+
 	it("rejects duplicate identity, unsafe paths, empty plans and conflicting installers", async () => {
 		await expect(executeQualityPlan("/tmp/df-quality", [])).rejects.toThrow("No executable");
 		await expect(executeQualityPlan("/tmp/df-quality", [action("a", "test"), action("a", "test")])).rejects.toThrow(
