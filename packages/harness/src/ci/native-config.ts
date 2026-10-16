@@ -110,8 +110,7 @@ export async function nativeConfigOutputs(root: string): Promise<Map<NativeConfi
 		throw new Error("Declare only one documentation tool projection: docs.native_properdocs or docs.native_mkdocs");
 	if (docs.native_properdocs !== undefined)
 		outputs.set("properdocs.yml", sealed(renderProperdocs(docs.native_properdocs, docs.site)));
-	if (docs.native_mkdocs !== undefined)
-		outputs.set("mkdocs.yml", sealed(renderMkdocs(docs.native_mkdocs, docs.site)));
+	if (docs.native_mkdocs !== undefined) outputs.set("mkdocs.yml", sealed(renderMkdocs(docs.native_mkdocs, docs.site)));
 	return outputs;
 }
 
