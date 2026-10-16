@@ -3,7 +3,7 @@ import { mkdtemp, readFile, rm, symlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { runCiCli } from "../../src/ci/cli.ts";
-import { reconcileNativeConfigs, renderProperdocs, renderPyproject } from "../../src/ci/native-config.ts";
+import { reconcileNativeConfigs, renderMkdocs, renderProperdocs, renderPyproject } from "../../src/ci/native-config.ts";
 
 const roots: string[] = [];
 async function fixture() {
@@ -94,6 +94,42 @@ describe("native tool configuration from the canonical repository document", () 
 		expect(parsed.markdown_extensions[1].toc.toc_depth).toBe("2-4");
 		expect(parsed.plugins[1].mkdocstrings.handlers.python.options.docstring_style).toBe("google");
 		expect(() => renderProperdocs({ site_name: "duplicate" }, config.docs.site)).toThrow();
+	});
+
+	test("projects MkDocs themes, asset paths, hooks and extensions without duplicate site metadata", async () => {
+		const { root, config } = await fixture();
+		const mkdocs = {
+			docs_dir: ".github/docs-ui",
+			theme: { name: "material", custom_dir: ".github/docs-ui" },
+			extra_css: ["assets/theme.css"],
+			extra_javascript: ["assets/theme.js"],
+			hooks: [".github/scripts/docs_hooks.py"],
+			markdown_extensions: ["admonition", { toc: { permalink: true, toc_depth: "2-4" } }],
+			plugins: ["search", { mkdocstrings: { handlers: { python: { paths: [] } } } }],
+		};
+		const parsed = Bun.YAML.parse(renderMkdocs(mkdocs, config.docs.site)) as Record<string, any>;
+		expect(parsed.site_name).toBe("BoardGamesWithQuests");
+		expect(parsed.theme).toEqual({ name: "material", custom_dir: ".github/docs-ui" });
+		expect(parsed.extra_css).toEqual(["assets/theme.css"]);
+		expect(parsed.markdown_extensions[1].toc.toc_depth).toBe("2-4");
+		expect(() => renderMkdocs({ ...mkdocs, site_description: "conflicting" }, config.docs.site)).toThrow(
+			"Site metadata",
+		);
+		const docs = config.docs as Record<string, unknown>;
+		delete docs.native_properdocs;
+		docs.native_mkdocs = mkdocs;
+		await writeFile(join(root, "repo.dfconfig"), JSON.stringify(config));
+		const initial = await reconcileNativeConfigs(root);
+		expect(initial.map((item) => item.file)).toEqual(["pyproject.toml", "mkdocs.yml"]);
+		expect((await reconcileNativeConfigs(root, true)).every((item) => item.state === "in_sync")).toBe(true);
+		expect(Bun.YAML.parse(await readFile(join(root, "mkdocs.yml"), "utf8"))).toEqual(parsed);
+		await writeFile(join(root, "mkdocs.yml"), (await readFile(join(root, "mkdocs.yml"), "utf8")) + "# manual\\n");
+		expect((await reconcileNativeConfigs(root, true)).find((item) => item.file === "mkdocs.yml")?.state).toBe(
+			"modified",
+		);
+		docs.native_properdocs = { hooks: [] };
+		await writeFile(join(root, "repo.dfconfig"), JSON.stringify(config));
+		await expect(reconcileNativeConfigs(root)).rejects.toThrow("only one documentation tool projection");
 	});
 
 	test("requires explicit installation; does not overwrite unmanaged files", async () => {
