@@ -50,16 +50,16 @@ DarkFactory is a root Bun workspace.
 The final first-party package boundaries are:
 
 - `@darkfactory/protocol` — browser/runtime-safe schemas, serialized state/event contracts and shared types;
-- `@darkfactory/core` — execution kernel, graph/run state, provider/router mechanisms and config resolution;
+- `@darkfactory/core` — reusable execution, configuration and repository mechanisms that are not themselves agent orchestration;
 - `@darkfactory/capability` — capability ABI, discovery/loader/resolution and deterministic adapter/build tooling;
 - `@darkfactory/github` — typed GitHub REST/GraphQL substrate with explicit browser/server-safe entrypoints;
 - `@darkfactory/keychain` — machine/runtime credential custody and authentication;
 - `@darkfactory/auth` — human/browser GitHub App authentication and sessions;
 - `@darkfactory/docs` — headless documentation compiler/content graph;
+- `@darkfactory/plugins` — plugin discovery, validation, loading and host integration;
+- `@darkfactory/harness` — the production agent runtime, graph orchestration, planning/review lifecycle, routing and durable execution;
 - `@darkfactory/cli` — `df` command, command composition and interactive TUI ownership;
 - `@darkfactory/web` — the sole first-party web application/renderer.
-
-Any remaining implementation under `packages/harness/` is deletion-bound source during the rebuild. It is not a public package, documentation surface, or final architecture boundary.
 
 Package dependencies must remain acyclic. Browser-safe entrypoints cannot import machine-secret/private-key/runtime-only implementations.
 
@@ -139,8 +139,6 @@ The combined configuration rules are:
 - when root candidates exist they are selected, otherwise candidates under `DF_CONFIG_DIR` (default `.darkfactory`) are selected;
 - two aliases in the selected scope, or candidates in both root and the configured folder, fail closed as ambiguous;
 - separate candidate files are never silently merged;
-- `.darkfactory` is a discovery fallback and is not a committed source in this repository;
-- `.df` is a filename extension, never a directory.
 
 ### 7.2 Documentation configuration and output
 
@@ -150,7 +148,7 @@ Generated documentation sites and JSON content graphs are CI outputs and must no
 
 ### 7.3 State
 
-Df-owned config/state/result/review/audit artifacts use appropriate `.df` filenames in their owning locations.
+DarkFactory-owned state, result, review and audit artifacts use established structured formats such as JSON or Markdown with explicit schemas where needed. The schema for each persisted artifact must be explicit and machine-verifiable.
 
 ## 8. Governed Request lifecycle
 
@@ -423,7 +421,7 @@ DarkFactory is final only when the exact pre-merge candidate has passed the decl
 - the rules are skills under `.darkfactory/plugins/df-rules/skills/`, each declaring its own `name` and `description`; root `README.md` is the canonical product document itself, not a projection;
 - shared web UI is deployed across the fleet without consumer frontend rebuild;
 - the source-free pre-merge candidate installs/updates cleanly, and the canonical publication reproduces that behavior;
-- all six repositories pass governance, detection, capability, docs/web, release-candidate and drift checks before the integration merge;
-- `audit.df` is internally consistent;
+- all eligible consumers pass governance, detection, capability, docs/web, release-candidate and drift checks before the integration merge;
+- machine-readable audit results are internally consistent and derived from observed evidence;
 - installed fleet acceptance is green across the supported consumer set before merge;
 - the declarable-graph product contract passes against the installed exact-head candidate and is re-smoked against the canonical publication.

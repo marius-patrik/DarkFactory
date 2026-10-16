@@ -34,7 +34,7 @@ const root = process.cwd();
 const dist = join(root, "packages", "harness", "dist");
 // Bun appends `.exe` for a Windows target, so the requested and produced names have to be compared
 // rather than assumed. A name that drifts would publish an asset no installer resolves.
-await $`bun build ./packages/harness/src/cli.ts ./packages/harness/src/image-resize-worker.ts --compile --target=${target.bunTarget} --outfile ${join(dist, asset)}`;
+await $`bun build ./packages/cli/src/cli.ts ./packages/harness/src/image-resize-worker.ts --compile --target=${target.bunTarget} --outfile ${join(dist, asset)}`;
 if (!existsSync(join(dist, asset))) {
 	throw new Error(`bun build reported success but produced no dist/${asset} for target ${target.name}.`);
 }
