@@ -78,8 +78,8 @@ let
     contents = tools ++ [ df entrypoint agentRuntime ];
     extraCommands = ''
       mkdir -p bin etc/ssl/certs home/agent/.config workspace
-      ln -s ${pkgs.bash}/bin/sh bin/sh
-      ln -s ${pkgs.bash}/bin/bash bin/bash
+      ln -sfn ${pkgs.bash}/bin/sh bin/sh
+      ln -sfn ${pkgs.bash}/bin/bash bin/bash
       ln -s ${pkgs.cacert}/etc/ssl/certs/ca-bundle.crt etc/ssl/certs/ca-bundle.crt
       printf '%s\n' \
         'root:x:0:0:root:/root:/bin/bash' \

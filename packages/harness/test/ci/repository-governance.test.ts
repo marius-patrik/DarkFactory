@@ -77,6 +77,8 @@ const NOT_CALLABLE = [
 	// Self-hosted event bridges are producer-only, not reusable consumer workflows.
 	"darkfactory-self.yml",
 	"self-install.yml",
+	// The Nix container verification matrix tests producer source and is not a consumer workflow.
+	"nix-agent.yml",
 ];
 
 /** Workflows that write to GitHub on the pipeline's behalf and must therefore authenticate as the App. */
