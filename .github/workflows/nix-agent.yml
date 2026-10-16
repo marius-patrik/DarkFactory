@@ -1,0 +1,84 @@
+name: Nix Agent Image
+
+on:
+  pull_request:
+    paths:
+      - "flake.nix"
+      - "flake.lock"
+      - "nix/**"
+      - ".github/workflows/agent.yml"
+      - ".github/workflows/nix-agent.yml"
+      - "packages/cli/**"
+      - "packages/harness/**"
+      - "package.json"
+      - "bun.lock"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  image:
+    name: image (${{ matrix.system }})
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - system: x86_64-linux
+            runner: ubuntu-24.04
+          - system: aarch64-linux
+            runner: ubuntu-24.04-arm
+    runs-on: ${{ matrix.runner }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: cachix/install-nix-action@v31
+
+      - name: Verify committed lockfile
+        run: |
+          nix flake lock
+          cat flake.lock
+          git ls-files --error-unmatch flake.lock
+          git diff --exit-code -- flake.lock
+
+      - name: Check flake and runtime
+        run: nix flake check -L --show-trace
+
+      - name: Build image
+        run: nix build .#agentImage -L --show-trace
+
+      - name: Load and exercise the entrypoint
+        run: |
+          docker load -i result
+          docker image inspect darkfactory-agent:nix
+          docker run --rm darkfactory-agent:nix --help
+          docker run --rm darkfactory-agent:nix --version
+          docker run --rm darkfactory-agent:nix providers
+
+      - name: Check unprivileged filesystem and tools
+        run: |
+          mkdir -p "$RUNNER_TEMP/df-workspace"
+          docker run --rm --entrypoint /bin/sh -v "$RUNNER_TEMP/df-workspace:/workspace" darkfactory-agent:nix -ec '
+            test "$(id -u)" = 1001
+            test "$(id -g)" = 1001
+            touch /workspace/write-probe
+            git init -q /workspace/fixture
+            git -C /workspace/fixture status --short
+            command -v gh
+            command -v secret-tool
+            command -v dbus-run-session
+          '
+          test -f "$RUNNER_TEMP/df-workspace/write-probe"
+
+      - name: Real dispatch rejects invalid event
+        run: |
+          printf '%s' '{invalid json' > "$RUNNER_TEMP/df-workspace/event.json"
+          if docker run --rm \
+              -v "$RUNNER_TEMP/df-workspace:/workspace" \
+              -e GH_TOKEN=ci-fixture-token \
+              -e GITHUB_REPOSITORY=marius-patrik/DarkFactory \
+              -e GITHUB_EVENT_NAME=issues \
+              -e GITHUB_EVENT_PATH=/workspace/event.json \
+              darkfactory-agent:nix dispatch; then
+            echo "::error::Malformed event was accepted."
+            exit 1
+          fi
