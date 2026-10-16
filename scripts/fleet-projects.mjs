@@ -16,7 +16,7 @@ export function isProjectsQuotaExceeded(error) {
 
 export function reportQuotaDeferral(error, env = process.env) {
 	const note =
-		"DarkFactory Projects v2 reconciliation deferred: the owner-wide GitHub GraphQL quota is exhausted. No other repositories were modified; retry on the next scheduled self-only fleet reconciliation.";
+		"DarkFactory Projects v2 reconciliation incomplete: the owner-wide GraphQL quota is exhausted. Previously applied project changes may be partial; the full reconciliation must be retried.";
 	console.warn(note);
 	console.warn(String(error));
 	if (env.GITHUB_STEP_SUMMARY)
@@ -56,6 +56,7 @@ async function graph(token, query, variables = {}) {
 }
 
 export function registerProjectTitle(index, project) {
+	if (project.closed === true) return;
 	if (index.has(project.title)) index.set(project.title, null);
 	else index.set(project.title, project);
 }
@@ -241,6 +242,7 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
 	runFleetProjects().catch((error) => {
 		if (isProjectsQuotaExceeded(error)) {
 			reportQuotaDeferral(error);
+			process.exitCode = 1;
 			return;
 		}
 		console.error(error);
