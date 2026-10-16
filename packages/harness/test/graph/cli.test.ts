@@ -2,9 +2,12 @@ import { expect, test } from "bun:test";
 import { join } from "node:path";
 
 test("df graph validate accepts the bundled standalone graph", () => {
-	const result = Bun.spawnSync([process.execPath, "src/cli.ts", "graph", "validate", "assets/graph.darkfactory.json"], {
-		cwd: join(import.meta.dir, "../.."),
-	});
+	const result = Bun.spawnSync(
+		[process.execPath, "../cli/src/cli.ts", "graph", "validate", "assets/graph.darkfactory.json"],
+		{
+			cwd: join(import.meta.dir, "../.."),
+		},
+	);
 	expect(result.exitCode).toBe(0);
 	expect(result.stdout.toString()).toContain("valid workflow graph v1");
 });
@@ -22,7 +25,7 @@ test("df graph plan reads event and state files", async () => {
 		const result = Bun.spawnSync(
 			[
 				process.execPath,
-				"src/cli.ts",
+				"../cli/src/cli.ts",
 				"graph",
 				"plan",
 				"--graph",

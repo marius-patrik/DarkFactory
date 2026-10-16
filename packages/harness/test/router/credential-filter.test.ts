@@ -4,7 +4,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { FileCredentialStore } from "../../../keychain/src/index.ts";
 import defaultsJson from "../../assets/providers.defaults.json";
-import { routerModels } from "../../src/cli.ts";
+import { routerModels } from "../../../cli/src/cli.ts";
 import type { DfConfig } from "../../src/config.ts";
 import { LimitLedger } from "../../src/limits/ledger.ts";
 import { ProviderRegistry } from "../../src/providers/runtime.ts";
