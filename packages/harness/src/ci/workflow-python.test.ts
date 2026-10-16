@@ -48,6 +48,8 @@ function pushPathFilter(workflow: string): string[] {
  * Removing these commands would drop supported quality actions. #1148 tracks this distinction.
  */
 const REMAINING_PYTHON_STEPS: Record<string, string[]> = {
+	// Real isolated interpreter validation is production CI, not legacy Python authoring.
+	"quality-python-versions.yml": ["python-quality-versions / Install runtime tools"],
 	"ci.yml": ["quality-run / Install Python package manager"],
 	"darkfactory-control.yml": [
 		"execute-quality / (unnamed)",
