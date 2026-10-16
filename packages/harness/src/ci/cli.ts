@@ -1,8 +1,10 @@
 import { requiredChecksForDetectedQuality } from "../../../capability/src/actions.ts";
+import { executeQualityPlan } from "./quality-runner.ts";
 import { GitHubClient } from "../github/client.ts";
 import { GitHubRepository } from "../github/repository.ts";
-import { resolveDetectedQuality, runDetectedQuality } from "./detected.ts";
+import { resolveDetectedQuality } from "./detected.ts";
 import { runCiDoctor } from "./doctor.ts";
+import { reconcileNativeConfigs } from "./native-config.ts";
 import { installWorkflows, updateWorkflows } from "./installer.ts";
 import { applyBranchProtection, computeRequiredChecks, verifyBranchProtection } from "./protection.ts";
 import { getCheckStatus, getRunLogs, getWorkflowRuns, rerunWorkflowRun } from "./status.ts";
@@ -44,9 +46,18 @@ export async function runCiCli(args: string[], context: CiCliContext = {}): Prom
 	const isJson = hasFlag(args, "--json");
 
 	switch (subcommand) {
+		case "native-config": {
+			const statuses = await reconcileNativeConfigs(repoPath, hasFlag(args, "--write"));
+			log(JSON.stringify(statuses, null, 2));
+			const drift = statuses.filter((item) => item.state !== "in_sync");
+			if (drift.length > 0)
+				error("Native tool config drift: " + drift.map((item) => item.file + " (" + item.state + ")").join(", "));
+			return drift.length > 0 ? 1 : 0;
+		}
+
 		case "matrix": {
-			const capabilitiesRoot = getOption(args, "--capabilities-root");
-			const state = await resolveDetectedQuality(repoPath, capabilitiesRoot);
+			const native = await reconcileNativeConfigs(repoPath);
+			const state = await resolveDetectedQuality(repoPath, getOption(args, "--capabilities-root"));
 			log(
 				JSON.stringify(
 					{
@@ -61,29 +72,48 @@ export async function runCiCli(args: string[], context: CiCliContext = {}): Prom
 					2,
 				),
 			);
+			if (state.matrix.length === 0 || state.resolution.gaps.length > 0) {
+				error(
+					`Quality plan incomplete: ${state.matrix.length} executable actions, ${state.resolution.gaps.length} unresolved required actions`,
+				);
+				return 1;
+			}
+			const drift = native.filter((item) => item.state !== "in_sync");
+			if (drift.length > 0) {
+				error("Native tool config drift: " + drift.map((item) => item.file + " (" + item.state + ")").join(", "));
+				return 1;
+			}
 			return 0;
 		}
 
 		case "quality": {
-			const capabilitiesRoot = getOption(args, "--capabilities-root");
-			const executions = await runDetectedQuality(repoPath, { capabilitiesRoot });
-			if (isJson) {
-				log(JSON.stringify(executions, null, 2));
-			} else {
-				for (const execution of executions) {
-					if (!execution.supported) {
-						const label = execution.notApplicable ? "not applicable" : "unsupported";
-						log(`[${label}] ${execution.packageId} ${execution.kind}: ${execution.reason ?? "missing action"}`);
-						continue;
-					}
-					const result = execution.result!;
-					log(
-						`[${result.exitCode === 0 ? "pass" : "fail"}] ${execution.packageId} ${execution.kind}: ${execution.command}`,
-					);
-					if (result.outputTail) log(result.outputTail);
-				}
+			const native = await reconcileNativeConfigs(repoPath);
+			const drift = native.filter((item) => item.state !== "in_sync");
+			if (drift.length > 0) {
+				error("Native tool config drift: " + drift.map((item) => item.file + " (" + item.state + ")").join(", "));
+				return 1;
 			}
-			return executions.some((execution) => execution.result && execution.result.exitCode !== 0) ? 1 : 0;
+			const state = await resolveDetectedQuality(repoPath, getOption(args, "--capabilities-root"));
+			if (state.matrix.length === 0 || state.resolution.gaps.length > 0) {
+				error(
+					`Quality plan incomplete: ${state.matrix.length} executable actions, ${state.resolution.gaps.length} unresolved required actions`,
+				);
+				for (const gap of state.resolution.gaps)
+					error(`GAP ${gap.packageId} ${gap.kind}: ${gap.reason ?? gap.description}`);
+				return 1;
+			}
+			const workerArg = getOption(args, "--workers");
+			const workers = workerArg === undefined ? undefined : Number(workerArg);
+			const summary = await executeQualityPlan(repoPath, state.matrix, {
+				...(workers === undefined ? {} : { workers }),
+				log: isJson ? undefined : log,
+			});
+			if (isJson) log(JSON.stringify(summary, null, 2));
+			else
+				log(
+					`Quality: ${summary.passed}/${summary.planned} passed; ${summary.failed} failed; ${summary.blocked} blocked; ${summary.executed} executed`,
+				);
+			return summary.failed === 0 && summary.blocked === 0 && summary.executed === summary.planned ? 0 : 1;
 		}
 
 		case "install": {
@@ -342,8 +372,8 @@ export async function runCiCli(args: string[], context: CiCliContext = {}): Prom
 		}
 		default:
 			log(`df ci commands:
-  df ci matrix  [--repo <path>] [--capabilities-root <path>]
-  df ci quality [--repo <path>] [--capabilities-root <path>] [--json]
+  df ci native-config [--repo <path>] [--write]\n  df ci matrix  [--repo <path>] [--capabilities-root <path>]
+  df ci quality [--repo <path>] [--capabilities-root <path>] [--workers 1..32] [--json]
   df ci install [--repo <path>] [--dry-run] [--force]
   df ci update  [--repo <path>] [--dry-run] [--force]
   df ci status  [--repo <path>] [--pr <n> | --ref <r>] [--json]

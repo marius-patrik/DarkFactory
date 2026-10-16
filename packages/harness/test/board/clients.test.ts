@@ -1,5 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import type { CanonicalStatus } from "../../../protocol/src/workflow.ts";
+import { BoardAutomation } from "../../src/board/automation.ts";
 import { BoardGroup, ProjectClient } from "../../src/board/client.ts";
 import { ghEnvironment } from "../../src/board/gh.ts";
 import { BoardGraphqlClient } from "../../src/board/graphql.ts";
@@ -217,6 +218,241 @@ describe("a board client routes a status label exclusively", () => {
 		await client.addIssueLabel("o/r", 10, "area:ci");
 
 		expect(written).toEqual(["o/r#10=In Progress"]);
+	});
+});
+
+describe("complete owner Projects discovery", () => {
+	test("pagination returns all scoped boards, including those beyond the first page", async () => {
+		const run = quietRun();
+		const { client, transport } = graphqlClient(run, (request) => {
+			const after = (request.body as { variables: { after?: string | null } }).variables.after;
+			return graphql({
+				user: {
+					projectsV2: after
+						? {
+								nodes: [{ id: "PVT_2", title: "Global", number: 2 }],
+								pageInfo: { hasNextPage: false, endCursor: null },
+							}
+						: {
+								nodes: [{ id: "PVT_1", title: "DarkFactory", number: 1 }],
+								pageInfo: { hasNextPage: true, endCursor: "next" },
+							},
+				},
+			});
+		});
+		const projects = await client.resolveProjects("marius-patrik");
+		expect([...projects.keys()]).toEqual(["DarkFactory", "Global"]);
+		expect(
+			transport.requests.map((request) => (request.body as { variables: { after?: string | null } }).variables.after),
+		).toEqual([null, "next"]);
+		expect((await client.listProjects("marius-patrik")).ok).toBe(true);
+		expect(transport.requests).toHaveLength(2);
+	});
+
+	test("unrelated duplicate titles across pages do not block managed project discovery", async () => {
+		const run = quietRun();
+		const { client, transport } = graphqlClient(run, (request) => {
+			const after = (request.body as { variables: { after?: string | null } }).variables.after;
+			return graphql({
+				user: {
+					projectsV2: after
+						? {
+								nodes: [
+									{ id: "PVT_5", title: "Features", number: 5 },
+									{ id: "PVT_6", title: "Global", number: 6 },
+								],
+								pageInfo: { hasNextPage: false, endCursor: null },
+							}
+						: {
+								nodes: [
+									{ id: "PVT_2", title: "Features", number: 2 },
+									{ id: "PVT_3", title: "DarkFactory", number: 3 },
+								],
+								pageInfo: { hasNextPage: true, endCursor: "next" },
+							},
+				},
+			});
+		});
+		const listed = await client.listProjects("marius-patrik", ["DarkFactory", "Global"]);
+		expect(listed.ok).toBe(true);
+		if (listed.ok) expect([...listed.projects.keys()]).toEqual(["DarkFactory", "Global"]);
+		const full = await client.resolveProjects("marius-patrik");
+		expect([...full.keys()]).toEqual(["DarkFactory", "Global"]);
+		expect(full.has("Features")).toBe(false);
+		expect(transport.requests).toHaveLength(2);
+	});
+
+	test("closed Projects cannot conflict with or replace active declared boards", async () => {
+		const run = quietRun();
+		const { client, transport } = graphqlClient(run, (request) => {
+			const after = (request.body as { variables: { after?: string | null } }).variables.after;
+			return graphql({
+				user: {
+					projectsV2: after
+						? {
+								nodes: [
+									{ id: "PVT_4", title: "DarkFactory", number: 4, closed: false },
+									{ id: "PVT_5", title: "Global", number: 5, closed: false },
+								],
+								pageInfo: { hasNextPage: false, endCursor: null },
+							}
+						: {
+								nodes: [
+									{ id: "PVT_1", title: "Features", number: 1, closed: true },
+									{ id: "PVT_2", title: "Features", number: 2, closed: true },
+									{ id: "PVT_3", title: "Global", number: 3, closed: true },
+								],
+								pageInfo: { hasNextPage: true, endCursor: "next" },
+							},
+				},
+			});
+		});
+		const scoped = await client.listProjects("marius-patrik", ["DarkFactory", "Global"]);
+		expect(scoped.ok).toBe(true);
+		if (scoped.ok) expect([...scoped.projects.keys()]).toEqual(["DarkFactory", "Global"]);
+		const active = await client.resolveProjects("marius-patrik");
+		expect([...active.keys()]).toEqual(["DarkFactory", "Global"]);
+		expect(transport.requests).toHaveLength(2);
+		const firstRequest = transport.requests[0];
+		if (!firstRequest) throw new Error("No Projects listing request was made");
+		expect((firstRequest.body as { query: string }).query).toContain("closed");
+	});
+
+	test("closed-only declared boards are absent, never ambiguous or selected", async () => {
+		const run = quietRun();
+		const { client } = graphqlClient(run, () =>
+			graphql({
+				user: {
+					projectsV2: {
+						nodes: [
+							{ id: "PVT_1", title: "Global", number: 1, closed: true },
+							{ id: "PVT_2", title: "Global", number: 2, closed: true },
+							{ id: "PVT_3", title: "DarkFactory", number: 3, closed: false },
+						],
+						pageInfo: { hasNextPage: false, endCursor: null },
+					},
+				},
+			}),
+		);
+		const result = await client.listProjects("marius-patrik", ["Global", "DarkFactory"]);
+		expect(result.ok).toBe(true);
+		if (result.ok) expect([...result.projects.keys()]).toEqual(["DarkFactory"]);
+	});
+
+	test("duplicate managed titles fail closed even when the duplicate is on a later page", async () => {
+		const run = quietRun();
+		const { client, transport } = graphqlClient(run, (request) => {
+			const after = (request.body as { variables: { after?: string | null } }).variables.after;
+			return graphql({
+				user: {
+					projectsV2: after
+						? {
+								nodes: [{ id: "PVT_9", title: "Global", number: 9 }],
+								pageInfo: { hasNextPage: false, endCursor: null },
+							}
+						: {
+								nodes: [
+									{ id: "PVT_4", title: "Global", number: 4 },
+									{ id: "PVT_7", title: "DarkFactory", number: 7 },
+								],
+								pageInfo: { hasNextPage: true, endCursor: "next" },
+							},
+				},
+			});
+		});
+		const listed = await client.listProjects("marius-patrik", ["Global", "DarkFactory"]);
+		expect(listed.ok).toBe(false);
+		if (!listed.ok) expect(listed.reason).toContain("Ambiguous duplicate managed project: Global");
+		const unscoped = await client.resolveProjects("marius-patrik");
+		expect([...unscoped.keys()]).toEqual(["DarkFactory"]);
+		expect(unscoped.has("Global")).toBe(false);
+		expect(transport.requests).toHaveLength(2);
+	});
+
+	test("ambiguous managed board names cannot select a project or invoke the CLI fallback", async () => {
+		const run = quietRun();
+		const { client } = graphqlClient(run, () =>
+			graphql({
+				user: {
+					projectsV2: {
+						nodes: [
+							{ id: "PVT_1", title: "Global", number: 1 },
+							{ id: "PVT_2", title: "Global", number: 2 },
+							{ id: "PVT_3", title: "DarkFactory", number: 3 },
+						],
+						pageInfo: { hasNextPage: false, endCursor: null },
+					},
+				},
+			}),
+		);
+		let fallbackCalls = 0;
+		const automation = new BoardAutomation({
+			run,
+			graphql: client,
+			cli: () => {
+				fallbackCalls++;
+				return JSON.stringify({ projects: [{ title: "Global", number: 1 }] });
+			},
+			declaration: {
+				owner: "marius-patrik",
+				repo: "DarkFactory",
+				projectTitle: "DarkFactory",
+				globalBoardTitle: "Global",
+				linkedBoards: [],
+				defaultBranch: "main",
+				developmentBranch: "main",
+				installedOn: [],
+				app: {},
+			},
+			env: { GITHUB_REPOSITORY: "marius-patrik/DarkFactory" },
+		});
+		expect(await automation.resolveBoards()).toEqual([]);
+		expect(fallbackCalls).toBe(0);
+		expect(run.failures.some((failure) => String(failure).includes("Ambiguous duplicate managed project"))).toBe(true);
+	});
+
+	test("a repeated project identity across pages is malformed even if the titles differ", async () => {
+		const run = quietRun();
+		const { client } = graphqlClient(run, (request) => {
+			const after = (request.body as { variables: { after?: string | null } }).variables.after;
+			return graphql({
+				user: {
+					projectsV2: {
+						nodes: after
+							? [{ id: "PVT_1", title: "Changed", number: 1 }]
+							: [{ id: "PVT_1", title: "DarkFactory", number: 1 }],
+						pageInfo: { hasNextPage: !after, endCursor: after ? null : "next" },
+					},
+				},
+			});
+		});
+		const result = await client.listProjects("marius-patrik", ["DarkFactory"]);
+		expect(result.ok).toBe(false);
+		if (!result.ok) expect(result.reason).toContain("repeated a project identity");
+	});
+
+	test("a repeated cursor fails closed; partial project discovery is never cached", async () => {
+		const run = quietRun();
+		const { client } = graphqlClient(run, () =>
+			graphql({
+				user: {
+					projectsV2: {
+						nodes: [{ id: "PVT_1", title: "DarkFactory", number: 1 }],
+						pageInfo: { hasNextPage: true, endCursor: "same" },
+					},
+				},
+			}),
+		);
+		const result = await client.listProjects("marius-patrik");
+		expect(result.ok).toBe(false);
+		expect(await client.resolveProjects("marius-patrik")).toEqual(new Map());
+	});
+
+	test("a malformed owner listing fails closed rather than claiming there are no projects", async () => {
+		const run = quietRun();
+		const { client } = graphqlClient(run, () => graphql({ user: null }));
+		const result = await client.listProjects("marius-patrik");
+		expect(result.ok).toBe(false);
 	});
 });
 

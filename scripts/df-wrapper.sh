@@ -26,21 +26,6 @@ if [ "$#" -eq 0 ] && [ -t 0 ] && [ -t 1 ]; then
 	run_df chat
 fi
 
-case ${1-} in
-	chat|run|providers|models|accounts|account|login|logout|ask|help)
-		run_df "$@"
-		;;
-esac
-
-old_ifs=$IFS
-IFS=:
-for directory in ${PATH-}; do
-	[ -n "$directory" ] || directory=.
-	if [ -x "$directory/df" ] && [ ! -d "$directory/df" ]; then
-		[ "$directory/df" -ef "$0" ] && continue
-		IFS=$old_ifs
-		exec "$directory/df" "$@"
-	fi
-done
-IFS=$old_ifs
-exec /bin/df "$@"
+# Every df command is routed to the single CLI owner. Do not maintain a second
+# subcommand whitelist or silently invoke the operating system's disk-usage df.
+run_df "$@"

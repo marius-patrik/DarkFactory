@@ -48,6 +48,7 @@ interface RepositoryPackageEvidence {
 	domains: readonly string[];
 	scripts: readonly string[];
 	apiEntryPoints: readonly string[];
+	pythonSetupKind?: "editable" | "requirements" | "requirements-dev" | "none";
 }
 
 /** Explicit deterministic-action override declared in the combined configuration's repo block. */
@@ -232,7 +233,11 @@ function evidence(
 	name: string,
 	packageManager: PackageManager,
 	packageManagerRoot: string,
-	options: { scripts?: readonly string[]; apiEntryPoints?: readonly string[] } = {},
+	options: {
+		scripts?: readonly string[];
+		apiEntryPoints?: readonly string[];
+		pythonSetupKind?: RepositoryPackageEvidence["pythonSetupKind"];
+	} = {},
 ): RepositoryPackageEvidence {
 	const path = repoPath(root, directory);
 	return {
@@ -246,6 +251,7 @@ function evidence(
 		domains: [ECOSYSTEM_DOMAIN[ecosystem]],
 		scripts: options.scripts ?? [],
 		apiEntryPoints: options.apiEntryPoints ?? [],
+		...(options.pythonSetupKind ? { pythonSetupKind: options.pythonSetupKind } : {}),
 	};
 }
 
@@ -298,7 +304,20 @@ async function discoveredPackages(directory: string, root: string): Promise<Repo
 			} catch {}
 		}
 		const { manager, managerRoot } = await pythonManager(directory, root);
-		found.push(evidence(root, directory, "python", pythonManifest, name, manager, managerRoot));
+		let pythonSetupKind: RepositoryPackageEvidence["pythonSetupKind"] = "editable";
+		if (pythonManifest === "requirements.txt") pythonSetupKind = "requirements";
+		else if (pythonManifest === "pyproject.toml") {
+			const source = await readFile(pyproject, "utf8");
+			const installable = /^\s*\[(?:project|tool\.poetry)\]\s*$/mu.test(source);
+			pythonSetupKind = installable
+				? "editable"
+				: (await exists(join(directory, "requirements-dev.txt")))
+					? "requirements-dev"
+					: (await exists(join(directory, "requirements.txt")))
+						? "requirements"
+						: "none";
+		}
+		found.push(evidence(root, directory, "python", pythonManifest, name, manager, managerRoot, { pythonSetupKind }));
 	}
 
 	if (await exists(join(directory, "Cargo.toml")))
@@ -354,6 +373,8 @@ async function scan(
 	}
 	for (const entry of entries) {
 		if (!entry.isDirectory()) continue;
+		// Packaged Codex extension dependencies are not consumer source packages.
+		if (rel === ".codex-plugin" && entry.name === "runtime") continue;
 		if (
 			[
 				".git",

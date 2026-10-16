@@ -19,8 +19,8 @@ jobs:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
       - name: Install SHA256-verified released df
         env:
-          DF_TAG: "v0.289.2"
-          DF_SHA256: "792c5b602dcd7a2caeb15da12ca6fbe63a6ba54d78b873b2c595e063cbe21f92"
+          DF_TAG: "v0.291.6"
+          DF_SHA256: "9b601ce17446348fbbac74597067855be7c05f004670cd14d9d77dd40ab545e0"
         run: |
           set -euo pipefail
           curl --fail --location --silent --show-error --retry 3 "https://github.com/marius-patrik/DarkFactory/releases/download/$DF_TAG/df-linux-x64.tar.gz" --output "$RUNNER_TEMP/df.tar.gz"
@@ -87,14 +87,33 @@ jobs:
           DF_SETUP_CWD: ${{ matrix.setupCwd }}
         run: |
           cd "$GITHUB_WORKSPACE/$DF_SETUP_CWD"
-          bash -lc "$DF_SETUP_COMMAND"
+          if [ "$DF_SETUP_COMMAND" = "npm ci" ] && [ ! -f package-lock.json ] && [ ! -f npm-shrinkwrap.json ]; then
+            npm install --no-package-lock
+          else
+            bash -c "$DF_SETUP_COMMAND"
+          fi
+      - if: matrix.ecosystem == 'python'
+        name: Install inferred Python quality tooling
+        env:
+          DF_ACTION_COMMAND: ${{ matrix.command }}
+        run: |
+          set -euo pipefail
+          case "$DF_ACTION_COMMAND" in
+            pytest*|*' -m pytest'*) python -m pip install pytest ;;
+            black*|*' -m black'*) python -m pip install black ;;
+            ruff*|*' -m ruff'*) python -m pip install ruff ;;
+            mypy*|*' -m mypy'*) python -m pip install mypy ;;
+            flake8*|*' -m flake8'*) python -m pip install flake8 ;;
+            isort*|*' -m isort'*) python -m pip install isort ;;
+          esac
       - name: Run detected quality action
         env:
           DF_ACTION_COMMAND: ${{ matrix.command }}
           DF_ACTION_CWD: ${{ matrix.cwd }}
         run: |
           cd "$GITHUB_WORKSPACE/$DF_ACTION_CWD"
-          bash -lc "$DF_ACTION_COMMAND"
+          export PATH="$GITHUB_WORKSPACE/node_modules/.bin:$PWD/node_modules/.bin:$PATH"
+          bash -c "$DF_ACTION_COMMAND"
   quality:
     name: released-df-quality
     runs-on: ubuntu-latest
@@ -111,23 +130,23 @@ jobs:
           if [ "$DF_HAS_ACTIONS" = "true" ]; then test "$DF_QUALITY" = "success"; fi
   agent:
     if: github.event_name == 'issues' || github.event_name == 'issue_comment' || github.event_name == 'pull_request_review_comment'
-    uses: marius-patrik/DarkFactory/.github/workflows/agent.yml@12a2507ba6499b3236c17d3c977c55a480ed5200
+    uses: marius-patrik/DarkFactory/.github/workflows/agent.yml@368eb9d75d5d828e7ac17fe590d4dc17b028cebc
     with:
-      pipeline-ref: "12a2507ba6499b3236c17d3c977c55a480ed5200"
+      pipeline-ref: "368eb9d75d5d828e7ac17fe590d4dc17b028cebc"
       pipeline-repo: marius-patrik/DarkFactory
       agent-enabled: ${{ vars.AGENT_ENABLED }}
     secrets: inherit
   issue-binding:
     if: github.event_name == 'pull_request'
-    uses: marius-patrik/DarkFactory/.github/workflows/verify-pr-issue.yml@12a2507ba6499b3236c17d3c977c55a480ed5200
+    uses: marius-patrik/DarkFactory/.github/workflows/verify-pr-issue.yml@368eb9d75d5d828e7ac17fe590d4dc17b028cebc
     with:
-      pipeline-ref: "12a2507ba6499b3236c17d3c977c55a480ed5200"
+      pipeline-ref: "368eb9d75d5d828e7ac17fe590d4dc17b028cebc"
       pipeline-repo: marius-patrik/DarkFactory
     secrets: inherit
   approvals:
     if: github.event_name == 'pull_request_review' || github.event_name == 'issue_comment'
-    uses: marius-patrik/DarkFactory/.github/workflows/pr-approval-automerge.yml@12a2507ba6499b3236c17d3c977c55a480ed5200
+    uses: marius-patrik/DarkFactory/.github/workflows/pr-approval-automerge.yml@368eb9d75d5d828e7ac17fe590d4dc17b028cebc
     with:
-      pipeline-ref: "12a2507ba6499b3236c17d3c977c55a480ed5200"
+      pipeline-ref: "368eb9d75d5d828e7ac17fe590d4dc17b028cebc"
       pipeline-repo: marius-patrik/DarkFactory
     secrets: inherit

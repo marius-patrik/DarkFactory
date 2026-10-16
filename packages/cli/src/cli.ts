@@ -9,7 +9,7 @@ import { stdin, stdout } from "node:process";
 import { createInterface } from "node:readline/promises";
 import type { AuthEvent, AuthPrompt, Provider } from "@earendil-works/pi-ai";
 import { fauxAssistantMessage, fauxProvider } from "@earendil-works/pi-ai";
-import { formatCaptureSchema } from "../../cli/src/capture-schema.ts";
+import { formatCaptureSchema } from "./capture-schema.ts";
 import { importAntigravityAccount, OsKeyringAdapter } from "../../keychain/src/import/antigravity.ts";
 import { importClaudeAccount } from "../../keychain/src/import/claude.ts";
 import { importCodexAccount } from "../../keychain/src/import/codex.ts";
@@ -30,18 +30,23 @@ import {
 } from "../../keychain/src/index.ts";
 import { loginProviderAccount } from "../../keychain/src/login.ts";
 import { runPluginCli } from "../../plugins/src/index.ts";
-import { runCiCli } from "./ci/cli.ts";
-import { executableReleaseVersion, runReleasedInstaller } from "./install/released-df.ts";
-import { applyLicence } from "./ci/licensing.ts";
-import { reportFailure, resolveFailure } from "./ci/report-failure.ts";
-import { DEFAULT_ROUTER_CONFIG, type DfConfig, loadDfConfig, localCredentialFallback } from "./config.ts";
-import type { Candidate } from "./failover.ts";
-import { GitHubClient } from "./github/client.ts";
-import { GitHubRepository } from "./github/repository.ts";
-import { bundledGraphPath } from "./graph/assets.ts";
-import { type GraphEvent, plan, type RunState, validateGraph } from "./graph/index.ts";
-import { parseCandidate, parseChain, resolveRouting } from "./harness/routing.ts";
-import { validateCandidateCredentials } from "./harness/runtime.ts";
+import { runCiCli } from "../../harness/src/ci/cli.ts";
+import { executableReleaseVersion, runReleasedInstaller } from "../../harness/src/install/released-df.ts";
+import { applyLicence } from "../../harness/src/ci/licensing.ts";
+import { failureActionForConclusion, reportFailure, resolveFailure } from "../../harness/src/ci/report-failure.ts";
+import {
+	DEFAULT_ROUTER_CONFIG,
+	type DfConfig,
+	loadDfConfig,
+	localCredentialFallback,
+} from "../../harness/src/config.ts";
+import type { Candidate } from "../../harness/src/failover.ts";
+import { GitHubClient } from "../../harness/src/github/client.ts";
+import { GitHubRepository } from "../../harness/src/github/repository.ts";
+import { bundledGraphPath } from "../../harness/src/graph/assets.ts";
+import { type GraphEvent, plan, type RunState, validateGraph } from "../../harness/src/graph/index.ts";
+import { parseCandidate, parseChain, resolveRouting } from "../../harness/src/harness/routing.ts";
+import { validateCandidateCredentials } from "../../harness/src/harness/runtime.ts";
 import {
 	type CandidateFailureReason,
 	ChainExhaustedError,
@@ -49,24 +54,24 @@ import {
 	type HarnessEvent,
 	type RunDeadline,
 	RunTimeoutError,
-} from "./harness/supervisor.ts";
-import { runDoctorIdentities } from "./identities/index.ts";
-import { LimitLedger } from "./limits/ledger.ts";
-import { QuotaEngine } from "./limits/quota-engine.ts";
-import { buildQuotaReport } from "./limits/quota-report.ts";
-import { sweepQuotaResumes } from "./limits/resume-sweep.ts";
-import { estimateTask } from "./limits/routing.ts";
-import { type CatalogResult, isRunnableCatalogModel, ModelCatalog } from "./models/catalog.ts";
-import { ModelPoller } from "./models/poller.ts";
-import { RUNNER_COMMANDS, type RunnerCommand, runnerMain } from "./pipeline/main.ts";
-import { ProviderRegistry } from "./providers/runtime.ts";
-import { loadProviderConfig } from "./providers/schema.ts";
-import { classifyFailure } from "./quota.ts";
-import { redactErrorMessage } from "./redaction.ts";
-import { buildRouterCatalog } from "./router/catalog.ts";
-import { OutcomeStore } from "./router/outcomes.ts";
-import { routeTask } from "./router/router.ts";
-import { type CapabilityEscalationPolicy, candidateTierKey } from "./router/tiers.ts";
+} from "../../harness/src/harness/supervisor.ts";
+import { runDoctorIdentities } from "../../harness/src/identities/index.ts";
+import { LimitLedger } from "../../harness/src/limits/ledger.ts";
+import { QuotaEngine } from "../../harness/src/limits/quota-engine.ts";
+import { buildQuotaReport } from "../../harness/src/limits/quota-report.ts";
+import { sweepQuotaResumes } from "../../harness/src/limits/resume-sweep.ts";
+import { estimateTask } from "../../harness/src/limits/routing.ts";
+import { type CatalogResult, isRunnableCatalogModel, ModelCatalog } from "../../harness/src/models/catalog.ts";
+import { ModelPoller } from "../../harness/src/models/poller.ts";
+import { RUNNER_COMMANDS, type RunnerCommand, runnerMain } from "../../harness/src/pipeline/main.ts";
+import { ProviderRegistry } from "../../harness/src/providers/runtime.ts";
+import { loadProviderConfig } from "../../harness/src/providers/schema.ts";
+import { classifyFailure } from "../../harness/src/quota.ts";
+import { redactErrorMessage } from "../../harness/src/redaction.ts";
+import { buildRouterCatalog } from "../../harness/src/router/catalog.ts";
+import { OutcomeStore } from "../../harness/src/router/outcomes.ts";
+import { routeTask } from "../../harness/src/router/router.ts";
+import { type CapabilityEscalationPolicy, candidateTierKey } from "../../harness/src/router/tiers.ts";
 import type {
 	Difficulty,
 	ModelCapability,
@@ -75,10 +80,14 @@ import type {
 	TaskSize as RouterTaskSize,
 	TaskKind,
 	TaskNeed,
-} from "./router/types.ts";
-import { secretsCommand } from "./secrets/cli.ts";
-import { runWorkspaceCli } from "./workspace/cli.ts";
-import { describeSubmoduleMovement, pinSubmoduleBranches, updateSubmodules } from "./workspace/submodules.ts";
+} from "../../harness/src/router/types.ts";
+import { secretsCommand } from "../../harness/src/secrets/cli.ts";
+import { runWorkspaceCli } from "../../harness/src/workspace/cli.ts";
+import {
+	describeSubmoduleMovement,
+	pinSubmoduleBranches,
+	updateSubmodules,
+} from "../../harness/src/workspace/submodules.ts";
 
 function usage(): string {
 	return [
@@ -1128,7 +1137,7 @@ async function packagingSmoke(): Promise<void> {
 		console.warn(`no packaged pi-tui native module for ${platform}-${arch}; pi-tui runs without one`);
 	}
 
-	const worker = new Worker(new URL("./image-resize-worker.ts", import.meta.url));
+	const worker = new Worker(new URL("../../harness/src/image-resize-worker.ts", import.meta.url));
 	try {
 		const png = Uint8Array.from(
 			Buffer.from(
@@ -1416,7 +1425,8 @@ async function reportFailureCommand(args: string[]): Promise<void> {
 	const log = (message: string) => console.log(message);
 
 	try {
-		if (process.env.CONCLUSION === "failure") {
+		const action = failureActionForConclusion(process.env.CONCLUSION);
+		if (action === "report") {
 			const outcome = await reportFailure({
 				repo,
 				workflow,
@@ -1432,7 +1442,8 @@ async function reportFailureCommand(args: string[]): Promise<void> {
 			}
 			return;
 		}
-		await resolveFailure(repo, workflow, log);
+		if (action === "resolve") await resolveFailure(repo, workflow, log);
+		else log(`Ignoring non-recovery workflow conclusion: ${process.env.CONCLUSION ?? "missing"}`);
 	} catch (error) {
 		console.error(`Error: ${(error as Error).message}`);
 		process.exitCode = 1;
@@ -1617,7 +1628,7 @@ async function graphCommand(args: string[]): Promise<void> {
 		return;
 	}
 	if (subcommand === "dispatch") {
-		const { dispatch } = await import("./graph/dispatch.ts");
+		const { dispatch } = await import("../../harness/src/graph/dispatch.ts");
 		await dispatch(args.slice(1));
 		return;
 	}
@@ -1687,9 +1698,7 @@ export async function main(args = process.argv.slice(2)): Promise<void> {
 	// and would be wrong twice over: it bypasses the CLI that owns the command surface, and it makes
 	// the image's entrypoint depend on the source layout, so a file move breaks the container.
 	//
-	// `nix/entrypoint.sh` refused to shim `dispatch` into `graph dispatch` for the same reason it gave:
-	// a shim that makes the image look compatible turns a loud failure into a silent one. The fix was
-	// never a better shim. It was a real `df dispatch`, which is what this is.
+	// `df dispatch` invokes the governed runtime, not only graph planning.
 	if (RUNNER_COMMANDS.includes(args[0] as RunnerCommand)) {
 		process.exitCode = await runnerMain(args);
 		return;

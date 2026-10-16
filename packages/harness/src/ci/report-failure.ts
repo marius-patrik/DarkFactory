@@ -1,6 +1,16 @@
 import type { GitHubRepository } from "../github/repository";
 
 /** Label carried by every issue this module opens, so they can be found and filtered as a set. */
+/**
+ * An incident is resolved only by an observed successful workflow run.
+ * Cancellation, timeout, neutral and skipped outcomes are not recovery.
+ */
+export function failureActionForConclusion(conclusion: string | null | undefined): "report" | "resolve" | "ignore" {
+	if (conclusion === "failure") return "report";
+	if (conclusion === "success") return "resolve";
+	return "ignore";
+}
+
 export const FAILURE_LABEL = "pipeline-failure";
 
 /**

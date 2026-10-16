@@ -97,6 +97,31 @@ describe("repository evidence and capability actions", () => {
 		expect(matrix.some((entry) => entry.packageId === "lean:proofs" && entry.kind === "test")).toBe(true);
 	});
 
+	test("tool-only Python metadata installs declared dev tools, not a nonexistent editable package", async () => {
+		const root = await mkdtemp(join(tmpdir(), "df-python-tool-config-"));
+		roots.push(root);
+		await writeFile(join(root, "pyproject.toml"), '[tool.pytest.ini_options]\ntestpaths = ["tests"]\n');
+		await writeFile(join(root, "requirements-dev.txt"), "pytest>=8\nblack>=24\n");
+		const detected = await detectRepositoryEvidence(root);
+		const entry = detected.packages.find((pkg) => pkg.id === "python:.")!;
+		expect(entry.pythonSetupKind).toBe("requirements-dev");
+		const resolved = resolveRepositoryActions(detected, [codeCapability]);
+		expect(resolved.packages.find((pkg) => pkg.package.id === "python:.")?.actions.setup.command).toBe(
+			"python -m pip install -r requirements-dev.txt",
+		);
+	});
+
+	test("genuine Python project metadata retains editable installation", async () => {
+		const root = await fixture();
+		const detected = await detectRepositoryEvidence(root);
+		const entry = detected.packages.find((pkg) => pkg.id === "python:python")!;
+		expect(entry.pythonSetupKind).toBe("editable");
+		const resolved = resolveRepositoryActions(detected, [codeCapability]);
+		expect(resolved.packages.find((pkg) => pkg.package.id === "python:python")?.actions.setup.command).toBe(
+			"python -m pip install -e .",
+		);
+	});
+
 	test("does not silently fall back when an action is unsupported", async () => {
 		const root = await fixture();
 		const evidence = await detectRepositoryEvidence(root);
@@ -150,4 +175,25 @@ describe("the pinned runtime checkout is not the consumer's content", () => {
 			await rm(root, { recursive: true, force: true });
 		}
 	});
+});
+
+test("consumer discovery excludes packaged Codex extension runtimes while retaining source plugins", async () => {
+	const root = await mkdtemp(join(tmpdir(), "df-vendored-agent-scan-"));
+	try {
+		await writeFile(join(root, "package.json"), JSON.stringify({ name: "source-root" }));
+		await mkdir(join(root, ".codex-plugin", "runtime", "modules"), { recursive: true });
+		await writeFile(
+			join(root, ".codex-plugin", "runtime", "modules", "package.json"),
+			JSON.stringify({ name: "vendored-copy", scripts: { test: "bun test" } }),
+		);
+		await mkdir(join(root, ".codex-plugin", "source"), { recursive: true });
+		await writeFile(join(root, ".codex-plugin", "source", "package.json"), JSON.stringify({ name: "plugin-source" }));
+		await mkdir(join(root, "packages", "cli"), { recursive: true });
+		await writeFile(join(root, "packages", "cli", "package.json"), JSON.stringify({ name: "app-cli" }));
+
+		const evidence = await detectRepositoryEvidence(root);
+		expect(evidence.packages.map((entry) => entry.path)).toEqual([".", ".codex-plugin/source", "packages/cli"]);
+	} finally {
+		await rm(root, { recursive: true, force: true });
+	}
 });
