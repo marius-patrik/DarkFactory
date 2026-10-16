@@ -19,6 +19,7 @@ interface ProjectNode {
 	readonly id: string;
 	readonly number: number;
 	readonly title: string;
+	readonly closed?: boolean;
 }
 
 /** One single-select option on a project's field. */
@@ -75,13 +76,15 @@ interface BoardGraphqlOptions {
 }
 
 const GET_PROJECTS = `
-        query GetProjects($login: String!) {
+        query GetProjects($login: String!, $after: String) {
           user(login: $login) {
-            projectsV2(first: 20) {
+            projectsV2(first: 100, after: $after) {
+              pageInfo { hasNextPage endCursor }
               nodes {
                 id
                 number
                 title
+                closed
               }
             }
           }
@@ -263,7 +266,7 @@ export class BoardGraphqlClient {
 	readonly #run: BoardRun;
 	readonly #transport: FetchTransport;
 	readonly #statusNames: readonly string[];
-	#projects: Map<string, ProjectNode> | null = null;
+	#projects: ProjectNode[] | null = null;
 
 	constructor(options: BoardGraphqlOptions) {
 		this.#statusNames =
@@ -328,51 +331,105 @@ export class BoardGraphqlClient {
 	}
 
 	/**
-	 * Every project the owner can see, by title, discovered once per run.
-	 *
-	 * A discovery failure returns nothing rather than throwing: the caller falls back to the `gh`
-	 * CLI, and a board it cannot find is reported as a failure with the name of the board that is
-	 * missing rather than as an unhandled error.
+	 * Read the full owner inventory. Project titles are not unique in GitHub:
+	 * unrelated projects can share a title without making the managed boards ambiguous.
+	 * Only a completed, structurally valid listing is cached.
 	 */
-	async resolveProjects(owner: string): Promise<Map<string, ProjectNode>> {
-		if (this.#projects) return this.#projects;
-		try {
-			const data = await this.execute(GET_PROJECTS, { login: owner });
-			const nodes = ((data.user as Node | undefined)?.projectsV2 as Node | undefined)?.nodes;
-			this.#projects = new Map(
-				(Array.isArray(nodes) ? (nodes as ProjectNode[]) : [])
-					.filter((node) => typeof node?.title === "string")
-					.map((node) => [node.title, node]),
-			);
-		} catch (error) {
-			if (isRateLimited(error)) this.#run.markRateLimited();
-			this.#run.notice(`resolving projects for ${owner}: ${describeFailure(error)}`);
-		}
-		return this.#projects ?? new Map();
+	async #discoverProjects(owner: string): Promise<ProjectNode[]> {
+		const result: ProjectNode[] = [];
+		const visited = new Set<string>();
+		const seenIds = new Set<string>();
+		const seenNumbers = new Set<number>();
+		let after: string | null = null;
+		do {
+			const data = await this.execute(GET_PROJECTS, { login: owner, after });
+			const page = (data.user as Node | undefined)?.projectsV2 as Node | undefined;
+			if (!page || !Array.isArray(page.nodes))
+				throw new Error("Projects v2 returned an unreadable listing; refusing to treat it as empty");
+			for (const node of page.nodes as ProjectNode[]) {
+				if (
+					!node ||
+					typeof node.title !== "string" ||
+					typeof node.id !== "string" ||
+					!node.id ||
+					!Number.isInteger(node.number) ||
+					node.number < 1
+				)
+					throw new Error("Projects v2 listing contained an invalid project");
+				if (seenIds.has(node.id) || seenNumbers.has(node.number))
+					throw new Error("Projects v2 listing repeated a project identity");
+				seenIds.add(node.id);
+				seenNumbers.add(node.number);
+				// Only open Projects participate in governed project discovery.
+				if (node.closed !== undefined && typeof node.closed !== "boolean")
+					throw new Error("Projects v2 listing contains an invalid closed state");
+				if (node.closed !== true) result.push(node);
+			}
+			const info = page.pageInfo as Node | undefined;
+			if (info?.hasNextPage === true) {
+				const cursor = info.endCursor;
+				if (typeof cursor !== "string" || !cursor || visited.has(cursor))
+					throw new Error("Projects v2 pagination cursor is missing or repeats");
+				visited.add(cursor);
+				after = cursor;
+			} else {
+				if (!info && page.nodes.length === 100)
+					throw new Error("Projects v2 omitted pagination metadata on a full page");
+				after = null;
+			}
+		} while (after);
+		return result;
 	}
 
 	/**
-	 * The listing, or the failure that prevented one.
-	 *
-	 * `resolveProjects` returns an empty map when the listing cannot be read, because its callers treat
-	 * a board they cannot see as one they will simply not use. That is wrong for a caller deciding
-	 * whether to create a board: absence is grounds to create, an unreadable listing is not, and the two
-	 * are the same empty map. An account that genuinely has no boards is *not* a failure — that is
-	 * absence, and it is reported here as a successful read of nothing.
+	 * Project names are lookup aliases, not identities. Never select an arbitrary project
+	 * from a duplicate title. For explicitly requested managed titles, duplicates are a
+	 * fatal ambiguity; unrelated duplicates are excluded from the index without blocking
+	 * the complete owner inventory.
+	 */
+	#indexProjects(nodes: readonly ProjectNode[], requiredTitles?: readonly string[]): Map<string, ProjectNode> {
+		const required = requiredTitles ? new Set(requiredTitles) : null;
+		const result = new Map<string, ProjectNode>();
+		const ambiguous = new Set<string>();
+		for (const node of nodes) {
+			if (required && !required.has(node.title)) continue;
+			if (ambiguous.has(node.title)) continue;
+			if (result.has(node.title)) {
+				result.delete(node.title);
+				ambiguous.add(node.title);
+			} else {
+				result.set(node.title, node);
+			}
+		}
+		if (required && ambiguous.size > 0)
+			throw new Error(`Ambiguous duplicate managed project: ${[...ambiguous].sort().join(", ")}`);
+		return result;
+	}
+
+	/** Return discovered projects. A failed read never becomes a cached empty inventory. */
+	async resolveProjects(owner: string, requiredTitles?: readonly string[]): Promise<Map<string, ProjectNode>> {
+		try {
+			if (!this.#projects) this.#projects = await this.#discoverProjects(owner);
+			return this.#indexProjects(this.#projects, requiredTitles);
+		} catch (error) {
+			if (isRateLimited(error)) this.#run.markRateLimited();
+			this.#run.notice(`resolving projects for ${owner}: ${describeFailure(error)}`);
+			return new Map();
+		}
+	}
+
+	/**
+	 * An explicit success/failure result for callers that might create or mutate a board.
+	 * A missing managed title must never be confused with a duplicate managed title or a
+	 * failed API read; only a successful complete inventory permits an absence decision.
 	 */
 	async listProjects(
 		owner: string,
+		requiredTitles?: readonly string[],
 	): Promise<{ ok: true; projects: Map<string, ProjectNode> } | { ok: false; reason: string }> {
-		if (this.#projects) return { ok: true, projects: this.#projects };
 		try {
-			const data = await this.execute(GET_PROJECTS, { login: owner });
-			const nodes = ((data.user as Node | undefined)?.projectsV2 as Node | undefined)?.nodes;
-			this.#projects = new Map(
-				(Array.isArray(nodes) ? (nodes as ProjectNode[]) : [])
-					.filter((node) => typeof node?.title === "string")
-					.map((node) => [node.title, node]),
-			);
-			return { ok: true, projects: this.#projects };
+			if (!this.#projects) this.#projects = await this.#discoverProjects(owner);
+			return { ok: true, projects: this.#indexProjects(this.#projects, requiredTitles) };
 		} catch (error) {
 			if (isRateLimited(error)) this.#run.markRateLimited();
 			const reason = `could not list projects for ${owner}: ${describeFailure(error)}`;
@@ -419,7 +476,7 @@ export class BoardGraphqlClient {
 				title: String((project.title as string | undefined) ?? title),
 				number: project.number,
 			};
-			if (this.#projects) this.#projects.set(node.title, node);
+			if (this.#projects) this.#projects.push(node);
 			return node;
 		} catch (error) {
 			if (isRateLimited(error)) this.#run.markRateLimited();

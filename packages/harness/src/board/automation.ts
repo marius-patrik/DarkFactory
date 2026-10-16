@@ -128,14 +128,32 @@ export class BoardAutomation {
 			return [this.projectNumber];
 		}
 
-		let byTitle = await this.graphql.resolveProjects(this.owner);
-		if (byTitle.size === 0 && this.cli) {
+		const listing = await this.graphql.listProjects(this.owner, titles);
+		// A duplicate managed title must never be disambiguated arbitrarily by the CLI fallback.
+		if (!listing.ok && listing.reason.includes("Ambiguous duplicate managed project")) {
+			this.run.fail(listing.reason);
+			return [];
+		}
+		let byTitle = listing.ok ? listing.projects : new Map<string, { id: string; title: string; number: number }>();
+		if (!listing.ok && this.cli) {
 			try {
 				const output = this.cli(["project", "list", "--owner", this.owner, "--limit", "100", "--format", "json"]);
-				const projects = (JSON.parse(output) as { projects?: { title: string; number: number }[] }).projects ?? [];
-				byTitle = new Map(
-					projects.map((project) => [project.title, project as { id: string; title: string; number: number }]),
-				);
+				const projects =
+					(JSON.parse(output) as { projects?: { title: string; number: number; closed?: boolean }[] }).projects ?? [];
+				// Never revive closed boards when a successful API inventory found no active boards.
+				// On fallback, require an explicit open state before selecting a board.
+				const openManaged = projects.filter((project) => project.closed === false && titles.includes(project.title));
+				const unique = new Map<string, { id: string; title: string; number: number }>();
+				for (const project of openManaged) {
+					if (!Number.isInteger(project.number) || project.number <= 0)
+						throw new Error(`Invalid managed project number: ${project.title}`);
+					if (unique.has(project.title)) {
+						this.run.fail(`Ambiguous duplicate managed project: ${project.title}`);
+						return [];
+					}
+					unique.set(project.title, project as { id: string; title: string; number: number });
+				}
+				byTitle = unique;
 			} catch (error) {
 				if (isRateLimited(error)) {
 					this.run.markRateLimited(`Project board rate limit reached resolving boards for ${this.owner}`);
@@ -202,10 +220,17 @@ export class BoardAutomation {
 	/** Every declared board, plus every board linked to this repository, addressed as one. */
 	async everyDeclaredBoard(): Promise<BoardGroup> {
 		const numbers = await this.resolveBoards();
-		const byTitle = await this.graphql.resolveProjects(this.owner);
-		for (const title of this.declaration?.linkedBoards ?? []) {
-			const project = byTitle.get(title);
-			if (project && !numbers.includes(project.number)) numbers.push(project.number);
+		const linked = this.declaration?.linkedBoards ?? [];
+		if (linked.length > 0) {
+			const listing = await this.graphql.listProjects(this.owner, linked);
+			if (!listing.ok) {
+				this.run.fail(listing.reason);
+				return this.boardGroup([]);
+			}
+			for (const title of linked) {
+				const project = listing.projects.get(title);
+				if (project && !numbers.includes(project.number)) numbers.push(project.number);
+			}
 		}
 		return this.boardGroup(numbers);
 	}
