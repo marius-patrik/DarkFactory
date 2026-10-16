@@ -33,7 +33,7 @@ import { runPluginCli } from "../../plugins/src/index.ts";
 import { runCiCli } from "../../harness/src/ci/cli.ts";
 import { executableReleaseVersion, runReleasedInstaller } from "../../harness/src/install/released-df.ts";
 import { applyLicence } from "../../harness/src/ci/licensing.ts";
-import { reportFailure, resolveFailure } from "../../harness/src/ci/report-failure.ts";
+import { failureActionForConclusion, reportFailure, resolveFailure } from "../../harness/src/ci/report-failure.ts";
 import {
 	DEFAULT_ROUTER_CONFIG,
 	type DfConfig,
@@ -1425,7 +1425,8 @@ async function reportFailureCommand(args: string[]): Promise<void> {
 	const log = (message: string) => console.log(message);
 
 	try {
-		if (process.env.CONCLUSION === "failure") {
+		const action = failureActionForConclusion(process.env.CONCLUSION);
+		if (action === "report") {
 			const outcome = await reportFailure({
 				repo,
 				workflow,
@@ -1441,7 +1442,8 @@ async function reportFailureCommand(args: string[]): Promise<void> {
 			}
 			return;
 		}
-		await resolveFailure(repo, workflow, log);
+		if (action === "resolve") await resolveFailure(repo, workflow, log);
+		else log(`Ignoring non-recovery workflow conclusion: ${process.env.CONCLUSION ?? "missing"}`);
 	} catch (error) {
 		console.error(`Error: ${(error as Error).message}`);
 		process.exitCode = 1;
