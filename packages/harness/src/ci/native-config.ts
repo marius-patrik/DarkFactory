@@ -6,7 +6,7 @@ import { configBlock, parseConfigDocument, resolveConfigDocumentPath } from "../
 type JsonObject = Record<string, unknown>;
 export type NativeConfigState = "in_sync" | "missing" | "unmanaged" | "modified" | "outdated";
 export interface NativeConfigStatus {
-	file: "pyproject.toml" | "properdocs.yml";
+	file: "pyproject.toml" | "properdocs.yml" | "mkdocs.yml";
 	state: NativeConfigState;
 	message: string;
 }
@@ -57,14 +57,14 @@ export function renderPyproject(value: unknown): string {
 }
 
 /** YAML 1.2 is a superset of JSON; emitting strict JSON avoids ambiguous YAML scalar coercions. */
-export function renderProperdocs(value: unknown, site: unknown): string {
-	const config = { ...object(value, "docs.native_properdocs") };
+function renderDocumentationYaml(value: unknown, site: unknown, owner: "native_properdocs" | "native_mkdocs"): string {
+	const config = { ...object(value, `docs.${owner}`) };
 	if ("site_name" in config || "site_description" in config) {
-		throw new Error("Site metadata belongs exclusively to docs.site, not docs.native_properdocs");
+		throw new Error(`Site metadata belongs exclusively to docs.site, not docs.${owner}`);
 	}
 	const metadata = site === undefined ? {} : object(site, "docs.site");
 	if (typeof metadata.name !== "string" || !metadata.name.trim())
-		throw new Error("docs.site.name is required when docs.native_properdocs is declared");
+		throw new Error(`docs.site.name is required when docs.${owner} is declared`);
 	if (metadata.description !== undefined && typeof metadata.description !== "string")
 		throw new Error("docs.site.description must be a string");
 	return (
@@ -78,6 +78,16 @@ export function renderProperdocs(value: unknown, site: unknown): string {
 			2,
 		) + "\n"
 	);
+}
+
+/** Render the supported ProperDocs-native settings without duplicating site identity. */
+export function renderProperdocs(value: unknown, site: unknown): string {
+	return renderDocumentationYaml(value, site, "native_properdocs");
+}
+
+/** Render MkDocs-native settings for consumers using the MkDocs build toolchain. */
+export function renderMkdocs(value: unknown, site: unknown): string {
+	return renderDocumentationYaml(value, site, "native_mkdocs");
 }
 
 function sealed(body: string): string {
@@ -96,8 +106,11 @@ export async function nativeConfigOutputs(root: string): Promise<Map<NativeConfi
 	const outputs = new Map<NativeConfigStatus["file"], string>();
 	if (environment.native_pyproject !== undefined)
 		outputs.set("pyproject.toml", sealed(renderPyproject(environment.native_pyproject)));
+	if (docs.native_properdocs !== undefined && docs.native_mkdocs !== undefined)
+		throw new Error("Declare only one documentation tool projection: docs.native_properdocs or docs.native_mkdocs");
 	if (docs.native_properdocs !== undefined)
 		outputs.set("properdocs.yml", sealed(renderProperdocs(docs.native_properdocs, docs.site)));
+	if (docs.native_mkdocs !== undefined) outputs.set("mkdocs.yml", sealed(renderMkdocs(docs.native_mkdocs, docs.site)));
 	return outputs;
 }
 
