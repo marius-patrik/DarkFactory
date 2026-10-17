@@ -179,7 +179,7 @@ describe("operational failure observer scope", () => {
 		const guard = workflow.jobs.report.if;
 		expect(guard).toContain("github.event_name == 'workflow_run'");
 		expect(guard).toContain("!startsWith(github.event.workflow_run.event, 'pull_request')");
-		expect(guard).toContain("github.event.workflow_run.event != 'merge_group'");
+		expect(guard).toContain("github.event.workflow_run.event == 'push'");
 		expect(guard).toContain("github.event.workflow_run.head_branch == github.event.repository.default_branch");
 		expect(guard).toContain("github.ref == format('refs/heads/{0}', github.event.repository.default_branch)");
 	});
