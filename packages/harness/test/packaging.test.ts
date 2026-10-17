@@ -19,12 +19,14 @@ describe("standalone packaging", () => {
 	});
 
 	test("compiles the worker under the exact path used by pi at runtime", async () => {
-		// The build compiles both entry points, and the worker's path is what pi loads at runtime, so
-		// the command has to name the file the worker really lives at. It moved with the single
-		// package: `src/` beside this script is now `packages/harness/src/`.
-		expect(await readFile(new URL("../scripts/build.ts", import.meta.url), "utf8")).toContain(
-			"./packages/harness/src/image-resize-worker.ts",
-		);
+		// Bun's compiled worker identity must match the constructor's exact specifier.
+		// The CLI entry forwards to the harness implementation without duplicating it.
+		const build = await readFile(new URL("../scripts/build.ts", import.meta.url), "utf8");
+		const cli = await readFile(new URL("../../cli/src/cli.ts", import.meta.url), "utf8");
+		const entry = await readFile(new URL("../../cli/src/image-resize-worker.ts", import.meta.url), "utf8");
+		expect(build).toContain("./packages/cli/src/image-resize-worker.ts");
+		expect(cli).toContain('new Worker(new URL("./image-resize-worker.ts", import.meta.url))');
+		expect(entry).toContain('import "../../harness/src/image-resize-worker.ts"');
 	});
 });
 

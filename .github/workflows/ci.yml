@@ -286,10 +286,30 @@ jobs:
         if: steps.docs.outputs.present != 'true'
         run: echo "No combined configuration docs block; native documentation check is not applicable."
 
+  nix-agent:
+    name: nix-agent (${{ matrix.system }})
+    # The production image belongs to DarkFactory, not to consumer repositories. Its result
+    # participates in the single protected quality check; consumers skip it explicitly.
+    if: github.repository == 'marius-patrik/DarkFactory'
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - system: x86_64-linux
+            runner: ubuntu-24.04
+          - system: aarch64-linux
+            runner: ubuntu-24.04-arm
+    runs-on: ${{ matrix.runner }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: cachix/install-nix-action@v31
+      - name: Build and exercise the production agent image
+        run: bash .github/scripts/verify-nix-agent.sh
+
   quality:
     name: quality
     if: always()
-    needs: [detect, quality-run, docs-check]
+    needs: [detect, quality-run, docs-check, nix-agent]
     runs-on: ubuntu-latest
     steps:
       - name: Enforce detected quality result
@@ -298,9 +318,16 @@ jobs:
           DF_HAS_ACTIONS: ${{ needs.detect.outputs.has-actions }}
           DF_QUALITY_RESULT: ${{ needs.quality-run.result }}
           DF_DOCS_RESULT: ${{ needs.docs-check.result }}
+          DF_NIX_RESULT: ${{ needs.nix-agent.result }}
+          DF_REPOSITORY: ${{ github.repository }}
         run: |
           test "$DF_DETECT_RESULT" = "success"
           test "$DF_DOCS_RESULT" = "success"
+          if [ "$DF_REPOSITORY" = "marius-patrik/DarkFactory" ]; then
+            test "$DF_NIX_RESULT" = "success"
+          else
+            test "$DF_NIX_RESULT" = "skipped"
+          fi
           if [ "$DF_HAS_ACTIONS" = "true" ]; then
             test "$DF_QUALITY_RESULT" = "success"
           else

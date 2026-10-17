@@ -1,6 +1,5 @@
 import type { GitHubRepository } from "../github/repository";
 
-/** Label carried by every issue this module opens, so they can be found and filtered as a set. */
 /**
  * An incident is resolved only by an observed successful workflow run.
  * Cancellation, timeout, neutral and skipped outcomes are not recovery.
@@ -39,6 +38,27 @@ interface FailureOutcome {
 	number: number | null;
 	/** Duplicates closed because two runs raced to file. */
 	duplicatesClosed: number[];
+}
+
+/**
+ * Act on a completed default-branch workflow after the caller verified its scope.
+ * The issue effects live here rather than being reimplemented by the CLI.
+ */
+export async function observeWorkflowCompletion(
+	options: ReportFailureOptions & { conclusion: string | null | undefined },
+): Promise<"report" | "resolve" | "ignore"> {
+	const action = failureActionForConclusion(options.conclusion);
+	if (action === "ignore") {
+		options.log?.(`Ignoring non-recovery workflow conclusion: ${options.conclusion ?? "missing"}`);
+		return action;
+	}
+	if (action === "resolve") {
+		await resolveFailure(options.repo, options.workflow, options.log);
+		return action;
+	}
+	const outcome = await reportFailure(options);
+	if (outcome.number === null) throw new Error(`could not file a failure issue for ${options.workflow}`);
+	return action;
 }
 
 /** Builds the body of a failure issue, carrying the marker that identifies its workflow. */

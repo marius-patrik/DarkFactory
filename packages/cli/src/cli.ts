@@ -33,7 +33,7 @@ import { runPluginCli } from "../../plugins/src/index.ts";
 import { runCiCli } from "../../harness/src/ci/cli.ts";
 import { executableReleaseVersion, runReleasedInstaller } from "../../harness/src/install/released-df.ts";
 import { applyLicence } from "../../harness/src/ci/licensing.ts";
-import { failureActionForConclusion, reportFailure, resolveFailure } from "../../harness/src/ci/report-failure.ts";
+import { observeWorkflowCompletion } from "../../harness/src/ci/report-failure.ts";
 import {
 	DEFAULT_ROUTER_CONFIG,
 	type DfConfig,
@@ -1137,7 +1137,7 @@ async function packagingSmoke(): Promise<void> {
 		console.warn(`no packaged pi-tui native module for ${platform}-${arch}; pi-tui runs without one`);
 	}
 
-	const worker = new Worker(new URL("../../harness/src/image-resize-worker.ts", import.meta.url));
+	const worker = new Worker(new URL("./image-resize-worker.ts", import.meta.url));
 	try {
 		const png = Uint8Array.from(
 			Buffer.from(
@@ -1425,25 +1425,14 @@ async function reportFailureCommand(args: string[]): Promise<void> {
 	const log = (message: string) => console.log(message);
 
 	try {
-		const action = failureActionForConclusion(process.env.CONCLUSION);
-		if (action === "report") {
-			const outcome = await reportFailure({
-				repo,
-				workflow,
-				runUrl: process.env.RUN_URL ?? "",
-				runId: process.env.RUN_ID ?? "",
-				log,
-			});
-			if (outcome.number === null) {
-				// Reporting a failure is itself a pipeline step. A step that swallows its own errors
-				// is the thing this exists to surface, so a report that could not be filed fails the
-				// run rather than logging and moving on.
-				throw new Error(`could not file a failure issue for ${workflow}`);
-			}
-			return;
-		}
-		if (action === "resolve") await resolveFailure(repo, workflow, log);
-		else log(`Ignoring non-recovery workflow conclusion: ${process.env.CONCLUSION ?? "missing"}`);
+		await observeWorkflowCompletion({
+			repo,
+			workflow,
+			runUrl: process.env.RUN_URL ?? "",
+			runId: process.env.RUN_ID ?? "",
+			conclusion: process.env.CONCLUSION,
+			log,
+		});
 	} catch (error) {
 		console.error(`Error: ${(error as Error).message}`);
 		process.exitCode = 1;

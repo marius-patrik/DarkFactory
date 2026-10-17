@@ -7,6 +7,7 @@ import {
 	failureBody,
 	failureMarker,
 	findOpenFailure,
+	observeWorkflowCompletion,
 	reportFailure,
 	resolveFailure,
 } from "../src/ci/report-failure";
@@ -135,6 +136,9 @@ describe("operational failure observer scope", () => {
 		expect(guard).toContain("github.event_name != 'workflow_run'");
 		expect(guard).toContain("github.event.workflow_run.event != 'pull_request'");
 		expect(guard).toContain("github.event.workflow_run.head_branch == github.event.repository.default_branch");
+		expect(guard).toContain("github.ref == format('refs/heads/{0}', github.event.repository.default_branch)");
+		for (const key of ["workflow-name", "conclusion", "run-url", "run-id"])
+			expect(guard).toContain(`inputs.${key} != ''`);
 	});
 });
 
@@ -170,5 +174,39 @@ describe("workflow conclusion classification", () => {
 		expect(observed?.CONCLUSION).toContain("inputs.conclusion || github.event.workflow_run.conclusion");
 		expect(observed?.RUN_URL).toContain("inputs.run-url || github.event.workflow_run.html_url");
 		expect(observed?.RUN_ID).toContain("inputs.run-id || github.event.workflow_run.id");
+	});
+});
+
+describe("observed workflow result drives issue mutations", () => {
+	test("failure files an incident and explicit success closes the same incident", async () => {
+		const { repo, created, closed, comments } = fakeRepo();
+		expect(await observeWorkflowCompletion({ ...options, repo, conclusion: "failure" })).toBe("report");
+		expect(created).toHaveLength(1);
+		expect(created[0]?.body).toContain(failureMarker("CI"));
+		expect(await observeWorkflowCompletion({ ...options, repo, conclusion: "success" })).toBe("resolve");
+		expect(closed).toEqual([101]);
+		expect(comments.some((c) => c.body.includes("succeeded again"))).toBe(true);
+	});
+
+	test("non-recovery conclusions never query or mutate the repository", async () => {
+		for (const conclusion of ["cancelled", "timed_out", "skipped", "neutral", "stale", "action_required", null, undefined]) {
+			const { repo, created, comments, closed } = fakeRepo([{ number: 7, body: failureMarker("CI") }]);
+			let requested = 0;
+			const proxy = new Proxy(repo, {
+				get(target, property, receiver) {
+					if (typeof property === "string" && ["listIssues", "createIssue", "createComment", "closeIssue"].includes(property))
+						return (...args: unknown[]) => {
+							requested++;
+							return (Reflect.get(target, property, receiver) as (...args: unknown[]) => unknown).apply(target, args);
+						};
+					return Reflect.get(target, property, receiver);
+				},
+			});
+			expect(await observeWorkflowCompletion({ ...options, repo: proxy, conclusion })).toBe("ignore");
+			expect(requested).toBe(0);
+			expect(created).toEqual([]);
+			expect(comments).toEqual([]);
+			expect(closed).toEqual([]);
+		}
 	});
 });
