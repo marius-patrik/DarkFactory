@@ -225,8 +225,9 @@ describe("ci.yml", () => {
 			{ system: "x86_64-linux", runner: "ubuntu-24.04" },
 			{ system: "aarch64-linux", runner: "ubuntu-24.04-arm" },
 		]);
-		expect(steps(ci, "nix-agent").find((step) => step.name === "Build and exercise the production agent image")?.run)
-			.toContain(".github/scripts/verify-nix-agent.sh");
+		expect(
+			steps(ci, "nix-agent").find((step) => step.name === "Build and exercise the production agent image")?.run,
+		).toContain(".github/scripts/verify-nix-agent.sh");
 		const enforcement = jobScripts(ci, "quality");
 		expect(enforcement).toContain('test "$DF_NIX_RESULT" = "success"');
 		expect(enforcement).toContain('test "$DF_NIX_RESULT" = "skipped"');
