@@ -448,6 +448,40 @@ describe("incident idempotence and deduplication", () => {
 		expect(state.created).toHaveLength(1);
 		expect(state.comments).toEqual([]);
 	});
+	test("two simultaneous reporters converge on one surviving incident", async () => {
+		const state = fakeRepo();
+		const listIssues = state.repo.listIssues.bind(state.repo);
+		let initialReads = 0;
+		let release!: () => void;
+		const gate = new Promise<void>((resolve) => {
+			release = resolve;
+		});
+		const racingRepo = new Proxy(state.repo, {
+			get(target, key, receiver) {
+				if (key === "listIssues") {
+					return async (args: Parameters<GitHubRepository["listIssues"]>[0]) => {
+						if (initialReads < 2) {
+							initialReads++;
+							if (initialReads === 2) release();
+							await gate;
+							return [];
+						}
+						return listIssues(args);
+					};
+				}
+				return Reflect.get(target, key, receiver);
+			},
+		});
+		await Promise.all([
+			reportFailure({ ...options, repo: racingRepo }),
+			reportFailure({ ...options, repo: racingRepo }),
+		]);
+		const survivors = await listIssues({ state: "open", labels: [FAILURE_LABEL] });
+		expect(state.created).toHaveLength(2);
+		expect(survivors.map((issue) => issue.number)).toEqual([101]);
+		expect(state.closed).toContain(102);
+	});
+
 	test("competing reporters always keep the lowest numbered incident", async () => {
 		for (const keep of [4, 9]) {
 			const state = fakeRepo([
