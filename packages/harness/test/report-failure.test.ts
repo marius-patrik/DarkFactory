@@ -432,6 +432,22 @@ describe("ordered incident observations", () => {
 	});
 });
 
+describe("eventual consistency of authenticated Actions listings", () => {
+	test("missing actionable run evidence never silently drops a genuine failure", async () => {
+		const state = fakeRepo([], {}, []);
+		await expect(
+			observeWorkflowCompletion({
+				...options,
+				repo: state.repo,
+				conclusion: "failure",
+				invocation: trustedInvocation,
+			}),
+		).rejects.toThrow("omitted");
+		expect(state.created).toEqual([]);
+		expect(state.closed).toEqual([]);
+	});
+});
+
 describe("incident idempotence and deduplication", () => {
 	test("replaying the same run leaves one issue and no extra comments", async () => {
 		const state = fakeRepo();

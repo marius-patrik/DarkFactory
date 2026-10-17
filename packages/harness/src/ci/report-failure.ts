@@ -168,6 +168,8 @@ export async function latestActionableWorkflowRun(
 	);
 	candidates.sort((left, right) => right.run_number - left.run_number || right.id - left.id);
 	const latest = candidates[0] ?? null;
+	if (!latest && failureActionForConclusion(observed.conclusion) !== "ignore")
+		throw new Error("Actions workflow list omitted an authenticated completed actionable run");
 	// A lagging list response is not evidence that a known completed run is old.
 	// Fail closed rather than applying an older result when the observed run
 	// has a later run_number than everything the listing currently returned.
