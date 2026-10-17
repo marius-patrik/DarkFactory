@@ -164,6 +164,17 @@ describe("resolving a failure", () => {
 		expect(closed).toEqual([7]);
 		expect(comments[0]?.body).toContain("succeeded again");
 	});
+	test("successful recovery closes every matching duplicate incident", async () => {
+		const state = fakeRepo([
+			{ number: 4, body: failureMarker("CI") },
+			{ number: 9, body: failureMarker("CI") },
+			{ number: 12, body: failureMarker("Release") },
+		]);
+		expect(await resolveFailure(state.repo, "CI")).toBe(4);
+		expect(state.closed).toEqual([4, 9]);
+		expect(state.comments).toHaveLength(2);
+	});
+
 	test("does nothing when no issue is open", async () => {
 		const { repo, closed } = fakeRepo();
 		expect(await resolveFailure(repo, "CI")).toBeNull();

@@ -257,14 +257,17 @@ export async function reportFailure(options: ReportFailureOptions): Promise<Fail
 
 	const existing = await findOpenFailure(repo, workflow);
 	if (existing !== null) {
+		const duplicatesClosed = await closeDuplicateFailures(repo, workflow, existing, log);
+		const survivor = (await findOpenFailure(repo, workflow)) ?? existing;
 		const marker = `<!-- pipeline-failure-run: ${runId} -->`;
-		const issue = await repo.getIssue(existing);
-		if ((issue.body ?? "").includes(`- Run id: \`${runId}\``)) return { number: existing, duplicatesClosed: [] };
-		const comments = await repo.listComments(existing);
-		if (comments.some((comment) => comment.body.includes(marker))) return { number: existing, duplicatesClosed: [] };
-		await repo.createComment(existing, `Failed again: ${runUrl}\n${marker}`);
-		log(`Commented on #${existing} for ${workflow}.`);
-		return { number: existing, duplicatesClosed: [] };
+		const issue = await repo.getIssue(survivor);
+		const initialRun = `- Run id: \`${runId}\``;
+		if ((issue.body ?? "").includes(initialRun)) return { number: survivor, duplicatesClosed };
+		const comments = await repo.listComments(survivor);
+		if (comments.some((comment) => comment.body.includes(marker))) return { number: survivor, duplicatesClosed };
+		await repo.createComment(survivor, `Failed again: ${runUrl}\n${marker}`);
+		log(`Commented on #${survivor} for ${workflow}.`);
+		return { number: survivor, duplicatesClosed };
 	}
 
 	const issue = await repo.createIssue({
@@ -285,10 +288,15 @@ export async function resolveFailure(
 	workflow: string,
 	log: (message: string) => void = () => {},
 ): Promise<number | null> {
-	const existing = await findOpenFailure(repo, workflow);
-	if (existing === null) return null;
-	await repo.createComment(existing, `**${workflow}** succeeded again; closing.`);
-	await repo.closeIssue(existing);
-	log(`Closed #${existing}: ${workflow} is green again.`);
-	return existing;
+	const marker = failureMarker(workflow);
+	const matches = (await repo.listIssues({ state: "open", labels: [FAILURE_LABEL] }))
+		.filter((issue) => (issue.body ?? "").includes(marker))
+		.map((issue) => Number(issue.number))
+		.sort((a, b) => a - b);
+	for (const number of matches) {
+		await repo.createComment(number, `**${workflow}** succeeded again; closing.`);
+		await repo.closeIssue(number);
+		log(`Closed #${number}: ${workflow} is green again.`);
+	}
+	return matches[0] ?? null;
 }

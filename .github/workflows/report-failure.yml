@@ -66,17 +66,16 @@ permissions:
   contents: read
   issues: write
 
-# No concurrency group: a queued run is cancelled when another joins the same one, and a cancelled
-# observer is a failure nobody hears about - exactly what this workflow exists to prevent. Filing is
-# idempotent anyway, since the issue is found by a marker rather than created blindly.
+# Serial observers reconcile the latest completed default-branch run. GitHub can
+# coalesce pending jobs, so each surviving observer computes the current state.
 
 jobs:
   report:
     # Only a default-branch failure is a repository-wide operational incident.
     # PR checks report on their own PR, and must never open/close main failures.
-    # Reusable callers inherit their caller event name (often pull_request), not
-    # workflow_call itself. Require a default-branch ref and explicit observed
-    # metadata; PR-triggered callers cannot open or close global incidents.
+    # Reusable callers inherit their caller event name, not workflow_call itself.
+    # Only workflow_run event contexts qualify, and the runtime binds claimed
+    # run metadata to the original triggering run ID.
     # The CLI separately verifies the observed run through the authenticated
     # Actions REST API before performing any incident issue mutations.
     if: >-
