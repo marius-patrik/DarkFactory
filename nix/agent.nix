@@ -46,6 +46,15 @@ let
         && !(lib.hasSuffix ".pdf" name);
   };
 
+  # Native Bun release binaries carry an appended payload; modifying their ELF
+  # layout with patchelf corrupts that payload (ARM64 segfaults after patching).
+  # Keep their bytes pristine. Provide the expected Linux loader in the image.
+  dynamicLoader = pkgs.stdenv.cc.bintools.dynamicLinker;
+  systemLoader = if pkgs.stdenv.hostPlatform.system == "x86_64-linux"
+    then "lib64/ld-linux-x86-64.so.2"
+    else "lib/ld-linux-aarch64.so.1";
+  sharedLibraries = lib.makeLibraryPath [ pkgs.glibc pkgs.stdenv.cc.cc.lib pkgs.zlib pkgs.openssl ];
+
   # Reuse the native release compiler and asset packager. The final image
   # contains the compiled executable plus its bundled assets, not TS sources.
   target = if pkgs.stdenv.hostPlatform.system == "x86_64-linux" then "linux-x64"
@@ -76,14 +85,12 @@ let
     mkdir -p "$out/bin"
     cp -a "$dist"/. "$out/bin/"
     mv "$out/bin/df-${target}" "$out/bin/df"
-    # The Bun Linux target expects a standard Linux loader, which is not
-    # available at /lib64 inside a Nix image. Bind it to the Nix closure.
-    patchelf --set-interpreter "${pkgs.stdenv.cc.bintools.dynamicLinker}" "$out/bin/df"
-    patchelf --set-rpath "${lib.makeLibraryPath [ pkgs.stdenv.cc.cc.lib pkgs.zlib pkgs.openssl ]}" "$out/bin/df"
-
-    # Prove that the packaged artifact, not an interpreter, actually executes.
-    "$out/bin/df" __packaging-smoke
-    "$out/bin/df" --version
+    # Verify the expected system interpreter without rewriting the ELF.
+    test "$(patchelf --print-interpreter "$out/bin/df")" = "/${systemLoader}"
+    # Nix build sandboxes lack /lib64. Invoke the unmodified packaged binary
+    # through the Nix loader for the build smoke; Docker uses /lib{,64} below.
+    "${dynamicLoader}" --library-path "${sharedLibraries}" "$out/bin/df" __packaging-smoke
+    "${dynamicLoader}" --library-path "${sharedLibraries}" "$out/bin/df" --version
   '';
 
   df = agentRuntime;
@@ -118,9 +125,12 @@ let
   agentImage = pkgs.dockerTools.buildLayeredImage {
     name = "darkfactory-agent";
     tag = "nix";
-    contents = tools ++ [ df entrypoint ];
+    contents = tools ++ [ df entrypoint pkgs.glibc pkgs.stdenv.cc.cc.lib pkgs.zlib pkgs.openssl ];
     extraCommands = ''
-      mkdir -p bin etc/ssl/certs home/agent/.config workspace tmp
+      mkdir -p bin lib lib64 etc/ssl/certs home/agent/.config workspace tmp
+      # The untouched release binary resolves the standard Linux ELF loader
+      # through this symlink; libraries themselves remain immutable in /nix/store.
+      ln -s ${dynamicLoader} ${systemLoader}
       chmod 1777 tmp
       printf '%s\n' \
         'root:x:0:0:root:/root:/bin/bash' \
@@ -143,6 +153,7 @@ let
         "XDG_DATA_DIRS=${pkgs.gnome-keyring}/share:${pkgs.dbus}/share"
         "PATH=${df}/bin:${path}:/bin"
         "SSL_CERT_FILE=${pkgs.cacert}/etc/ssl/certs/ca-bundle.crt"
+        "LD_LIBRARY_PATH=${sharedLibraries}"
       ];
     };
   };
