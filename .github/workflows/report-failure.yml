@@ -62,6 +62,7 @@ on:
       GH_PROJECT_TOKEN: {required: false}
 
 permissions:
+  actions: read
   contents: read
   issues: write
 

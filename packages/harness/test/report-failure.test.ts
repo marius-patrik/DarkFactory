@@ -264,7 +264,7 @@ describe("observed workflow identity verification", () => {
 		];
 		for (const overrides of invalid) {
 			const { repo, created, comments, closed } = fakeRepo([], overrides);
-			expect(
+			await expect(
 				observeWorkflowCompletion({
 					...options,
 					repo,
@@ -285,10 +285,18 @@ describe("observed workflow identity verification", () => {
 			{ eventName: "workflow_call", ref: "refs/heads/pr" },
 		]) {
 			const { repo, created } = fakeRepo();
-			expect(
+			await expect(
 				observeWorkflowCompletion({ ...options, repo, conclusion: "failure", invocation }),
 			).rejects.toThrow();
 			expect(created).toEqual([]);
+		}
+		for (const conclusion of [null, undefined]) {
+			const { repo, created, closed } = fakeRepo();
+			await expect(observeWorkflowCompletion({
+				...options, repo, conclusion, invocation: trustedInvocation,
+			})).rejects.toThrow();
+			expect(created).toEqual([]);
+			expect(closed).toEqual([]);
 		}
 		for (const entry of [
 			{ runId: "xyz" },
@@ -298,7 +306,7 @@ describe("observed workflow identity verification", () => {
 			{ conclusion: "success" },
 		]) {
 			const { repo, created } = fakeRepo();
-			expect(
+			await expect(
 				observeWorkflowCompletion({ ...options, ...entry, repo, conclusion: entry.conclusion ?? "failure", invocation: trustedInvocation }),
 			).rejects.toThrow();
 			expect(created).toEqual([]);
@@ -329,11 +337,9 @@ describe("observed workflow result drives issue mutations", () => {
 			"neutral",
 			"stale",
 			"action_required",
-			null,
-			undefined,
 		]) {
 			const { repo, created, comments, closed } = fakeRepo([{ number: 7, body: failureMarker("CI") }], {
-				conclusion: conclusion ?? null,
+				conclusion,
 			});
 			let requested = 0;
 			const proxy = new Proxy(repo, {
