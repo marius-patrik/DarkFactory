@@ -46,18 +46,47 @@ let
         && !(lib.hasSuffix ".pdf" name);
   };
 
-  agentRuntime = pkgs.runCommand "darkfactory-agent-runtime" { } ''
-    mkdir -p "$out/share/darkfactory"
-    cp -a ${source}/. "$out/share/darkfactory/"
-    chmod u+w "$out/share/darkfactory"
-    ln -s ${nodeModules}/node_modules "$out/share/darkfactory/node_modules"
-    chmod -R a-w "$out/share/darkfactory"
+  # Reuse the native release compiler and asset packager. The final image
+  # contains the compiled executable plus its bundled assets, not TS sources.
+  target = if pkgs.stdenv.hostPlatform.system == "x86_64-linux" then "linux-x64"
+    else if pkgs.stdenv.hostPlatform.system == "aarch64-linux" then "linux-arm64"
+    else throw "Unsupported DarkFactory agent platform";
+
+  agentRuntime = pkgs.runCommand "darkfactory-agent-runtime" {
+    nativeBuildInputs = [ pkgs.bun pkgs.coreutils pkgs.patchelf ];
+  } ''
+    set -euo pipefail
+    export HOME="$TMPDIR/home"
+    export BUN_INSTALL_CACHE_DIR="$TMPDIR/cache"
+    mkdir -p "$HOME" "$BUN_INSTALL_CACHE_DIR" "$TMPDIR/build"
+    cp -a ${source}/. "$TMPDIR/build/"
+    chmod -R u+w "$TMPDIR/build"
+    ln -s ${nodeModules}/node_modules "$TMPDIR/build/node_modules"
+    cd "$TMPDIR/build"
+
+    # One compiler for release assets and container images; includes worker,
+    # WASM, graph assets and independently bundled official capabilities.
+    bun packages/harness/scripts/build.ts --target ${target}
+    dist="packages/harness/dist"
+    test -x "$dist/df-${target}"
+    test -d "$dist/assets"
+    test -d "$dist/plugins"
+    test -f "$dist/photon_rs_bg.wasm"
+
+    mkdir -p "$out/bin"
+    cp -a "$dist"/. "$out/bin/"
+    mv "$out/bin/df-${target}" "$out/bin/df"
+    # The Bun Linux target expects a standard Linux loader, which is not
+    # available at /lib64 inside a Nix image. Bind it to the Nix closure.
+    patchelf --set-interpreter "${pkgs.stdenv.cc.bintools.dynamicLinker}" "$out/bin/df"
+    patchelf --set-rpath "${lib.makeLibraryPath [ pkgs.stdenv.cc.cc.lib pkgs.zlib pkgs.openssl ]}" "$out/bin/df"
+
+    # Prove that the packaged artifact, not an interpreter, actually executes.
+    "$out/bin/df" __packaging-smoke
+    "$out/bin/df" --version
   '';
 
-  df = pkgs.writeShellScriptBin "df" ''
-    set -eu
-    exec ${pkgs.bun}/bin/bun ${agentRuntime}/share/darkfactory/packages/cli/src/cli.ts "$@"
-  '';
+  df = agentRuntime;
 
   # Container images have no system-level D-Bus configuration. The session bus
   # must use an explicit reproducible policy rather than an absent /etc default.
@@ -89,7 +118,7 @@ let
   agentImage = pkgs.dockerTools.buildLayeredImage {
     name = "darkfactory-agent";
     tag = "nix";
-    contents = tools ++ [ df entrypoint agentRuntime ];
+    contents = tools ++ [ df entrypoint ];
     extraCommands = ''
       mkdir -p bin etc/ssl/certs home/agent/.config workspace tmp
       chmod 1777 tmp
@@ -114,7 +143,6 @@ let
         "XDG_DATA_DIRS=${pkgs.gnome-keyring}/share:${pkgs.dbus}/share"
         "PATH=${df}/bin:${path}:/bin"
         "SSL_CERT_FILE=${pkgs.cacert}/etc/ssl/certs/ca-bundle.crt"
-        "DF_SOURCE=${agentRuntime}/share/darkfactory/packages/cli/src/cli.ts"
       ];
     };
   };

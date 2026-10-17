@@ -22,6 +22,7 @@
             ${agent.df}/bin/df --help >/dev/null
             ${agent.df}/bin/df --version >/dev/null
             ${agent.df}/bin/df providers >/dev/null
+            ${agent.df}/bin/df __packaging-smoke >/dev/null
             touch "$out"
           '';
         });

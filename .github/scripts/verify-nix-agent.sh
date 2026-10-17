@@ -14,6 +14,7 @@ docker image inspect darkfactory-agent:nix > /dev/null
 docker run --rm darkfactory-agent:nix --help
 docker run --rm darkfactory-agent:nix --version
 docker run --rm darkfactory-agent:nix providers
+docker run --rm darkfactory-agent:nix __packaging-smoke
 
 workspace="$(mktemp -d "${RUNNER_TEMP:-/tmp}/df-agent-verify.XXXXXXXX")"
 trap 'rm -rf "$workspace"' EXIT
@@ -25,6 +26,8 @@ docker run --rm --entrypoint /bin/sh -v "$workspace:/workspace" darkfactory-agen
   git init -q /workspace/fixture
   git -C /workspace/fixture status --short
   command -v df
+  # A compiled native executable, not a shell script invoking Bun source.
+  test "$(od -An -tx1 -N4 "$(command -v df)" | tr -d " \\n")" = "7f454c46"
   df --version | grep "^df "
   command -v gh
   command -v secret-tool
