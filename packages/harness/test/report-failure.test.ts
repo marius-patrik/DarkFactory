@@ -338,9 +338,9 @@ describe("observed workflow result drives issue mutations", () => {
 		expect(
 			await observeWorkflowCompletion({
 				...options,
-			repo: successRepo.repo,
-			conclusion: "success",
-			invocation: trustedInvocation,
+				repo: successRepo.repo,
+				conclusion: "success",
+				invocation: trustedInvocation,
 			}),
 		).toBe("resolve");
 		expect(successRepo.closed).toEqual([101]);
