@@ -292,9 +292,14 @@ describe("observed workflow identity verification", () => {
 		}
 		for (const conclusion of [null, undefined]) {
 			const { repo, created, closed } = fakeRepo();
-			await expect(observeWorkflowCompletion({
-				...options, repo, conclusion, invocation: trustedInvocation,
-			})).rejects.toThrow();
+			await expect(
+				observeWorkflowCompletion({
+					...options,
+					repo,
+					conclusion,
+					invocation: trustedInvocation,
+				}),
+			).rejects.toThrow();
 			expect(created).toEqual([]);
 			expect(closed).toEqual([]);
 		}
@@ -307,7 +312,13 @@ describe("observed workflow identity verification", () => {
 		]) {
 			const { repo, created } = fakeRepo();
 			await expect(
-				observeWorkflowCompletion({ ...options, ...entry, repo, conclusion: entry.conclusion ?? "failure", invocation: trustedInvocation }),
+				observeWorkflowCompletion({
+					...options,
+					...entry,
+					repo,
+					conclusion: entry.conclusion ?? "failure",
+					invocation: trustedInvocation,
+				}),
 			).rejects.toThrow();
 			expect(created).toEqual([]);
 		}
@@ -317,12 +328,21 @@ describe("observed workflow identity verification", () => {
 describe("observed workflow result drives issue mutations", () => {
 	test("failure files an incident and explicit success closes the same incident", async () => {
 		const { repo, created, closed, comments } = fakeRepo();
-		expect(await observeWorkflowCompletion({ ...options, repo, conclusion: "failure", invocation: trustedInvocation })).toBe("report");
+		expect(
+			await observeWorkflowCompletion({ ...options, repo, conclusion: "failure", invocation: trustedInvocation }),
+		).toBe("report");
 		expect(created).toHaveLength(1);
 		expect(created[0]?.body).toContain(failureMarker("CI"));
 		// A legitimate subsequent completed success is verified through the Actions API.
 		const successRepo = fakeRepo([{ number: 101, body: failureMarker("CI") }], { conclusion: "success" });
-		expect(await observeWorkflowCompletion({ ...options, repo: successRepo.repo, conclusion: "success", invocation: trustedInvocation })).toBe("resolve");
+		expect(
+			await observeWorkflowCompletion({
+				...options,
+			repo: successRepo.repo,
+			conclusion: "success",
+			invocation: trustedInvocation,
+			}),
+		).toBe("resolve");
 		expect(successRepo.closed).toEqual([101]);
 		expect(closed).toEqual([]);
 		expect(comments).toEqual([]);
@@ -330,14 +350,7 @@ describe("observed workflow result drives issue mutations", () => {
 	});
 
 	test("non-recovery conclusions never query or mutate the repository", async () => {
-		for (const conclusion of [
-			"cancelled",
-			"timed_out",
-			"skipped",
-			"neutral",
-			"stale",
-			"action_required",
-		]) {
+		for (const conclusion of ["cancelled", "timed_out", "skipped", "neutral", "stale", "action_required"]) {
 			const { repo, created, comments, closed } = fakeRepo([{ number: 7, body: failureMarker("CI") }], {
 				conclusion,
 			});
@@ -355,7 +368,9 @@ describe("observed workflow result drives issue mutations", () => {
 					return Reflect.get(target, property, receiver);
 				},
 			});
-			expect(await observeWorkflowCompletion({ ...options, repo: proxy, conclusion, invocation: trustedInvocation })).toBe("ignore");
+			expect(
+				await observeWorkflowCompletion({ ...options, repo: proxy, conclusion, invocation: trustedInvocation }),
+			).toBe("ignore");
 			expect(requested).toBe(0);
 			expect(created).toEqual([]);
 			expect(comments).toEqual([]);

@@ -89,9 +89,7 @@ export interface ObservedCompletion extends ReportFailureOptions {
  *
  * Invalid claims fail closed. Transient API errors propagate and do not mutate incidents.
  */
-export async function verifyWorkflowCompletion(
-	options: ObservedCompletion,
-): Promise<ObservedWorkflowRun> {
+export async function verifyWorkflowCompletion(options: ObservedCompletion): Promise<ObservedWorkflowRun> {
 	const { repo, runId, runUrl, workflow, conclusion, invocation } = options;
 	if (!/^[1-9]\d*$/u.test(runId) || !Number.isSafeInteger(Number(runId)))
 		throw new Error("Incident observation requires a positive numeric run ID");
