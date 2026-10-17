@@ -1420,6 +1420,8 @@ async function reportFailureCommand(args: string[]): Promise<void> {
 	}
 	const token = process.env.GH_TOKEN ?? process.env.GITHUB_TOKEN;
 	if (!token) throw new Error("df report-failure needs GH_TOKEN or GITHUB_TOKEN");
+	const readToken = process.env.ACTIONS_READ_TOKEN;
+	if (!readToken) throw new Error("df report-failure needs ACTIONS_READ_TOKEN for Actions API verification");
 	const [owner, name] = slug.split("/");
 	const repo = new GitHubRepository(new GitHubClient({ token }), owner!, name!);
 	const log = (message: string) => console.log(message);
@@ -1431,9 +1433,11 @@ async function reportFailureCommand(args: string[]): Promise<void> {
 			runUrl: process.env.RUN_URL ?? "",
 			runId: process.env.RUN_ID ?? "",
 			conclusion: process.env.CONCLUSION,
+			reader: new GitHubClient({ token: readToken }),
 			invocation: {
 				eventName: process.env.GITHUB_EVENT_NAME ?? "",
 				ref: process.env.GITHUB_REF ?? "",
+				triggerRunId: process.env.TRIGGER_RUN_ID ?? "",
 			},
 			log,
 		});

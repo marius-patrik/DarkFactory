@@ -1,3 +1,4 @@
+import type { GitHubClient } from "../github/client.ts";
 import type { GitHubRepository } from "../github/repository";
 
 /**
@@ -43,6 +44,8 @@ interface FailureOutcome {
 /** A completed Actions run as reported by GitHub's authenticated REST API. */
 export interface ObservedWorkflowRun {
 	id: number;
+	workflow_id: number;
+	run_number: number;
 	name: string;
 	html_url: string;
 	status: string;
@@ -54,70 +57,70 @@ export interface ObservedWorkflowRun {
 }
 
 export interface IncidentInvocation {
-	/** The event which started the incident observer, not the observed workflow's event. */
+	/** The effective GitHub event and ref for direct and reusable workflows. */
 	eventName: string;
-	/** The GitHub-controlled ref of the observer invocation. */
 	ref: string;
+	/** Immutable ID from github.event.workflow_run.id, not user-provided workflow_call inputs. */
+	triggerRunId: string;
 }
 
-/** Reject PR-origin events even if pull_request_target points GITHUB_REF at main. */
+/** Only a genuine completed-workflow event from the default-branch observer is eligible. */
 export function incidentInvocationAllowed(invocation: IncidentInvocation, defaultBranch: string): boolean {
 	return (
-		invocation.eventName.length > 0 &&
-		!invocation.eventName.startsWith("pull_request") &&
-		invocation.eventName !== "merge_group" &&
-		invocation.ref === `refs/heads/${defaultBranch}`
+		invocation.eventName === "workflow_run" &&
+		invocation.ref === `refs/heads/${defaultBranch}` &&
+		/^[1-9]\d*$/u.test(invocation.triggerRunId)
 	);
 }
 
-/** A PR-origin workflow is never evidence of repository-wide operational health. */
+/** PR-origin and merge-queue runs must never affect repository-wide incidents. */
 export function incidentRunEventAllowed(eventName: string): boolean {
-	return eventName.length > 0 && !eventName.startsWith("pull_request") && eventName !== "merge_group";
+	return ["push", "schedule", "workflow_dispatch", "repository_dispatch", "issues"].includes(eventName);
 }
 
 export interface ObservedCompletion extends ReportFailureOptions {
 	conclusion: string | null | undefined;
 	invocation: IncidentInvocation;
+	/** Optional independent read client; default is the caller's Actions-capable GITHUB_TOKEN. */
+	reader?: Pick<GitHubClient, "rest">;
 }
 
-/**
- * Confirm the complete run identity using trusted GitHub metadata before any issue reads or writes.
- *
- * Workflow-call inputs are claims, not evidence. The Actions API must establish that
- * the named run really completed in this same repository, from its default branch,
- * for a non-PR event, with the claimed conclusion and URL.
- *
- * Invalid claims fail closed. Transient API errors propagate and do not mutate incidents.
- */
+interface RepositoryMetadata {
+	full_name: string;
+	default_branch: string;
+}
+
+/** All claims are checked against the authenticated Actions API before incident mutation. */
 export async function verifyWorkflowCompletion(options: ObservedCompletion): Promise<ObservedWorkflowRun> {
 	const { repo, runId, runUrl, workflow, conclusion, invocation } = options;
 	if (!/^[1-9]\d*$/u.test(runId) || !Number.isSafeInteger(Number(runId)))
 		throw new Error("Incident observation requires a positive numeric run ID");
 	if (!workflow || !runUrl || !conclusion)
 		throw new Error("Incident observation requires complete run name, URL and conclusion");
+	if (invocation.triggerRunId !== runId)
+		throw new Error("Observed run ID does not match the original GitHub workflow_run event");
 
-	const repoData = await repo.client.rest<{ default_branch: string; full_name: string }>(
-		"GET",
-		`/repos/${encodeURIComponent(repo.owner)}/${encodeURIComponent(repo.repo)}`,
-	);
+	const reader = options.reader ?? repo.client;
+	const path = `/repos/${encodeURIComponent(repo.owner)}/${encodeURIComponent(repo.repo)}`;
+	const repository = await reader.rest<RepositoryMetadata>("GET", path);
 	const slug = repo.slug.toLowerCase();
-	if (repoData.full_name?.toLowerCase() !== slug || !repoData.default_branch)
+	if (repository.full_name?.toLowerCase() !== slug || !repository.default_branch)
 		throw new Error("Incident repository could not be verified against GitHub");
+	if (!incidentInvocationAllowed(invocation, repository.default_branch))
+		throw new Error("Incident observer was not invoked from a completed-workflow default-branch event");
 
-	if (!incidentInvocationAllowed(invocation, repoData.default_branch))
-		throw new Error("Incident observer was not invoked from an eligible default-branch event");
-
-	const run = await repo.client.rest<ObservedWorkflowRun>(
-		"GET",
-		`/repos/${encodeURIComponent(repo.owner)}/${encodeURIComponent(repo.repo)}/actions/runs/${runId}`,
-	);
+	const run = await reader.rest<ObservedWorkflowRun>("GET", `${path}/actions/runs/${runId}`);
 	if (
 		String(run.id) !== runId ||
+		!Number.isSafeInteger(run.workflow_id) ||
+		run.workflow_id <= 0 ||
+		!Number.isSafeInteger(run.run_number) ||
+		run.run_number <= 0 ||
 		run.name !== workflow ||
 		run.html_url !== runUrl ||
 		run.status !== "completed" ||
 		run.conclusion !== conclusion ||
-		run.head_branch !== repoData.default_branch ||
+		run.head_branch !== repository.default_branch ||
 		run.repository?.full_name?.toLowerCase() !== slug ||
 		run.head_repository?.full_name?.toLowerCase() !== slug ||
 		!incidentRunEventAllowed(run.event)
@@ -127,22 +130,72 @@ export async function verifyWorkflowCompletion(options: ObservedCompletion): Pro
 }
 
 /**
- * Verifies a completed workflow via GitHub before applying repository-wide issue effects.
- * No arbitrary caller-provided 'success' can close a real incident.
+ * Authoritative incident state: the most recent eligible, completed and actionable run
+ * of the same workflow. This prevents old events and manual replays from reopening
+ * incidents after recovery or closing them after a newer failure.
+ *
+ * The observer job is serialized per workflow (cancel-in-progress=false); GitHub
+ * may replace older pending jobs, so every invocation reconciles this newest result.
+ */
+export async function latestActionableWorkflowRun(
+	repo: GitHubRepository,
+	reader: Pick<GitHubClient, "rest">,
+	observed: ObservedWorkflowRun,
+): Promise<ObservedWorkflowRun | null> {
+	const path = `/repos/${encodeURIComponent(repo.owner)}/${encodeURIComponent(repo.repo)}`;
+	const repository = await reader.rest<RepositoryMetadata>("GET", path);
+	if (repository.full_name?.toLowerCase() !== repo.slug.toLowerCase() || !repository.default_branch)
+		throw new Error("Cannot determine authenticated default-branch incident state");
+	const query = new URLSearchParams({ branch: repository.default_branch, status: "completed", per_page: "100" });
+	const page = await reader.rest<{ workflow_runs: ObservedWorkflowRun[] }>(
+		"GET",
+		`${path}/actions/workflows/${observed.workflow_id}/runs?${query}`,
+	);
+	if (!Array.isArray(page.workflow_runs)) throw new Error("Actions response omitted workflow runs");
+	const slug = repo.slug.toLowerCase();
+	const candidates = page.workflow_runs.filter(
+		(run) =>
+			run.workflow_id === observed.workflow_id &&
+			Number.isSafeInteger(run.id) &&
+			Number.isSafeInteger(run.run_number) &&
+			run.run_number > 0 &&
+			run.status === "completed" &&
+			run.head_branch === repository.default_branch &&
+			run.repository?.full_name?.toLowerCase() === slug &&
+			run.head_repository?.full_name?.toLowerCase() === slug &&
+			incidentRunEventAllowed(run.event) &&
+			failureActionForConclusion(run.conclusion) !== "ignore",
+	);
+	candidates.sort((left, right) => right.run_number - left.run_number || right.id - left.id);
+	const latest = candidates[0] ?? null;
+	// A lagging list response is not evidence that a known completed run is old.
+	// Fail closed rather than applying an older result when the observed run
+	// has a later run_number than everything the listing currently returned.
+	if (latest && observed.run_number > latest.run_number && failureActionForConclusion(observed.conclusion) !== "ignore")
+		throw new Error("Actions workflow list is stale relative to the observed completed run");
+	return latest;
+}
+
+/**
+ * Apply the newest authoritative completed result, not whichever event arrived
+ * last. This also recovers when GitHub replaces an older pending observer job.
  */
 export async function observeWorkflowCompletion(options: ObservedCompletion): Promise<"report" | "resolve" | "ignore"> {
-	const run = await verifyWorkflowCompletion(options);
-	const action = failureActionForConclusion(run.conclusion);
-	if (action === "ignore") {
-		options.log?.(`Ignoring non-recovery workflow conclusion: ${run.conclusion ?? "missing"}`);
-		return action;
-	}
+	const observed = await verifyWorkflowCompletion(options);
+	const latest = await latestActionableWorkflowRun(options.repo, options.reader ?? options.repo.client, observed);
+	if (!latest) return "ignore";
+	const action = failureActionForConclusion(latest.conclusion);
 	if (action === "resolve") {
-		await resolveFailure(options.repo, run.name, options.log);
+		await resolveFailure(options.repo, latest.name, options.log);
 		return action;
 	}
-	const outcome = await reportFailure({ ...options, workflow: run.name, runUrl: run.html_url, runId: String(run.id) });
-	if (outcome.number === null) throw new Error(`could not file a failure issue for ${run.name}`);
+	const outcome = await reportFailure({
+		...options,
+		workflow: latest.name,
+		runUrl: latest.html_url,
+		runId: String(latest.id),
+	});
+	if (outcome.number === null) throw new Error(`could not file a failure issue for ${latest.name}`);
 	return action;
 }
 
@@ -171,12 +224,8 @@ export async function findOpenFailure(repo: GitHubRepository, workflow: string):
 }
 
 /**
- * Closes any extra failure issues covering the same workflow.
- *
- * The check and the create are not atomic, so two runs finishing together can both find nothing
- * open and both file. Filing stays unserialised deliberately: a concurrency group would cancel a
- * queued run, and a cancelled observer is a failure nobody hears about. The lowest number is kept,
- * because that is the one whose comments people replied to.
+ * Keep the globally lowest issue number, regardless of which concurrent reporter
+ * created the issue. Both observers must select the same survivor, never each other.
  */
 export async function closeDuplicateFailures(
 	repo: GitHubRepository,
@@ -185,13 +234,18 @@ export async function closeDuplicateFailures(
 	log: (message: string) => void = () => {},
 ): Promise<number[]> {
 	const marker = failureMarker(workflow);
+	const matches = (await repo.listIssues({ state: "open", labels: [FAILURE_LABEL] }))
+		.filter((issue) => (issue.body ?? "").includes(marker))
+		.map((issue) => Number(issue.number))
+		.filter((number) => Number.isSafeInteger(number))
+		.sort((a, b) => a - b);
+	const survivor = matches[0] ?? keep;
 	const closed: number[] = [];
-	for (const issue of await repo.listIssues({ state: "open", labels: [FAILURE_LABEL] })) {
-		const number = Number(issue.number);
-		if (number === keep || !(issue.body ?? "").includes(marker)) continue;
-		await repo.createComment(number, `Duplicate of #${keep}; both runs filed before either saw the other.`);
+	for (const number of matches) {
+		if (number === survivor) continue;
+		await repo.createComment(number, `Duplicate of #${survivor}; both runs filed before either saw the other.`);
 		await repo.closeIssue(number);
-		log(`Closed duplicate #${number} of #${keep}.`);
+		log(`Closed duplicate #${number} of #${survivor}.`);
 		closed.push(number);
 	}
 	return closed;
@@ -203,7 +257,12 @@ export async function reportFailure(options: ReportFailureOptions): Promise<Fail
 
 	const existing = await findOpenFailure(repo, workflow);
 	if (existing !== null) {
-		await repo.createComment(existing, `Failed again: ${runUrl}`);
+		const marker = `<!-- pipeline-failure-run: ${runId} -->`;
+		const issue = await repo.getIssue(existing);
+		if ((issue.body ?? "").includes(`- Run id: \`${runId}\``)) return { number: existing, duplicatesClosed: [] };
+		const comments = await repo.listComments(existing);
+		if (comments.some((comment) => comment.body.includes(marker))) return { number: existing, duplicatesClosed: [] };
+		await repo.createComment(existing, `Failed again: ${runUrl}\n${marker}`);
 		log(`Commented on #${existing} for ${workflow}.`);
 		return { number: existing, duplicatesClosed: [] };
 	}
@@ -217,7 +276,7 @@ export async function reportFailure(options: ReportFailureOptions): Promise<Fail
 	log(`Opened #${number} for ${workflow}.`);
 	// Another run may have filed between the check above and this create.
 	const duplicatesClosed = await closeDuplicateFailures(repo, workflow, number, log);
-	return { number, duplicatesClosed };
+	return { number: (await findOpenFailure(repo, workflow)) ?? number, duplicatesClosed };
 }
 
 /** Closes the failure issue for a workflow that has succeeded again. */

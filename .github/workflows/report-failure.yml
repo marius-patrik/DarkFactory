@@ -80,18 +80,14 @@ jobs:
     # The CLI separately verifies the observed run through the authenticated
     # Actions REST API before performing any incident issue mutations.
     if: >-
-      (github.event_name == 'workflow_run'
+      github.event_name == 'workflow_run'
         && !startsWith(github.event.workflow_run.event, 'pull_request')
         && github.event.workflow_run.event != 'merge_group'
-        && github.event.workflow_run.head_branch == github.event.repository.default_branch)
-      || (github.event_name != 'workflow_run'
-        && !startsWith(github.event_name, 'pull_request')
-        && github.event_name != 'merge_group'
+        && github.event.workflow_run.head_branch == github.event.repository.default_branch
         && github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
-        && inputs.workflow-name != ''
-        && inputs.conclusion != ''
-        && inputs.run-url != ''
-        && inputs.run-id != '')
+    concurrency:
+      group: incident-observer-${{ github.repository }}-${{ github.event.workflow_run.workflow_id }}
+      cancel-in-progress: false
     name: report-failure
     runs-on: ubuntu-latest
     env:
@@ -149,3 +145,5 @@ jobs:
           CONCLUSION: ${{ inputs.conclusion || github.event.workflow_run.conclusion }}
           RUN_URL: ${{ inputs.run-url || github.event.workflow_run.html_url }}
           RUN_ID: ${{ inputs.run-id || github.event.workflow_run.id }}
+          TRIGGER_RUN_ID: ${{ github.event.workflow_run.id }}
+          ACTIONS_READ_TOKEN: ${{ github.token }}

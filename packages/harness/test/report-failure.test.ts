@@ -23,13 +23,19 @@ interface FakeIssue {
 }
 
 /** Minimal repository stand-in recording issue writes and authenticated Actions reads. */
-function fakeRepo(issues: FakeIssue[] = [], overrides: Partial<ObservedWorkflowRun> = {}) {
+function fakeRepo(
+	issues: FakeIssue[] = [],
+	overrides: Partial<ObservedWorkflowRun> = {},
+	listedRuns?: ObservedWorkflowRun[],
+) {
 	const created: { title: string; body?: string; labels?: string[] }[] = [];
 	const comments: { issue: number; body: string }[] = [];
 	const closed: number[] = [];
 	const apiReads: string[] = [];
 	const run: ObservedWorkflowRun = {
 		id: 1,
+		workflow_id: 42,
+		run_number: 1,
 		name: "CI",
 		html_url: "https://run/1",
 		status: "completed",
@@ -49,10 +55,18 @@ function fakeRepo(issues: FakeIssue[] = [], overrides: Partial<ObservedWorkflowR
 				apiReads.push(path);
 				if (path === "/repos/owner/repo") return { full_name: "owner/repo", default_branch: "main" };
 				if (path === "/repos/owner/repo/actions/runs/1") return run;
+				if (path.startsWith("/repos/owner/repo/actions/workflows/42/runs?"))
+					return { workflow_runs: listedRuns ?? [run] };
 				throw new Error(`Unexpected GitHub API path: ${path}`);
 			},
 		},
 
+		async getIssue(number: number) {
+			return issues.find((issue) => issue.number === number);
+		},
+		async listComments(number: number) {
+			return comments.filter((comment) => comment.issue === number);
+		},
 		async listIssues() {
 			return issues
 				.filter((issue) => !closed.includes(issue.number))
@@ -73,7 +87,7 @@ function fakeRepo(issues: FakeIssue[] = [], overrides: Partial<ObservedWorkflowR
 			return {};
 		},
 	} as unknown as GitHubRepository;
-	return { repo, created, comments, closed, issues, apiReads };
+	return { repo, created, comments, closed, issues, apiReads, run };
 }
 
 const options = { workflow: "CI", runUrl: "https://run/1", runId: "1" };
@@ -113,7 +127,8 @@ describe("reporting a failure", () => {
 		const { repo, created, comments } = fakeRepo([{ number: 7, body: failureMarker("CI") }]);
 		const result = await reportFailure({ ...options, repo });
 		expect(created).toEqual([]);
-		expect(comments[0]).toEqual({ issue: 7, body: "Failed again: https://run/1" });
+		expect(comments[0]?.body).toContain("Failed again: https://run/1");
+		expect(comments[0]?.body).toContain("<!-- pipeline-failure-run: 1 -->");
 		expect(result.number).toBe(7);
 	});
 
@@ -162,15 +177,11 @@ describe("operational failure observer scope", () => {
 			readFileSync(new URL("../../../.github/workflows/report-failure.yml", import.meta.url), "utf8"),
 		) as { jobs: { report: { if: string } } };
 		const guard = workflow.jobs.report.if;
-		expect(guard).toContain("github.event_name != 'workflow_run'");
+		expect(guard).toContain("github.event_name == 'workflow_run'");
 		expect(guard).toContain("!startsWith(github.event.workflow_run.event, 'pull_request')");
 		expect(guard).toContain("github.event.workflow_run.event != 'merge_group'");
-		expect(guard).toContain("!startsWith(github.event_name, 'pull_request')");
-		expect(guard).toContain("github.event_name != 'merge_group'");
 		expect(guard).toContain("github.event.workflow_run.head_branch == github.event.repository.default_branch");
 		expect(guard).toContain("github.ref == format('refs/heads/{0}', github.event.repository.default_branch)");
-		for (const key of ["workflow-name", "conclusion", "run-url", "run-id"])
-			expect(guard).toContain(`inputs.${key} != ''`);
 	});
 });
 
@@ -209,27 +220,20 @@ describe("workflow conclusion classification", () => {
 	});
 });
 
-const trustedInvocation = { eventName: "workflow_run", ref: "refs/heads/main" };
+const trustedInvocation = { eventName: "workflow_run", ref: "refs/heads/main", triggerRunId: "1" };
 
 describe("incident event eligibility", () => {
-	test("the real event predicate blocks PR-origin triggers even if GITHUB_REF points at main", () => {
-		for (const eventName of [
-			"pull_request",
-			"pull_request_target",
-			"pull_request_review",
-			"pull_request_review_comment",
-			"merge_group",
-		]) {
-			expect(incidentInvocationAllowed({ eventName, ref: "refs/heads/main" }, "main")).toBe(false);
-			expect(incidentRunEventAllowed(eventName)).toBe(false);
+	test("accepts only workflow_run observers tied to their triggering Actions run", () => {
+		expect(incidentInvocationAllowed(trustedInvocation, "main")).toBe(true);
+		for (const eventName of ["pull_request", "pull_request_target", "pull_request_review", "issue_comment", "push"]) {
+			expect(incidentInvocationAllowed({ ...trustedInvocation, eventName }, "main")).toBe(false);
 		}
-		for (const eventName of ["push", "workflow_run", "workflow_dispatch", "schedule", "issues"]) {
-			expect(incidentInvocationAllowed({ eventName, ref: "refs/heads/main" }, "main")).toBe(true);
+		expect(incidentInvocationAllowed({ ...trustedInvocation, ref: "refs/heads/feature" }, "main")).toBe(false);
+		expect(incidentInvocationAllowed({ ...trustedInvocation, triggerRunId: "0" }, "main")).toBe(false);
+		for (const eventName of ["push", "schedule", "workflow_dispatch", "repository_dispatch", "issues"])
 			expect(incidentRunEventAllowed(eventName)).toBe(true);
-		}
-		expect(incidentInvocationAllowed({ eventName: "push", ref: "refs/heads/feature" }, "main")).toBe(false);
-		expect(incidentInvocationAllowed({ eventName: "workflow_run", ref: "refs/tags/v1" }, "main")).toBe(false);
-		expect(incidentInvocationAllowed({ eventName: "", ref: "refs/heads/main" }, "main")).toBe(false);
+		for (const eventName of ["issue_comment", "pull_request", "pull_request_target", "workflow_run", "merge_group"])
+			expect(incidentRunEventAllowed(eventName)).toBe(false);
 	});
 });
 
@@ -249,6 +253,8 @@ describe("observed workflow identity verification", () => {
 	test("rejects mismatched run metadata and never mutates incidents", async () => {
 		const invalid: Partial<ObservedWorkflowRun>[] = [
 			{ id: 100 },
+			{ workflow_id: 0 },
+			{ run_number: 0 },
 			{ name: "Release" },
 			{ html_url: "https://run/100" },
 			{ status: "in_progress" },
@@ -256,6 +262,7 @@ describe("observed workflow identity verification", () => {
 			{ event: "pull_request" },
 			{ event: "pull_request_target" },
 			{ event: "merge_group" },
+			{ event: "issue_comment" },
 			{ head_branch: "feature" },
 			{ repository: { full_name: "other/repo" } },
 			{ head_repository: { full_name: "attacker/repo" } },
@@ -280,9 +287,9 @@ describe("observed workflow identity verification", () => {
 
 	test("rejects invalid caller event, incorrect conclusion, and incomplete run identity", async () => {
 		for (const invocation of [
-			{ eventName: "pull_request_target", ref: "refs/heads/main" },
-			{ eventName: "pull_request_review_comment", ref: "refs/heads/main" },
-			{ eventName: "workflow_call", ref: "refs/heads/pr" },
+			{ eventName: "pull_request_target", ref: "refs/heads/main", triggerRunId: "1" },
+			{ eventName: "pull_request_review_comment", ref: "refs/heads/main", triggerRunId: "1" },
+			{ eventName: "workflow_call", ref: "refs/heads/pr", triggerRunId: "1" },
 		]) {
 			const { repo, created } = fakeRepo();
 			await expect(
@@ -375,6 +382,52 @@ describe("observed workflow result drives issue mutations", () => {
 			expect(created).toEqual([]);
 			expect(comments).toEqual([]);
 			expect(closed).toEqual([]);
+		}
+	});
+});
+
+describe("ordered incident observations", () => {
+	test("a late old failure reconciles the newer successful run", async () => {
+		const seed = fakeRepo();
+		const newest = { ...seed.run, id: 2, run_number: 2, html_url: "https://run/2", conclusion: "success" };
+		const target = fakeRepo([{ number: 7, body: failureMarker("CI") }], {}, [newest, seed.run]);
+		expect(await observeWorkflowCompletion({
+			...options, repo: target.repo, conclusion: "failure", invocation: trustedInvocation,
+		})).toBe("resolve");
+		expect(target.closed).toEqual([7]);
+		expect(target.created).toEqual([]);
+	});
+	test("a late old success reconciles the newer failure", async () => {
+		const seed = fakeRepo();
+		const newest = { ...seed.run, id: 2, run_number: 2, html_url: "https://run/2", conclusion: "failure" };
+		const target = fakeRepo([], { conclusion: "success" }, [newest]);
+		expect(await observeWorkflowCompletion({
+			...options, repo: target.repo, conclusion: "success", invocation: trustedInvocation,
+		})).toBe("report");
+		expect(target.created[0]?.body).toContain("https://run/2");
+		expect(target.closed).toEqual([]);
+	});
+});
+
+describe("incident idempotence and deduplication", () => {
+	test("replaying the same run leaves one issue and no extra comments", async () => {
+		const state = fakeRepo();
+		for (let attempt = 0; attempt < 3; attempt++) {
+			expect(await observeWorkflowCompletion({
+				...options, repo: state.repo, conclusion: "failure", invocation: trustedInvocation,
+			})).toBe("report");
+		}
+		expect(state.created).toHaveLength(1);
+		expect(state.comments).toEqual([]);
+	});
+	test("competing reporters always keep the lowest numbered incident", async () => {
+		for (const keep of [4, 9]) {
+			const state = fakeRepo([
+				{ number: 4, body: failureMarker("CI") },
+				{ number: 9, body: failureMarker("CI") },
+			]);
+			expect(await closeDuplicateFailures(state.repo, "CI", keep)).toEqual([9]);
+			expect(state.closed).toEqual([9]);
 		}
 	});
 });
