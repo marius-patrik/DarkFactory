@@ -189,12 +189,24 @@ describe("observed workflow result drives issue mutations", () => {
 	});
 
 	test("non-recovery conclusions never query or mutate the repository", async () => {
-		for (const conclusion of ["cancelled", "timed_out", "skipped", "neutral", "stale", "action_required", null, undefined]) {
+		for (const conclusion of [
+			"cancelled",
+			"timed_out",
+			"skipped",
+			"neutral",
+			"stale",
+			"action_required",
+			null,
+			undefined,
+		]) {
 			const { repo, created, comments, closed } = fakeRepo([{ number: 7, body: failureMarker("CI") }]);
 			let requested = 0;
 			const proxy = new Proxy(repo, {
 				get(target, property, receiver) {
-					if (typeof property === "string" && ["listIssues", "createIssue", "createComment", "closeIssue"].includes(property))
+					if (
+						typeof property === "string" &&
+						["listIssues", "createIssue", "createComment", "closeIssue"].includes(property)
+					)
 						return (...args: unknown[]) => {
 							requested++;
 							return (Reflect.get(target, property, receiver) as (...args: unknown[]) => unknown).apply(target, args);
