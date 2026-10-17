@@ -264,7 +264,7 @@ export async function reportFailure(options: ReportFailureOptions): Promise<Fail
 		const initialRun = `- Run id: \`${runId}\``;
 		if ((issue.body ?? "").includes(initialRun)) return { number: survivor, duplicatesClosed };
 		const comments = await repo.listComments(survivor);
-		if (comments.some((comment) => comment.body.includes(marker))) return { number: survivor, duplicatesClosed };
+		if (comments.some((comment) => (comment.body ?? "").includes(marker))) return { number: survivor, duplicatesClosed };
 		await repo.createComment(survivor, `Failed again: ${runUrl}\n${marker}`);
 		log(`Commented on #${survivor} for ${workflow}.`);
 		return { number: survivor, duplicatesClosed };

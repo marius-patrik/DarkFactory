@@ -402,9 +402,14 @@ describe("ordered incident observations", () => {
 		const seed = fakeRepo();
 		const newest = { ...seed.run, id: 2, run_number: 2, html_url: "https://run/2", conclusion: "success" };
 		const target = fakeRepo([{ number: 7, body: failureMarker("CI") }], {}, [newest, seed.run]);
-		expect(await observeWorkflowCompletion({
-			...options, repo: target.repo, conclusion: "failure", invocation: trustedInvocation,
-		})).toBe("resolve");
+		expect(
+			await observeWorkflowCompletion({
+				...options,
+				repo: target.repo,
+				conclusion: "failure",
+				invocation: trustedInvocation,
+			}),
+		).toBe("resolve");
 		expect(target.closed).toEqual([7]);
 		expect(target.created).toEqual([]);
 	});
@@ -412,9 +417,14 @@ describe("ordered incident observations", () => {
 		const seed = fakeRepo();
 		const newest = { ...seed.run, id: 2, run_number: 2, html_url: "https://run/2", conclusion: "failure" };
 		const target = fakeRepo([], { conclusion: "success" }, [newest]);
-		expect(await observeWorkflowCompletion({
-			...options, repo: target.repo, conclusion: "success", invocation: trustedInvocation,
-		})).toBe("report");
+		expect(
+			await observeWorkflowCompletion({
+				...options,
+				repo: target.repo,
+				conclusion: "success",
+				invocation: trustedInvocation,
+			}),
+		).toBe("report");
 		expect(target.created[0]?.body).toContain("https://run/2");
 		expect(target.closed).toEqual([]);
 	});
@@ -424,9 +434,14 @@ describe("incident idempotence and deduplication", () => {
 	test("replaying the same run leaves one issue and no extra comments", async () => {
 		const state = fakeRepo();
 		for (let attempt = 0; attempt < 3; attempt++) {
-			expect(await observeWorkflowCompletion({
-				...options, repo: state.repo, conclusion: "failure", invocation: trustedInvocation,
-			})).toBe("report");
+			expect(
+				await observeWorkflowCompletion({
+					...options,
+					repo: state.repo,
+					conclusion: "failure",
+					invocation: trustedInvocation,
+				}),
+			).toBe("report");
 		}
 		expect(state.created).toHaveLength(1);
 		expect(state.comments).toEqual([]);
