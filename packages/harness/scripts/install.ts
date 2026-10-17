@@ -11,7 +11,7 @@ export const BINARY_NAME = "df-bin";
 /**
  * Resources the compiled binary resolves beside itself.
  *
- * `harness/src/cli.ts` loads platform prebuilds from `dirname(process.execPath)`, and
+ * `packages/cli/src/cli.ts` loads platform prebuilds from `dirname(process.execPath)`, and
  * `harness/src/ci/installer.ts` and `templates.ts` look for `assets/` next to the executable. A
  * staged install that omits either tree yields a `df` that loads and lists providers and then fails
  * at the first operation needing a bundled resource, so both travel with the binary.
