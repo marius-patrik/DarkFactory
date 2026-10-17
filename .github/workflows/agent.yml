@@ -251,14 +251,18 @@ jobs:
           ref: ${{ inputs.pipeline-ref || 'main' }}
           path: .darkfactory-pipeline
 
-      - name: Build agent container
-        # The image is built from the pipeline's definition, so every consumer runs the same
-        # runner; the repository being worked on is still the caller's checkout, mounted below.
+      - name: Install Nix
+        if: steps.delegate.outputs.delegated != 'true'
+        uses: cachix/install-nix-action@v31
+
+      - name: Build and load Nix agent image
         if: steps.delegate.outputs.delegated != 'true'
         run: |
           CONTEXT="."
-          [ -d .darkfactory-pipeline ] && CONTEXT=".darkfactory-pipeline"
-          docker build -t darkfactory-agent -f "$CONTEXT/docker/Dockerfile.agent" "$CONTEXT"
+          [ -d .darkfactory-pipeline ] && CONTEXT="./.darkfactory-pipeline"
+          nix build "$CONTEXT#agentImage" --no-write-lock-file -L -o "$RUNNER_TEMP/agent-image"
+          docker load -i "$RUNNER_TEMP/agent-image"
+          docker image inspect darkfactory-agent:nix >/dev/null
 
       - name: Dispatch agent in container
         if: steps.delegate.outputs.delegated != 'true'
@@ -298,5 +302,5 @@ jobs:
             -e GITHUB_REPOSITORY_OWNER="${{ steps.target-env.outputs.owner }}" \
             -e PROJECT_NUMBER \
             -v "${{ github.workspace }}:/workspace" \
-            darkfactory-agent dispatch
+            darkfactory-agent:nix dispatch
 

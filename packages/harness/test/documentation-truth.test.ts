@@ -1,6 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
+import { RUNNER_COMMANDS } from "../src/pipeline/main.ts";
 
 // Paths come from this file, never from process.cwd(): the suite runs from packages/harness/ and from the repository root.
 const harnessDir = join(import.meta.dir, "..");
@@ -79,7 +80,7 @@ function pathClaims(markdown: string): string[] {
 
 /** `df` subcommands the CLI's usage() text declares. */
 function usageCommands(): Set<string> {
-	const source = readFileSync(join(harnessDir, "src", "cli.ts"), "utf8");
+	const source = readFileSync(join(repoDir, "packages", "cli", "src", "cli.ts"), "utf8");
 	const start = source.indexOf("function usage(): string {");
 	const body = source.slice(start, source.indexOf("\n}\n", start));
 	return new Set([...body.matchAll(/\bdf ([a-z][a-z-]*)/gu)].map((match) => match[1] as string));
@@ -87,7 +88,7 @@ function usageCommands(): Set<string> {
 
 /** `df` subcommands the CLI dispatches, for the commands usage() does not advertise. */
 function dispatchedCommands(): Set<string> {
-	const source = readFileSync(join(harnessDir, "src", "cli.ts"), "utf8");
+	const source = readFileSync(join(repoDir, "packages", "cli", "src", "cli.ts"), "utf8");
 	return new Set([...source.matchAll(/^\t\tcase "([a-z][a-z-]*)":/gmu)].map((match) => match[1] as string));
 }
 
@@ -122,7 +123,7 @@ describe("canonical documentation truth", () => {
 	});
 
 	test.each(DOCUMENTS)("%s names only df subcommands the CLI has", (document) => {
-		const known = new Set([...usageCommands(), ...dispatchedCommands()]);
+		const known = new Set([...usageCommands(), ...dispatchedCommands(), ...RUNNER_COMMANDS]);
 		const unknown = [...new Set(dfCommands(readFileSync(join(repoDir, document), "utf8")))].filter(
 			(command) => !known.has(command),
 		);

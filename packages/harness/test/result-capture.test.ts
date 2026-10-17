@@ -294,7 +294,7 @@ describe("result-capture: prompt cleanliness and natural stop", () => {
 
 describe("result-capture: offline --capture-schema CLI", () => {
 	test("df run --capture-schema prints registered schemas and exits 0 without network", async () => {
-		const proc = Bun.spawn(["bun", "src/cli.ts", "run", "--capture-schema"], {
+		const proc = Bun.spawn(["bun", "../cli/src/cli.ts", "run", "--capture-schema"], {
 			cwd: join(import.meta.dir, ".."),
 			stdout: "pipe",
 			stderr: "pipe",
@@ -308,7 +308,7 @@ describe("result-capture: offline --capture-schema CLI", () => {
 	});
 
 	test("df run --capture-schema review prints specific JSON schema", async () => {
-		const proc = Bun.spawn(["bun", "src/cli.ts", "run", "--capture-schema", "review"], {
+		const proc = Bun.spawn(["bun", "../cli/src/cli.ts", "run", "--capture-schema", "review"], {
 			cwd: join(import.meta.dir, ".."),
 			stdout: "pipe",
 			stderr: "pipe",

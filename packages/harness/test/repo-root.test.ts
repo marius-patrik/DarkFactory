@@ -27,7 +27,7 @@ describe("the suite's repository root is the repository root", () => {
 		// `packages/` holds packages/* and capabilities/* but no .github, so if the root were wrong
 		// the first test fails. Assert the shape too, so the failure names the mistake.
 		expect(existsSync(join(repoRoot, "packages"))).toBe(true);
-		expect(existsSync(join(repoRoot, "packages", "harness", "src", "cli.ts"))).toBe(true);
+		expect(existsSync(join(repoRoot, "packages", "cli", "src", "cli.ts"))).toBe(true);
 		expect(existsSync(join(repoRoot, "harness"))).toBe(false);
 	});
 

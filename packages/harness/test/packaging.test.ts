@@ -19,12 +19,14 @@ describe("standalone packaging", () => {
 	});
 
 	test("compiles the worker under the exact path used by pi at runtime", async () => {
-		// The build compiles both entry points, and the worker's path is what pi loads at runtime, so
-		// the command has to name the file the worker really lives at. It moved with the single
-		// package: `src/` beside this script is now `packages/harness/src/`.
-		expect(await readFile(new URL("../scripts/build.ts", import.meta.url), "utf8")).toContain(
-			"./packages/harness/src/image-resize-worker.ts",
-		);
+		// Bun's compiled worker identity must match the constructor's exact specifier.
+		// The CLI entry forwards to the harness implementation without duplicating it.
+		const build = await readFile(new URL("../scripts/build.ts", import.meta.url), "utf8");
+		const cli = await readFile(new URL("../../cli/src/cli.ts", import.meta.url), "utf8");
+		const entry = await readFile(new URL("../../cli/src/image-resize-worker.ts", import.meta.url), "utf8");
+		expect(build).toContain("./packages/cli/src/image-resize-worker.ts");
+		expect(cli).toContain('new Worker(new URL("./image-resize-worker.ts", import.meta.url))');
+		expect(entry).toContain('import "../../harness/src/image-resize-worker.ts"');
 	});
 });
 
@@ -114,7 +116,7 @@ describe("the packaging smoke agrees with the packager about the native module",
 	// `packagingSmoke` required one. All five release targets failed on
 	// `Packaged pi-tui native module is missing for <platform>-<arch>`, and pi-tui 0.85.1 ships no
 	// `linux/` directory at all, so on Linux there was nothing to find by design.
-	const cli = readFileSync(join(repoRoot, "packages/harness/src/cli.ts"), "utf8");
+	const cli = readFileSync(join(repoRoot, "packages/cli/src/cli.ts"), "utf8");
 	const assets = readFileSync(join(repoRoot, "packages/harness/scripts/package-assets.ts"), "utf8");
 
 	it("the packager treats the native module as optional", () => {
