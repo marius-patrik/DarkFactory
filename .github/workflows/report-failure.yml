@@ -42,15 +42,35 @@ on:
       GH_PROJECT_TOKEN: {required: false}
 
 permissions:
+  actions: read
   contents: read
   issues: write
 
-# No concurrency group: a queued run is cancelled when another joins the same one, and a cancelled
-# observer is a failure nobody hears about - exactly what this workflow exists to prevent. Filing is
-# idempotent anyway, since the issue is found by a marker rather than created blindly.
+# Serial observers reconcile the latest completed default-branch run. GitHub can
+# coalesce pending jobs, so each surviving observer computes the current state.
 
 jobs:
   report:
+    # Only a default-branch failure is a repository-wide operational incident.
+    # PR checks report on their own PR, and must never open/close main failures.
+    # Reusable callers inherit their caller event name, not workflow_call itself.
+    # Only workflow_run event contexts qualify, and the runtime binds claimed
+    # run metadata to the original triggering run ID.
+    # The CLI separately verifies the observed run through the authenticated
+    # Actions REST API before performing any incident issue mutations.
+    if: >-
+      github.event_name == 'workflow_run'
+        && !startsWith(github.event.workflow_run.event, 'pull_request')
+        && (github.event.workflow_run.event == 'push'
+          || github.event.workflow_run.event == 'schedule'
+          || github.event.workflow_run.event == 'workflow_dispatch'
+          || github.event.workflow_run.event == 'repository_dispatch'
+          || github.event.workflow_run.event == 'issues')
+        && github.event.workflow_run.head_branch == github.event.repository.default_branch
+        && github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
+    concurrency:
+      group: incident-observer-${{ github.repository }}-${{ github.event.workflow_run.workflow_id }}
+      cancel-in-progress: false
     name: report-failure
     runs-on: ubuntu-latest
     env:
@@ -108,3 +128,5 @@ jobs:
           CONCLUSION: ${{ github.event.workflow_run.conclusion }}
           RUN_URL: ${{ github.event.workflow_run.html_url }}
           RUN_ID: ${{ github.event.workflow_run.id }}
+          TRIGGER_RUN_ID: ${{ github.event.workflow_run.id }}
+          ACTIONS_READ_TOKEN: ${{ github.token }}

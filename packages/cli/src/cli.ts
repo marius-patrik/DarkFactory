@@ -33,7 +33,7 @@ import { runPluginCli } from "../../plugins/src/index.ts";
 import { runCiCli } from "../../harness/src/ci/cli.ts";
 import { executableReleaseVersion, runReleasedInstaller } from "../../harness/src/install/released-df.ts";
 import { applyLicence } from "../../harness/src/ci/licensing.ts";
-import { reportFailure, resolveFailure } from "../../harness/src/ci/report-failure.ts";
+import { observeWorkflowCompletion } from "../../harness/src/ci/report-failure.ts";
 import {
 	DEFAULT_ROUTER_CONFIG,
 	type DfConfig,
@@ -1420,28 +1420,27 @@ async function reportFailureCommand(args: string[]): Promise<void> {
 	}
 	const token = process.env.GH_TOKEN ?? process.env.GITHUB_TOKEN;
 	if (!token) throw new Error("df report-failure needs GH_TOKEN or GITHUB_TOKEN");
+	const readToken = process.env.ACTIONS_READ_TOKEN;
+	if (!readToken) throw new Error("df report-failure needs ACTIONS_READ_TOKEN for Actions API verification");
 	const [owner, name] = slug.split("/");
 	const repo = new GitHubRepository(new GitHubClient({ token }), owner!, name!);
 	const log = (message: string) => console.log(message);
 
 	try {
-		if (process.env.CONCLUSION === "failure") {
-			const outcome = await reportFailure({
-				repo,
-				workflow,
-				runUrl: process.env.RUN_URL ?? "",
-				runId: process.env.RUN_ID ?? "",
-				log,
-			});
-			if (outcome.number === null) {
-				// Reporting a failure is itself a pipeline step. A step that swallows its own errors
-				// is the thing this exists to surface, so a report that could not be filed fails the
-				// run rather than logging and moving on.
-				throw new Error(`could not file a failure issue for ${workflow}`);
-			}
-			return;
-		}
-		await resolveFailure(repo, workflow, log);
+		await observeWorkflowCompletion({
+			repo,
+			workflow,
+			runUrl: process.env.RUN_URL ?? "",
+			runId: process.env.RUN_ID ?? "",
+			conclusion: process.env.CONCLUSION,
+			reader: new GitHubClient({ token: readToken }),
+			invocation: {
+				eventName: process.env.GITHUB_EVENT_NAME ?? "",
+				ref: process.env.GITHUB_REF ?? "",
+				triggerRunId: process.env.TRIGGER_RUN_ID ?? "",
+			},
+			log,
+		});
 	} catch (error) {
 		console.error(`Error: ${(error as Error).message}`);
 		process.exitCode = 1;
