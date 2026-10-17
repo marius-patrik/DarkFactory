@@ -1431,6 +1431,10 @@ async function reportFailureCommand(args: string[]): Promise<void> {
 			runUrl: process.env.RUN_URL ?? "",
 			runId: process.env.RUN_ID ?? "",
 			conclusion: process.env.CONCLUSION,
+			invocation: {
+				eventName: process.env.GITHUB_EVENT_NAME ?? "",
+				ref: process.env.GITHUB_REF ?? "",
+			},
 			log,
 		});
 	} catch (error) {
