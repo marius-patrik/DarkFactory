@@ -214,7 +214,7 @@ describe("workflow conclusion classification", () => {
 		expect(failureActionForConclusion(undefined)).toBe("ignore");
 	});
 
-	test("reusable callers can explicitly supply the observed event fields", () => {
+	test("reusable callers derive incident identity only from the original GitHub event", () => {
 		const workflow = Bun.YAML.parse(
 			readFileSync(new URL("../../../.github/workflows/report-failure.yml", import.meta.url), "utf8"),
 		) as {
@@ -222,12 +222,14 @@ describe("workflow conclusion classification", () => {
 			jobs: { report: { steps: { env?: Record<string, string> }[] } };
 		};
 		for (const key of ["workflow-name", "conclusion", "run-url", "run-id"])
-			expect(workflow.on.workflow_call.inputs).toHaveProperty(key);
+			expect(workflow.on.workflow_call.inputs).not.toHaveProperty(key);
 		const observed = workflow.jobs.report.steps.at(-1)?.env;
-		expect(observed?.WORKFLOW_NAME).toContain("inputs.workflow-name || github.event.workflow_run.name");
-		expect(observed?.CONCLUSION).toContain("inputs.conclusion || github.event.workflow_run.conclusion");
-		expect(observed?.RUN_URL).toContain("inputs.run-url || github.event.workflow_run.html_url");
-		expect(observed?.RUN_ID).toContain("inputs.run-id || github.event.workflow_run.id");
+		expect(observed?.WORKFLOW_NAME).toBe("${{ github.event.workflow_run.name }}");
+		expect(observed?.CONCLUSION).toBe("${{ github.event.workflow_run.conclusion }}");
+		expect(observed?.RUN_URL).toBe("${{ github.event.workflow_run.html_url }}");
+		expect(observed?.RUN_ID).toBe("${{ github.event.workflow_run.id }}");
+		expect(observed?.TRIGGER_RUN_ID).toBe(observed?.RUN_ID);
+		expect(observed?.ACTIONS_READ_TOKEN).toBe("${{ github.token }}");
 	});
 });
 

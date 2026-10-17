@@ -37,26 +37,6 @@ on:
         required: false
         type: string
         default: "marius-patrik/DarkFactory"
-      workflow-name:
-        description: "Failed or recovered workflow name for callers without workflow_run context."
-        required: false
-        type: string
-        default: ""
-      conclusion:
-        description: "Observed conclusion: failure, success, cancelled, timed_out, skipped or neutral."
-        required: false
-        type: string
-        default: ""
-      run-url:
-        description: "URL of the observed completed workflow run."
-        required: false
-        type: string
-        default: ""
-      run-id:
-        description: "Identifier of the observed completed workflow run."
-        required: false
-        type: string
-        default: ""
     secrets:
       DARKFACTORY_APP_PRIVATE_KEY: {required: false}
       GH_PROJECT_TOKEN: {required: false}
@@ -144,9 +124,9 @@ jobs:
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token || secrets.GH_PROJECT_TOKEN || secrets.GITHUB_TOKEN }}
           GITHUB_REPOSITORY: ${{ github.repository }}
-          WORKFLOW_NAME: ${{ inputs.workflow-name || github.event.workflow_run.name }}
-          CONCLUSION: ${{ inputs.conclusion || github.event.workflow_run.conclusion }}
-          RUN_URL: ${{ inputs.run-url || github.event.workflow_run.html_url }}
-          RUN_ID: ${{ inputs.run-id || github.event.workflow_run.id }}
+          WORKFLOW_NAME: ${{ github.event.workflow_run.name }}
+          CONCLUSION: ${{ github.event.workflow_run.conclusion }}
+          RUN_URL: ${{ github.event.workflow_run.html_url }}
+          RUN_ID: ${{ github.event.workflow_run.id }}
           TRIGGER_RUN_ID: ${{ github.event.workflow_run.id }}
           ACTIONS_READ_TOKEN: ${{ github.token }}
