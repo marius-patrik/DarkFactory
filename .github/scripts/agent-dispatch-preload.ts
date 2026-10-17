@@ -10,10 +10,11 @@ const record = (event: Record<string, unknown>): void => {
 	appendFileSync(observed, `${JSON.stringify(event)}\n`);
 };
 
+// Observe the genuine model subprocess without replacing its implementation.
+// DF_FAUX enables the existing in-memory model provider; the real run must produce
+// the final response event and return through the pipeline's JSON event parser.
 if (process.argv[2] === "run") {
-	record({ kind: "model", args: process.argv.slice(2) });
-	console.log(JSON.stringify({ type: "text_delta", delta: "Verified model response from controlled fixture." }));
-	process.exit(0);
+	record({ kind: "model-runtime", args: process.argv.slice(2) });
 }
 
 globalThis.fetch = async (input: RequestInfo | URL, init?: RequestInit): Promise<Response> => {

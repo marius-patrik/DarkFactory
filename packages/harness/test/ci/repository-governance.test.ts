@@ -78,7 +78,6 @@ const NOT_CALLABLE = [
 	"darkfactory-self.yml",
 	"self-install.yml",
 	// The Nix container verification matrix tests producer source and is not a consumer workflow.
-	"nix-agent.yml",
 ];
 
 /** Workflows that write to GitHub on the pipeline's behalf and must therefore authenticate as the App. */
@@ -216,7 +215,21 @@ describe("ci.yml", () => {
 	it("test_ci_has_one_aggregate_quality_context: branch protection consumes one stable result", () => {
 		expect(ci.jobs.quality).toBeDefined();
 		expect(ci.jobs.quality?.name).toBe("quality");
-		expect(ci.jobs.quality?.needs).toEqual(["detect", "quality-run", "docs-check"]);
+		expect(ci.jobs.quality?.needs).toEqual(["detect", "quality-run", "docs-check", "nix-agent"]);
+	});
+
+	it("test_production_nix_image_is_in_aggregate_quality_on_both_architectures", () => {
+		const image = ci.jobs["nix-agent"];
+		expect(image?.if).toBe("github.repository == 'marius-patrik/DarkFactory'");
+		expect(image?.strategy?.matrix?.include).toEqual([
+			{ system: "x86_64-linux", runner: "ubuntu-24.04" },
+			{ system: "aarch64-linux", runner: "ubuntu-24.04-arm" },
+		]);
+		expect(steps(ci, "nix-agent").find((step) => step.name === "Build and exercise the production agent image")?.run)
+			.toContain(".github/scripts/verify-nix-agent.sh");
+		const enforcement = jobScripts(ci, "quality");
+		expect(enforcement).toContain('test "$DF_NIX_RESULT" = "success"');
+		expect(enforcement).toContain('test "$DF_NIX_RESULT" = "skipped"');
 	});
 
 	it("test_python_actions_and_docs_have_separate_final_owners: capability actions versus the native compiler", () => {
