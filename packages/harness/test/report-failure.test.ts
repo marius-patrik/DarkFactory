@@ -65,12 +65,6 @@ function fakeRepo(
 		async getIssue(number: number) {
 			return issues.find((issue) => issue.number === number);
 		},
-		async updateIssue(number: number, input: { body: string }) {
-			const issue = issues.find((item) => item.number === number);
-			if (!issue) throw new Error(`Unknown issue #${number}`);
-			issue.body = input.body;
-			return issue;
-		},
 		async listComments(number: number) {
 			return comments.filter((comment) => comment.issue === number);
 		},
