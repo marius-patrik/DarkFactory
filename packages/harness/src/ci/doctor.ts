@@ -37,9 +37,10 @@ export async function runCiDoctor(
 				}
 			: {
 					status: "fail",
-					message: gaps.length > 0
-						? `Detected ${gaps.length} uncovered required quality action(s)`
-						: "No executable quality actions detected",
+					message:
+						gaps.length > 0
+							? `Detected ${gaps.length} uncovered required quality action(s)`
+							: "No executable quality actions detected",
 					details: { packages: detected.evidence.packages, gaps, matrix: detected.matrix },
 				};
 	} catch (error) {
