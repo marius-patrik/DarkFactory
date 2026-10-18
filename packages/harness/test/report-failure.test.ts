@@ -57,7 +57,7 @@ function fakeRepo(
 				if (path === "/repos/owner/repo") return { full_name: "owner/repo", default_branch: "main" };
 				if (path === "/repos/owner/repo/actions/runs/1") return run;
 				if (path.startsWith("/repos/owner/repo/actions/workflows/42/runs?"))
-					return { workflow_runs: listedRuns ?? [run] };
+					return { workflow_runs: path.includes("page=1") ? (listedRuns ?? [run]) : [] };
 				throw new Error(`Unexpected GitHub API path: ${path}`);
 			},
 		},
@@ -469,6 +469,39 @@ describe("ordered incident observations", () => {
 });
 
 describe("eventual consistency of authenticated Actions listings", () => {
+	test("paginates beyond 100 irrelevant completed runs to the latest actionable result", async () => {
+		const state = fakeRepo();
+		const irrelevant = Array.from({ length: 100 }, (_, index) => ({
+			...state.run,
+			id: 1000 - index,
+			run_number: 1000 - index,
+			conclusion: "cancelled",
+		}));
+		const originalRest = state.repo.client.rest.bind(state.repo.client);
+		const pages: number[] = [];
+		const reader = {
+			async rest<T>(method: string, path: string): Promise<T> {
+				if (path.includes("/actions/workflows/42/runs?")) {
+					const pageNumber = Number(new URLSearchParams(path.split("?")[1]).get("page"));
+					pages.push(pageNumber);
+					return { workflow_runs: pageNumber === 1 ? irrelevant : [state.run] } as T;
+				}
+				return originalRest<T>(method, path);
+			},
+		};
+		expect(
+			await observeWorkflowCompletion({
+				...options,
+				repo: state.repo,
+				reader,
+				conclusion: "failure",
+				invocation: trustedInvocation,
+			}),
+		).toBe("report");
+		expect(pages).toEqual([1, 2]);
+		expect(state.created).toHaveLength(1);
+	});
+
 	test("retries an eventually consistent listing before filing the verified failure", async () => {
 		const state = fakeRepo();
 		const originalRest = state.repo.client.rest.bind(state.repo.client);

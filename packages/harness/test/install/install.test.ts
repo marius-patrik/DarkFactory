@@ -67,6 +67,14 @@ describe("the generated callers", () => {
 		}
 	});
 
+	test("reusable incident reporter callers grant Actions read without dropping issue writes", () => {
+		const caller = Bun.YAML.parse(renderCaller("report-failure", { pipelineRepo: "o/p", ref: "abc" })) as {
+			permissions: Record<string, string>;
+		};
+		expect(caller.permissions.actions).toBe("read");
+		expect(caller.permissions.issues).toBe("write");
+	});
+
 	test("the reporter watches every workflow it installs", async () => {
 		// The previous version of this assertion checked that a hardcoded set was a *subset* of the
 		// names, which is true of any list naming real workflows and says nothing about the ones it

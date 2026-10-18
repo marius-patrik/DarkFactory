@@ -153,27 +153,35 @@ export async function latestActionableWorkflowRun(
 	// Retry the *read* with bounded backoff; never mutate on stale evidence.
 	let lastReadHadCandidate = false;
 	for (let attempt = 0; attempt < 5; attempt++) {
-		const page = await reader.rest<{ workflow_runs: ObservedWorkflowRun[] }>(
-			"GET",
-			`${path}/actions/workflows/${observed.workflow_id}/runs?${query}`,
-		);
-		if (!Array.isArray(page.workflow_runs)) throw new Error("Actions response omitted workflow runs");
-		const slug = repo.slug.toLowerCase();
-		const candidates = page.workflow_runs.filter(
-			(run) =>
-				run.workflow_id === observed.workflow_id &&
-				Number.isSafeInteger(run.id) &&
-				Number.isSafeInteger(run.run_number) &&
-				run.run_number > 0 &&
-				run.status === "completed" &&
-				run.head_branch === repository.default_branch &&
-				run.repository?.full_name?.toLowerCase() === slug &&
-				run.head_repository?.full_name?.toLowerCase() === slug &&
-				incidentRunEventAllowed(run.event) &&
-				failureActionForConclusion(run.conclusion) !== "ignore",
-		);
-		candidates.sort((left, right) => right.run_number - left.run_number || right.id - left.id);
-		const latest = candidates[0] ?? null;
+		// GitHub returns at most 100 runs per page; cancelled/PR-origin runs can
+		// hide the last actionable default-branch result on a later page.
+		// Entries are newest first; stop at the first page with eligible runs.
+		let latest: ObservedWorkflowRun | null = null;
+		for (let pageNumber = 1; pageNumber <= 10; pageNumber++) {
+			const page = await reader.rest<{ workflow_runs: ObservedWorkflowRun[] }>(
+				"GET",
+				`${path}/actions/workflows/${observed.workflow_id}/runs?${query}&page=${pageNumber}`,
+			);
+			if (!Array.isArray(page.workflow_runs)) throw new Error("Actions response omitted workflow runs");
+			const slug = repo.slug.toLowerCase();
+			const candidates = page.workflow_runs.filter(
+				(run) =>
+					run.workflow_id === observed.workflow_id &&
+					Number.isSafeInteger(run.id) &&
+					Number.isSafeInteger(run.run_number) &&
+					run.run_number > 0 &&
+					run.status === "completed" &&
+					run.head_branch === repository.default_branch &&
+					run.repository?.full_name?.toLowerCase() === slug &&
+					run.head_repository?.full_name?.toLowerCase() === slug &&
+					incidentRunEventAllowed(run.event) &&
+					failureActionForConclusion(run.conclusion) !== "ignore",
+			);
+			candidates.sort((left, right) => right.run_number - left.run_number || right.id - left.id);
+			latest = candidates[0] ?? null;
+			if (latest || page.workflow_runs.length < 100) break;
+		}
+
 		const observedActionable = failureActionForConclusion(observed.conclusion) !== "ignore";
 		lastReadHadCandidate = latest !== null;
 		// A known completed run newer than the listing must not be superseded by
