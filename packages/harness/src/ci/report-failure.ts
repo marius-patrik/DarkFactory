@@ -247,7 +247,15 @@ export async function migrateLegacyFailureIssues(
 	log: (message: string) => void = () => {},
 ): Promise<void> {
 	const issues = await repo.listIssues({ state: "open", labels: [FAILURE_LABEL] });
-	for (const issue of issues) {
+	const legacy = issues.filter(
+		(issue) => !("pull_request" in issue) && (issue.body ?? "").startsWith("<!-- pipeline-failure: "),
+	);
+	if (legacy.length === 0) return;
+	const path = `/repos/${encodeURIComponent(repo.owner)}/${encodeURIComponent(repo.repo)}`;
+	const repository = await reader.rest<RepositoryMetadata>("GET", path);
+	if (repository.full_name?.toLowerCase() !== repo.slug.toLowerCase() || !repository.default_branch)
+		throw new Error("Cannot verify default branch before legacy incident adoption");
+	for (const issue of legacy) {
 		const body = issue.body ?? "";
 		if (
 			"pull_request" in issue ||
@@ -270,10 +278,20 @@ export async function migrateLegacyFailureIssues(
 			log(`Cannot authenticate legacy incident #${issue.number} run ${id}; leaving untouched.`);
 			continue;
 		}
+		// A run with the correct workflow ID can still be a PR or fork.
+		// Only adopt when the legacy body matches the *failed default-branch*
+		// run that originally caused this incident.
 		if (
 			String(original.id) !== id ||
 			original.workflow_id !== workflowId ||
-			original.repository?.full_name?.toLowerCase() !== repo.slug.toLowerCase()
+			original.status !== "completed" ||
+			failureActionForConclusion(original.conclusion) !== "report" ||
+			original.head_branch !== repository.default_branch ||
+			!incidentRunEventAllowed(original.event) ||
+			original.repository?.full_name?.toLowerCase() !== repo.slug.toLowerCase() ||
+			original.head_repository?.full_name?.toLowerCase() !== repo.slug.toLowerCase() ||
+			!body.startsWith(`${failureMarker(original.name)}\n\n`) ||
+			!body.includes(`- Run: ${original.html_url}\n`)
 		)
 			continue;
 		await repo.updateIssue(Number(issue.number), {

@@ -500,17 +500,81 @@ describe("durable workflow identity and legacy reconciliation", () => {
 		expect(state.closed).toEqual([7]);
 	});
 
-	test("a legacy incident is migrated only after verifying the original run's workflow ID", async () => {
-		const legacy = failureBody("Old CI", "https://run/1", "1");
-		const state = fakeRepo([{ number: 7, body: legacy }], { name: "CI", conclusion: "success" });
+	test("migrates a renamed legacy incident only after verifying its original default-branch failure", async () => {
+		const legacy = failureBody("Old CI", "https://run/7", "7");
+		const state = fakeRepo([{ number: 7, body: legacy }], { conclusion: "success" });
+		const originalRest = state.repo.client.rest.bind(state.repo.client);
+		const reader = {
+			async rest<T>(method: string, path: string): Promise<T> {
+				if (path.endsWith("/actions/runs/7")) {
+					return {
+						...state.run,
+						id: 7,
+						run_number: 7,
+						name: "Old CI",
+						html_url: "https://run/7",
+						conclusion: "failure",
+					} as T;
+				}
+				return originalRest<T>(method, path);
+			},
+		};
 		await observeWorkflowCompletion({
 			...options,
 			repo: state.repo,
+			reader,
 			conclusion: "success",
 			invocation: trustedInvocation,
 		});
-		expect(state.issues[0]?.body).toContain(failureMarker("CI", 42));
+		expect(state.issues[0]?.body).toContain(failureMarker("Old CI", 42));
 		expect(state.closed).toEqual([7]);
+	});
+
+	test("rejects adoption of legacy incidents sourced from PRs, forks, other branches or mismatched bodies", async () => {
+		const candidates: Array<{ metadata?: Partial<ObservedWorkflowRun>; issueBody?: string }> = [
+			{ metadata: { event: "pull_request" } },
+			{ metadata: { event: "pull_request_target" } },
+			{ metadata: { head_branch: "feature" } },
+			{ metadata: { head_repository: { full_name: "someone/fork" } } },
+			{ metadata: { repository: { full_name: "someone/fork" } } },
+			{ metadata: { conclusion: "success" } },
+			{ metadata: { conclusion: "cancelled" } },
+			{ metadata: { status: "in_progress" } },
+			{ metadata: { workflow_id: 99 } },
+			{ metadata: { name: "Another Workflow" } },
+			{ metadata: { html_url: "https://run/other" } },
+			{ issueBody: failureBody("Incorrect Name", "https://run/7", "7") },
+			{ issueBody: failureBody("CI", "https://run/other", "7") },
+		];
+		for (const candidate of candidates) {
+			const body = candidate.issueBody ?? failureBody("CI", "https://run/7", "7");
+			const state = fakeRepo([{ number: 7, body }], { conclusion: "success" });
+			const originalRest = state.repo.client.rest.bind(state.repo.client);
+			const reader = {
+				async rest<T>(method: string, path: string): Promise<T> {
+					if (path.endsWith("/actions/runs/7")) {
+						return {
+							...state.run,
+							id: 7,
+							run_number: 7,
+							html_url: "https://run/7",
+							conclusion: "failure",
+							...candidate.metadata,
+						} as T;
+					}
+					return originalRest<T>(method, path);
+				},
+			};
+			await observeWorkflowCompletion({
+				...options,
+				repo: state.repo,
+				reader,
+				conclusion: "success",
+				invocation: trustedInvocation,
+			});
+			expect(state.issues[0]?.body).toBe(body);
+			expect(state.closed).toEqual([]);
+		}
 	});
 
 	test("unverifiable legacy incidents remain untouched rather than being misattributed", async () => {
