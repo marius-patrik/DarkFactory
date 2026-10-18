@@ -373,11 +373,9 @@ export async function handlePrApproval(deps: HandlePrApprovalDeps): Promise<PrAp
 	// approved PR. Refuse to merge a stack parent as a side effect of approving
 	// its child. The caller can approve each PR independently after restacking.
 	if (!data.baseRefName) throw new Error(`Cannot merge PR #${pr}: missing base branch identity`);
-	const list = run(
-		["pr", "list", "--state", "open", "--limit", "1000", "--json", "number,headRefName"],
-		repo,
-		{ check: true },
-	);
+	const list = run(["pr", "list", "--state", "open", "--limit", "1000", "--json", "number,headRefName"], repo, {
+		check: true,
+	});
 	const open = JSON.parse(list.stdout) as { number: number; headRefName: string }[];
 	const parent = open.find((candidate) => candidate.number !== pr && candidate.headRefName === data.baseRefName);
 	if (parent) {

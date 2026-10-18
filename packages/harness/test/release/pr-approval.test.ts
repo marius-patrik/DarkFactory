@@ -474,7 +474,7 @@ describe("the board writes are awaited, which is the whole point of the async cl
 								isDraft: false,
 								reviewDecision: "APPROVED",
 								headRefOid: "0123456789abcdef0123456789abcdef01234567",
-					baseRefName: "main",
+								baseRefName: "main",
 							}
 						: { state: "MERGED" },
 				),
