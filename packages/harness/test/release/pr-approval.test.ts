@@ -577,5 +577,4 @@ describe("merged-close reconciliation awaits every remote board write", () => {
 				},
 			}),
 		).rejects.toThrow(/board write failed/u);
-	});
-}
+	});});
