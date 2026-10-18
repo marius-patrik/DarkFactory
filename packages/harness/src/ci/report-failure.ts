@@ -221,7 +221,7 @@ export async function observeWorkflowCompletion(options: ObservedCompletion): Pr
 		options.log,
 	);
 	if (action === "resolve") {
-		await resolveFailure(options.repo, latest.name, options.log, latest.workflow_id);
+		await resolveFailure(options.repo, latest.name, options.log, latest.workflow_id, String(latest.id));
 		return action;
 	}
 	const outcome = await reportFailure({
@@ -332,7 +332,10 @@ export async function closeDuplicateFailures(
 	const closed: number[] = [];
 	for (const number of matches) {
 		if (number === survivor) continue;
-		await repo.createComment(number, `Duplicate of #${survivor}; both runs filed before either saw the other.`);
+		const marker = `<!-- pipeline-failure-duplicate-of: ${survivor} -->`;
+		const comments = await repo.listComments(number);
+		if (!comments.some((comment) => (comment.body ?? "").includes(marker)))
+			await repo.createComment(number, `Duplicate of #${survivor}; both runs filed before either saw the other.\n${marker}`);
 		await repo.closeIssue(number);
 		log(`Closed duplicate #${number} of #${survivor}.`);
 		closed.push(number);
@@ -378,6 +381,7 @@ export async function resolveFailure(
 	workflow: string,
 	log: (message: string) => void = () => {},
 	workflowId?: number,
+	runId?: string,
 ): Promise<number | null> {
 	const marker = failureMarker(workflow, workflowId);
 	const matches = (await repo.listIssues({ state: "open", labels: [FAILURE_LABEL] }))
@@ -385,7 +389,10 @@ export async function resolveFailure(
 		.map((issue) => Number(issue.number))
 		.sort((a, b) => a - b);
 	for (const number of matches) {
-		await repo.createComment(number, `**${workflow}** succeeded again; closing.`);
+		const recoveryMarker = runId ? `<!-- pipeline-failure-recovery-run: ${runId} -->` : "";
+		const comments = recoveryMarker ? await repo.listComments(number) : [];
+		if (!comments.some((comment) => (comment.body ?? "").includes(recoveryMarker)))
+			await repo.createComment(number, `**${workflow}** succeeded again; closing.${recoveryMarker ? `\n${recoveryMarker}` : ""}`);
 		await repo.closeIssue(number);
 		log(`Closed #${number}: ${workflow} is green again.`);
 	}

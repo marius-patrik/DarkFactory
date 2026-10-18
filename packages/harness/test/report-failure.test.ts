@@ -193,6 +193,30 @@ describe("resolving a failure", () => {
 		expect(closed).toEqual([7]);
 		expect(comments[0]?.body).toContain("succeeded again");
 	});
+	test("retry after a failed close does not duplicate a recovery comment", async () => {
+		const state = fakeRepo([{ number: 7, body: failureMarker("CI", 42) }]);
+		const closeIssue = state.repo.closeIssue.bind(state.repo);
+		let failOnce = true;
+		const flaky = new Proxy(state.repo, {
+			get(target, property, receiver) {
+				if (property === "closeIssue")
+					return async (number: number) => {
+						if (failOnce) {
+							failOnce = false;
+							throw new Error("transient GitHub close error");
+						}
+						return closeIssue(number);
+					};
+				return Reflect.get(target, property, receiver);
+			},
+		});
+		await expect(resolveFailure(flaky, "CI", undefined, 42, "1")).rejects.toThrow("transient");
+		expect(await resolveFailure(flaky, "CI", undefined, 42, "1")).toBe(7);
+		expect(state.closed).toEqual([7]);
+		expect(state.comments).toHaveLength(1);
+		expect(state.comments[0]?.body).toContain("pipeline-failure-recovery-run: 1");
+	});
+
 	test("successful recovery closes every matching duplicate incident", async () => {
 		const state = fakeRepo([
 			{ number: 4, body: failureMarker("CI") },
