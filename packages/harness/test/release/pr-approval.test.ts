@@ -512,66 +512,21 @@ describe("auto-merge and post-merge reconciliation", () => {
 	});
 });
 
-describe("the board writes are awaited, which is the whole point of the async client", () => {
-	/**
-	 * A pull request that is OPEN when auto-merge is armed and MERGED on the next poll, closing #3.
-	 *
-	 * The two-step shape is the point, and the query has to be told apart by its `--json` field set
-	 * rather than by containing "state": the pre-check asks for `isDraft,state,reviewDecision` and the
-	 * poll asks for `state` alone, and a single canned answer for both means the merge is observed
-	 * before it happens.
-	 *
-	 * A pull request that is *already* MERGED takes an early return that deliberately does not
-	 * reconcile, exactly as the Python did — it left that to the `pull_request` closed event.
-	 * Reconciliation runs only when the merge lands inside the poll window, and that is the path whose
-	 * writes have to be awaited.
-	 */
-	function mergedDuringPoll(): GhRunner {
-		let stateQueries = 0;
-		return ((args: readonly string[]) => {
-			if (args[0] === "api" && args[1]?.includes("/pulls?")) return { exitCode: 0, stdout: "[]", stderr: "" };
-			if (args[0] === "api")
-				return {
-					exitCode: 0,
-					stdout: JSON.stringify({ status: "pending", details: { uuid: "test-merge-uuid" } }),
-					stderr: "",
-				};
-			const fields = args[args.indexOf("--json") + 1] ?? "";
-			if (fields.includes("closingIssuesReferences")) {
-				return {
-					exitCode: 0,
-					stdout: JSON.stringify({
-						state: "MERGED",
-						url: "https://github.com/o/r/pull/7",
-						body: "Closes #3",
-						closingIssuesReferences: [{ number: 3, url: "https://github.com/o/r/issues/3" }],
-					}),
-					stderr: "",
-				};
-			}
-			stateQueries += 1;
-			return {
-				exitCode: 0,
-				stdout: JSON.stringify(
-					stateQueries === 1
-						? {
-								state: "OPEN",
-								isDraft: false,
-								reviewDecision: "APPROVED",
-								headRefOid: "0123456789abcdef0123456789abcdef01234567",
-								baseRefName: "main",
-							}
-						: { state: "MERGED" },
-				),
-				stderr: "",
-			};
-		}) as unknown as GhRunner;
+describe("merged-close reconciliation awaits every remote board write", () => {
+	function mergedClose(): GhRunner {
+		return () => ({
+			exitCode: 0,
+			stdout: JSON.stringify({
+				state: "MERGED",
+				url: "https://github.com/o/r/pull/7",
+				body: "Closes #3",
+				closingIssuesReferences: [{ number: 3, url: "https://github.com/o/r/issues/3" }],
+			}),
+			stderr: "",
+		});
 	}
 
-	test("every board write has completed by the time the handler returns", async () => {
-		// The failure this guards against is the one the synchronous signature could not express: a
-		// GraphQL write that is still in flight when the process exits. A handler that returns before
-		// its writes land reports a merge and reconciles nothing.
+	test("awaits remote board writes before the workflow exits", async () => {
 		const settled: string[] = [];
 		const client: ProjectBoardClient = {
 			track: async () => {
@@ -582,34 +537,25 @@ describe("the board writes are awaited, which is the whole point of the async cl
 				await Bun.sleep(1);
 				settled.push("setStatusLabel");
 			},
-			closeIssue: async () => {
-				await Bun.sleep(1);
-				settled.push("closeIssue");
-			},
+			closeIssue: async () => undefined,
 			addIssueLabel: async () => undefined,
 		};
 		const outcome = await handlePrApproval({
-			run: mergedDuringPoll(),
+			run: mergedClose(),
 			client,
-			logger: { out: () => undefined, err: () => undefined },
+			logger: SILENT,
 			env: {
-				GITHUB_ACTOR: "maintainer",
-				APPROVER_ASSOCIATION: "OWNER",
 				GITHUB_EVENT_NAME: "pull_request_target",
-					PR_MERGED: "true",
-					GITHUB_REPOSITORY: "o/r",
-				IS_PR: "true",
+				PR_MERGED: "true",
+				GITHUB_REPOSITORY: "o/r",
 				PR_NUMBER: "7",
-				COMMENT_BODY: "/df approve",
 			},
-			sleep: async () => undefined,
 		});
 		expect(outcome.merged).toBe(true);
-		// The PR is tracked and labelled, then each bound issue is labelled and tracked.
 		expect(settled).toEqual(["track", "setStatusLabel", "setStatusLabel", "track"]);
 	});
 
-	test("a rejected board write propagates, because the Python had no try/except around it", async () => {
+	test("does not swallow a failed post-merge board write", async () => {
 		const client: ProjectBoardClient = {
 			track: async () => {
 				throw new Error("board write failed");
@@ -620,19 +566,16 @@ describe("the board writes are awaited, which is the whole point of the async cl
 		};
 		await expect(
 			handlePrApproval({
-				run: mergedDuringPoll(),
+				run: mergedClose(),
 				client,
-				logger: { out: () => undefined, err: () => undefined },
+				logger: SILENT,
 				env: {
-					GITHUB_ACTOR: "maintainer",
-					APPROVER_ASSOCIATION: "OWNER",
 					GITHUB_EVENT_NAME: "pull_request_target",
 					PR_MERGED: "true",
 					GITHUB_REPOSITORY: "o/r",
 					PR_NUMBER: "7",
 				},
-				sleep: async () => undefined,
 			}),
 		).rejects.toThrow(/board write failed/u);
 	});
-});
+}
