@@ -87,7 +87,8 @@ jobs:
         # not redden the workflow. A rejected board write propagates, as it did in the Python.
         run: bun "$DF_ROOT/packages/harness/src/board/pr-approval-main.ts"
         env:
-          GH_TOKEN: ${{ steps.app-token.outputs.token || secrets.GH_PROJECT_TOKEN || secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ steps.app-token.outputs.token || github.token }}
+          GH_PROJECT_TOKEN: ${{ secrets.GH_PROJECT_TOKEN }}
           # The proxy approval must come from github-actions[bot], which is neither the App nor
           # the maintainer. Whichever of the two opened the pull request is its author, and GitHub
           # rejects an author approving their own.
