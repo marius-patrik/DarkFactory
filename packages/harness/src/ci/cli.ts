@@ -76,7 +76,9 @@ export async function runCiCli(args: string[], context: CiCliContext = {}): Prom
 			try {
 				executions = await runDetectedQuality(repoPath, { capabilitiesRoot });
 			} catch (cause) {
-				error(cause instanceof Error ? cause.message : String(cause));
+				const message = cause instanceof Error ? cause.message : String(cause);
+				if (isJson) log(JSON.stringify({ error: message, executions: [] }, null, 2));
+				error(message);
 				return 1;
 			}
 			if (isJson) {

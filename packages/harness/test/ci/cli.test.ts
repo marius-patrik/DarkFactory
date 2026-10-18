@@ -92,7 +92,12 @@ describe("df ci CLI commands", () => {
 					error: (line) => errors.push(line),
 				});
 				expect(code).toBe(1);
-				expect(output).toEqual([]);
+				expect(output).toHaveLength(1);
+				const details = JSON.parse(output[0]!);
+				expect(details.executions).toEqual([]);
+				expect(details.error).toContain(
+					incomplete ? "Uncovered required quality actions" : "No executable quality actions",
+				);
 				expect(errors.join("\n")).toContain(
 					incomplete ? "Uncovered required quality actions" : "No executable quality actions",
 				);
