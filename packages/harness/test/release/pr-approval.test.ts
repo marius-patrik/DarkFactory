@@ -199,6 +199,50 @@ describe("the actor gate", () => {
 		expect(lines.join("\n")).toContain("approved by @author");
 	});
 
+	test("reconciles a merged-close webhook even if its actor is a bot", async () => {
+		const called: string[][] = [];
+		const run: GhRunner = (args) => {
+			called.push([...args]);
+			return {
+				exitCode: 0,
+				stdout: JSON.stringify({
+					state: "MERGED",
+					url: "https://github.com/o/r/pull/7",
+					body: "Closes #3 and fixes https://github.com/other/repo/issues/7",
+					closingIssuesReferences: [],
+				}),
+				stderr: "",
+			};
+		};
+		const board = boardSpy();
+		const result = await handlePrApproval({
+			run,
+			client: board,
+			logger: SILENT,
+			env: {
+				GITHUB_ACTOR: "github-actions[bot]",
+				GITHUB_EVENT_NAME: "pull_request_target",
+				PR_MERGED: "true",
+				PR_NUMBER: "7",
+				GITHUB_REPOSITORY: "o/r",
+			},
+		});
+		expect(result.merged).toBe(true);
+		expect(board.added).toEqual(["https://github.com/o/r/pull/7", "https://github.com/o/r/issues/3"]);
+		expect(called.filter((args) => args[0] === "issue" && args[1] === "close").map((args) => args[2])).toEqual(["3"]);
+	});
+
+	test("ignores closed PRs that were not merged", async () => {
+		const run: GhRunner = () => { throw new Error("unmerged close must not make GitHub requests"); };
+		const result = await handlePrApproval({
+			run,
+			client: boardSpy(),
+			logger: SILENT,
+			env: { GITHUB_EVENT_NAME: "pull_request_target", PR_MERGED: "false", PR_NUMBER: "7" },
+		});
+		expect(result.entered).toBe(false);
+	});
+
 	test("an event that is not an approval stops before any gh call", async () => {
 		const outcome = await handlePrApproval({
 			run: forbidden,
@@ -428,6 +472,32 @@ describe("auto-merge and post-merge reconciliation", () => {
 		await expect(handlePrApproval({ run, client: boardSpy(), logger: SILENT, env: openEnv })).rejects.toThrow(
 			"review required",
 		);
+	});
+
+	test("stops polling when the native merge API queues the PR", async () => {
+		const called: string[][] = [];
+		const run: GhRunner = (args) => {
+			called.push([...args]);
+			if (args[0] === "api" && args[1]?.includes("/pulls?")) return { exitCode: 0, stdout: "[]", stderr: "" };
+			if (args[0] === "api") return { exitCode: 0, stdout: JSON.stringify({ status: "enqueued" }), stderr: "" };
+			return {
+				exitCode: 0,
+				stdout: JSON.stringify({
+					state: "OPEN",
+					isDraft: false,
+					reviewDecision: "APPROVED",
+					headRefOid: "0123456789abcdef0123456789abcdef01234567",
+					baseRefName: "main",
+				}),
+				stderr: "",
+			};
+		};
+		const board = boardSpy();
+		const result = await handlePrApproval({ run, client: board, logger: SILENT, env: openEnv });
+		expect(result.reason).toBe("merge queued");
+		expect(result.merged).toBe(false);
+		expect(board.added).toEqual([]);
+		expect(called.filter((args) => args[0] === "api" && args.includes("PUT"))).toHaveLength(1);
 	});
 
 	test("reconciliation declines a pull request that is not merged", async () => {
