@@ -20,6 +20,7 @@ import type { GitHubRepository } from "../src/github/repository";
 interface FakeIssue {
 	number: number;
 	body?: string;
+	pull_request?: { url: string };
 }
 
 /** Minimal repository stand-in recording issue writes and authenticated Actions reads. */
@@ -70,7 +71,7 @@ function fakeRepo(
 		async listIssues() {
 			return issues
 				.filter((issue) => !closed.includes(issue.number))
-				.map((issue) => ({ number: issue.number, body: issue.body }));
+				.map((issue) => ({ ...issue }));
 		},
 		async createIssue(input: { title: string; body?: string; labels?: string[] }) {
 			created.push(input);
@@ -108,6 +109,22 @@ describe("finding an open failure", () => {
 		const { repo } = fakeRepo([{ number: 7, body: "retitled by a human\n\n" + failureMarker("CI") }]);
 		expect(await findOpenFailure(repo, "CI")).toBe(7);
 	});
+	test("excludes pull requests from incident issue lookup and mutation", async () => {
+		const state = fakeRepo([
+			{ number: 7, body: failureMarker("CI"), pull_request: { url: "https://api.github.com/repos/owner/repo/pulls/7" } },
+			{ number: 8, body: failureMarker("CI") },
+		]);
+		expect(await findOpenFailure(state.repo, "CI")).toBe(8);
+		expect(await closeDuplicateFailures(state.repo, "CI", 8)).toEqual([]);
+		expect(await resolveFailure(state.repo, "CI")).toBe(8);
+		expect(state.closed).toEqual([8]);
+		const onlyPr = fakeRepo([
+			{ number: 7, body: failureMarker("CI"), pull_request: { url: "https://api.github.com/repos/owner/repo/pulls/7" } },
+		]);
+		expect((await reportFailure({ ...options, repo: onlyPr.repo })).number).toBe(101);
+		expect(onlyPr.closed).toEqual([]);
+	});
+
 	test("ignores an issue for a different workflow", async () => {
 		const { repo } = fakeRepo([{ number: 7, body: failureMarker("Release") }]);
 		expect(await findOpenFailure(repo, "CI")).toBeNull();

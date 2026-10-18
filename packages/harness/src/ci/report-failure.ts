@@ -232,7 +232,7 @@ export function failureBody(workflow: string, runUrl: string, runId: string): st
 export async function findOpenFailure(repo: GitHubRepository, workflow: string): Promise<number | null> {
 	const marker = failureMarker(workflow);
 	const issues = await repo.listIssues({ state: "open", labels: [FAILURE_LABEL] });
-	const match = issues.find((issue) => (issue.body ?? "").includes(marker));
+	const match = issues.find((issue) => !("pull_request" in issue) && (issue.body ?? "").includes(marker));
 	return match ? Number(match.number) : null;
 }
 
@@ -248,7 +248,7 @@ export async function closeDuplicateFailures(
 ): Promise<number[]> {
 	const marker = failureMarker(workflow);
 	const matches = (await repo.listIssues({ state: "open", labels: [FAILURE_LABEL] }))
-		.filter((issue) => (issue.body ?? "").includes(marker))
+		.filter((issue) => !("pull_request" in issue) && (issue.body ?? "").includes(marker))
 		.map((issue) => Number(issue.number))
 		.filter((number) => Number.isSafeInteger(number))
 		.sort((a, b) => a - b);
@@ -304,7 +304,7 @@ export async function resolveFailure(
 ): Promise<number | null> {
 	const marker = failureMarker(workflow);
 	const matches = (await repo.listIssues({ state: "open", labels: [FAILURE_LABEL] }))
-		.filter((issue) => (issue.body ?? "").includes(marker))
+		.filter((issue) => !("pull_request" in issue) && (issue.body ?? "").includes(marker))
 		.map((issue) => Number(issue.number))
 		.sort((a, b) => a - b);
 	for (const number of matches) {
