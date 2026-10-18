@@ -19,7 +19,8 @@ export const FAILURE_LABEL = "pipeline-failure";
  * Identity lives in the body rather than the title so that renaming an issue by hand — or an agent
  * rewording it — does not spawn a second issue for the same failing workflow.
  */
-export const failureMarker = (workflow: string): string => `<!-- pipeline-failure: ${workflow} -->`;
+export const failureMarker = (workflow: string, workflowId?: number): string =>
+	workflowId === undefined ? `<!-- pipeline-failure: ${workflow} -->` : `<!-- pipeline-failure-workflow-id: ${workflowId} -->`;
 interface ReportFailureOptions {
 	/** Repository the issue is opened in. */
 	repo: GitHubRepository;
@@ -29,6 +30,8 @@ interface ReportFailureOptions {
 	runUrl: string;
 	/** Identifier of the failing run. */
 	runId: string;
+	/** Verified, stable GitHub workflow ID; omitted only by legacy direct callers. */
+	workflowId?: number;
 	/** Notice sink for duplicates closed and other progress. */
 	log?: (message: string) => void;
 }
@@ -206,8 +209,11 @@ export async function observeWorkflowCompletion(options: ObservedCompletion): Pr
 	const latest = await latestActionableWorkflowRun(options.repo, options.reader ?? options.repo.client, observed);
 	if (!latest) return "ignore";
 	const action = failureActionForConclusion(latest.conclusion);
+	// Existing active incident issues used display names as keys. Verify their
+	// original Actions run identities before giving them durable workflow IDs.
+	await migrateLegacyFailureIssues(options.repo, latest.workflow_id, options.reader ?? options.repo.client, options.log);
 	if (action === "resolve") {
-		await resolveFailure(options.repo, latest.name, options.log);
+		await resolveFailure(options.repo, latest.name, options.log, latest.workflow_id);
 		return action;
 	}
 	const outcome = await reportFailure({
@@ -215,15 +221,62 @@ export async function observeWorkflowCompletion(options: ObservedCompletion): Pr
 		workflow: latest.name,
 		runUrl: latest.html_url,
 		runId: String(latest.id),
+		workflowId: latest.workflow_id,
 	});
 	if (outcome.number === null) throw new Error(`could not file a failure issue for ${latest.name}`);
 	return action;
 }
 
+/**
+ * Migrate pre-ID operational incidents only when their stored first run can
+ * be independently tied to this exact workflow ID. Name-only matching is not
+ * safe: unrelated workflow files can share a display name, and names change.
+ */
+export async function migrateLegacyFailureIssues(
+	repo: GitHubRepository,
+	workflowId: number,
+	reader: Pick<GitHubClient, "rest">,
+	log: (message: string) => void = () => {},
+): Promise<void> {
+	const issues = await repo.listIssues({ state: "open", labels: [FAILURE_LABEL] });
+	for (const issue of issues) {
+		const body = issue.body ?? "";
+		if (
+			"pull_request" in issue ||
+			!body.includes("<!-- pipeline-failure: ") ||
+			body.includes("<!-- pipeline-failure-workflow-id: ")
+		) continue;
+		const id = body.match(/^- Run id: `([1-9]\d*)`$/mu)?.[1];
+		if (!id || !Number.isSafeInteger(Number(id))) {
+			log(`Unverifiable legacy incident #${issue.number}; leaving untouched.`);
+			continue;
+		}
+		let original: ObservedWorkflowRun;
+		try {
+			original = await reader.rest<ObservedWorkflowRun>(
+				"GET",
+				`/repos/${encodeURIComponent(repo.owner)}/${encodeURIComponent(repo.repo)}/actions/runs/${id}`,
+			);
+		} catch {
+			log(`Cannot authenticate legacy incident #${issue.number} run ${id}; leaving untouched.`);
+			continue;
+		}
+		if (
+			String(original.id) !== id ||
+			original.workflow_id !== workflowId ||
+			original.repository?.full_name?.toLowerCase() !== repo.slug.toLowerCase()
+		) continue;
+		await repo.updateIssue(Number(issue.number), {
+			body: `${failureMarker(original.name, workflowId)}\n${body}`,
+		});
+		log(`Assigned verified workflow identity ${workflowId} to legacy incident #${issue.number}.`);
+	}
+}
+
 /** Builds the body of a failure issue, carrying the marker that identifies its workflow. */
-export function failureBody(workflow: string, runUrl: string, runId: string): string {
+export function failureBody(workflow: string, runUrl: string, runId: string, workflowId?: number): string {
 	return (
-		`${failureMarker(workflow)}\n\n` +
+		`${failureMarker(workflow, workflowId)}\n\n` +
 		`The **${workflow}** workflow failed.\n\n` +
 		`- Run: ${runUrl}\n` +
 		`- Run id: \`${runId}\`\n\n` +
@@ -237,8 +290,8 @@ export function failureBody(workflow: string, runUrl: string, runId: string): st
  *
  * The marker in the body is the identity, not the title, so a retitled issue is still found.
  */
-export async function findOpenFailure(repo: GitHubRepository, workflow: string): Promise<number | null> {
-	const marker = failureMarker(workflow);
+export async function findOpenFailure(repo: GitHubRepository, workflow: string, workflowId?: number): Promise<number | null> {
+	const marker = failureMarker(workflow, workflowId);
 	const issues = await repo.listIssues({ state: "open", labels: [FAILURE_LABEL] });
 	const match = issues.find((issue) => !("pull_request" in issue) && (issue.body ?? "").includes(marker));
 	return match ? Number(match.number) : null;
@@ -253,8 +306,9 @@ export async function closeDuplicateFailures(
 	workflow: string,
 	keep: number,
 	log: (message: string) => void = () => {},
+	workflowId?: number,
 ): Promise<number[]> {
-	const marker = failureMarker(workflow);
+	const marker = failureMarker(workflow, workflowId);
 	const matches = (await repo.listIssues({ state: "open", labels: [FAILURE_LABEL] }))
 		.filter((issue) => !("pull_request" in issue) && (issue.body ?? "").includes(marker))
 		.map((issue) => Number(issue.number))
@@ -274,12 +328,12 @@ export async function closeDuplicateFailures(
 
 /** Opens or updates the issue for a failing workflow, then reconciles any duplicate. */
 export async function reportFailure(options: ReportFailureOptions): Promise<FailureOutcome> {
-	const { repo, workflow, runUrl, runId, log = () => {} } = options;
+	const { repo, workflow, runUrl, runId, workflowId, log = () => {} } = options;
 
-	const existing = await findOpenFailure(repo, workflow);
+	const existing = await findOpenFailure(repo, workflow, workflowId);
 	if (existing !== null) {
-		const duplicatesClosed = await closeDuplicateFailures(repo, workflow, existing, log);
-		const survivor = (await findOpenFailure(repo, workflow)) ?? existing;
+		const duplicatesClosed = await closeDuplicateFailures(repo, workflow, existing, log, workflowId);
+		const survivor = (await findOpenFailure(repo, workflow, workflowId)) ?? existing;
 		const marker = `<!-- pipeline-failure-run: ${runId} -->`;
 		const issue = await repo.getIssue(survivor);
 		const initialRun = `- Run id: \`${runId}\``;
@@ -294,14 +348,14 @@ export async function reportFailure(options: ReportFailureOptions): Promise<Fail
 
 	const issue = await repo.createIssue({
 		title: `Pipeline failure: ${workflow}`,
-		body: failureBody(workflow, runUrl, runId),
+		body: failureBody(workflow, runUrl, runId, workflowId),
 		labels: [FAILURE_LABEL],
 	});
 	const number = Number(issue.number);
 	log(`Opened #${number} for ${workflow}.`);
 	// Another run may have filed between the check above and this create.
-	const duplicatesClosed = await closeDuplicateFailures(repo, workflow, number, log);
-	return { number: (await findOpenFailure(repo, workflow)) ?? number, duplicatesClosed };
+	const duplicatesClosed = await closeDuplicateFailures(repo, workflow, number, log, workflowId);
+	return { number: (await findOpenFailure(repo, workflow, workflowId)) ?? number, duplicatesClosed };
 }
 
 /** Closes the failure issue for a workflow that has succeeded again. */
@@ -309,8 +363,9 @@ export async function resolveFailure(
 	repo: GitHubRepository,
 	workflow: string,
 	log: (message: string) => void = () => {},
+	workflowId?: number,
 ): Promise<number | null> {
-	const marker = failureMarker(workflow);
+	const marker = failureMarker(workflow, workflowId);
 	const matches = (await repo.listIssues({ state: "open", labels: [FAILURE_LABEL] }))
 		.filter((issue) => !("pull_request" in issue) && (issue.body ?? "").includes(marker))
 		.map((issue) => Number(issue.number))

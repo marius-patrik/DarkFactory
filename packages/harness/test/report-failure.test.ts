@@ -65,6 +65,12 @@ function fakeRepo(
 		async getIssue(number: number) {
 			return issues.find((issue) => issue.number === number);
 		},
+		async updateIssue(number: number, input: { body: string }) {
+			const issue = issues.find((item) => item.number === number);
+			if (!issue) throw new Error(`Unknown issue #${number}`);
+			issue.body = input.body;
+			return issue;
+		},
 		async listComments(number: number) {
 			return comments.filter((comment) => comment.issue === number);
 		},
@@ -388,9 +394,9 @@ describe("observed workflow result drives issue mutations", () => {
 			await observeWorkflowCompletion({ ...options, repo, conclusion: "failure", invocation: trustedInvocation }),
 		).toBe("report");
 		expect(created).toHaveLength(1);
-		expect(created[0]?.body).toContain(failureMarker("CI"));
+		expect(created[0]?.body).toContain(failureMarker("CI", 42));
 		// A legitimate subsequent completed success is verified through the Actions API.
-		const successRepo = fakeRepo([{ number: 101, body: failureMarker("CI") }], { conclusion: "success" });
+		const successRepo = fakeRepo([{ number: 101, body: failureMarker("CI", 42) }], { conclusion: "success" });
 		expect(
 			await observeWorkflowCompletion({
 				...options,
@@ -435,11 +441,52 @@ describe("observed workflow result drives issue mutations", () => {
 	});
 });
 
+describe("durable workflow identity and legacy reconciliation", () => {
+	test("two workflows with the same display name never share or close each others incidents", async () => {
+		const state = fakeRepo([
+			{ number: 7, body: failureMarker("CI", 42) },
+			{ number: 8, body: failureMarker("CI", 99) },
+		], { conclusion: "success" });
+		await observeWorkflowCompletion({
+			...options,
+			repo: state.repo,
+			conclusion: "success",
+			invocation: trustedInvocation,
+		});
+		expect(state.closed).toEqual([7]);
+	});
+
+	test("a legacy incident is migrated only after verifying the original run's workflow ID", async () => {
+		const legacy = failureBody("Old CI", "https://run/1", "1");
+		const state = fakeRepo([{ number: 7, body: legacy }], { name: "CI", conclusion: "success" });
+		await observeWorkflowCompletion({
+			...options,
+			repo: state.repo,
+			conclusion: "success",
+			invocation: trustedInvocation,
+		});
+		expect(state.issues[0]?.body).toContain(failureMarker("CI", 42));
+		expect(state.closed).toEqual([7]);
+	});
+
+	test("unverifiable legacy incidents remain untouched rather than being misattributed", async () => {
+		const state = fakeRepo([{ number: 7, body: failureMarker("CI") }], { conclusion: "success" });
+		await observeWorkflowCompletion({
+			...options,
+			repo: state.repo,
+			conclusion: "success",
+			invocation: trustedInvocation,
+		});
+		expect(state.closed).toEqual([]);
+		expect(state.issues[0]?.body).toBe(failureMarker("CI"));
+	});
+});
+
 describe("ordered incident observations", () => {
 	test("a late old failure reconciles the newer successful run", async () => {
 		const seed = fakeRepo();
 		const newest = { ...seed.run, id: 2, run_number: 2, html_url: "https://run/2", conclusion: "success" };
-		const target = fakeRepo([{ number: 7, body: failureMarker("CI") }], {}, [newest, seed.run]);
+		const target = fakeRepo([{ number: 7, body: failureMarker("CI", 42) }], {}, [newest, seed.run]);
 		expect(
 			await observeWorkflowCompletion({
 				...options,
