@@ -246,7 +246,8 @@ describe("workflow conclusion classification", () => {
 			["cancelled", "ignore"],
 			["skipped", "ignore"],
 			["neutral", "ignore"],
-			["timed_out", "ignore"],
+			["timed_out", "report"],
+			["startup_failure", "report"],
 			["action_required", "ignore"],
 			["stale", "ignore"],
 			["", "ignore"],
@@ -411,8 +412,23 @@ describe("observed workflow result drives issue mutations", () => {
 		expect(successRepo.comments.some((c) => c.body.includes("succeeded again"))).toBe(true);
 	});
 
+	test("a timed-out workflow and a runner startup failure open operational incidents", async () => {
+		for (const conclusion of ["timed_out", "startup_failure"]) {
+			const state = fakeRepo([], { conclusion });
+			expect(
+				await observeWorkflowCompletion({
+					...options,
+					repo: state.repo,
+					conclusion,
+					invocation: trustedInvocation,
+				}),
+			).toBe("report");
+			expect(state.created).toHaveLength(1);
+		}
+	});
+
 	test("non-recovery conclusions never query or mutate the repository", async () => {
-		for (const conclusion of ["cancelled", "timed_out", "skipped", "neutral", "stale", "action_required"]) {
+		for (const conclusion of ["cancelled", "skipped", "neutral", "stale", "action_required"]) {
 			const { repo, created, comments, closed } = fakeRepo([{ number: 7, body: failureMarker("CI") }], {
 				conclusion,
 			});

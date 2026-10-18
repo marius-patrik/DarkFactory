@@ -3,10 +3,11 @@ import type { GitHubRepository } from "../github/repository";
 
 /**
  * An incident is resolved only by an observed successful workflow run.
- * Cancellation, timeout, neutral and skipped outcomes are not recovery.
+ * Cancellation, neutral and skipped outcomes are not recovery. Timeout and
+ * runner startup failure are operational failures requiring incident reporting.
  */
 export function failureActionForConclusion(conclusion: string | null | undefined): "report" | "resolve" | "ignore" {
-	if (conclusion === "failure") return "report";
+	if (conclusion === "failure" || conclusion === "timed_out" || conclusion === "startup_failure") return "report";
 	if (conclusion === "success") return "resolve";
 	return "ignore";
 }
