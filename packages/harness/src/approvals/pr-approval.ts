@@ -375,11 +375,17 @@ export async function handlePrApproval(deps: HandlePrApprovalDeps): Promise<PrAp
 	// approved PR. Refuse to merge a stack parent as a side effect of approving
 	// its child. The caller can approve each PR independently after restacking.
 	if (!data.baseRefName) throw new Error(`Cannot merge PR #${pr}: missing base branch identity`);
-	const list = run(["pr", "list", "--state", "open", "--limit", "1000", "--json", "number,headRefName"], repo, {
+	const headFilter = encodeURIComponent(`${repo.split("/")[0]}:${data.baseRefName}`);
+	const list = run(["api", `repos/${repo}/pulls?state=open&head=${headFilter}&per_page=100`], repo, {
 		check: true,
 	});
-	const open = JSON.parse(list.stdout) as { number: number; headRefName: string }[];
-	const parent = open.find((candidate) => candidate.number !== pr && candidate.headRefName === data.baseRefName);
+	const open = JSON.parse(list.stdout) as { number: number; head?: { ref?: string; repo?: { full_name?: string } } }[];
+	const parent = open.find(
+		(candidate) =>
+			candidate.number !== pr &&
+			candidate.head?.ref === data.baseRefName &&
+			candidate.head?.repo?.full_name?.toLowerCase() === repo.toLowerCase(),
+	);
 	if (parent) {
 		logger.out(`PR #${pr} has open downstack parent #${parent.number}; defer merge until that PR lands.`);
 		return { entered: true, reason: `unmerged downstack PR #${parent.number}`, merged: false };

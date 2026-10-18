@@ -256,7 +256,7 @@ describe("auto-merge and post-merge reconciliation", () => {
 		let views = 0;
 		const run: GhRunner = (args) => {
 			issued.push([...args]);
-			if (args[0] === "pr" && args[1] === "list") return { exitCode: 0, stdout: "[]", stderr: "" };
+			if (args[0] === "api" && args[1]?.includes("/pulls?")) return { exitCode: 0, stdout: "[]", stderr: "" };
 			if (args[0] === "api")
 				return {
 					exitCode: 0,
@@ -314,7 +314,7 @@ describe("auto-merge and post-merge reconciliation", () => {
 
 	test("reports honestly when the merge has not landed inside the poll window", async () => {
 		const run: GhRunner = (args) => {
-			if (args[0] === "pr" && args[1] === "list") return { exitCode: 0, stdout: "[]", stderr: "" };
+			if (args[0] === "api" && args[1]?.includes("/pulls?")) return { exitCode: 0, stdout: "[]", stderr: "" };
 			if (args[0] === "api")
 				return {
 					exitCode: 0,
@@ -353,8 +353,12 @@ describe("auto-merge and post-merge reconciliation", () => {
 		const called: string[][] = [];
 		const run: GhRunner = (args) => {
 			called.push([...args]);
-			if (args[0] === "pr" && args[1] === "list")
-				return { exitCode: 0, stdout: JSON.stringify([{ number: 41, headRefName: "feature/parent" }]), stderr: "" };
+			if (args[0] === "api" && args[1]?.includes("/pulls?"))
+				return {
+					exitCode: 0,
+					stdout: JSON.stringify([{ number: 41, head: { ref: "feature/parent", repo: { full_name: "o/r" } } }]),
+					stderr: "",
+				};
 			return {
 				exitCode: 0,
 				stdout: JSON.stringify({
@@ -375,7 +379,7 @@ describe("auto-merge and post-merge reconciliation", () => {
 
 	test("fails loudly if GitHub rejects a stacked merge instead of claiming auto-merge is armed", async () => {
 		const run: GhRunner = (args) => {
-			if (args[0] === "pr" && args[1] === "list") return { exitCode: 0, stdout: "[]", stderr: "" };
+			if (args[0] === "api" && args[1]?.includes("/pulls?")) return { exitCode: 0, stdout: "[]", stderr: "" };
 			if (args[0] === "api") return { exitCode: 1, stdout: "", stderr: "merge denied" };
 			return {
 				exitCode: 0,
@@ -402,7 +406,7 @@ describe("auto-merge and post-merge reconciliation", () => {
 					stdout: JSON.stringify({ status: "pending", details: { uuid: "test-merge-uuid" } }),
 					stderr: "",
 				};
-			if (args[0] === "pr" && args[1] === "list") return { exitCode: 0, stdout: "[]", stderr: "" };
+			if (args[0] === "api" && args[1]?.includes("/pulls?")) return { exitCode: 0, stdout: "[]", stderr: "" };
 			if (args[0] === "api")
 				return {
 					exitCode: 0,
@@ -455,7 +459,7 @@ describe("the board writes are awaited, which is the whole point of the async cl
 	function mergedDuringPoll(): GhRunner {
 		let stateQueries = 0;
 		return ((args: readonly string[]) => {
-			if (args[0] === "pr" && args[1] === "list") return { exitCode: 0, stdout: "[]", stderr: "" };
+			if (args[0] === "api" && args[1]?.includes("/pulls?")) return { exitCode: 0, stdout: "[]", stderr: "" };
 			if (args[0] === "api")
 				return {
 					exitCode: 0,
