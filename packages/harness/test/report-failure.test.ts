@@ -69,9 +69,7 @@ function fakeRepo(
 			return comments.filter((comment) => comment.issue === number);
 		},
 		async listIssues() {
-			return issues
-				.filter((issue) => !closed.includes(issue.number))
-				.map((issue) => ({ ...issue }));
+			return issues.filter((issue) => !closed.includes(issue.number)).map((issue) => ({ ...issue }));
 		},
 		async createIssue(input: { title: string; body?: string; labels?: string[] }) {
 			created.push(input);
@@ -111,7 +109,11 @@ describe("finding an open failure", () => {
 	});
 	test("excludes pull requests from incident issue lookup and mutation", async () => {
 		const state = fakeRepo([
-			{ number: 7, body: failureMarker("CI"), pull_request: { url: "https://api.github.com/repos/owner/repo/pulls/7" } },
+			{
+				number: 7,
+				body: failureMarker("CI"),
+				pull_request: { url: "https://api.github.com/repos/owner/repo/pulls/7" },
+			},
 			{ number: 8, body: failureMarker("CI") },
 		]);
 		expect(await findOpenFailure(state.repo, "CI")).toBe(8);
@@ -119,7 +121,11 @@ describe("finding an open failure", () => {
 		expect(await resolveFailure(state.repo, "CI")).toBe(8);
 		expect(state.closed).toEqual([8]);
 		const onlyPr = fakeRepo([
-			{ number: 7, body: failureMarker("CI"), pull_request: { url: "https://api.github.com/repos/owner/repo/pulls/7" } },
+			{
+				number: 7,
+				body: failureMarker("CI"),
+				pull_request: { url: "https://api.github.com/repos/owner/repo/pulls/7" },
+			},
 		]);
 		expect((await reportFailure({ ...options, repo: onlyPr.repo })).number).toBe(101);
 		expect(onlyPr.closed).toEqual([]);
