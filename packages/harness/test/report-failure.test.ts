@@ -433,6 +433,32 @@ describe("ordered incident observations", () => {
 });
 
 describe("eventual consistency of authenticated Actions listings", () => {
+	test("retries an eventually consistent listing before filing the verified failure", async () => {
+		const state = fakeRepo();
+		const originalRest = state.repo.client.rest.bind(state.repo.client);
+		let listingReads = 0;
+		const reader = {
+			async rest<T>(method: string, path: string): Promise<T> {
+				if (path.startsWith("/repos/owner/repo/actions/workflows/42/runs?")) {
+					listingReads++;
+					return { workflow_runs: listingReads === 1 ? [] : [state.run] } as T;
+				}
+				return originalRest<T>(method, path);
+			},
+		};
+		expect(
+			await observeWorkflowCompletion({
+				...options,
+				repo: state.repo,
+				reader,
+				conclusion: "failure",
+				invocation: trustedInvocation,
+			}),
+		).toBe("report");
+		expect(listingReads).toBe(2);
+		expect(state.created).toHaveLength(1);
+	});
+
 	test("missing actionable run evidence never silently drops a genuine failure", async () => {
 		const state = fakeRepo([], {}, []);
 		await expect(

@@ -147,35 +147,46 @@ export async function latestActionableWorkflowRun(
 	if (repository.full_name?.toLowerCase() !== repo.slug.toLowerCase() || !repository.default_branch)
 		throw new Error("Cannot determine authenticated default-branch incident state");
 	const query = new URLSearchParams({ branch: repository.default_branch, status: "completed", per_page: "100" });
-	const page = await reader.rest<{ workflow_runs: ObservedWorkflowRun[] }>(
-		"GET",
-		`${path}/actions/workflows/${observed.workflow_id}/runs?${query}`,
+	// A completed run can be visible by ID before the Actions list catches up.
+	// A single stale read would lose the incident permanently when no later workflow
+	// completes: the observer itself is not in the workflow_run trigger list.
+	// Retry the *read* with bounded backoff; never mutate on stale evidence.
+	let lastReadHadCandidate = false;
+	for (let attempt = 0; attempt < 5; attempt++) {
+		const page = await reader.rest<{ workflow_runs: ObservedWorkflowRun[] }>(
+			"GET",
+			`${path}/actions/workflows/${observed.workflow_id}/runs?${query}`,
+		);
+		if (!Array.isArray(page.workflow_runs)) throw new Error("Actions response omitted workflow runs");
+		const slug = repo.slug.toLowerCase();
+		const candidates = page.workflow_runs.filter(
+			(run) =>
+				run.workflow_id === observed.workflow_id &&
+				Number.isSafeInteger(run.id) &&
+				Number.isSafeInteger(run.run_number) &&
+				run.run_number > 0 &&
+				run.status === "completed" &&
+				run.head_branch === repository.default_branch &&
+				run.repository?.full_name?.toLowerCase() === slug &&
+				run.head_repository?.full_name?.toLowerCase() === slug &&
+				incidentRunEventAllowed(run.event) &&
+				failureActionForConclusion(run.conclusion) !== "ignore",
+		);
+		candidates.sort((left, right) => right.run_number - left.run_number || right.id - left.id);
+		const latest = candidates[0] ?? null;
+		const observedActionable = failureActionForConclusion(observed.conclusion) !== "ignore";
+		lastReadHadCandidate = latest !== null;
+		// A known completed run newer than the listing must not be superseded by
+		// older state. Non-actionable runs are intentionally ignored.
+		const stale = observedActionable && (!latest || observed.run_number > latest.run_number);
+		if (!stale) return latest;
+		if (attempt < 4) await Bun.sleep(250 * 2 ** attempt);
+	}
+	throw new Error(
+		lastReadHadCandidate
+			? "Actions workflow list is stale relative to the observed completed run after retries"
+			: "Actions workflow list omitted an authenticated completed actionable run after retries",
 	);
-	if (!Array.isArray(page.workflow_runs)) throw new Error("Actions response omitted workflow runs");
-	const slug = repo.slug.toLowerCase();
-	const candidates = page.workflow_runs.filter(
-		(run) =>
-			run.workflow_id === observed.workflow_id &&
-			Number.isSafeInteger(run.id) &&
-			Number.isSafeInteger(run.run_number) &&
-			run.run_number > 0 &&
-			run.status === "completed" &&
-			run.head_branch === repository.default_branch &&
-			run.repository?.full_name?.toLowerCase() === slug &&
-			run.head_repository?.full_name?.toLowerCase() === slug &&
-			incidentRunEventAllowed(run.event) &&
-			failureActionForConclusion(run.conclusion) !== "ignore",
-	);
-	candidates.sort((left, right) => right.run_number - left.run_number || right.id - left.id);
-	const latest = candidates[0] ?? null;
-	if (!latest && failureActionForConclusion(observed.conclusion) !== "ignore")
-		throw new Error("Actions workflow list omitted an authenticated completed actionable run");
-	// A lagging list response is not evidence that a known completed run is old.
-	// Fail closed rather than applying an older result when the observed run
-	// has a later run_number than everything the listing currently returned.
-	if (latest && observed.run_number > latest.run_number && failureActionForConclusion(observed.conclusion) !== "ignore")
-		throw new Error("Actions workflow list is stale relative to the observed completed run");
-	return latest;
 }
 
 /**
