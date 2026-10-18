@@ -335,7 +335,10 @@ export async function closeDuplicateFailures(
 		const marker = `<!-- pipeline-failure-duplicate-of: ${survivor} -->`;
 		const comments = await repo.listComments(number);
 		if (!comments.some((comment) => (comment.body ?? "").includes(marker)))
-			await repo.createComment(number, `Duplicate of #${survivor}; both runs filed before either saw the other.\n${marker}`);
+			await repo.createComment(
+				number,
+				`Duplicate of #${survivor}; both runs filed before either saw the other.\n${marker}`,
+			);
 		await repo.closeIssue(number);
 		log(`Closed duplicate #${number} of #${survivor}.`);
 		closed.push(number);
@@ -392,7 +395,10 @@ export async function resolveFailure(
 		const recoveryMarker = runId ? `<!-- pipeline-failure-recovery-run: ${runId} -->` : "";
 		const comments = recoveryMarker ? await repo.listComments(number) : [];
 		if (!comments.some((comment) => (comment.body ?? "").includes(recoveryMarker)))
-			await repo.createComment(number, `**${workflow}** succeeded again; closing.${recoveryMarker ? `\n${recoveryMarker}` : ""}`);
+			await repo.createComment(
+				number,
+				`**${workflow}** succeeded again; closing.${recoveryMarker ? `\n${recoveryMarker}` : ""}`,
+			);
 		await repo.closeIssue(number);
 		log(`Closed #${number}: ${workflow} is green again.`);
 	}
