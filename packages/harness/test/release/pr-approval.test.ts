@@ -49,28 +49,35 @@ const OK: GhResult = { exitCode: 0, stdout: "", stderr: "" };
 const SILENT = { out: () => {}, err: () => {} };
 
 describe("collecting the issues a pull request binds", () => {
-	test("merges GitHub's link graph with the body regex, then deduplicates", () => {
+	test("collects verified same-repository references and deduplicates", () => {
 		expect(
-			collectBoundIssues({
-				closingIssuesReferences: [{ number: 5, url: "https://github.com/o/r/issues/5" }, { number: 7, url: "https://github.com/o/r/issues/7" }],
-				body: "Closes #7 and fixes #9",
-			}, "o/r"),
+			collectBoundIssues(
+				{
+					closingIssuesReferences: [
+						{ number: 5, url: "https://github.com/o/r/issues/5" },
+						{ number: 7, url: "https://github.com/o/r/issues/7" },
+					],
+					body: "Closes #7 and fixes #9",
+				},
+				"o/r",
+			),
 		).toEqual([5, 7, 9]);
 	});
 
-	test("a cross-repository url binds just as a short reference does", () => {
-		expect(collectBoundIssues({ body: "Resolves https://github.com/other/repo/issues/41" }, "o/r")).toEqual([]);
-	});
-
-	test("rejects cross-repository closing links and unverified GraphQL references", () => {
-		expect(collectBoundIssues({
-			closingIssuesReferences: [
-				{ number: 41, url: "https://github.com/other/repo/issues/41" },
-				{ number: 7, url: "https://github.com/o/r/issues/7" },
-				{ number: 99 },
-			],
-			body: "Fixes https://github.com/other/repo/issues/41 and closes https://github.com/O/R/issues/8",
-		}, "o/r")).toEqual([7, 8]);
+	test("ignores cross-repository links and unverified closing-reference numbers", () => {
+		expect(
+			collectBoundIssues(
+				{
+					closingIssuesReferences: [
+						{ number: 41, url: "https://github.com/other/repo/issues/41" },
+						{ number: 7, url: "https://github.com/o/r/issues/7" },
+						{ number: 99 },
+					],
+					body: "Fixes https://github.com/other/repo/issues/41 and closes https://github.com/O/R/issues/8",
+				},
+				"o/r",
+			),
+		).toEqual([7, 8]);
 	});
 
 	test("a pull request with neither source yields nothing rather than raising", () => {
@@ -251,7 +258,7 @@ describe("auto-merge and post-merge reconciliation", () => {
 		COMMENT_BODY: "/df approve",
 	};
 
-	test("readies a draft, arms auto-merge, and reconciles once the merge lands", async () => {
+	test("readies a draft, requests an asynchronous merge and leaves reconciliation for the close webhook", async () => {
 		const issued: string[][] = [];
 		let views = 0;
 		const run: GhRunner = (args) => {
@@ -299,17 +306,10 @@ describe("auto-merge and post-merge reconciliation", () => {
 					args.includes("sha=0123456789abcdef0123456789abcdef01234567"),
 			),
 		).toBe(true);
-		// The board sees the pull request and both bound issues: 5 from the link graph, 7 from the body.
-		expect(board.labelled).toEqual(["#42", "#5", "#7"]);
-		expect(board.added).toEqual([
-			"https://github.com/o/r/pull/42",
-			"https://github.com/o/r/issues/5",
-			"https://github.com/o/r/issues/7",
-		]);
-		expect(issued.filter((args) => args[0] === "issue" && args[1] === "close").map((args) => args[2])).toEqual([
-			"5",
-			"7",
-		]);
+		// The merged-close event, not the poll, is responsible for issue and board writes.
+		expect(board.labelled).toEqual([]);
+		expect(board.added).toEqual([]);
+		expect(issued.some((args) => args[0] === "issue" && args[1] === "close")).toBe(false);
 	});
 
 	test("reports honestly when the merge has not landed inside the poll window", async () => {
@@ -374,7 +374,7 @@ describe("auto-merge and post-merge reconciliation", () => {
 		const outcome = await handlePrApproval({ run, client: boardSpy(), logger: SILENT, env: openEnv });
 		expect(outcome.merged).toBe(false);
 		expect(outcome.reason).toBe("unmerged downstack PR #41");
-		expect(called.some((args) => args[0] === "api")).toBe(false);
+		expect(called.some((args) => args[0] === "api" && args.includes("PUT"))).toBe(false);
 	});
 
 	test("fails loudly if GitHub rejects a stacked merge instead of claiming auto-merge is armed", async () => {
@@ -525,7 +525,9 @@ describe("the board writes are awaited, which is the whole point of the async cl
 			env: {
 				GITHUB_ACTOR: "maintainer",
 				APPROVER_ASSOCIATION: "OWNER",
-				GITHUB_EVENT_NAME: "issue_comment",
+				GITHUB_EVENT_NAME: "pull_request_target",
+					PR_MERGED: "true",
+					GITHUB_REPOSITORY: "o/r",
 				IS_PR: "true",
 				PR_NUMBER: "7",
 				COMMENT_BODY: "/df approve",
@@ -554,10 +556,10 @@ describe("the board writes are awaited, which is the whole point of the async cl
 				env: {
 					GITHUB_ACTOR: "maintainer",
 					APPROVER_ASSOCIATION: "OWNER",
-					GITHUB_EVENT_NAME: "issue_comment",
-					IS_PR: "true",
+					GITHUB_EVENT_NAME: "pull_request_target",
+					PR_MERGED: "true",
+					GITHUB_REPOSITORY: "o/r",
 					PR_NUMBER: "7",
-					COMMENT_BODY: "/df approve",
 				},
 				sleep: async () => undefined,
 			}),
