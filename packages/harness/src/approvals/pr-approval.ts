@@ -435,6 +435,10 @@ export async function handlePrApproval(deps: HandlePrApprovalDeps): Promise<PrAp
 	if (submitted.status === "pending" && !requestId)
 		throw new Error(`GitHub omitted the async merge request ID for PR #${pr}`);
 	logger.out(`Merge request: ${submitted.status}${requestId ? ` (${requestId})` : ""}.`);
+	if (submitted.status === "enqueued") {
+		logger.out(`PR #${pr} queued; merge-complete event will reconcile it.`);
+		return { entered: true, reason: "merge queued", merged: false };
+	}
 
 	for (let attempt = 0; attempt < MERGE_POLL_ATTEMPTS; attempt += 1) {
 		if (requestId) {
@@ -446,11 +450,16 @@ export async function handlePrApproval(deps: HandlePrApprovalDeps): Promise<PrAp
 			const response = JSON.parse(status.stdout) as { status?: string; details?: { message?: string } };
 			if (response.status === "failed")
 				throw new Error(`Async merge of PR #${pr} failed: ${response.details?.message ?? "unknown reason"}`);
+			if (!["pending", "merged", "enqueued"].includes(response.status ?? ""))
+				throw new Error(`Unexpected async merge status for PR #${pr}: ${status.stdout}`);
+			if (response.status === "enqueued") {
+				logger.out(`PR #${pr} queued; merge-complete event will reconcile it.`);
+				return { entered: true, reason: "merge queued", merged: false };
+			}
 		}
 		const check = run(["pr", "view", String(pr), "--json", "state"], repo);
 		if (check.exitCode === 0 && (JSON.parse(check.stdout) as { state?: string }).state === "MERGED") {
 			logger.out(`PR #${pr} merged successfully.`);
-			await reconcilePostMerge(pr, repo, run, client, logger);
 			return { entered: true, reason: null, merged: true };
 		}
 		await sleep(MERGE_POLL_INTERVAL_SECONDS);
