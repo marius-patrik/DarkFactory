@@ -233,7 +233,9 @@ describe("the actor gate", () => {
 	});
 
 	test("ignores closed PRs that were not merged", async () => {
-		const run: GhRunner = () => { throw new Error("unmerged close must not make GitHub requests"); };
+		const run: GhRunner = () => {
+			throw new Error("unmerged close must not make GitHub requests");
+		};
 		const result = await handlePrApproval({
 			run,
 			client: boardSpy(),
@@ -577,4 +579,5 @@ describe("merged-close reconciliation awaits every remote board write", () => {
 				},
 			}),
 		).rejects.toThrow(/board write failed/u);
-	});});
+	});
+});

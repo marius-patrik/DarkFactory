@@ -277,7 +277,8 @@ async function reconcilePostMerge(
 	if (view.exitCode !== 0) throw new Error(`Cannot inspect merged PR #${prNumber}: ${view.stderr}`);
 
 	const data = JSON.parse(view.stdout) as PullRequestView;
-	if (data.state !== "MERGED") throw new Error(`Cannot reconcile PR #${prNumber}: expected MERGED, found ${data.state}`);
+	if (data.state !== "MERGED")
+		throw new Error(`Cannot reconcile PR #${prNumber}: expected MERGED, found ${data.state}`);
 	if (data.url !== `https://github.com/${repo}/pull/${prNumber}`)
 		throw new Error(`Cannot reconcile PR #${prNumber}: merged PR URL does not match target repository`);
 
