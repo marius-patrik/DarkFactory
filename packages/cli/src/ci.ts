@@ -167,6 +167,12 @@ export async function runCiCli(args: string[], context: CiCliContext = {}): Prom
 			}
 
 			const detected = await resolveDetectedQuality(repoPath);
+			try {
+				assertQualityCoverage(detected);
+			} catch (cause) {
+				error(cause instanceof Error ? cause.message : String(cause));
+				return 1;
+			}
 			const checks = requiredChecksForDetectedQuality(detected.resolution);
 			const prNumber = getOption(args, "--pr");
 			let ref = getOption(args, "--ref");
@@ -293,6 +299,12 @@ export async function runCiCli(args: string[], context: CiCliContext = {}): Prom
 			}
 
 			const detected = await resolveDetectedQuality(repoPath);
+			try {
+				assertQualityCoverage(detected);
+			} catch (cause) {
+				error(cause instanceof Error ? cause.message : String(cause));
+				return 1;
+			}
 			const checks = requiredChecksForDetectedQuality(detected.resolution);
 			const branch = getOption(args, "--branch") ?? detected.evidence.repoDf.identity?.default_branch ?? "main";
 			const dryRun = hasFlag(args, "--dry-run");

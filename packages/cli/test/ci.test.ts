@@ -107,9 +107,30 @@ describe("df ci CLI commands", () => {
 		}
 	});
 
+	it("refuses green status and branch protection when required quality coverage is absent", async () => {
+		const temp = await mkdtemp(join(tmpdir(), "df-ci-uncovered-status-"));
+		try {
+			const { fetch } = scripted([]);
+			const repo = new GitHubRepository(new GitHubClient({ token: "test", fetch }), "owner", "repo");
+			for (const command of ["status", "protect"]) {
+				const errors: string[] = [];
+				const exitCode = await runCiCli([command, "--repo", temp, "--verify"], {
+					repo,
+					log: () => undefined,
+					error: (message) => errors.push(message),
+				});
+				expect(exitCode).toBe(1);
+				expect(errors.join("\n")).toContain("No executable quality actions");
+			}
+		} finally {
+			await rm(temp, { recursive: true, force: true });
+		}
+	});
+
 	it("executes status with detector-derived required checks", async () => {
 		const temp = await mkdtemp(join(tmpdir(), "df-ci-cli-"));
 		try {
+			await writeFile(join(temp, "package.json"), JSON.stringify({ name: "consumer", scripts: { test: "bun test" } }));
 			const { fetch } = scripted([
 				json({
 					check_runs: [
