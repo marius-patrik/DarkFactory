@@ -52,19 +52,30 @@ describe("collecting the issues a pull request binds", () => {
 	test("merges GitHub's link graph with the body regex, then deduplicates", () => {
 		expect(
 			collectBoundIssues({
-				closingIssuesReferences: [{ number: 5 }, { number: 7 }],
+				closingIssuesReferences: [{ number: 5, url: "https://github.com/o/r/issues/5" }, { number: 7, url: "https://github.com/o/r/issues/7" }],
 				body: "Closes #7 and fixes #9",
-			}),
+			}, "o/r"),
 		).toEqual([5, 7, 9]);
 	});
 
 	test("a cross-repository url binds just as a short reference does", () => {
-		expect(collectBoundIssues({ body: "Resolves https://github.com/other/repo/issues/41" })).toEqual([41]);
+		expect(collectBoundIssues({ body: "Resolves https://github.com/other/repo/issues/41" }, "o/r")).toEqual([]);
+	});
+
+	test("rejects cross-repository closing links and unverified GraphQL references", () => {
+		expect(collectBoundIssues({
+			closingIssuesReferences: [
+				{ number: 41, url: "https://github.com/other/repo/issues/41" },
+				{ number: 7, url: "https://github.com/o/r/issues/7" },
+				{ number: 99 },
+			],
+			body: "Fixes https://github.com/other/repo/issues/41 and closes https://github.com/O/R/issues/8",
+		}, "o/r")).toEqual([7, 8]);
 	});
 
 	test("a pull request with neither source yields nothing rather than raising", () => {
-		expect(collectBoundIssues({})).toEqual([]);
-		expect(collectBoundIssues({ closingIssuesReferences: null, body: null })).toEqual([]);
+		expect(collectBoundIssues({}, "o/r")).toEqual([]);
+		expect(collectBoundIssues({ closingIssuesReferences: null, body: null }, "o/r")).toEqual([]);
 	});
 });
 
@@ -269,7 +280,7 @@ describe("auto-merge and post-merge reconciliation", () => {
 					state: "MERGED",
 					url: "https://github.com/o/r/pull/42",
 					body: "Closes #7",
-					closingIssuesReferences: [{ number: 5 }],
+					closingIssuesReferences: [{ number: 5, url: "https://github.com/o/r/issues/5" }],
 				}),
 				stderr: "",
 			};
@@ -459,7 +470,7 @@ describe("the board writes are awaited, which is the whole point of the async cl
 						state: "MERGED",
 						url: "https://github.com/o/r/pull/7",
 						body: "Closes #3",
-						closingIssuesReferences: [{ number: 3 }],
+						closingIssuesReferences: [{ number: 3, url: "https://github.com/o/r/issues/3" }],
 					}),
 					stderr: "",
 				};

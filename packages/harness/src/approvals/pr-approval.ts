@@ -25,7 +25,7 @@ export const MERGE_POLL_ATTEMPTS = 12;
  * copy, or a pull request can bind an issue one way for merging and another way for the board.
  */
 const CLOSING_REFERENCE_PATTERN =
-	/\b(?:close|closes|closed|fix|fixes|fixed|resolve|resolves|resolved)\s+(?:#(\d+)|https:\/\/github\.com\/[^/\s]+\/[^/\s]+\/issues\/(\d+))\b/giu;
+	/\b(?:close|closes|closed|fix|fixes|fixed|resolve|resolves|resolved)\s+(?:#(\d+)|https:\/\/github\.com\/([^/\s]+)\/([^/\s]+)\/issues\/(\d+))\b/giu;
 
 /** The outcome of one `gh` invocation. */
 export interface GhResult {
@@ -144,7 +144,7 @@ export const runGh: GhRunner = (args, repo, options = {}) => {
 /** The pull request fields post-merge reconciliation reads. */
 interface PullRequestView {
 	state?: string;
-	closingIssuesReferences?: readonly { number?: number | string }[] | null;
+	closingIssuesReferences?: readonly { number?: number | string; url?: string | null }[] | null;
 	body?: string | null;
 	url?: string | null;
 }
@@ -208,20 +208,22 @@ export function submitProxyReview(prNumber: number, repo: string, actor: string,
  * @param prData - Result of `gh pr view --json state,closingIssuesReferences,body,url`.
  * @returns Sorted list of unique issue numbers.
  */
-export function collectBoundIssues(prData: PullRequestView): number[] {
+export function collectBoundIssues(prData: PullRequestView, repo: string): number[] {
 	const numbers = new Set<number>();
+	const prefix = `https://github.com/${repo.toLowerCase()}/issues/`;
 	for (const ref of prData.closingIssuesReferences ?? []) {
-		if (ref.number === undefined) continue;
+		if (ref.number === undefined || typeof ref.url !== "string") continue;
 		const value = typeof ref.number === "string" ? Number.parseInt(ref.number, 10) : ref.number;
-		if (Number.isFinite(value)) numbers.add(value);
+		if (Number.isSafeInteger(value) && value > 0 && ref.url.toLowerCase() === `${prefix}${value}`) numbers.add(value);
 	}
-	// The pattern is global, so a stale `lastIndex` would resume mid-body and skip a reference.
+	// Cross-repository closing references must never close same-numbered local issues.
 	CLOSING_REFERENCE_PATTERN.lastIndex = 0;
 	for (const match of (prData.body ?? "").matchAll(CLOSING_REFERENCE_PATTERN)) {
-		const value = Number.parseInt(match[1] ?? match[2] ?? "", 10);
-		if (Number.isFinite(value)) numbers.add(value);
+		if (match[2] && `${match[2]}/${match[3]}`.toLowerCase() !== repo.toLowerCase()) continue;
+		const value = Number.parseInt(match[1] ?? match[4] ?? "", 10);
+		if (Number.isSafeInteger(value) && value > 0) numbers.add(value);
 	}
-	return [...numbers].sort((left, right) => left - right);
+	return [...numbers].sort((a, b) => a - b);
 }
 
 /** The decision one event carries about one pull request. */
@@ -280,7 +282,7 @@ async function reconcilePostMerge(
 		return;
 	}
 
-	const issueNumbers = collectBoundIssues(data);
+	const issueNumbers = collectBoundIssues(data, repo);
 	logger.out(`Reconciling post-merge for PR #${prNumber}. Bound issues: [${issueNumbers.join(", ")}]`);
 
 	// Every write is awaited. The Python's client was synchronous, so `add_item` had returned by the
