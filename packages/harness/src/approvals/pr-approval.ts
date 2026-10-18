@@ -392,6 +392,8 @@ export async function handlePrApproval(deps: HandlePrApprovalDeps): Promise<PrAp
 		repo,
 		{ check: true },
 	);
+	if (response.exitCode !== 0)
+		throw new Error(`Cannot submit async merge for PR #${pr}: ${(response.stderr || response.stdout).trim()}`);
 	const submitted = JSON.parse(response.stdout) as { status?: string; details?: { uuid?: string; message?: string } };
 	if (!["pending", "enqueued", "merged"].includes(submitted.status ?? ""))
 		throw new Error(`GitHub did not accept merge of PR #${pr}: ${response.stdout}`);

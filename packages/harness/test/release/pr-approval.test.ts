@@ -308,7 +308,7 @@ describe("auto-merge and post-merge reconciliation", () => {
 					stdout: JSON.stringify({ status: "pending", details: { uuid: "test-merge-uuid" } }),
 					stderr: "",
 				};
-			if (args[1] === "view" && args.includes("reviewDecision")) {
+			if (args[1] === "view" && args.some((arg) => arg.includes("reviewDecision"))) {
 				return {
 					exitCode: 0,
 					stdout:
@@ -364,7 +364,11 @@ describe("auto-merge and post-merge reconciliation", () => {
 					stderr: "",
 				};
 			if (args[0] === "api")
-				return { exitCode: 0, stdout: JSON.stringify({ status: "failed", details: { message: "review required" } }), stderr: "" };
+				return {
+					exitCode: 0,
+					stdout: JSON.stringify({ status: "failed", details: { message: "review required" } }),
+					stderr: "",
+				};
 			return {
 				exitCode: 0,
 				stdout: JSON.stringify({
