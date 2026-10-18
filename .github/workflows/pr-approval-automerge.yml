@@ -5,6 +5,8 @@ on:
     types: [submitted]
   issue_comment:
     types: [created]
+  pull_request_target:
+    types: [closed]
 
   # Consumers call this rather than copying it, so the scripts it runs live in one place.
   workflow_call:
@@ -104,6 +106,7 @@ jobs:
           COMMENT_BODY: ${{ github.event.comment.body }}
           REVIEW_BODY: ${{ github.event.review.body }}
           REVIEW_STATE: ${{ github.event.review.state }}
+          PR_MERGED: ${{ github.event.pull_request.merged }}
           # Who may approve (owner decision 9c): the Request author or an
           # OWNER/MEMBER/COLLABORATOR, never a bot. Replaces the hardcoded allowlist.
           APPROVER_ASSOCIATION: ${{ github.event.comment.author_association || github.event.review.author_association }}
