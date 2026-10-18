@@ -210,6 +210,10 @@ describe("operational failure observer scope", () => {
 		const workflow = Bun.YAML.parse(
 			readFileSync(new URL("../../../.github/workflows/report-failure.yml", import.meta.url), "utf8"),
 		) as { jobs: { report: { if: string } } };
+		const monitoredWorkflows = (workflow as unknown as { on: { workflow_run: { workflows: string[] } } }).on.workflow_run.workflows;
+		for (const name of ["DarkFactory Self-Hosted Control","Install Sweep","Quota Resume Sweep","Synchronize DarkFactory Fleet","Verify DarkFactory Self-Installation"]) {
+			expect(monitoredWorkflows).toContain(name);
+		}
 		const guard = workflow.jobs.report.if;
 		expect(guard).toContain("github.event_name == 'workflow_run'");
 		expect(guard).toContain("!startsWith(github.event.workflow_run.event, 'pull_request')");

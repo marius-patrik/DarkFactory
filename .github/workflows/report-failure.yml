@@ -13,15 +13,20 @@ on:
       - Autonomous Agent
       - Branch Policy
       - CI
+      - DarkFactory Self-Hosted Control
       - Deploy Documentation
       - Install Pipeline
+      - Install Sweep
       - Open Pull Request
+      - Quota Resume Sweep
       - PR Approval and Auto-Merge
       - Validate Documentation
       - Project Board Automation
       - Release
+      - Synchronize DarkFactory Fleet
       - Update Submodules
       - Verify Bound Issue
+      - Verify DarkFactory Self-Installation
     types: [completed]
 
   # Consumers call this rather than copying it, so the runtime it runs lives in one place.
