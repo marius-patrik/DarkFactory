@@ -297,6 +297,7 @@ describe("workflow conclusion classification", () => {
 		expect(observed?.RUN_ID).toBe("${{ github.event.workflow_run.id }}");
 		expect(observed?.TRIGGER_RUN_ID).toBe(observed?.RUN_ID);
 		expect(observed?.ACTIONS_READ_TOKEN).toBe("${{ github.token }}");
+		expect(observed?.GH_TOKEN).toBe("${{ steps.app-token.outputs.token || github.token }}");
 	});
 });
 

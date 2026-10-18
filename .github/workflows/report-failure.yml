@@ -44,7 +44,6 @@ on:
         default: "marius-patrik/DarkFactory"
     secrets:
       DARKFACTORY_APP_PRIVATE_KEY: {required: false}
-      GH_PROJECT_TOKEN: {required: false}
 
 permissions:
   actions: read
@@ -127,7 +126,7 @@ jobs:
           fi
           bun "$ROOT/packages/cli/src/bin.ts" report-failure
         env:
-          GH_TOKEN: ${{ steps.app-token.outputs.token || secrets.GH_PROJECT_TOKEN || secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ steps.app-token.outputs.token || github.token }}
           GITHUB_REPOSITORY: ${{ github.repository }}
           WORKFLOW_NAME: ${{ github.event.workflow_run.name }}
           CONCLUSION: ${{ github.event.workflow_run.conclusion }}
