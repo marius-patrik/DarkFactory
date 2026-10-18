@@ -4,7 +4,11 @@ import { GitHubRepository } from "../../harness/src/github/repository.ts";
 import { assertQualityCoverage, resolveDetectedQuality, runDetectedQuality } from "../../harness/src/ci/detected.ts";
 import { runCiDoctor } from "../../harness/src/ci/doctor.ts";
 import { installWorkflows, updateWorkflows } from "../../harness/src/ci/installer.ts";
-import { applyBranchProtection, computeRequiredChecks, verifyBranchProtection } from "../../harness/src/ci/protection.ts";
+import {
+	applyBranchProtection,
+	computeRequiredChecks,
+	verifyBranchProtection,
+} from "../../harness/src/ci/protection.ts";
 import { getCheckStatus, getRunLogs, getWorkflowRuns, rerunWorkflowRun } from "../../harness/src/ci/status.ts";
 
 interface CiCliContext {
