@@ -1,6 +1,7 @@
 /**
  * Unit tests for the pull request approval and auto-merge handler.
  */
+import { readFileSync } from "node:fs";
 import { describe, expect, test } from "bun:test";
 import {
 	collectBoundIssues,
@@ -12,6 +13,26 @@ import {
 	type ProjectBoardClient,
 	submitProxyReview,
 } from "../../src/approvals/pr-approval.ts";
+
+describe("approval workflow authentication and merge notifications", () => {
+	test("uses independent app/Actions and user Projects credentials", () => {
+		const workflow = Bun.YAML.parse(
+			readFileSync(new URL("../../../.github/workflows/pr-approval-automerge.yml", import.meta.url), "utf8"),
+		) as {
+			on: { pull_request_target: { types: string[] } };
+			jobs: {
+				"on-approval": { steps: Array<{ env?: Record<string, string> }> };
+			};
+		};
+		const env = workflow.jobs["on-approval"].steps.at(-1)?.env;
+		expect(env?.GH_TOKEN).toBe("${{ steps.app-token.outputs.token || github.token }}");
+		expect(env?.GH_PROJECT_TOKEN).toBe("${{ secrets.GH_PROJECT_TOKEN }}");
+		expect(env?.PR_MERGED).toBe("${{ github.event.pull_request.merged }}");
+		expect(env?.PR_BASE_BRANCH).toBe("${{ github.event.pull_request.base.ref }}");
+		expect(env?.DEFAULT_BRANCH).toBe("${{ github.event.repository.default_branch }}");
+		expect(workflow.on.pull_request_target.types).toEqual(["closed"]);
+	});
+});
 
 /** Collects everything the handler narrates, so a test can assert on it. */
 function recorder(): { lines: string[]; logger: { out: (line: string) => void; err: (line: string) => void } } {
