@@ -17,7 +17,7 @@ import {
 describe("approval workflow authentication and merge notifications", () => {
 	test("uses independent app/Actions and user Projects credentials", () => {
 		const workflow = Bun.YAML.parse(
-			readFileSync(new URL("../../../.github/workflows/pr-approval-automerge.yml", import.meta.url), "utf8"),
+			readFileSync(new URL("../../../../.github/workflows/pr-approval-automerge.yml", import.meta.url), "utf8"),
 		) as {
 			on: { pull_request_target: { types: string[] } };
 			jobs: {
