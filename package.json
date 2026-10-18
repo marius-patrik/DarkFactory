@@ -10,7 +10,7 @@
     "install:df": "bun packages/harness/scripts/install.ts",
     "format": "biome format --write .",
     "format:check": "biome format .",
-    "lint": "biome lint --max-diagnostics=500 .",
+    "lint": "biome lint .",
     "check": "biome ci .",
     "docs": "bun scripts/build-docs.ts",
     "release:version": "bun packages/harness/src/release/versioning.ts",

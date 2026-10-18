@@ -572,8 +572,6 @@ describe("merged-close reconciliation awaits every remote board write", () => {
 				PR_MERGED: "true",
 				PR_BASE_BRANCH: "main",
 				DEFAULT_BRANCH: "main",
-				PR_BASE_BRANCH: "main",
-				DEFAULT_BRANCH: "main",
 				GITHUB_REPOSITORY: "o/r",
 				PR_NUMBER: "7",
 			},
