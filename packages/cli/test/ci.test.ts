@@ -2,10 +2,10 @@ import { describe, expect, it } from "bun:test";
 import { mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { runCiCli } from "../../src/ci/cli.ts";
-import { GitHubClient } from "../../src/github/client.ts";
-import { GitHubRepository } from "../../src/github/repository.ts";
-import { json, scripted } from "../github/helpers.ts";
+import { runCiCli } from "../src/ci.ts";
+import { GitHubClient } from "../../harness/src/github/client.ts";
+import { GitHubRepository } from "../../harness/src/github/repository.ts";
+import { json, scripted } from "../../harness/test/github/helpers.ts";
 
 describe("df ci CLI commands", () => {
 	it("executes install and offline doctor without ci.json", async () => {

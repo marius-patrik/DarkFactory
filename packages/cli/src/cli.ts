@@ -30,7 +30,7 @@ import {
 } from "../../keychain/src/index.ts";
 import { loginProviderAccount } from "../../keychain/src/login.ts";
 import { runPluginCli } from "../../plugins/src/index.ts";
-import { runCiCli } from "../../harness/src/ci/cli.ts";
+import { runCiCli } from "./ci.ts";
 import { executableReleaseVersion, runReleasedInstaller } from "../../harness/src/install/released-df.ts";
 import { applyLicence } from "../../harness/src/ci/licensing.ts";
 import { observeWorkflowCompletion } from "../../harness/src/ci/report-failure.ts";

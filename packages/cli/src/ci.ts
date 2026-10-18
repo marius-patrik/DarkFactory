@@ -1,11 +1,11 @@
-import { requiredChecksForDetectedQuality } from "../../../capability/src/actions.ts";
-import { GitHubClient } from "../github/client.ts";
-import { GitHubRepository } from "../github/repository.ts";
-import { assertQualityCoverage, resolveDetectedQuality, runDetectedQuality } from "./detected.ts";
-import { runCiDoctor } from "./doctor.ts";
-import { installWorkflows, updateWorkflows } from "./installer.ts";
-import { applyBranchProtection, computeRequiredChecks, verifyBranchProtection } from "./protection.ts";
-import { getCheckStatus, getRunLogs, getWorkflowRuns, rerunWorkflowRun } from "./status.ts";
+import { requiredChecksForDetectedQuality } from "../../capability/src/actions.ts";
+import { GitHubClient } from "../../harness/src/github/client.ts";
+import { GitHubRepository } from "../../harness/src/github/repository.ts";
+import { assertQualityCoverage, resolveDetectedQuality, runDetectedQuality } from "../../harness/src/ci/detected.ts";
+import { runCiDoctor } from "../../harness/src/ci/doctor.ts";
+import { installWorkflows, updateWorkflows } from "../../harness/src/ci/installer.ts";
+import { applyBranchProtection, computeRequiredChecks, verifyBranchProtection } from "../../harness/src/ci/protection.ts";
+import { getCheckStatus, getRunLogs, getWorkflowRuns, rerunWorkflowRun } from "../../harness/src/ci/status.ts";
 
 interface CiCliContext {
 	repo?: GitHubRepository;
