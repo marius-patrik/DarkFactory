@@ -203,8 +203,8 @@ export function submitProxyReview(prNumber: number, repo: string, actor: string,
  * Collects bound issue numbers from both GitHub's link graph and the pull request body.
  *
  * GitHub's `closingIssuesReferences` is authoritative but only populated for well-formed references
- * in the current body; the regex pass catches cross-repository urls and edits that have not
- * propagated yet.
+ * in the current body; the regex pass catches valid in-repository links and edits that have not
+ * propagated yet. Cross-repository issue links must never close local issues.
  *
  * @param prData - Result of `gh pr view --json state,closingIssuesReferences,body,url`.
  * @returns Sorted list of unique issue numbers.
@@ -271,17 +271,15 @@ async function reconcilePostMerge(
 	client: ProjectBoardClient,
 	logger: PrApprovalLogger = CONSOLE,
 ): Promise<void> {
-	const view = run(["pr", "view", String(prNumber), "--json", "state,closingIssuesReferences,body,url"], repo);
-	if (view.exitCode !== 0) {
-		logger.out(`Failed to view PR #${prNumber} for post-merge reconciliation.`);
-		return;
-	}
+	const view = run(["pr", "view", String(prNumber), "--json", "state,closingIssuesReferences,body,url"], repo, {
+		check: true,
+	});
+	if (view.exitCode !== 0) throw new Error(`Cannot inspect merged PR #${prNumber}: ${view.stderr}`);
 
 	const data = JSON.parse(view.stdout) as PullRequestView;
-	if (data.state !== "MERGED") {
-		logger.out(`PR #${prNumber} state is ${data.state}, not MERGED.`);
-		return;
-	}
+	if (data.state !== "MERGED") throw new Error(`Cannot reconcile PR #${prNumber}: expected MERGED, found ${data.state}`);
+	if (data.url !== `https://github.com/${repo}/pull/${prNumber}`)
+		throw new Error(`Cannot reconcile PR #${prNumber}: merged PR URL does not match target repository`);
 
 	const issueNumbers = collectBoundIssues(data, repo);
 	logger.out(`Reconciling post-merge for PR #${prNumber}. Bound issues: [${issueNumbers.join(", ")}]`);
@@ -294,13 +292,11 @@ async function reconcilePostMerge(
 	// A rejected write propagates, which is what the Python did: it had no try/except around these
 	// calls, so a failed board write failed the run. Swallowing it would hide the very failure this
 	// reconciliation exists to prevent.
-	if (data.url) {
-		await client.track(data.url, "Done", { fastPath: true });
-		await client.setStatusLabel(repo, prNumber, "Done");
-	}
+	await client.track(data.url, "Done", { fastPath: true });
+	await client.setStatusLabel(repo, prNumber, "Done");
 
 	for (const num of issueNumbers) {
-		run(["issue", "close", String(num), "--repo", repo, "--reason", "completed"], repo);
+		run(["issue", "close", String(num), "--repo", repo, "--reason", "completed"], repo, { check: true });
 		await client.setStatusLabel(repo, num, "Done");
 		await client.track(`https://github.com/${repo}/issues/${num}`, "Done", { fastPath: true });
 		logger.out(`Closed issue #${num} and marked it Done on the project board`);
