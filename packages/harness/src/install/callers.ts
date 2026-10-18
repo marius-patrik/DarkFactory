@@ -129,7 +129,7 @@ export const WORKFLOWS: Readonly<Record<string, WorkflowSpec>> = Object.freeze({
 			"pull_request_review:\n    types: [submitted]\n" +
 			"  issue_comment:\n    types: [created]\n" +
 			"  pull_request_target:\n    types: [closed]\n" +
-			"  workflow_dispatch:
+			"  workflow_dispatch:",
 		permissions: "pull-requests: write\n  contents: write\n  issues: write\n" + "  repository-projects: write",
 	},
 	"open-pr": {
