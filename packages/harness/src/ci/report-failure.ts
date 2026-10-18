@@ -76,7 +76,7 @@ export function incidentRunEventAllowed(eventName: string): boolean {
 	return ["push", "schedule", "workflow_dispatch", "repository_dispatch", "issues"].includes(eventName);
 }
 
-export interface ObservedCompletion extends ReportFailureOptions {
+export interface ObservedCompletion extends Omit<ReportFailureOptions, "workflowId"> {
 	conclusion: string | null | undefined;
 	invocation: IncidentInvocation;
 	/** Optional independent read client; default is the caller's Actions-capable GITHUB_TOKEN. */

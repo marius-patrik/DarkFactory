@@ -493,8 +493,6 @@ describe("durable workflow identity", () => {
 		});
 		expect(state.closed).toEqual([7]);
 	});
-
-
 });
 
 describe("ordered incident observations", () => {
