@@ -345,8 +345,8 @@ export async function handlePrApproval(deps: HandlePrApprovalDeps): Promise<PrAp
 	const pr = Number.parseInt(detection.prNumber, 10);
 	logger.out(`PR #${pr} approved by @${actor}. Preparing for auto-merge.`);
 
-	const view = run(["pr", "view", String(pr), "--json", "isDraft,state,reviewDecision"], repo, { check: true });
-	const data = JSON.parse(view.stdout) as { isDraft?: boolean; state?: string; reviewDecision?: string };
+	const view = run(["pr", "view", String(pr), "--json", "isDraft,state,reviewDecision,headRefOid"], repo, { check: true });
+	const data = JSON.parse(view.stdout) as { isDraft?: boolean; state?: string; reviewDecision?: string; headRefOid?: string };
 	if (data.state !== "OPEN") {
 		logger.out(`PR #${pr} is ${data.state}. Exiting.`);
 		return { entered: true, reason: `pull request is ${data.state}`, merged: false };
@@ -361,16 +361,50 @@ export async function handlePrApproval(deps: HandlePrApprovalDeps): Promise<PrAp
 		submitProxyReview(pr, repo, actor, { run, env, logger });
 	}
 
-	logger.out(`Enabling auto-merge for PR #${pr} with --delete-branch...`);
-	const result = run(["pr", "merge", String(pr), "--auto", "--merge", "--delete-branch"], repo);
-	logger.out(`Auto-merge result:\n${result.stdout}\n${result.stderr}`);
-	if (result.exitCode !== 0) {
-		logger.out("Attempting direct merge in case requirements are already satisfied...");
-		const direct = run(["pr", "merge", String(pr), "--merge", "--delete-branch"], repo);
-		logger.out(`Direct merge result:\n${direct.stdout}\n${direct.stderr}`);
-	}
+	// GitHub's native PR stacks require asynchronous REST merging. The old gh pr
+	// merge/GraphQL auto-merge APIs reject stacks even when approved and green.
+	// The same REST endpoint works for single PRs and honors branch protections.
+	if (!data.headRefOid || !/^[a-f0-9]{40}$/u.test(data.headRefOid))
+		throw new Error(`Cannot merge PR #${pr}: reviewed head SHA is missing or invalid`);
+	logger.out(`Submitting asynchronous merge for PR #${pr} at ${data.headRefOid}...`);
+	const response = run(
+		[
+			"api",
+			"--method",
+			"PUT",
+			`repos/${repo}/pulls/${pr}/merge-async`,
+			"-H",
+			"X-GitHub-Api-Version: 2026-03-10",
+			"-f",
+			`sha=${data.headRefOid}`,
+			"-f",
+			"merge_method=merge",
+			"-f",
+			"merge_action=default",
+		],
+		repo,
+		{ check: true },
+	);
+	const submitted = JSON.parse(response.stdout) as { status?: string; details?: { uuid?: string; message?: string } };
+	if (!["pending", "enqueued", "merged"].includes(submitted.status ?? ""))
+		throw new Error(`GitHub did not accept merge of PR #${pr}: ${response.stdout}`);
+	const requestId = submitted.details?.uuid;
+	if (submitted.status === "pending" && !requestId)
+		throw new Error(`GitHub omitted the async merge request ID for PR #${pr}`);
+	logger.out(`Merge request: ${submitted.status}${requestId ? ` (${requestId})` : ""}.`);
+
 
 	for (let attempt = 0; attempt < MERGE_POLL_ATTEMPTS; attempt += 1) {
+		if (requestId) {
+			const status = run(
+				["api", `repos/${repo}/pulls/${pr}/merge-async/${requestId}`, "-H", "X-GitHub-Api-Version: 2026-03-10"],
+				repo,
+				{ check: true },
+			);
+			const response = JSON.parse(status.stdout) as { status?: string; details?: { message?: string } };
+			if (response.status === "failed")
+				throw new Error(`Async merge of PR #${pr} failed: ${response.details?.message ?? "unknown reason"}`);
+		}
 		const check = run(["pr", "view", String(pr), "--json", "state"], repo);
 		if (check.exitCode === 0 && (JSON.parse(check.stdout) as { state?: string }).state === "MERGED") {
 			logger.out(`PR #${pr} merged successfully.`);
@@ -380,9 +414,6 @@ export async function handlePrApproval(deps: HandlePrApprovalDeps): Promise<PrAp
 		await sleep(MERGE_POLL_INTERVAL_SECONDS);
 	}
 
-	logger.out(
-		`PR #${pr} has not merged yet; auto-merge stays armed and the post-merge reconciliation ` +
-			"will run from the pull_request closed event.",
-	);
-	return { entered: true, reason: "merge not observed within the poll window", merged: false };
+	logger.out(`PR #${pr} has not merged; asynchronous request ${requestId ?? submitted.status} remains unconfirmed.`);
+	return { entered: true, reason: "asynchronous merge pending", merged: false };
 }

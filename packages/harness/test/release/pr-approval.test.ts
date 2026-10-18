@@ -245,10 +245,12 @@ describe("auto-merge and post-merge reconciliation", () => {
 		let views = 0;
 		const run: GhRunner = (args) => {
 			issued.push([...args]);
+			if (args[0] === "api")
+				return { exitCode: 0, stdout: JSON.stringify({ status: "pending", details: { uuid: "test-merge-uuid" } }), stderr: "" };
 			if (args[0] !== "pr" || args[1] !== "view") return OK;
 			views += 1;
 			if (views === 1) {
-				return { exitCode: 0, stdout: '{"isDraft": true, "state": "OPEN", "reviewDecision": ""}', stderr: "" };
+				return { exitCode: 0, stdout: '{"isDraft": true, "state": "OPEN", "reviewDecision": "", "headRefOid": "0123456789abcdef0123456789abcdef01234567"}', stderr: "" };
 			}
 			if (views === 2) return { exitCode: 0, stdout: '{"state": "OPEN"}', stderr: "" };
 			return {
@@ -267,7 +269,15 @@ describe("auto-merge and post-merge reconciliation", () => {
 
 		expect(outcome.merged).toBe(true);
 		expect(issued.some((args) => args[1] === "ready")).toBe(true);
-		expect(issued.some((args) => args[1] === "merge" && args.includes("--auto"))).toBe(true);
+		expect(
+			issued.some(
+				(args) =>
+					args[0] === "api" &&
+					args.includes("PUT") &&
+					args.includes("repos/o/r/pulls/42/merge-async") &&
+					args.includes("sha=0123456789abcdef0123456789abcdef01234567"),
+			),
+		).toBe(true);
 		// The board sees the pull request and both bound issues: 5 from the link graph, 7 from the body.
 		expect(board.labelled).toEqual(["#42", "#5", "#7"]);
 		expect(board.added).toEqual([
@@ -283,8 +293,10 @@ describe("auto-merge and post-merge reconciliation", () => {
 
 	test("reports honestly when the merge has not landed inside the poll window", async () => {
 		const run: GhRunner = (args) => {
+			if (args[0] === "api")
+				return { exitCode: 0, stdout: JSON.stringify({ status: "pending", details: { uuid: "test-merge-uuid" } }), stderr: "" };
 			if (args[1] === "view" && args.includes("reviewDecision")) {
-				return { exitCode: 0, stdout: '{"isDraft": false, "state": "OPEN", "reviewDecision": ""}', stderr: "" };
+				return { exitCode: 0, stdout: '{"isDraft": false, "state": "OPEN", "reviewDecision": "", "headRefOid": "0123456789abcdef0123456789abcdef01234567"}', stderr: "" };
 			}
 			if (args[1] === "view") return { exitCode: 0, stdout: '{"state": "OPEN"}', stderr: "" };
 			return OK;
@@ -303,7 +315,38 @@ describe("auto-merge and post-merge reconciliation", () => {
 
 		expect(outcome.merged).toBe(false);
 		expect(slept).toBe(MERGE_POLL_ATTEMPTS);
-		expect(lines.join("\n")).toContain("auto-merge stays armed");
+		expect(lines.join("\n")).toContain("asynchronous request test-merge-uuid remains unconfirmed");
+	});
+
+	test("fails loudly if GitHub rejects a stacked merge instead of claiming auto-merge is armed", async () => {
+		const run: GhRunner = (args) => {
+			if (args[0] === "api") return { exitCode: 1, stdout: "", stderr: "merge denied" };
+			return {
+				exitCode: 0,
+				stdout: JSON.stringify({ state: "OPEN", isDraft: false, reviewDecision: "APPROVED", headRefOid: "0123456789abcdef0123456789abcdef01234567" }),
+				stderr: "",
+			};
+		};
+		await expect(handlePrApproval({ run, client: boardSpy(), logger: SILENT, env: openEnv })).rejects.toThrow(
+			"merge denied",
+		);
+	});
+
+	test("fails when GitHub asynchronously rejects a merge on repository rules", async () => {
+		const run: GhRunner = (args) => {
+			if (args[0] === "api" && args.includes("PUT"))
+				return { exitCode: 0, stdout: JSON.stringify({ status: "pending", details: { uuid: "test-merge-uuid" } }), stderr: "" };
+			if (args[0] === "api")
+				return { exitCode: 0, stdout: JSON.stringify({ status: "failed", details: { message: "review required" } }), stderr: "" };
+			return {
+				exitCode: 0,
+				stdout: JSON.stringify({ state: "OPEN", isDraft: false, reviewDecision: "APPROVED", headRefOid: "0123456789abcdef0123456789abcdef01234567" }),
+				stderr: "",
+			};
+		};
+		await expect(handlePrApproval({ run, client: boardSpy(), logger: SILENT, env: openEnv })).rejects.toThrow(
+			"review required",
+		);
 	});
 
 	test("reconciliation declines a pull request that is not merged", async () => {
@@ -335,6 +378,8 @@ describe("the board writes are awaited, which is the whole point of the async cl
 	function mergedDuringPoll(): GhRunner {
 		let stateQueries = 0;
 		return ((args: readonly string[]) => {
+			if (args[0] === "api")
+				return { exitCode: 0, stdout: JSON.stringify({ status: "pending", details: { uuid: "test-merge-uuid" } }), stderr: "" };
 			const fields = args[args.indexOf("--json") + 1] ?? "";
 			if (fields.includes("closingIssuesReferences")) {
 				return {
@@ -352,7 +397,7 @@ describe("the board writes are awaited, which is the whole point of the async cl
 			return {
 				exitCode: 0,
 				stdout: JSON.stringify(
-					stateQueries === 1 ? { state: "OPEN", isDraft: false, reviewDecision: "APPROVED" } : { state: "MERGED" },
+					stateQueries === 1 ? { state: "OPEN", isDraft: false, reviewDecision: "APPROVED", headRefOid: "0123456789abcdef0123456789abcdef01234567" } : { state: "MERGED" },
 				),
 				stderr: "",
 			};
