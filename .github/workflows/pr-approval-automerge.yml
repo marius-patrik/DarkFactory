@@ -107,6 +107,8 @@ jobs:
           REVIEW_BODY: ${{ github.event.review.body }}
           REVIEW_STATE: ${{ github.event.review.state }}
           PR_MERGED: ${{ github.event.pull_request.merged }}
+          PR_BASE_BRANCH: ${{ github.event.pull_request.base.ref }}
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
           # Who may approve (owner decision 9c): the Request author or an
           # OWNER/MEMBER/COLLABORATOR, never a bot. Replaces the hardcoded allowlist.
           APPROVER_ASSOCIATION: ${{ github.event.comment.author_association || github.event.review.author_association }}

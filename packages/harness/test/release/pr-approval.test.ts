@@ -223,6 +223,8 @@ describe("the actor gate", () => {
 				GITHUB_ACTOR: "github-actions[bot]",
 				GITHUB_EVENT_NAME: "pull_request_target",
 				PR_MERGED: "true",
+				PR_BASE_BRANCH: "main",
+				DEFAULT_BRANCH: "main",
 				PR_NUMBER: "7",
 				GITHUB_REPOSITORY: "o/r",
 			},
@@ -230,6 +232,25 @@ describe("the actor gate", () => {
 		expect(result.merged).toBe(true);
 		expect(board.added).toEqual(["https://github.com/o/r/pull/7", "https://github.com/o/r/issues/3"]);
 		expect(called.filter((args) => args[0] === "issue" && args[1] === "close").map((args) => args[2])).toEqual(["3"]);
+	});
+
+	test("never marks work complete when a PR merges into a non-default branch", async () => {
+		const run: GhRunner = () => {
+			throw new Error("non-default branch merge must not reconcile issues");
+		};
+		const result = await handlePrApproval({
+			run,
+			client: boardSpy(),
+			logger: SILENT,
+			env: {
+				GITHUB_EVENT_NAME: "pull_request_target",
+				PR_MERGED: "true",
+				PR_BASE_BRANCH: "feature",
+				DEFAULT_BRANCH: "main",
+				PR_NUMBER: "7",
+			},
+		});
+		expect(result.reason).toBe("merged outside default branch");
 	});
 
 	test("ignores closed PRs that were not merged", async () => {
@@ -549,6 +570,10 @@ describe("merged-close reconciliation awaits every remote board write", () => {
 			env: {
 				GITHUB_EVENT_NAME: "pull_request_target",
 				PR_MERGED: "true",
+				PR_BASE_BRANCH: "main",
+				DEFAULT_BRANCH: "main",
+				PR_BASE_BRANCH: "main",
+				DEFAULT_BRANCH: "main",
 				GITHUB_REPOSITORY: "o/r",
 				PR_NUMBER: "7",
 			},
@@ -574,6 +599,8 @@ describe("merged-close reconciliation awaits every remote board write", () => {
 				env: {
 					GITHUB_EVENT_NAME: "pull_request_target",
 					PR_MERGED: "true",
+				PR_BASE_BRANCH: "main",
+				DEFAULT_BRANCH: "main",
 					GITHUB_REPOSITORY: "o/r",
 					PR_NUMBER: "7",
 				},

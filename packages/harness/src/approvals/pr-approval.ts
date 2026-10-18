@@ -81,6 +81,8 @@ export interface PrApprovalEnvironment {
 	GITHUB_REPOSITORY?: string;
 	GITHUB_EVENT_NAME?: string;
 	PR_MERGED?: string;
+	PR_BASE_BRANCH?: string;
+	DEFAULT_BRANCH?: string;
 	BOT_TOKEN?: string;
 	APPROVER_ASSOCIATION?: string;
 	APPROVER_TYPE?: string;
@@ -331,6 +333,10 @@ export async function handlePrApproval(deps: HandlePrApprovalDeps): Promise<PrAp
 		const number = env.PR_NUMBER ?? "";
 		if (!/^[0-9]+$/u.test(number) || env.PR_MERGED !== "true")
 			return { entered: false, reason: "not a merged pull request", merged: false };
+		if (!env.PR_BASE_BRANCH || !env.DEFAULT_BRANCH)
+			throw new Error("Missing trusted base/default branch identity for merged-close reconciliation");
+		if (env.PR_BASE_BRANCH !== env.DEFAULT_BRANCH)
+			return { entered: false, reason: "merged outside default branch", merged: false };
 		await reconcilePostMerge(Number(number), repo, run, client, logger);
 		return { entered: true, reason: null, merged: true };
 	}
