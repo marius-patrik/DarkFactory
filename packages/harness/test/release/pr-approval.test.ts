@@ -245,6 +245,7 @@ describe("auto-merge and post-merge reconciliation", () => {
 		let views = 0;
 		const run: GhRunner = (args) => {
 			issued.push([...args]);
+			if (args[0] === "pr" && args[1] === "list") return { exitCode: 0, stdout: "[]", stderr: "" };
 			if (args[0] === "api")
 				return {
 					exitCode: 0,
@@ -257,7 +258,7 @@ describe("auto-merge and post-merge reconciliation", () => {
 				return {
 					exitCode: 0,
 					stdout:
-						'{"isDraft": true, "state": "OPEN", "reviewDecision": "", "headRefOid": "0123456789abcdef0123456789abcdef01234567"}',
+						'{"isDraft": true, "state": "OPEN", "reviewDecision": "", "headRefOid": "0123456789abcdef0123456789abcdef01234567", "baseRefName": "main"}',
 					stderr: "",
 				};
 			}
@@ -302,6 +303,7 @@ describe("auto-merge and post-merge reconciliation", () => {
 
 	test("reports honestly when the merge has not landed inside the poll window", async () => {
 		const run: GhRunner = (args) => {
+			if (args[0] === "pr" && args[1] === "list") return { exitCode: 0, stdout: "[]", stderr: "" };
 			if (args[0] === "api")
 				return {
 					exitCode: 0,
@@ -312,7 +314,7 @@ describe("auto-merge and post-merge reconciliation", () => {
 				return {
 					exitCode: 0,
 					stdout:
-						'{"isDraft": false, "state": "OPEN", "reviewDecision": "", "headRefOid": "0123456789abcdef0123456789abcdef01234567"}',
+						'{"isDraft": false, "state": "OPEN", "reviewDecision": "", "headRefOid": "0123456789abcdef0123456789abcdef01234567", "baseRefName": "main"}',
 					stderr: "",
 				};
 			}
@@ -336,8 +338,33 @@ describe("auto-merge and post-merge reconciliation", () => {
 		expect(lines.join("\n")).toContain("asynchronous request test-merge-uuid remains unconfirmed");
 	});
 
+	test("does not merge unapproved downstack ancestors when an upstack PR is approved", async () => {
+		const called: string[][] = [];
+		const run: GhRunner = (args) => {
+			called.push([...args]);
+			if (args[0] === "pr" && args[1] === "list")
+				return { exitCode: 0, stdout: JSON.stringify([{ number: 41, headRefName: "feature/parent" }]), stderr: "" };
+			return {
+				exitCode: 0,
+				stdout: JSON.stringify({
+					state: "OPEN",
+					isDraft: false,
+					reviewDecision: "APPROVED",
+					headRefOid: "0123456789abcdef0123456789abcdef01234567",
+					baseRefName: "feature/parent",
+				}),
+				stderr: "",
+			};
+		};
+		const outcome = await handlePrApproval({ run, client: boardSpy(), logger: SILENT, env: openEnv });
+		expect(outcome.merged).toBe(false);
+		expect(outcome.reason).toBe("unmerged downstack PR #41");
+		expect(called.some((args) => args[0] === "api")).toBe(false);
+	});
+
 	test("fails loudly if GitHub rejects a stacked merge instead of claiming auto-merge is armed", async () => {
 		const run: GhRunner = (args) => {
+			if (args[0] === "pr" && args[1] === "list") return { exitCode: 0, stdout: "[]", stderr: "" };
 			if (args[0] === "api") return { exitCode: 1, stdout: "", stderr: "merge denied" };
 			return {
 				exitCode: 0,
@@ -346,6 +373,7 @@ describe("auto-merge and post-merge reconciliation", () => {
 					isDraft: false,
 					reviewDecision: "APPROVED",
 					headRefOid: "0123456789abcdef0123456789abcdef01234567",
+					baseRefName: "main",
 				}),
 				stderr: "",
 			};
@@ -363,6 +391,7 @@ describe("auto-merge and post-merge reconciliation", () => {
 					stdout: JSON.stringify({ status: "pending", details: { uuid: "test-merge-uuid" } }),
 					stderr: "",
 				};
+			if (args[0] === "pr" && args[1] === "list") return { exitCode: 0, stdout: "[]", stderr: "" };
 			if (args[0] === "api")
 				return {
 					exitCode: 0,
@@ -376,6 +405,7 @@ describe("auto-merge and post-merge reconciliation", () => {
 					isDraft: false,
 					reviewDecision: "APPROVED",
 					headRefOid: "0123456789abcdef0123456789abcdef01234567",
+					baseRefName: "main",
 				}),
 				stderr: "",
 			};
@@ -414,6 +444,7 @@ describe("the board writes are awaited, which is the whole point of the async cl
 	function mergedDuringPoll(): GhRunner {
 		let stateQueries = 0;
 		return ((args: readonly string[]) => {
+			if (args[0] === "pr" && args[1] === "list") return { exitCode: 0, stdout: "[]", stderr: "" };
 			if (args[0] === "api")
 				return {
 					exitCode: 0,
@@ -443,6 +474,7 @@ describe("the board writes are awaited, which is the whole point of the async cl
 								isDraft: false,
 								reviewDecision: "APPROVED",
 								headRefOid: "0123456789abcdef0123456789abcdef01234567",
+					baseRefName: "main",
 							}
 						: { state: "MERGED" },
 				),

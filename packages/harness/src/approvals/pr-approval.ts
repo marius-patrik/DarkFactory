@@ -345,7 +345,7 @@ export async function handlePrApproval(deps: HandlePrApprovalDeps): Promise<PrAp
 	const pr = Number.parseInt(detection.prNumber, 10);
 	logger.out(`PR #${pr} approved by @${actor}. Preparing for auto-merge.`);
 
-	const view = run(["pr", "view", String(pr), "--json", "isDraft,state,reviewDecision,headRefOid"], repo, {
+	const view = run(["pr", "view", String(pr), "--json", "isDraft,state,reviewDecision,headRefOid,baseRefName"], repo, {
 		check: true,
 	});
 	const data = JSON.parse(view.stdout) as {
@@ -353,6 +353,7 @@ export async function handlePrApproval(deps: HandlePrApprovalDeps): Promise<PrAp
 		state?: string;
 		reviewDecision?: string;
 		headRefOid?: string;
+		baseRefName?: string;
 	};
 	if (data.state !== "OPEN") {
 		logger.out(`PR #${pr} is ${data.state}. Exiting.`);
@@ -366,6 +367,22 @@ export async function handlePrApproval(deps: HandlePrApprovalDeps): Promise<PrAp
 
 	if (data.reviewDecision === "REVIEW_REQUIRED") {
 		submitProxyReview(pr, repo, actor, { run, env, logger });
+	}
+
+	// A merge-async request merges *every open downstack PR* too, not just this
+	// approved PR. Refuse to merge a stack parent as a side effect of approving
+	// its child. The caller can approve each PR independently after restacking.
+	if (!data.baseRefName) throw new Error(`Cannot merge PR #${pr}: missing base branch identity`);
+	const list = run(
+		["pr", "list", "--state", "open", "--limit", "1000", "--json", "number,headRefName"],
+		repo,
+		{ check: true },
+	);
+	const open = JSON.parse(list.stdout) as { number: number; headRefName: string }[];
+	const parent = open.find((candidate) => candidate.number !== pr && candidate.headRefName === data.baseRefName);
+	if (parent) {
+		logger.out(`PR #${pr} has open downstack parent #${parent.number}; defer merge until that PR lands.`);
+		return { entered: true, reason: `unmerged downstack PR #${parent.number}`, merged: false };
 	}
 
 	// GitHub's native PR stacks require asynchronous REST merging. The old gh pr
