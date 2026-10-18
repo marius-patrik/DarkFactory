@@ -80,6 +80,7 @@ export interface PrApprovalEnvironment {
 	GITHUB_ACTOR?: string;
 	GITHUB_REPOSITORY?: string;
 	GITHUB_EVENT_NAME?: string;
+	PR_MERGED?: string;
 	BOT_TOKEN?: string;
 	APPROVER_ASSOCIATION?: string;
 	APPROVER_TYPE?: string;
@@ -326,6 +327,16 @@ export async function handlePrApproval(deps: HandlePrApprovalDeps): Promise<PrAp
 	const sleep = deps.sleep ?? ((milliseconds: number) => Bun.sleep(milliseconds));
 	const actor = env.GITHUB_ACTOR ?? "";
 	const repo = env.GITHUB_REPOSITORY ?? "";
+
+	// A queued merge can complete after its approval job exits.
+	// Reconcile from the trusted merged-close webhook.
+	if (env.GITHUB_EVENT_NAME === "pull_request_target") {
+		const number = env.PR_NUMBER ?? "";
+		if (!/^[0-9]+$/u.test(number) || env.PR_MERGED !== "true")
+			return { entered: false, reason: "not a merged pull request", merged: false };
+		await reconcilePostMerge(Number(number), repo, run, client, logger);
+		return { entered: true, reason: null, merged: true };
+	}
 
 	if (
 		!isAllowedApprover(actor, {
