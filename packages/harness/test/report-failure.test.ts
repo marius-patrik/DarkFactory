@@ -209,9 +209,18 @@ describe("operational failure observer scope", () => {
 	test("only default-branch workflow_run events may create repository-wide failure issues", () => {
 		const workflow = Bun.YAML.parse(
 			readFileSync(new URL("../../../.github/workflows/report-failure.yml", import.meta.url), "utf8"),
-		) as { jobs: { report: { if: string } } };
-		const monitoredWorkflows = (workflow as unknown as { on: { workflow_run: { workflows: string[] } } }).on.workflow_run.workflows;
-		for (const name of ["DarkFactory Self-Hosted Control","Install Sweep","Quota Resume Sweep","Synchronize DarkFactory Fleet","Verify DarkFactory Self-Installation"]) {
+		) as {
+			on: { workflow_run: { workflows: string[] } };
+			jobs: { report: { if: string } };
+		};
+		const monitoredWorkflows = workflow.on.workflow_run.workflows;
+		for (const name of [
+			"DarkFactory Self-Hosted Control",
+			"Install Sweep",
+			"Quota Resume Sweep",
+			"Synchronize DarkFactory Fleet",
+			"Verify DarkFactory Self-Installation",
+		]) {
 			expect(monitoredWorkflows).toContain(name);
 		}
 		const guard = workflow.jobs.report.if;
