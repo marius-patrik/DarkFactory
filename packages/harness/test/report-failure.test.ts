@@ -95,41 +95,41 @@ function fakeRepo(
 	return { repo, created, comments, closed, issues, apiReads, run };
 }
 
-const options = { workflow: "CI", runUrl: "https://run/1", runId: "1" };
+const options = { workflow: "CI", workflowId: 42, runUrl: "https://run/1", runId: "1" };
 
 describe("failure issue body", () => {
 	test("carries the marker that identifies its workflow", () => {
-		const body = failureBody("CI", "https://run/1", "1");
-		expect(body).toContain(failureMarker("CI"));
+		const body = failureBody("CI", "https://run/1", "1", 42);
+		expect(body).toContain(failureMarker(42));
 		expect(body).toContain("https://run/1");
 	});
 	test("different workflows get different markers", () => {
-		expect(failureMarker("CI")).not.toBe(failureMarker("Release"));
+		expect(failureMarker(42)).not.toBe(failureMarker(99));
 	});
 });
 
 describe("finding an open failure", () => {
 	test("finds by marker rather than by title", async () => {
-		const { repo } = fakeRepo([{ number: 7, body: "retitled by a human\n\n" + failureMarker("CI") }]);
-		expect(await findOpenFailure(repo, "CI")).toBe(7);
+		const { repo } = fakeRepo([{ number: 7, body: "retitled by a human\n\n" + failureMarker(42) }]);
+		expect(await findOpenFailure(repo, 42)).toBe(7);
 	});
 	test("excludes pull requests from incident issue lookup and mutation", async () => {
 		const state = fakeRepo([
 			{
 				number: 7,
-				body: failureMarker("CI"),
+				body: failureMarker(42),
 				pull_request: { url: "https://api.github.com/repos/owner/repo/pulls/7" },
 			},
-			{ number: 8, body: failureMarker("CI") },
+			{ number: 8, body: failureMarker(42) },
 		]);
-		expect(await findOpenFailure(state.repo, "CI")).toBe(8);
-		expect(await closeDuplicateFailures(state.repo, "CI", 8)).toEqual([]);
-		expect(await resolveFailure(state.repo, "CI")).toBe(8);
+		expect(await findOpenFailure(state.repo, 42)).toBe(8);
+		expect(await closeDuplicateFailures(state.repo, 42, 8)).toEqual([]);
+		expect(await resolveFailure(state.repo, 42, "CI", "1")).toBe(8);
 		expect(state.closed).toEqual([8]);
 		const onlyPr = fakeRepo([
 			{
 				number: 7,
-				body: failureMarker("CI"),
+				body: failureMarker(42),
 				pull_request: { url: "https://api.github.com/repos/owner/repo/pulls/7" },
 			},
 		]);
@@ -138,8 +138,8 @@ describe("finding an open failure", () => {
 	});
 
 	test("ignores an issue for a different workflow", async () => {
-		const { repo } = fakeRepo([{ number: 7, body: failureMarker("Release") }]);
-		expect(await findOpenFailure(repo, "CI")).toBeNull();
+		const { repo } = fakeRepo([{ number: 7, body: failureMarker(99) }]);
+		expect(await findOpenFailure(repo, 42)).toBeNull();
 	});
 });
 
@@ -153,7 +153,7 @@ describe("reporting a failure", () => {
 	});
 
 	test("comments on the open issue instead of filing a second one", async () => {
-		const { repo, created, comments } = fakeRepo([{ number: 7, body: failureMarker("CI") }]);
+		const { repo, created, comments } = fakeRepo([{ number: 7, body: failureMarker(42) }]);
 		const result = await reportFailure({ ...options, repo });
 		expect(created).toEqual([]);
 		expect(comments[0]?.body).toContain("Failed again: https://run/1");
@@ -164,37 +164,37 @@ describe("reporting a failure", () => {
 	test("closes a duplicate left by a race, keeping the lower number", async () => {
 		// Two runs both saw nothing open and both filed; the higher number is the duplicate.
 		const { repo, closed, comments } = fakeRepo([
-			{ number: 4, body: failureMarker("CI") },
-			{ number: 9, body: failureMarker("CI") },
+			{ number: 4, body: failureMarker(42) },
+			{ number: 9, body: failureMarker(42) },
 		]);
-		const closedBySweep = await closeDuplicateFailures(repo, "CI", 4);
+		const closedBySweep = await closeDuplicateFailures(repo, 42, 4);
 		expect(closedBySweep).toEqual([9]);
 		expect(closed).toEqual([9]);
 		expect(comments[0]?.body).toContain("Duplicate of #4");
 	});
 
 	test("never closes the issue it is keeping", async () => {
-		const { repo, closed } = fakeRepo([{ number: 4, body: failureMarker("CI") }]);
-		await closeDuplicateFailures(repo, "CI", 4);
+		const { repo, closed } = fakeRepo([{ number: 4, body: failureMarker(42) }]);
+		await closeDuplicateFailures(repo, 42, 4);
 		expect(closed).toEqual([]);
 	});
 
 	test("leaves another workflow's issue alone while de-duplicating", async () => {
-		const { repo, closed } = fakeRepo([{ number: 9, body: failureMarker("Release") }]);
-		expect(await closeDuplicateFailures(repo, "CI", 4)).toEqual([]);
+		const { repo, closed } = fakeRepo([{ number: 9, body: failureMarker(99) }]);
+		expect(await closeDuplicateFailures(repo, 42, 4)).toEqual([]);
 		expect(closed).toEqual([]);
 	});
 });
 
 describe("resolving a failure", () => {
 	test("closes the issue and says why", async () => {
-		const { repo, closed, comments } = fakeRepo([{ number: 7, body: failureMarker("CI") }]);
-		expect(await resolveFailure(repo, "CI")).toBe(7);
+		const { repo, closed, comments } = fakeRepo([{ number: 7, body: failureMarker(42) }]);
+		expect(await resolveFailure(repo, 42, "CI", "1")).toBe(7);
 		expect(closed).toEqual([7]);
 		expect(comments[0]?.body).toContain("succeeded again");
 	});
 	test("retry after a failed close does not duplicate a recovery comment", async () => {
-		const state = fakeRepo([{ number: 7, body: failureMarker("CI", 42) }]);
+		const state = fakeRepo([{ number: 7, body: failureMarker(42) }]);
 		const closeIssue = state.repo.closeIssue.bind(state.repo);
 		let failOnce = true;
 		const flaky = new Proxy(state.repo, {
@@ -210,8 +210,8 @@ describe("resolving a failure", () => {
 				return Reflect.get(target, property, receiver);
 			},
 		});
-		await expect(resolveFailure(flaky, "CI", undefined, 42, "1")).rejects.toThrow("transient");
-		expect(await resolveFailure(flaky, "CI", undefined, 42, "1")).toBe(7);
+		await expect(resolveFailure(flaky, 42, "CI", "1")).rejects.toThrow("transient");
+		expect(await resolveFailure(flaky, 42, "CI", "1")).toBe(7);
 		expect(state.closed).toEqual([7]);
 		expect(state.comments).toHaveLength(1);
 		expect(state.comments[0]?.body).toContain("pipeline-failure-recovery-run: 1");
@@ -219,18 +219,18 @@ describe("resolving a failure", () => {
 
 	test("successful recovery closes every matching duplicate incident", async () => {
 		const state = fakeRepo([
-			{ number: 4, body: failureMarker("CI") },
-			{ number: 9, body: failureMarker("CI") },
-			{ number: 12, body: failureMarker("Release") },
+			{ number: 4, body: failureMarker(42) },
+			{ number: 9, body: failureMarker(42) },
+			{ number: 12, body: failureMarker(99) },
 		]);
-		expect(await resolveFailure(state.repo, "CI")).toBe(4);
+		expect(await resolveFailure(state.repo, 42, "CI", "1")).toBe(4);
 		expect(state.closed).toEqual([4, 9]);
 		expect(state.comments).toHaveLength(2);
 	});
 
 	test("does nothing when no issue is open", async () => {
 		const { repo, closed } = fakeRepo();
-		expect(await resolveFailure(repo, "CI")).toBeNull();
+		expect(await resolveFailure(repo, 42, "CI", "1")).toBeNull();
 		expect(closed).toEqual([]);
 	});
 });
@@ -420,9 +420,9 @@ describe("observed workflow result drives issue mutations", () => {
 			await observeWorkflowCompletion({ ...options, repo, conclusion: "failure", invocation: trustedInvocation }),
 		).toBe("report");
 		expect(created).toHaveLength(1);
-		expect(created[0]?.body).toContain(failureMarker("CI", 42));
+		expect(created[0]?.body).toContain(failureMarker(42));
 		// A legitimate subsequent completed success is verified through the Actions API.
-		const successRepo = fakeRepo([{ number: 101, body: failureMarker("CI", 42) }], { conclusion: "success" });
+		const successRepo = fakeRepo([{ number: 101, body: failureMarker(42) }], { conclusion: "success" });
 		expect(
 			await observeWorkflowCompletion({
 				...options,
@@ -454,7 +454,7 @@ describe("observed workflow result drives issue mutations", () => {
 
 	test("non-recovery conclusions never query or mutate the repository", async () => {
 		for (const conclusion of ["cancelled", "skipped", "neutral", "stale", "action_required"]) {
-			const { repo, created, comments, closed } = fakeRepo([{ number: 7, body: failureMarker("CI") }], {
+			const { repo, created, comments, closed } = fakeRepo([{ number: 7, body: failureMarker(42) }], {
 				conclusion,
 			});
 			let requested = 0;
@@ -482,12 +482,12 @@ describe("observed workflow result drives issue mutations", () => {
 	});
 });
 
-describe("durable workflow identity and legacy reconciliation", () => {
+describe("durable workflow identity", () => {
 	test("two workflows with the same display name never share or close each others incidents", async () => {
 		const state = fakeRepo(
 			[
-				{ number: 7, body: failureMarker("CI", 42) },
-				{ number: 8, body: failureMarker("CI", 99) },
+				{ number: 7, body: failureMarker(42) },
+				{ number: 8, body: failureMarker(99) },
 			],
 			{ conclusion: "success" },
 		);
@@ -500,101 +500,14 @@ describe("durable workflow identity and legacy reconciliation", () => {
 		expect(state.closed).toEqual([7]);
 	});
 
-	test("migrates a renamed legacy incident only after verifying its original default-branch failure", async () => {
-		const legacy = failureBody("Old CI", "https://run/7", "7");
-		const state = fakeRepo([{ number: 7, body: legacy }], { conclusion: "success" });
-		const originalRest = state.repo.client.rest.bind(state.repo.client);
-		const reader = {
-			async rest<T>(method: string, path: string): Promise<T> {
-				if (path.endsWith("/actions/runs/7")) {
-					return {
-						...state.run,
-						id: 7,
-						run_number: 7,
-						name: "Old CI",
-						html_url: "https://run/7",
-						conclusion: "failure",
-					} as T;
-				}
-				return originalRest<T>(method, path);
-			},
-		};
-		await observeWorkflowCompletion({
-			...options,
-			repo: state.repo,
-			reader,
-			conclusion: "success",
-			invocation: trustedInvocation,
-		});
-		expect(state.issues[0]?.body).toContain(failureMarker("Old CI", 42));
-		expect(state.closed).toEqual([7]);
-	});
 
-	test("rejects adoption of legacy incidents sourced from PRs, forks, other branches or mismatched bodies", async () => {
-		const candidates: Array<{ metadata?: Partial<ObservedWorkflowRun>; issueBody?: string }> = [
-			{ metadata: { event: "pull_request" } },
-			{ metadata: { event: "pull_request_target" } },
-			{ metadata: { head_branch: "feature" } },
-			{ metadata: { head_repository: { full_name: "someone/fork" } } },
-			{ metadata: { repository: { full_name: "someone/fork" } } },
-			{ metadata: { conclusion: "success" } },
-			{ metadata: { conclusion: "cancelled" } },
-			{ metadata: { status: "in_progress" } },
-			{ metadata: { workflow_id: 99 } },
-			{ metadata: { name: "Another Workflow" } },
-			{ metadata: { html_url: "https://run/other" } },
-			{ issueBody: failureBody("Incorrect Name", "https://run/7", "7") },
-			{ issueBody: failureBody("CI", "https://run/other", "7") },
-		];
-		for (const candidate of candidates) {
-			const body = candidate.issueBody ?? failureBody("CI", "https://run/7", "7");
-			const state = fakeRepo([{ number: 7, body }], { conclusion: "success" });
-			const originalRest = state.repo.client.rest.bind(state.repo.client);
-			const reader = {
-				async rest<T>(method: string, path: string): Promise<T> {
-					if (path.endsWith("/actions/runs/7")) {
-						return {
-							...state.run,
-							id: 7,
-							run_number: 7,
-							html_url: "https://run/7",
-							conclusion: "failure",
-							...candidate.metadata,
-						} as T;
-					}
-					return originalRest<T>(method, path);
-				},
-			};
-			await observeWorkflowCompletion({
-				...options,
-				repo: state.repo,
-				reader,
-				conclusion: "success",
-				invocation: trustedInvocation,
-			});
-			expect(state.issues[0]?.body).toBe(body);
-			expect(state.closed).toEqual([]);
-		}
-	});
-
-	test("unverifiable legacy incidents remain untouched rather than being misattributed", async () => {
-		const state = fakeRepo([{ number: 7, body: failureMarker("CI") }], { conclusion: "success" });
-		await observeWorkflowCompletion({
-			...options,
-			repo: state.repo,
-			conclusion: "success",
-			invocation: trustedInvocation,
-		});
-		expect(state.closed).toEqual([]);
-		expect(state.issues[0]?.body).toBe(failureMarker("CI"));
-	});
 });
 
 describe("ordered incident observations", () => {
 	test("a late old failure reconciles the newer successful run", async () => {
 		const seed = fakeRepo();
 		const newest = { ...seed.run, id: 2, run_number: 2, html_url: "https://run/2", conclusion: "success" };
-		const target = fakeRepo([{ number: 7, body: failureMarker("CI", 42) }], {}, [newest, seed.run]);
+		const target = fakeRepo([{ number: 7, body: failureMarker(42) }], {}, [newest, seed.run]);
 		expect(
 			await observeWorkflowCompletion({
 				...options,
@@ -751,10 +664,10 @@ describe("incident idempotence and deduplication", () => {
 	test("competing reporters always keep the lowest numbered incident", async () => {
 		for (const keep of [4, 9]) {
 			const state = fakeRepo([
-				{ number: 4, body: failureMarker("CI") },
-				{ number: 9, body: failureMarker("CI") },
+				{ number: 4, body: failureMarker(42) },
+				{ number: 9, body: failureMarker(42) },
 			]);
-			expect(await closeDuplicateFailures(state.repo, "CI", keep)).toEqual([9]);
+			expect(await closeDuplicateFailures(state.repo, 42, keep)).toEqual([9]);
 			expect(state.closed).toEqual([9]);
 		}
 	});

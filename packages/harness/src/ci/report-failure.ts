@@ -14,16 +14,8 @@ export function failureActionForConclusion(conclusion: string | null | undefined
 
 export const FAILURE_LABEL = "pipeline-failure";
 
-/**
- * Hidden marker naming the workflow an issue belongs to.
- *
- * Identity lives in the body rather than the title so that renaming an issue by hand — or an agent
- * rewording it — does not spawn a second issue for the same failing workflow.
- */
-export const failureMarker = (workflow: string, workflowId?: number): string =>
-	workflowId === undefined
-		? `<!-- pipeline-failure: ${workflow} -->`
-		: `<!-- pipeline-failure-workflow-id: ${workflowId} -->`;
+/** Stable GitHub Actions workflow ID scopes each incident, independent of display name. */
+export const failureMarker = (workflowId: number): string => `<!-- pipeline-failure-workflow-id: ${workflowId} -->`;
 interface ReportFailureOptions {
 	/** Repository the issue is opened in. */
 	repo: GitHubRepository;
@@ -33,8 +25,8 @@ interface ReportFailureOptions {
 	runUrl: string;
 	/** Identifier of the failing run. */
 	runId: string;
-	/** Verified, stable GitHub workflow ID; omitted only by legacy direct callers. */
-	workflowId?: number;
+	/** Verified GitHub Actions workflow ID. */
+	workflowId: number;
 	/** Notice sink for duplicates closed and other progress. */
 	log?: (message: string) => void;
 }
@@ -212,16 +204,8 @@ export async function observeWorkflowCompletion(options: ObservedCompletion): Pr
 	const latest = await latestActionableWorkflowRun(options.repo, options.reader ?? options.repo.client, observed);
 	if (!latest) return "ignore";
 	const action = failureActionForConclusion(latest.conclusion);
-	// Existing active incident issues used display names as keys. Verify their
-	// original Actions run identities before giving them durable workflow IDs.
-	await migrateLegacyFailureIssues(
-		options.repo,
-		latest.workflow_id,
-		options.reader ?? options.repo.client,
-		options.log,
-	);
 	if (action === "resolve") {
-		await resolveFailure(options.repo, latest.name, options.log, latest.workflow_id, String(latest.id));
+		await resolveFailure(options.repo, latest.workflow_id, latest.name, String(latest.id), options.log);
 		return action;
 	}
 	const outcome = await reportFailure({
@@ -235,76 +219,10 @@ export async function observeWorkflowCompletion(options: ObservedCompletion): Pr
 	return action;
 }
 
-/**
- * Migrate pre-ID operational incidents only when their stored first run can
- * be independently tied to this exact workflow ID. Name-only matching is not
- * safe: unrelated workflow files can share a display name, and names change.
- */
-export async function migrateLegacyFailureIssues(
-	repo: GitHubRepository,
-	workflowId: number,
-	reader: Pick<GitHubClient, "rest">,
-	log: (message: string) => void = () => {},
-): Promise<void> {
-	const issues = await repo.listIssues({ state: "open", labels: [FAILURE_LABEL] });
-	const legacy = issues.filter(
-		(issue) => !("pull_request" in issue) && (issue.body ?? "").startsWith("<!-- pipeline-failure: "),
-	);
-	if (legacy.length === 0) return;
-	const path = `/repos/${encodeURIComponent(repo.owner)}/${encodeURIComponent(repo.repo)}`;
-	const repository = await reader.rest<RepositoryMetadata>("GET", path);
-	if (repository.full_name?.toLowerCase() !== repo.slug.toLowerCase() || !repository.default_branch)
-		throw new Error("Cannot verify default branch before legacy incident adoption");
-	for (const issue of legacy) {
-		const body = issue.body ?? "";
-		if (
-			"pull_request" in issue ||
-			!body.includes("<!-- pipeline-failure: ") ||
-			body.includes("<!-- pipeline-failure-workflow-id: ")
-		)
-			continue;
-		const id = body.match(/^- Run id: `([1-9]\d*)`$/mu)?.[1];
-		if (!id || !Number.isSafeInteger(Number(id))) {
-			log(`Unverifiable legacy incident #${issue.number}; leaving untouched.`);
-			continue;
-		}
-		let original: ObservedWorkflowRun;
-		try {
-			original = await reader.rest<ObservedWorkflowRun>(
-				"GET",
-				`/repos/${encodeURIComponent(repo.owner)}/${encodeURIComponent(repo.repo)}/actions/runs/${id}`,
-			);
-		} catch {
-			log(`Cannot authenticate legacy incident #${issue.number} run ${id}; leaving untouched.`);
-			continue;
-		}
-		// A run with the correct workflow ID can still be a PR or fork.
-		// Only adopt when the legacy body matches the *failed default-branch*
-		// run that originally caused this incident.
-		if (
-			String(original.id) !== id ||
-			original.workflow_id !== workflowId ||
-			original.status !== "completed" ||
-			failureActionForConclusion(original.conclusion) !== "report" ||
-			original.head_branch !== repository.default_branch ||
-			!incidentRunEventAllowed(original.event) ||
-			original.repository?.full_name?.toLowerCase() !== repo.slug.toLowerCase() ||
-			original.head_repository?.full_name?.toLowerCase() !== repo.slug.toLowerCase() ||
-			!body.startsWith(`${failureMarker(original.name)}\n\n`) ||
-			!body.includes(`- Run: ${original.html_url}\n`)
-		)
-			continue;
-		await repo.updateIssue(Number(issue.number), {
-			body: `${failureMarker(original.name, workflowId)}\n${body}`,
-		});
-		log(`Assigned verified workflow identity ${workflowId} to legacy incident #${issue.number}.`);
-	}
-}
-
 /** Builds the body of a failure issue, carrying the marker that identifies its workflow. */
-export function failureBody(workflow: string, runUrl: string, runId: string, workflowId?: number): string {
+export function failureBody(workflow: string, runUrl: string, runId: string, workflowId: number): string {
 	return (
-		`${failureMarker(workflow, workflowId)}\n\n` +
+		`${failureMarker(workflowId)}\n\n` +
 		`The **${workflow}** workflow failed.\n\n` +
 		`- Run: ${runUrl}\n` +
 		`- Run id: \`${runId}\`\n\n` +
@@ -316,14 +234,10 @@ export function failureBody(workflow: string, runUrl: string, runId: string, wor
 /**
  * Finds the open failure issue for a workflow, if one exists.
  *
- * The marker in the body is the identity, not the title, so a retitled issue is still found.
+ * The immutable workflow ID in the body is authoritative even if the issue is retitled.
  */
-export async function findOpenFailure(
-	repo: GitHubRepository,
-	workflow: string,
-	workflowId?: number,
-): Promise<number | null> {
-	const marker = failureMarker(workflow, workflowId);
+export async function findOpenFailure(repo: GitHubRepository, workflowId: number): Promise<number | null> {
+	const marker = failureMarker(workflowId);
 	const issues = await repo.listIssues({ state: "open", labels: [FAILURE_LABEL] });
 	const match = issues.find((issue) => !("pull_request" in issue) && (issue.body ?? "").includes(marker));
 	return match ? Number(match.number) : null;
@@ -335,12 +249,11 @@ export async function findOpenFailure(
  */
 export async function closeDuplicateFailures(
 	repo: GitHubRepository,
-	workflow: string,
+	workflowId: number,
 	keep: number,
 	log: (message: string) => void = () => {},
-	workflowId?: number,
 ): Promise<number[]> {
-	const marker = failureMarker(workflow, workflowId);
+	const marker = failureMarker(workflowId);
 	const matches = (await repo.listIssues({ state: "open", labels: [FAILURE_LABEL] }))
 		.filter((issue) => !("pull_request" in issue) && (issue.body ?? "").includes(marker))
 		.map((issue) => Number(issue.number))
@@ -368,10 +281,10 @@ export async function closeDuplicateFailures(
 export async function reportFailure(options: ReportFailureOptions): Promise<FailureOutcome> {
 	const { repo, workflow, runUrl, runId, workflowId, log = () => {} } = options;
 
-	const existing = await findOpenFailure(repo, workflow, workflowId);
+	const existing = await findOpenFailure(repo, workflowId);
 	if (existing !== null) {
-		const duplicatesClosed = await closeDuplicateFailures(repo, workflow, existing, log, workflowId);
-		const survivor = (await findOpenFailure(repo, workflow, workflowId)) ?? existing;
+		const duplicatesClosed = await closeDuplicateFailures(repo, workflowId, existing, log);
+		const survivor = (await findOpenFailure(repo, workflowId)) ?? existing;
 		const marker = `<!-- pipeline-failure-run: ${runId} -->`;
 		const issue = await repo.getIssue(survivor);
 		const initialRun = `- Run id: \`${runId}\``;
@@ -392,31 +305,28 @@ export async function reportFailure(options: ReportFailureOptions): Promise<Fail
 	const number = Number(issue.number);
 	log(`Opened #${number} for ${workflow}.`);
 	// Another run may have filed between the check above and this create.
-	const duplicatesClosed = await closeDuplicateFailures(repo, workflow, number, log, workflowId);
-	return { number: (await findOpenFailure(repo, workflow, workflowId)) ?? number, duplicatesClosed };
+	const duplicatesClosed = await closeDuplicateFailures(repo, workflowId, number, log);
+	return { number: (await findOpenFailure(repo, workflowId)) ?? number, duplicatesClosed };
 }
 
 /** Closes the failure issue for a workflow that has succeeded again. */
 export async function resolveFailure(
 	repo: GitHubRepository,
+	workflowId: number,
 	workflow: string,
+	runId: string,
 	log: (message: string) => void = () => {},
-	workflowId?: number,
-	runId?: string,
 ): Promise<number | null> {
-	const marker = failureMarker(workflow, workflowId);
+	const marker = failureMarker(workflowId);
 	const matches = (await repo.listIssues({ state: "open", labels: [FAILURE_LABEL] }))
 		.filter((issue) => !("pull_request" in issue) && (issue.body ?? "").includes(marker))
 		.map((issue) => Number(issue.number))
 		.sort((a, b) => a - b);
 	for (const number of matches) {
-		const recoveryMarker = runId ? `<!-- pipeline-failure-recovery-run: ${runId} -->` : "";
-		const comments = recoveryMarker ? await repo.listComments(number) : [];
+		const recoveryMarker = `<!-- pipeline-failure-recovery-run: ${runId} -->`;
+		const comments = await repo.listComments(number);
 		if (!comments.some((comment) => (comment.body ?? "").includes(recoveryMarker)))
-			await repo.createComment(
-				number,
-				`**${workflow}** succeeded again; closing.${recoveryMarker ? `\n${recoveryMarker}` : ""}`,
-			);
+			await repo.createComment(number, `**${workflow}** succeeded again; closing.\n${recoveryMarker}`);
 		await repo.closeIssue(number);
 		log(`Closed #${number}: ${workflow} is green again.`);
 	}
