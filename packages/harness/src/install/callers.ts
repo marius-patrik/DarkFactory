@@ -98,7 +98,7 @@ export const WORKFLOWS: Readonly<Record<string, WorkflowSpec>> = Object.freeze({
 		// it simply never fires, which is how agent failures went unreported for as long as the
 		// pipeline watched a workflow called "Agent" that had been renamed "Autonomous Agent".
 		on: "workflow_run:\n    workflows: [{watched}]\n    types: [completed]",
-		permissions: "contents: read\n  issues: write",
+		permissions: "actions: read\n  contents: read\n  issues: write",
 	},
 	"update-submodules": {
 		name: "Update Submodules",
