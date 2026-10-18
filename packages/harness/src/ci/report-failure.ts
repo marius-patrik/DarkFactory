@@ -20,7 +20,9 @@ export const FAILURE_LABEL = "pipeline-failure";
  * rewording it — does not spawn a second issue for the same failing workflow.
  */
 export const failureMarker = (workflow: string, workflowId?: number): string =>
-	workflowId === undefined ? `<!-- pipeline-failure: ${workflow} -->` : `<!-- pipeline-failure-workflow-id: ${workflowId} -->`;
+	workflowId === undefined
+		? `<!-- pipeline-failure: ${workflow} -->`
+		: `<!-- pipeline-failure-workflow-id: ${workflowId} -->`;
 interface ReportFailureOptions {
 	/** Repository the issue is opened in. */
 	repo: GitHubRepository;
@@ -211,7 +213,12 @@ export async function observeWorkflowCompletion(options: ObservedCompletion): Pr
 	const action = failureActionForConclusion(latest.conclusion);
 	// Existing active incident issues used display names as keys. Verify their
 	// original Actions run identities before giving them durable workflow IDs.
-	await migrateLegacyFailureIssues(options.repo, latest.workflow_id, options.reader ?? options.repo.client, options.log);
+	await migrateLegacyFailureIssues(
+		options.repo,
+		latest.workflow_id,
+		options.reader ?? options.repo.client,
+		options.log,
+	);
 	if (action === "resolve") {
 		await resolveFailure(options.repo, latest.name, options.log, latest.workflow_id);
 		return action;
@@ -245,7 +252,8 @@ export async function migrateLegacyFailureIssues(
 			"pull_request" in issue ||
 			!body.includes("<!-- pipeline-failure: ") ||
 			body.includes("<!-- pipeline-failure-workflow-id: ")
-		) continue;
+		)
+			continue;
 		const id = body.match(/^- Run id: `([1-9]\d*)`$/mu)?.[1];
 		if (!id || !Number.isSafeInteger(Number(id))) {
 			log(`Unverifiable legacy incident #${issue.number}; leaving untouched.`);
@@ -265,7 +273,8 @@ export async function migrateLegacyFailureIssues(
 			String(original.id) !== id ||
 			original.workflow_id !== workflowId ||
 			original.repository?.full_name?.toLowerCase() !== repo.slug.toLowerCase()
-		) continue;
+		)
+			continue;
 		await repo.updateIssue(Number(issue.number), {
 			body: `${failureMarker(original.name, workflowId)}\n${body}`,
 		});
@@ -290,7 +299,11 @@ export function failureBody(workflow: string, runUrl: string, runId: string, wor
  *
  * The marker in the body is the identity, not the title, so a retitled issue is still found.
  */
-export async function findOpenFailure(repo: GitHubRepository, workflow: string, workflowId?: number): Promise<number | null> {
+export async function findOpenFailure(
+	repo: GitHubRepository,
+	workflow: string,
+	workflowId?: number,
+): Promise<number | null> {
 	const marker = failureMarker(workflow, workflowId);
 	const issues = await repo.listIssues({ state: "open", labels: [FAILURE_LABEL] });
 	const match = issues.find((issue) => !("pull_request" in issue) && (issue.body ?? "").includes(marker));

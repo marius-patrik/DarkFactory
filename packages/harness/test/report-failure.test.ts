@@ -443,10 +443,13 @@ describe("observed workflow result drives issue mutations", () => {
 
 describe("durable workflow identity and legacy reconciliation", () => {
 	test("two workflows with the same display name never share or close each others incidents", async () => {
-		const state = fakeRepo([
-			{ number: 7, body: failureMarker("CI", 42) },
-			{ number: 8, body: failureMarker("CI", 99) },
-		], { conclusion: "success" });
+		const state = fakeRepo(
+			[
+				{ number: 7, body: failureMarker("CI", 42) },
+				{ number: 8, body: failureMarker("CI", 99) },
+			],
+			{ conclusion: "success" },
+		);
 		await observeWorkflowCompletion({
 			...options,
 			repo: state.repo,
