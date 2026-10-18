@@ -345,8 +345,15 @@ export async function handlePrApproval(deps: HandlePrApprovalDeps): Promise<PrAp
 	const pr = Number.parseInt(detection.prNumber, 10);
 	logger.out(`PR #${pr} approved by @${actor}. Preparing for auto-merge.`);
 
-	const view = run(["pr", "view", String(pr), "--json", "isDraft,state,reviewDecision,headRefOid"], repo, { check: true });
-	const data = JSON.parse(view.stdout) as { isDraft?: boolean; state?: string; reviewDecision?: string; headRefOid?: string };
+	const view = run(["pr", "view", String(pr), "--json", "isDraft,state,reviewDecision,headRefOid"], repo, {
+		check: true,
+	});
+	const data = JSON.parse(view.stdout) as {
+		isDraft?: boolean;
+		state?: string;
+		reviewDecision?: string;
+		headRefOid?: string;
+	};
 	if (data.state !== "OPEN") {
 		logger.out(`PR #${pr} is ${data.state}. Exiting.`);
 		return { entered: true, reason: `pull request is ${data.state}`, merged: false };
@@ -392,7 +399,6 @@ export async function handlePrApproval(deps: HandlePrApprovalDeps): Promise<PrAp
 	if (submitted.status === "pending" && !requestId)
 		throw new Error(`GitHub omitted the async merge request ID for PR #${pr}`);
 	logger.out(`Merge request: ${submitted.status}${requestId ? ` (${requestId})` : ""}.`);
-
 
 	for (let attempt = 0; attempt < MERGE_POLL_ATTEMPTS; attempt += 1) {
 		if (requestId) {
