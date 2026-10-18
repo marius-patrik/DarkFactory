@@ -28,18 +28,20 @@ export async function runCiDoctor(
 	try {
 		detected = await resolveDetectedQuality(repoDir);
 		const gaps = detected.resolution.gaps;
-		repositoryResult =
-			gaps.length === 0
-				? {
-						status: "pass",
-						message: `Detected ${detected.evidence.packages.length} package(s) with complete deterministic action coverage`,
-						details: { packages: detected.evidence.packages, matrix: detected.matrix },
-					}
-				: {
-						status: "warn",
-						message: `Detected ${detected.evidence.packages.length} package(s) with ${gaps.length} explicitly unsupported/missing action(s)`,
-						details: { packages: detected.evidence.packages, gaps, matrix: detected.matrix },
-					};
+		const hasCoverage = gaps.length === 0 && detected.matrix.length > 0;
+		repositoryResult = hasCoverage
+			? {
+					status: "pass",
+					message: `Detected ${detected.evidence.packages.length} package(s) with executable, complete quality coverage`,
+					details: { packages: detected.evidence.packages, matrix: detected.matrix },
+				}
+			: {
+					status: "fail",
+					message: gaps.length > 0
+						? `Detected ${gaps.length} uncovered required quality action(s)`
+						: "No executable quality actions detected",
+					details: { packages: detected.evidence.packages, gaps, matrix: detected.matrix },
+				};
 	} catch (error) {
 		repositoryResult = {
 			status: "fail",

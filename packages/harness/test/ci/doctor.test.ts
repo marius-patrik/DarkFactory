@@ -12,6 +12,7 @@ describe("df ci doctor", () => {
 	it("passes when detected workflows and protection match", async () => {
 		const temp = await mkdtemp(join(tmpdir(), "df-ci-doctor-"));
 		try {
+			await writeFile(join(temp, "package.json"), JSON.stringify({ name: "consumer", scripts: { test: "bun test" } }));
 			await installWorkflows(temp);
 			const { fetch } = scripted([
 				json({ message: "Not Found" }, 404),
@@ -33,9 +34,23 @@ describe("df ci doctor", () => {
 		try {
 			const result = await runCiDoctor(temp);
 			expect(result.ok).toBe(false);
-			expect(result.checks.repository.status).toBe("pass");
+			expect(result.checks.repository.status).toBe("fail");
 			expect(result.checks.workflows.status).toBe("fail");
 			expect(result.checks.protection.status).toBe("skipped");
+		} finally {
+			await rm(temp, { recursive: true, force: true });
+		}
+	});
+
+	it("fails closed when installed workflows are valid but no executable quality is detected", async () => {
+		const temp = await mkdtemp(join(tmpdir(), "df-ci-doctor-empty-"));
+		try {
+			await installWorkflows(temp);
+			const result = await runCiDoctor(temp);
+			expect(result.ok).toBe(false);
+			expect(result.checks.repository.status).toBe("fail");
+			expect(result.checks.repository.message).toContain("No executable quality actions");
+			expect(result.checks.workflows.status).toBe("pass");
 		} finally {
 			await rm(temp, { recursive: true, force: true });
 		}
