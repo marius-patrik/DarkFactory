@@ -1,19 +1,12 @@
 /**
- * Pull request approval and auto-merge automation.
- *
- * Listens for maintainer approvals (native review or an approval comment), transitions the draft PR
- * to ready, submits a proxy approval when the branch protection still demands one, enables
- * auto-merge with branch auto-deletion, and reconciles bound issues and the project board to `Done`
- * after the merge lands.
- *
- * Board mutations are delegated to the board's own target, so field and option ids are
- * resolved at runtime rather than hardcoded.
+ * Maintainer-gated native PR approval, asynchronous merge and default-branch reconciliation.
+ * Project board writes use the canonical BoardTarget interface.
  */
 
 import type { BoardTarget } from "../board/client.ts";
 import { ALLOWED_ASSOCIATIONS, isAllowedApprover, parsePrCommand } from "./commands.ts";
 
-/** Seconds between merge-completion polls, and how many polls to attempt. */
+/** Milliseconds between merge-completion polls, and how many polls to attempt. */
 const MERGE_POLL_INTERVAL_MS = 5_000;
 export const MERGE_POLL_ATTEMPTS = 12;
 
@@ -41,7 +34,7 @@ interface GhOptions {
 	/**
 	 * Run with `BOT_TOKEN` instead of `GH_TOKEN`.
 	 *
-	 * Required for submitting the proxy review: `GH_TOKEN` is the maintainer's token, and GitHub
+	 * Required for submitting the proxy review: `GH_TOKEN` is the App or workflow token, and GitHub
 	 * refuses to let an author approve their own pull request, so an approval sent with it fails
 	 * silently.
 	 */
@@ -100,7 +93,7 @@ export interface PrApprovalOutcome {
 	entered: boolean;
 	/** Why the handler stopped, when it stopped before arming auto-merge. */
 	reason: string | null;
-	/** Whether a merge was observed landing during the poll. */
+	/** Whether a merge was confirmed or its merged-close webhook was reconciled. */
 	merged: boolean;
 }
 
@@ -288,14 +281,7 @@ async function reconcilePostMerge(
 	const issueNumbers = collectBoundIssues(data, repo);
 	logger.out(`Reconciling post-merge for PR #${prNumber}. Bound issues: [${issueNumbers.join(", ")}]`);
 
-	// Every write is awaited. The Python's client was synchronous, so `add_item` had returned by the
-	// time the next line ran; a GraphQL client is not, and without the await a failure surfaces as an
-	// unhandled rejection after this function has already returned — which is a board that silently
-	// stopped being updated, the exact outcome this reconciliation exists to prevent.
-	//
-	// A rejected write propagates, which is what the Python did: it had no try/except around these
-	// calls, so a failed board write failed the run. Swallowing it would hide the very failure this
-	// reconciliation exists to prevent.
+	// Await each project mutation and expose failures rather than reporting partial success.
 	await client.track(data.url, "Done", { fastPath: true });
 	await client.setStatusLabel(repo, prNumber, "Done");
 
@@ -308,17 +294,8 @@ async function reconcilePostMerge(
 }
 
 /**
- * Gates on the actor, then readies, approves, and auto-merges the pull request.
- *
- * Every early return is a success: an event that is not an approval is not a failure, and the
- * workflow step should not redden because a stranger commented.
- */
-/**
- * Now asynchronous, because the post-merge reconciliation it calls writes to a GraphQL board client
- * and those writes must complete before this returns. It was synchronous because the fake client in
- * the test suite was, and a synchronous fake makes a real asynchronous dependency look like a
- * synchronous one — the signature was shaped by the test rather than by the code it would run against
- * in production.
+ * Handles trusted merged-close events or maintainer approvals.
+ * Invalid state and failed board writes propagate; unrelated events are ignored.
  */
 export async function handlePrApproval(deps: HandlePrApprovalDeps): Promise<PrApprovalOutcome> {
 	const { client, run } = deps;
