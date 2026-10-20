@@ -178,13 +178,12 @@ export async function runCiCli(args: string[], context: CiCliContext = {}): Prom
 			let ref = getOption(args, "--ref");
 
 			if (prNumber) {
-				const pr = await repo.listPullRequests({ state: "all" });
-				const match = pr.find((p) => p.number === Number(prNumber));
-				if (!match) {
-					error(`Error: Pull request #${prNumber} not found`);
+				try {
+					ref = await repo.getPullRequestHeadSha(Number(prNumber));
+				} catch (cause) {
+					error(`Error: ${cause instanceof Error ? cause.message : String(cause)}`);
 					return 1;
 				}
-				ref = match.head.ref;
 			}
 
 			if (!ref) {

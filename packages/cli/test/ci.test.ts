@@ -148,6 +148,32 @@ describe("df ci CLI commands", () => {
 		}
 	});
 
+	it("checks the immutable SHA of an exact PR rather than its mutable branch name", async () => {
+		const temp = await mkdtemp(join(tmpdir(), "df-ci-pr-status-"));
+		try {
+			await writeFile(join(temp, "package.json"), JSON.stringify({ name: "consumer", scripts: { test: "bun test" } }));
+			const sha = "a".repeat(40);
+			const { fetch } = scripted([
+				json({ head: { ref: "mutable-branch", sha } }),
+				json({ check_runs: [
+					{ name: "quality", status: "completed", conclusion: "success" },
+					{ name: "verify-bound-issue", status: "completed", conclusion: "success" },
+				] }),
+				json({ statuses: [] }),
+			]);
+			const repo = new GitHubRepository(new GitHubClient({ token: "test", fetch }), "owner", "repo");
+			const output: string[] = [];
+			const exit = await runCiCli(["status", "--repo", temp, "--pr", "77", "--json"], {
+				repo,
+				log: (line) => output.push(line),
+			});
+			expect(exit).toBe(0);
+			expect(JSON.parse(output.join("")).ref).toBe(sha);
+		} finally {
+			await rm(temp, { recursive: true, force: true });
+		}
+	});
+
 	it("executes status with detector-derived required checks", async () => {
 		const temp = await mkdtemp(join(tmpdir(), "df-ci-cli-"));
 		try {

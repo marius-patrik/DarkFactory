@@ -108,6 +108,17 @@ export class GitHubRepository {
 		return `/repos/${encodeURIComponent(this.#owner)}/${encodeURIComponent(this.#repo)}${suffix}`;
 	}
 
+	/** Retrieves one immutable pull-request head SHA, without scanning all PRs or trusting a mutable branch ref. */
+	async getPullRequestHeadSha(number: number): Promise<string> {
+		if (!Number.isSafeInteger(number) || number <= 0)
+			throw new Error("Pull request number must be a positive integer");
+		const data = await this.#client.rest<{ head?: { sha?: string } }>("GET", this.#path(`/pulls/${number}`));
+		const sha = data.head?.sha;
+		if (!sha || !/^[a-f0-9]{40}$/iu.test(sha))
+			throw new Error(`Pull request #${number} has no valid head SHA`);
+		return sha;
+	}
+
 	async getIssue(number: number): Promise<GitHubIssue> {
 		return parse(issueSchema, await this.#client.rest("GET", this.#path(`/issues/${number}`)), "issue");
 	}
