@@ -90,6 +90,7 @@ export interface PrApprovalEnvironment {
 	IS_PR?: string;
 	PR_NUMBER?: string;
 	REVIEW_STATE?: string;
+	REVIEW_HEAD_SHA?: string;
 	COMMENT_BODY?: string;
 }
 
@@ -375,6 +376,11 @@ export async function handlePrApproval(deps: HandlePrApprovalDeps): Promise<PrAp
 		logger.out(`PR #${pr} is ${data.state}. Exiting.`);
 		return { entered: true, reason: `pull request is ${data.state}`, merged: false };
 	}
+
+	// GitHub may rewrite a native stack head after the review event was emitted.
+	// Never merge a different commit than the one the maintainer reviewed.
+	if (env.GITHUB_EVENT_NAME === "pull_request_review" && env.REVIEW_HEAD_SHA !== data.headRefOid)
+		throw new Error(`PR #${pr} head changed since the approving review; fresh approval required`);
 
 	if (data.isDraft) {
 		logger.out(`Marking PR #${pr} ready for review...`);

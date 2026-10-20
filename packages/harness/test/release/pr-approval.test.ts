@@ -443,6 +443,38 @@ describe("auto-merge and post-merge reconciliation", () => {
 		expect(lines.join("\n")).toContain("asynchronous request test-merge-uuid remains unconfirmed");
 	});
 
+	test("refuses to merge a rewritten PR head after its native review", async () => {
+		const commands: string[][] = [];
+		const run: GhRunner = (args) => {
+			commands.push([...args]);
+			return {
+				exitCode: 0,
+				stdout: JSON.stringify({
+					state: "OPEN",
+					isDraft: false,
+					reviewDecision: "APPROVED",
+					headRefOid: "a".repeat(40),
+					baseRefName: "main",
+				}),
+				stderr: "",
+			};
+		};
+		await expect(
+			handlePrApproval({
+				run,
+				client: boardSpy(),
+				logger: SILENT,
+				env: {
+					...openEnv,
+					GITHUB_EVENT_NAME: "pull_request_review",
+					REVIEW_STATE: "approved",
+					REVIEW_HEAD_SHA: "b".repeat(40),
+				},
+			}),
+		).rejects.toThrow("fresh approval required");
+		expect(commands).toHaveLength(1);
+	});
+
 	test("does not merge unapproved downstack ancestors when an upstack PR is approved", async () => {
 		const called: string[][] = [];
 		const run: GhRunner = (args) => {

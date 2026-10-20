@@ -107,6 +107,7 @@ jobs:
           COMMENT_BODY: ${{ github.event.comment.body }}
           REVIEW_BODY: ${{ github.event.review.body }}
           REVIEW_STATE: ${{ github.event.review.state }}
+          REVIEW_HEAD_SHA: ${{ github.event.review.commit_id }}
           PR_MERGED: ${{ github.event.pull_request.merged }}
           PR_BASE_BRANCH: ${{ github.event.pull_request.base.ref }}
           DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
