@@ -427,11 +427,28 @@ export async function handlePrApproval(deps: HandlePrApprovalDeps): Promise<PrAp
 			"merge_action=default",
 		],
 		repo,
-		{ check: true },
 	);
-	if (response.exitCode !== 0)
-		throw new Error(`Cannot submit async merge for PR #${pr}: ${(response.stderr || response.stdout).trim()}`);
-	const submitted = JSON.parse(response.stdout) as { status?: string; details?: { uuid?: string; message?: string } };
+	let submitted: {
+		status?: string;
+		details?: { uuid?: string; message?: string; expected_head_sha?: string; merge_action?: string };
+	};
+	try {
+		submitted = JSON.parse(response.stdout);
+	} catch {
+		throw new Error(`Cannot parse async merge response for PR #${pr}: ${response.stderr || response.stdout}`);
+	}
+	if (response.exitCode !== 0) {
+		// A repeated approval can race an existing, still-pending merge request.
+		// GitHub returns 409 with the original UUID/options. Only reuse a
+		// request targeting this exact reviewed head and merge action.
+		if (
+			submitted.status !== "pending" ||
+			!submitted.details?.uuid ||
+			submitted.details.expected_head_sha !== data.headRefOid ||
+			submitted.details.merge_action !== "default"
+		)
+			throw new Error(`Cannot submit async merge for PR #${pr}: ${(response.stderr || response.stdout).trim()}`);
+	}
 	if (!["pending", "enqueued", "merged"].includes(submitted.status ?? ""))
 		throw new Error(`GitHub did not accept merge of PR #${pr}: ${response.stdout}`);
 	const requestId = submitted.details?.uuid;

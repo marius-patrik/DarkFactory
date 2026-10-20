@@ -471,6 +471,36 @@ describe("auto-merge and post-merge reconciliation", () => {
 		expect(called.some((args) => args[0] === "api" && args.includes("PUT"))).toBe(false);
 	});
 
+	test("reuses a conflicting in-flight async merge only when it matches the reviewed SHA", async () => {
+		const run: GhRunner = (args) => {
+			if (args[0] === "api" && args[1]?.includes("/pulls?")) return { exitCode: 0, stdout: "[]", stderr: "" };
+			if (args[0] === "api" && args.includes("PUT"))
+				return {
+					exitCode: 1,
+					stdout: JSON.stringify({ status: "pending", details: { uuid: "existing-uuid", expected_head_sha: "0123456789abcdef0123456789abcdef01234567", merge_action: "default" } }),
+					stderr: "HTTP 409: Conflict",
+				};
+			if (args[0] === "api") return { exitCode: 0, stdout: JSON.stringify({ status: "enqueued" }), stderr: "" };
+			return {
+				exitCode: 0,
+				stdout: JSON.stringify({ state: "OPEN", isDraft: false, reviewDecision: "APPROVED", headRefOid: "0123456789abcdef0123456789abcdef01234567", baseRefName: "main" }),
+				stderr: "",
+			};
+		};
+		const result = await handlePrApproval({ run, client: boardSpy(), logger: SILENT, env: openEnv });
+		expect(result.reason).toBe("merge queued");
+	});
+
+	test("refuses to reuse a conflicting async request for a different SHA", async () => {
+		const run: GhRunner = (args) => {
+			if (args[0] === "api" && args[1]?.includes("/pulls?")) return { exitCode: 0, stdout: "[]", stderr: "" };
+			if (args[0] === "api")
+				return { exitCode: 1, stdout: JSON.stringify({ status: "pending", details: { uuid: "existing-uuid", expected_head_sha: "f".repeat(40), merge_action: "default" } }), stderr: "HTTP 409" };
+			return { exitCode: 0, stdout: JSON.stringify({ state: "OPEN", isDraft: false, reviewDecision: "APPROVED", headRefOid: "0123456789abcdef0123456789abcdef01234567", baseRefName: "main" }), stderr: "" };
+		};
+		await expect(handlePrApproval({ run, client: boardSpy(), logger: SILENT, env: openEnv })).rejects.toThrow("HTTP 409");
+	});
+
 	test("fails loudly if GitHub rejects a stacked merge instead of claiming auto-merge is armed", async () => {
 		const run: GhRunner = (args) => {
 			if (args[0] === "api" && args[1]?.includes("/pulls?")) return { exitCode: 0, stdout: "[]", stderr: "" };
