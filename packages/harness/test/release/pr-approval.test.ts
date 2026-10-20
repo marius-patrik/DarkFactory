@@ -381,7 +381,7 @@ describe("auto-merge and post-merge reconciliation", () => {
 			};
 		};
 		const board = boardSpy();
-		const outcome = await handlePrApproval({ run, client: board, logger: recorder().logger, env: openEnv });
+		const outcome = await handlePrApproval({ run, client: board, logger: recorder().logger, env: openEnv, sleep: () => {} });
 
 		expect(outcome.merged).toBe(true);
 		expect(issued.some((args) => args[1] === "ready")).toBe(true);
@@ -420,20 +420,20 @@ describe("auto-merge and post-merge reconciliation", () => {
 			if (args[1] === "view") return { exitCode: 0, stdout: '{"state": "OPEN"}', stderr: "" };
 			return OK;
 		};
-		let slept = 0;
+		const intervals: number[] = [];
 		const { lines, logger } = recorder();
 		const outcome = await handlePrApproval({
 			run,
 			client: boardSpy(),
 			logger,
 			env: openEnv,
-			sleep: () => {
-				slept += 1;
+			sleep: (interval) => {
+				intervals.push(interval);
 			},
 		});
 
 		expect(outcome.merged).toBe(false);
-		expect(slept).toBe(MERGE_POLL_ATTEMPTS);
+		expect(intervals).toEqual(Array(MERGE_POLL_ATTEMPTS).fill(5_000));
 		expect(lines.join("\n")).toContain("asynchronous request test-merge-uuid remains unconfirmed");
 	});
 

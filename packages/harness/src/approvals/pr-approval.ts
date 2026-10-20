@@ -14,7 +14,7 @@ import type { BoardTarget } from "../board/client.ts";
 import { ALLOWED_ASSOCIATIONS, isAllowedApprover, parsePrCommand } from "./commands.ts";
 
 /** Seconds between merge-completion polls, and how many polls to attempt. */
-const MERGE_POLL_INTERVAL_SECONDS = 5;
+const MERGE_POLL_INTERVAL_MS = 5_000;
 export const MERGE_POLL_ATTEMPTS = 12;
 
 /**
@@ -465,7 +465,7 @@ export async function handlePrApproval(deps: HandlePrApprovalDeps): Promise<PrAp
 			logger.out(`PR #${pr} merged successfully.`);
 			return { entered: true, reason: null, merged: true };
 		}
-		await sleep(MERGE_POLL_INTERVAL_SECONDS);
+		await sleep(MERGE_POLL_INTERVAL_MS);
 	}
 
 	logger.out(`PR #${pr} has not merged; asynchronous request ${requestId ?? submitted.status} remains unconfirmed.`);
