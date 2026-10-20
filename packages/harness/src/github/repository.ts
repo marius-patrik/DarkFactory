@@ -110,12 +110,10 @@ export class GitHubRepository {
 
 	/** Retrieves one immutable pull-request head SHA, without scanning all PRs or trusting a mutable branch ref. */
 	async getPullRequestHeadSha(number: number): Promise<string> {
-		if (!Number.isSafeInteger(number) || number <= 0)
-			throw new Error("Pull request number must be a positive integer");
+		if (!Number.isSafeInteger(number) || number <= 0) throw new Error("Pull request number must be a positive integer");
 		const data = await this.#client.rest<{ head?: { sha?: string } }>("GET", this.#path(`/pulls/${number}`));
 		const sha = data.head?.sha;
-		if (!sha || !/^[a-f0-9]{40}$/iu.test(sha))
-			throw new Error(`Pull request #${number} has no valid head SHA`);
+		if (!sha || !/^[a-f0-9]{40}$/iu.test(sha)) throw new Error(`Pull request #${number} has no valid head SHA`);
 		return sha;
 	}
 

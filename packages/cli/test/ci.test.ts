@@ -155,10 +155,12 @@ describe("df ci CLI commands", () => {
 			const sha = "a".repeat(40);
 			const { fetch } = scripted([
 				json({ head: { ref: "mutable-branch", sha } }),
-				json({ check_runs: [
-					{ name: "quality", status: "completed", conclusion: "success" },
-					{ name: "verify-bound-issue", status: "completed", conclusion: "success" },
-				] }),
+				json({
+					check_runs: [
+						{ name: "quality", status: "completed", conclusion: "success" },
+						{ name: "verify-bound-issue", status: "completed", conclusion: "success" },
+					],
+				}),
 				json({ statuses: [] }),
 			]);
 			const repo = new GitHubRepository(new GitHubClient({ token: "test", fetch }), "owner", "repo");
