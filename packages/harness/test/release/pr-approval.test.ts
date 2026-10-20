@@ -477,13 +477,26 @@ describe("auto-merge and post-merge reconciliation", () => {
 			if (args[0] === "api" && args.includes("PUT"))
 				return {
 					exitCode: 1,
-					stdout: JSON.stringify({ status: "pending", details: { uuid: "existing-uuid", expected_head_sha: "0123456789abcdef0123456789abcdef01234567", merge_action: "default" } }),
+					stdout: JSON.stringify({
+						status: "pending",
+						details: {
+							uuid: "existing-uuid",
+							expected_head_sha: "0123456789abcdef0123456789abcdef01234567",
+							merge_action: "default",
+						},
+					}),
 					stderr: "HTTP 409: Conflict",
 				};
 			if (args[0] === "api") return { exitCode: 0, stdout: JSON.stringify({ status: "enqueued" }), stderr: "" };
 			return {
 				exitCode: 0,
-				stdout: JSON.stringify({ state: "OPEN", isDraft: false, reviewDecision: "APPROVED", headRefOid: "0123456789abcdef0123456789abcdef01234567", baseRefName: "main" }),
+				stdout: JSON.stringify({
+					state: "OPEN",
+					isDraft: false,
+					reviewDecision: "APPROVED",
+					headRefOid: "0123456789abcdef0123456789abcdef01234567",
+					baseRefName: "main",
+				}),
 				stderr: "",
 			};
 		};
@@ -495,12 +508,30 @@ describe("auto-merge and post-merge reconciliation", () => {
 		const run: GhRunner = (args) => {
 			if (args[0] === "api" && args[1]?.includes("/pulls?")) return { exitCode: 0, stdout: "[]", stderr: "" };
 			if (args[0] === "api")
-				return { exitCode: 1, stdout: JSON.stringify({ status: "pending", details: { uuid: "existing-uuid", expected_head_sha: "f".repeat(40), merge_action: "default" } }), stderr: "HTTP 409" };
-			return { exitCode: 0, stdout: JSON.stringify({ state: "OPEN", isDraft: false, reviewDecision: "APPROVED", headRefOid: "0123456789abcdef0123456789abcdef01234567", baseRefName: "main" }), stderr: "" };
+				return {
+					exitCode: 1,
+					stdout: JSON.stringify({
+						status: "pending",
+						details: { uuid: "existing-uuid", expected_head_sha: "f".repeat(40), merge_action: "default" },
+					}),
+					stderr: "HTTP 409",
+				};
+			return {
+				exitCode: 0,
+				stdout: JSON.stringify({
+					state: "OPEN",
+					isDraft: false,
+					reviewDecision: "APPROVED",
+					headRefOid: "0123456789abcdef0123456789abcdef01234567",
+					baseRefName: "main",
+				}),
+				stderr: "",
+			};
 		};
-		await expect(handlePrApproval({ run, client: boardSpy(), logger: SILENT, env: openEnv })).rejects.toThrow("HTTP 409");
+		await expect(handlePrApproval({ run, client: boardSpy(), logger: SILENT, env: openEnv })).rejects.toThrow(
+			"HTTP 409",
+		);
 	});
-
 	test("fails loudly if GitHub rejects a stacked merge instead of claiming auto-merge is armed", async () => {
 		const run: GhRunner = (args) => {
 			if (args[0] === "api" && args[1]?.includes("/pulls?")) return { exitCode: 0, stdout: "[]", stderr: "" };
