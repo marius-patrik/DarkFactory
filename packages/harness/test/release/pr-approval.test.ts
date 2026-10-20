@@ -381,7 +381,13 @@ describe("auto-merge and post-merge reconciliation", () => {
 			};
 		};
 		const board = boardSpy();
-		const outcome = await handlePrApproval({ run, client: board, logger: recorder().logger, env: openEnv, sleep: () => {} });
+		const outcome = await handlePrApproval({
+			run,
+			client: board,
+			logger: recorder().logger,
+			env: openEnv,
+			sleep: () => {},
+		});
 
 		expect(outcome.merged).toBe(true);
 		expect(issued.some((args) => args[1] === "ready")).toBe(true);

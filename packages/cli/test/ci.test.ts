@@ -127,6 +127,27 @@ describe("df ci CLI commands", () => {
 		}
 	});
 
+	it("exits nonzero for pending checks instead of returning a false success", async () => {
+		const temp = await mkdtemp(join(tmpdir(), "df-ci-pending-status-"));
+		try {
+			await writeFile(join(temp, "package.json"), JSON.stringify({ name: "consumer", scripts: { test: "bun test" } }));
+			const { fetch } = scripted([
+				json({ check_runs: [{ name: "quality", status: "in_progress", conclusion: null }] }),
+				json({ statuses: [] }),
+			]);
+			const repo = new GitHubRepository(new GitHubClient({ token: "test", fetch }), "owner", "repo");
+			const output: string[] = [];
+			const exit = await runCiCli(["status", "--repo", temp, "--ref", "HEAD", "--json"], {
+				repo,
+				log: (line) => output.push(line),
+			});
+			expect(exit).toBe(1);
+			expect(JSON.parse(output.join("")).state).toBe("pending");
+		} finally {
+			await rm(temp, { recursive: true, force: true });
+		}
+	});
+
 	it("executes status with detector-derived required checks", async () => {
 		const temp = await mkdtemp(join(tmpdir(), "df-ci-cli-"));
 		try {

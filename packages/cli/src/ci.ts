@@ -195,7 +195,7 @@ export async function runCiCli(args: string[], context: CiCliContext = {}): Prom
 
 			if (isJson) {
 				log(JSON.stringify(status, null, 2));
-				return status.state === "failed" ? 1 : 0;
+				return status.state === "green" ? 0 : 1;
 			}
 
 			log(`Ref: ${ref}`);
@@ -209,7 +209,7 @@ export async function runCiCli(args: string[], context: CiCliContext = {}): Prom
 				);
 			}
 
-			return status.state === "failed" ? 1 : 0;
+			return status.state === "green" ? 0 : 1;
 		}
 
 		case "runs": {
