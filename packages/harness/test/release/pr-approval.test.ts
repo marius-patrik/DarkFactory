@@ -21,10 +21,12 @@ describe("approval workflow authentication and merge notifications", () => {
 		) as {
 			on: { pull_request_target: { types: string[] } };
 			jobs: {
-				"on-approval": { steps: Array<{ env?: Record<string, string> }> };
+				"on-approval": { steps: Array<{ name?: string; env?: Record<string, string>; with?: { ref?: string } }> };
 			};
 		};
 		const env = workflow.jobs["on-approval"].steps.at(-1)?.env;
+		const checkout = workflow.jobs["on-approval"].steps.find((step) => step.name === "Checkout trusted default branch");
+		expect(checkout?.with?.ref).toBe("${{ github.event.repository.default_branch }}");
 		expect(env?.GH_TOKEN).toBe("${{ steps.app-token.outputs.token || github.token }}");
 		expect(env?.GH_PROJECT_TOKEN).toBe("${{ secrets.GH_PROJECT_TOKEN }}");
 		expect(env?.PR_MERGED).toBe("${{ github.event.pull_request.merged }}");
