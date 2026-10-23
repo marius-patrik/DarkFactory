@@ -2,8 +2,8 @@ import { afterAll, beforeAll, describe, expect, it } from "bun:test";
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { main } from "../../cli/src/cli.ts";
-import { RUNNER_COMMANDS } from "../src/pipeline/main.ts";
+import { main } from "../../../packages/cli/src/cli.ts";
+import { RUNNER_COMMANDS } from "../../../packages/harness/src/pipeline/main.ts";
 
 /** The agent image runs the production df CLI, which must expose every governed runner command. */
 

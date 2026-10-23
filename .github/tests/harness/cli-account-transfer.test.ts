@@ -2,7 +2,7 @@ import { afterEach, describe, expect, test } from "bun:test";
 import { mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { FileCredentialStore, generateVaultKey } from "../../keychain/src/index.ts";
+import { FileCredentialStore, generateVaultKey } from "../../../packages/keychain/src/index.ts";
 
 const roots: string[] = [];
 afterEach(async () => {
@@ -10,7 +10,7 @@ afterEach(async () => {
 });
 
 async function run(home: string, args: string[], extraEnv: Record<string, string> = {}) {
-	const child = Bun.spawn([process.execPath, "run", join(import.meta.dir, "../../cli/src/cli.ts"), ...args], {
+	const child = Bun.spawn([process.execPath, "run", join(import.meta.dir, "../../../packages/cli/src/cli.ts"), ...args], {
 		cwd: process.cwd(),
 		env: {
 			DF_HOME: home,

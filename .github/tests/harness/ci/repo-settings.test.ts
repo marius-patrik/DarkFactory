@@ -2,8 +2,8 @@ import { afterAll, describe, expect, it } from "bun:test";
 import { mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { parseRepoSettingsArgs, REPO_SETTINGS_FLAGS, runRepoSettings } from "../../src/ci/repo-settings.ts";
-import type { GitHubClient } from "../../src/github/client.ts";
+import { parseRepoSettingsArgs, REPO_SETTINGS_FLAGS, runRepoSettings } from "../../../../packages/github/src/ci/repo-settings.ts";
+import type { GitHubClient } from "../../../../packages/github/src/client.ts";
 
 /**
  * The flags this command accepts, and how it treats the ones it does not.

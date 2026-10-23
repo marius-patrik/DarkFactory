@@ -1,5 +1,5 @@
 import { describe, expect, it } from "bun:test";
-import { parseManagedHeader, renderWorkflowTemplate, verifyWorkflowHash } from "../../src/ci/templates.ts";
+import { parseManagedHeader, renderWorkflowTemplate, verifyWorkflowHash } from "../../../../packages/github/src/ci/templates.ts";
 
 describe("Workflow templates & managed headers", () => {
 	it("renders detector-driven CI with pinned runtime and stable aggregate quality", () => {

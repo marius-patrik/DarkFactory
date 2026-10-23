@@ -1,14 +1,14 @@
 import { describe, expect, it } from "bun:test";
-import type { ResolvedCheck } from "../../src/ci/schema.ts";
+import type { ResolvedCheck } from "../../../../packages/github/src/ci/schema.ts";
 import {
 	extractFailureExcerpt,
 	getCheckStatus,
 	getRunLogs,
 	getWorkflowRuns,
 	rerunWorkflowRun,
-} from "../../src/ci/status.ts";
-import { GitHubClient } from "../../src/github/client.ts";
-import { GitHubRepository } from "../../src/github/repository.ts";
+} from "../../../../packages/github/src/ci/status.ts";
+import { GitHubClient } from "../../../../packages/github/src/client.ts";
+import { GitHubRepository } from "../../../../packages/github/src/repository.ts";
 import { json, scripted } from "../github/helpers.ts";
 
 describe("CI status surface & log extractor", () => {

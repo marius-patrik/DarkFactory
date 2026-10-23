@@ -34,7 +34,7 @@ async function run(args: string[]): Promise<{ stdout: string; stderr: string; ex
 		[
 			process.execPath,
 			"run",
-			join(import.meta.dir, "../../cli/src/cli.ts"),
+			join(import.meta.dir, "../../../packages/cli/src/cli.ts"),
 			"models",
 			"--provider",
 			provider.id,
@@ -116,7 +116,7 @@ describe("df models", () => {
 			[
 				process.execPath,
 				"run",
-				join(import.meta.dir, "../../cli/src/cli.ts"),
+				join(import.meta.dir, "../../../packages/cli/src/cli.ts"),
 				"models",
 				"--provider",
 				provider.id,

@@ -2,9 +2,9 @@ import { afterEach, describe, expect, test } from "bun:test";
 import { mkdir, mkdtemp, readFile, rm, stat, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { createModels, fauxProvider, type OAuthCredential, type Provider } from "@earendil-works/pi-ai";
-import { importCodexAccount } from "../../keychain/src/import/codex.ts";
-import { accountId, FileCredentialStore, validateAccountRecord } from "../../keychain/src/index.ts";
-import { QuotaStore } from "../src/harness/quota-store.ts";
+import { importCodexAccount } from "../../../packages/keychain/src/import/codex.ts";
+import { accountId, FileCredentialStore, validateAccountRecord } from "../../../packages/keychain/src/index.ts";
+import { QuotaStore } from "../../../packages/harness/src/harness/quota-store.ts";
 
 const roots: string[] = [];
 
