@@ -2,8 +2,8 @@ import { afterEach, describe, expect, test } from "bun:test";
 import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { importAntigravityAccount } from "../src/import/antigravity.ts";
-import { FileCredentialStore } from "../src/index.ts";
+import { importAntigravityAccount } from "../../../packages/keychain/src/import/antigravity.ts";
+import { FileCredentialStore } from "../../../packages/keychain/src/index.ts";
 
 const roots: string[] = [];
 afterEach(async () => {

@@ -1,9 +1,9 @@
 import { afterAll, beforeAll, describe, expect, it } from "bun:test";
 import { writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { createWorktree } from "../../src/workspace/createWorktree.ts";
-import { GitError, runGit } from "../../src/workspace/git.ts";
-import { updateBranch } from "../../src/workspace/updateBranch.ts";
+import { createWorktree } from "../../../../packages/harness/src/workspace/createWorktree.ts";
+import { GitError, runGit } from "../../../../packages/harness/src/workspace/git.ts";
+import { updateBranch } from "../../../../packages/harness/src/workspace/updateBranch.ts";
 import { createTempRepo, TEST_IDENTITY } from "./helpers.ts";
 
 const MERGE_IDENTITY = { name: "Merge Bot", email: "merge-bot@users.noreply.example" };

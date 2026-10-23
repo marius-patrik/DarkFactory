@@ -1,8 +1,8 @@
 import { afterEach, describe, expect, test } from "bun:test";
 import { writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { GitError, runGit } from "../../src/workspace/git.ts";
-import { pushBranch } from "../../src/workspace/pushBranch.ts";
+import { GitError, runGit } from "../../../../packages/harness/src/workspace/git.ts";
+import { pushBranch } from "../../../../packages/harness/src/workspace/pushBranch.ts";
 import { createTempRepo, TEST_IDENTITY } from "./helpers.ts";
 
 describe("pushBranch", () => {

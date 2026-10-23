@@ -8,7 +8,7 @@ import {
 	FileCredentialStore,
 	generateVaultKey,
 	importCredentialAccount,
-} from "../src/index.ts";
+} from "../../../packages/keychain/src/index.ts";
 
 /**
  * Account ids CI carries as `DF_ACCOUNT_*` secrets and feeds to `df account load <id> --from-env`,

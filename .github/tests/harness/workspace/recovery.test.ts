@@ -1,8 +1,8 @@
 import { afterEach, expect, test } from "bun:test";
 import { writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { runGit } from "../../src/workspace/git.ts";
-import { intakeRecoveryWork, provePlanApplies, scanForSecrets } from "../../src/workspace/recovery.ts";
+import { runGit } from "../../../../packages/harness/src/workspace/git.ts";
+import { intakeRecoveryWork, provePlanApplies, scanForSecrets } from "../../../../packages/harness/src/workspace/recovery.ts";
 import { createTempRepo, TEST_IDENTITY, type TempRepo } from "./helpers.ts";
 
 let temp: TempRepo | undefined;

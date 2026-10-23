@@ -1,8 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it } from "bun:test";
 import { mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { runGit } from "../../src/workspace/git.ts";
-import { scopeCheck } from "../../src/workspace/scopeCheck.ts";
+import { runGit } from "../../../../packages/harness/src/workspace/git.ts";
+import { scopeCheck } from "../../../../packages/harness/src/workspace/scopeCheck.ts";
 import { createTempRepo, TEST_IDENTITY } from "./helpers.ts";
 
 describe("scopeCheck utility", () => {

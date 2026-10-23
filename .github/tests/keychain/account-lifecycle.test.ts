@@ -2,7 +2,7 @@ import { afterEach, describe, expect, test } from "bun:test";
 import { mkdtemp, readFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { type AccountRecord, FileCredentialStore } from "../src/index.ts";
+import { type AccountRecord, FileCredentialStore } from "../../../packages/keychain/src/index.ts";
 
 const roots: string[] = [];
 afterEach(async () => {

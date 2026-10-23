@@ -8,7 +8,7 @@ import {
 	type BorrowedCredentialCoordinator,
 	FileCredentialStore,
 	type OAuthCredentialSlot,
-} from "../src/index.ts";
+} from "../../../packages/keychain/src/index.ts";
 
 const roots: string[] = [];
 
