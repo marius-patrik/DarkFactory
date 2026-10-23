@@ -21,10 +21,10 @@
  */
 
 import { configBlock, parseConfigDocument } from "../../../protocol/src/config-document.ts";
-import { type DeclaredLane, type ProtectionDecision, protectLaneWhenGreen } from "../ci/protect-when-green.ts";
-import { getCheckStatus } from "../ci/status.ts";
-import type { GitHubClient } from "../github/client.ts";
-import { GitHubRepository } from "../github/repository.ts";
+import { type DeclaredLane, type ProtectionDecision, protectLaneWhenGreen } from "../../../github/src/ci/protect-when-green.ts";
+import { getCheckStatus } from "../../../github/src/ci/status.ts";
+import type { GitHubClient } from "../../../github/src/client.ts";
+import { GitHubRepository } from "../../../github/src/repository.ts";
 import { MANIFEST_PATH } from "./manifest.ts";
 import { CONFIG_DOCUMENT_NAMES } from "./sweep-main.ts";
 

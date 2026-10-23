@@ -20,8 +20,8 @@
  *   `plan.ts`, so including it would spend a runner producing a known failure.
  */
 
-import { GitHubAppInstallations, type InstallationRepository } from "../github/app-installations.ts";
-import type { GitHubClient } from "../github/client.ts";
+import { GitHubAppInstallations, type InstallationRepository } from "../../../github/src/app-installations.ts";
+import type { GitHubClient } from "../../../github/src/client.ts";
 
 /** One repository the sweep intends to install into. */
 export interface SweepTarget {
