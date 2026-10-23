@@ -26,7 +26,7 @@ import {
 	isCommandHint,
 	parseIssueCommand,
 	parsePrCommand,
-} from "../approvals/commands.ts";
+} from "../../../github/src/approvals/commands.ts";
 import { type BoardStatus, unblockEntity } from "./board-status.ts";
 import {
 	type AgentDispatchPayload,

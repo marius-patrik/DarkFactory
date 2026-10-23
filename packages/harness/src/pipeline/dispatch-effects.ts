@@ -7,7 +7,7 @@
  * than in a handler because more than one route reaches them and neither belongs to any one stage.
  */
 
-import { HINT_MARKER } from "../approvals/commands.ts";
+import { HINT_MARKER } from "../../../github/src/approvals/commands.ts";
 import { claimBody, decideClaimElection } from "./failure-effect.ts";
 import type { IssueCommentRow, PipelineIo } from "./pipeline-io.ts";
 import { errorMessage } from "./pipeline-io.ts";

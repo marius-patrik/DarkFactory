@@ -8,7 +8,7 @@
  * run away and filed a pipeline-failure issue whose only content was a traceback.
  */
 
-import { INTERPRETATION_FOOTER } from "../approvals/commands.ts";
+import { INTERPRETATION_FOOTER } from "../../../github/src/approvals/commands.ts";
 import type { PipelineContext } from "./handler-context.ts";
 import { classifyTypeAndArea } from "./labels.ts";
 import { bestEffort } from "./pipeline-io.ts";
