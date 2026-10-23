@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
-import type { PlanningArtifact, PlanningContextPacket } from "../../../protocol/src/planning.ts";
-import { planningReviewAdapter, validatePlanningArtifact } from "../../src/graph/planning.ts";
-import { contextFingerprint, evaluateReview } from "../../src/graph/review-loop.ts";
+import type { PlanningArtifact, PlanningContextPacket } from "../../../../packages/protocol/src/planning.ts";
+import { planningReviewAdapter, validatePlanningArtifact } from "../../../../packages/harness/src/graph/planning.ts";
+import { contextFingerprint, evaluateReview } from "../../../../packages/harness/src/graph/review-loop.ts";
 
 const context = (): PlanningContextPacket => ({
 	request: {

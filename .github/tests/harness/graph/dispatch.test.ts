@@ -40,7 +40,7 @@ describe("dispatch", () => {
 	});
 
 	async function runDispatch(args: string[]) {
-		const { dispatch } = await import("../../src/graph/dispatch.ts");
+		const { dispatch } = await import("../../../../packages/harness/src/graph/dispatch.ts");
 		await dispatch(args);
 	}
 

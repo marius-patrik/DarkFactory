@@ -3,8 +3,8 @@ import { afterAll, beforeAll, describe, expect, test } from "bun:test";
 import { mkdtemp, readdir, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { loadRunState, saveRunState } from "../../src/graph/run-state";
-import type { WorkflowGraph } from "../../src/graph/types";
+import { loadRunState, saveRunState } from "../../../../packages/harness/src/graph/run-state";
+import type { WorkflowGraph } from "../../../../packages/harness/src/graph/types";
 
 describe("run-state load/save", () => {
 	const subject = "123";

@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
-import graph from "../../assets/graph.darkfactory.json";
+import graph from "../../../../packages/harness/assets/graph.darkfactory.json";
 
 const repoRoot = join(import.meta.dir, "..", "..", "..", "..");
 
