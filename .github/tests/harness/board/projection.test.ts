@@ -2,23 +2,23 @@ import { describe, expect, test } from "bun:test";
 import { mkdtempSync, readFileSync, utimesSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import type { CanonicalStatus } from "../../../protocol/src/workflow.ts";
+import type { CanonicalStatus } from "../../../../packages/protocol/src/workflow.ts";
 import {
 	extractBoundIssues,
 	extractClosingIssues,
 	issueUrl,
 	repoAndNumberFromContent,
-} from "../../src/board/bindings.ts";
+} from "../../../../packages/harness/src/board/bindings.ts";
 import {
 	CHECKPOINT_FILENAME,
 	checkpointAgeSeconds,
 	checkpointCoversIssue,
 	checkpointMaxAgeSeconds,
 	DEFAULT_CHECKPOINT_MAX_AGE_SECONDS,
-} from "../../src/board/checkpoint.ts";
-import { BoardRun, CommandFailure, describeFailure, isRateLimited } from "../../src/board/run.ts";
-import { type BoardItem, determineStatusFromLabels, expectedStatus, settledStatus } from "../../src/board/status.ts";
-import { STATUS_NAMES } from "../../src/board/taxonomy.ts";
+} from "../../../../packages/harness/src/board/checkpoint.ts";
+import { BoardRun, CommandFailure, describeFailure, isRateLimited } from "../../../../packages/harness/src/board/run.ts";
+import { type BoardItem, determineStatusFromLabels, expectedStatus, settledStatus } from "../../../../packages/harness/src/board/status.ts";
+import { STATUS_NAMES } from "../../../../packages/harness/src/board/taxonomy.ts";
 
 /**
  * The pure half of the board automation: what an item reads as, and what holds it `Blocked`.

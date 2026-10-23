@@ -8,7 +8,7 @@ import {
 	forceCaptureTool,
 	readCapture,
 	validateCaptureSchema,
-} from "../../core/src/result-capture.ts";
+} from "../../../packages/core/src/result-capture.ts";
 
 function clone<T>(obj: T): T {
 	return JSON.parse(JSON.stringify(obj));

@@ -3,10 +3,10 @@ import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fauxProvider, type Provider } from "@earendil-works/pi-ai";
-import { FileCredentialStore } from "../../keychain/src/index.ts";
-import { type CatalogFetch, ModelCatalog } from "../src/models/catalog.ts";
-import { providerFromConfig } from "../src/providers/runtime.ts";
-import { BUILTIN_PROVIDER_CONFIG, type ProviderConfig } from "../src/providers/schema.ts";
+import { FileCredentialStore } from "../../../packages/keychain/src/index.ts";
+import { type CatalogFetch, ModelCatalog } from "../../../packages/harness/src/models/catalog.ts";
+import { providerFromConfig } from "../../../packages/harness/src/providers/runtime.ts";
+import { BUILTIN_PROVIDER_CONFIG, type ProviderConfig } from "../../../packages/harness/src/providers/schema.ts";
 
 const temporary: string[] = [];
 

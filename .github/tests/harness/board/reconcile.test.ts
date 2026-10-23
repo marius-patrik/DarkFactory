@@ -1,14 +1,14 @@
 import { describe, expect, test } from "bun:test";
-import type { CanonicalStatus } from "../../../protocol/src/workflow.ts";
-import { BoardAutomation, type BoardAutomationOptions } from "../../src/board/automation.ts";
-import { BoardGroup, ProjectClient, type ReconcilableBoard } from "../../src/board/client.ts";
-import type { BoardDeclaration } from "../../src/board/declaration.ts";
-import { BoardGraphqlClient } from "../../src/board/graphql.ts";
-import { type ReconcileDeps, reconcile, reconcileMembership, reconcileStatuses } from "../../src/board/reconcile.ts";
-import { BoardRestClient, type RestIssue } from "../../src/board/rest.ts";
-import { BoardRun } from "../../src/board/run.ts";
-import { expectedStatus } from "../../src/board/status.ts";
-import { isStatusLabel } from "../../src/board/taxonomy.ts";
+import type { CanonicalStatus } from "../../../../packages/protocol/src/workflow.ts";
+import { BoardAutomation, type BoardAutomationOptions } from "../../../../packages/harness/src/board/automation.ts";
+import { BoardGroup, ProjectClient, type ReconcilableBoard } from "../../../../packages/harness/src/board/client.ts";
+import type { BoardDeclaration } from "../../../../packages/harness/src/board/declaration.ts";
+import { BoardGraphqlClient } from "../../../../packages/harness/src/board/graphql.ts";
+import { type ReconcileDeps, reconcile, reconcileMembership, reconcileStatuses } from "../../../../packages/harness/src/board/reconcile.ts";
+import { BoardRestClient, type RestIssue } from "../../../../packages/harness/src/board/rest.ts";
+import { BoardRun } from "../../../../packages/harness/src/board/run.ts";
+import { expectedStatus } from "../../../../packages/harness/src/board/status.ts";
+import { isStatusLabel } from "../../../../packages/harness/src/board/taxonomy.ts";
 import { type FakeAnswer, fakeTransport, type RecordedRequest } from "./fakes.ts";
 
 /**

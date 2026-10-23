@@ -1,7 +1,7 @@
 import { describe, expect, it } from "bun:test";
-import type { PrApprovalOutcome } from "../../src/approvals/pr-approval.ts";
-import type { BoardTarget } from "../../src/board/client.ts";
-import { main, PR_APPROVAL_FLAGS, parsePrApprovalArgs } from "../../src/board/pr-approval-main.ts";
+import type { PrApprovalOutcome } from "../../../../packages/github/src/approvals/pr-approval.ts";
+import type { BoardTarget } from "../../../../packages/harness/src/board/client.ts";
+import { main, PR_APPROVAL_FLAGS, parsePrApprovalArgs } from "../../../../packages/harness/src/board/pr-approval-main.ts";
 
 /**
  * The entry point's contract with the workflow that runs it.
