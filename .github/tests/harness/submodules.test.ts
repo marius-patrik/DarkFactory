@@ -2,7 +2,7 @@ import { afterEach, describe, expect, test } from "bun:test";
 import { mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { describeSubmoduleMovement, readSubmodules } from "../src/workspace/submodules.ts";
+import { describeSubmoduleMovement, readSubmodules } from "../../../packages/harness/src/workspace/submodules.ts";
 
 const roots: string[] = [];
 afterEach(async () => {

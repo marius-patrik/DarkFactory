@@ -2,9 +2,9 @@ import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { emptyVault, generateVaultKey } from "../../../keychain/src/index.ts";
-import { loadVault, saveVault } from "../../../keychain/src/vault-store.ts";
-import { syncDataRepo } from "../../src/secrets/sync.ts";
+import { emptyVault, generateVaultKey } from "../../../../packages/keychain/src/index.ts";
+import { loadVault, saveVault } from "../../../../packages/keychain/src/vault-store.ts";
+import { syncDataRepo } from "../../../../packages/harness/src/secrets/sync.ts";
 
 async function git(cwd: string, ...args: string[]) {
 	const proc = Bun.spawn(["git", ...args], { cwd, stdout: "pipe", stderr: "pipe" });

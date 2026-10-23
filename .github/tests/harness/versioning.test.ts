@@ -11,8 +11,8 @@ import {
 	nextVersion,
 	resolveRelease,
 	VersioningError,
-} from "../src/release/versioning.ts";
-import { runGit } from "../src/workspace/git.ts";
+} from "../../../packages/harness/src/release/versioning.ts";
+import { runGit } from "../../../packages/harness/src/workspace/git.ts";
 
 const BREAKING = "feat(agents)!: replace the harness invocation contract";
 const BREAKING_TRAILER = "refactor(agents): rework the chain\n\nBREAKING CHANGE: harness ids are now namespaced";

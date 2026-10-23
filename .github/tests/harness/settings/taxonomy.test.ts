@@ -1,7 +1,7 @@
 import { describe, expect, it } from "bun:test";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { CANONICAL_STATUSES } from "../../../protocol/src/workflow.ts";
+import { CANONICAL_STATUSES } from "../../../../packages/protocol/src/workflow.ts";
 import {
 	appliedStatusOptions,
 	boardStatusOptions,
@@ -9,8 +9,8 @@ import {
 	LEGACY_TODO_OPTION,
 	statusOptionPayload,
 	statusOptionsMatch,
-} from "../../src/settings/board.ts";
-import { assessRequiredChecks, protectionPaths, requiredStatusChecksBody } from "../../src/settings/required-checks.ts";
+} from "../../../../packages/harness/src/settings/board.ts";
+import { assessRequiredChecks, protectionPaths, requiredStatusChecksBody } from "../../../../packages/harness/src/settings/required-checks.ts";
 import {
 	CONVENTIONAL_COMMIT_LABELS,
 	type LabelDefinition,
@@ -21,8 +21,8 @@ import {
 	statusLabels,
 	statusPresentation,
 	TRIAGE_LABELS,
-} from "../../src/settings/taxonomy.ts";
-import { APP_CAPABLE_PATHS, appCanAuthenticate, ghEnvironment } from "../../src/settings/token.ts";
+} from "../../../../packages/harness/src/settings/taxonomy.ts";
+import { APP_CAPABLE_PATHS, appCanAuthenticate, ghEnvironment } from "../../../../packages/harness/src/settings/token.ts";
 
 /** The repository root, derived from this file rather than from the working directory. */
 const REPO_ROOT = join(import.meta.dir, "..", "..", "..", "..");

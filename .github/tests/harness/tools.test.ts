@@ -2,7 +2,7 @@ import { afterEach, describe, expect, test } from "bun:test";
 import { mkdir, mkdtemp, rm, symlink } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
-import { ToolPolicy } from "../src/harness/tools.ts";
+import { ToolPolicy } from "../../../packages/harness/src/harness/tools.ts";
 
 const temporary: string[] = [];
 

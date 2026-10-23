@@ -2,7 +2,7 @@ import { describe, expect, it } from "bun:test";
 import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
-import { configure, type EnvironmentData } from "../../src/env/environment.ts";
+import { configure, type EnvironmentData } from "../../../../packages/harness/src/env/environment.ts";
 
 /** The repository root, derived from this file rather than from the working directory. */
 const REPO_ROOT = join(import.meta.dir, "..", "..", "..", "..");

@@ -1,8 +1,8 @@
 import { describe, expect, test } from "bun:test";
-import { parseDurationMs } from "../../cli/src/cli.ts";
-import type { HarnessRuntime } from "../src/harness/runtime.ts";
-import { FailoverSupervisor, type HarnessEvent, type RunDeadline, RunTimeoutError } from "../src/harness/supervisor.ts";
-import type { LimitLedger } from "../src/limits/ledger.ts";
+import { parseDurationMs } from "../../../packages/cli/src/cli.ts";
+import type { HarnessRuntime } from "../../../packages/harness/src/harness/runtime.ts";
+import { FailoverSupervisor, type HarnessEvent, type RunDeadline, RunTimeoutError } from "../../../packages/harness/src/harness/supervisor.ts";
+import type { LimitLedger } from "../../../packages/harness/src/limits/ledger.ts";
 
 describe("df run execution budget", () => {
 	test("parses the pipeline Go-style durations without changing max-turn semantics", () => {
