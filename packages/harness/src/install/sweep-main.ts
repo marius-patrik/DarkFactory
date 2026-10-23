@@ -15,7 +15,7 @@
 import { appendFileSync } from "node:fs";
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
-import { GitHubClient } from "../github/client.ts";
+import { GitHubClient } from "../../../github/src/client.ts";
 import { AppInstallationTokenProvider, appIdentityFromManifest } from "../../../keychain/src/index.ts";
 import { MANIFEST_PATH } from "./manifest.ts";
 import { planSweep } from "./sweep.ts";

@@ -11,7 +11,7 @@
  */
 
 import { QUALITY_REQUIRED_CHECK, REQUEST_BINDING_REQUIRED_CHECK } from "../../../capability/src/actions.ts";
-import { getWorkflowTemplateContent } from "../ci/templates.ts";
+import { getWorkflowTemplateContent } from "../../../github/src/ci/templates.ts";
 
 /**
  * One GitHub Actions expression, built from its body.
