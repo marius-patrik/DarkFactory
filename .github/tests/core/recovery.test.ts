@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import type { RecoveryIntakeRecord, RecoverySourceIdentity } from "../../protocol/src/recovery.ts";
+import type { RecoveryIntakeRecord, RecoverySourceIdentity } from "../../../packages/protocol/src/recovery.ts";
 import {
 	assertRecoveryCleanupTruth,
 	assertRecoveryPublicationAllowed,
@@ -8,7 +8,7 @@ import {
 	fingerprintRecoverySource,
 	validateRecoveryIntakeForLifecycle,
 	validateRecoveryIntakeRecord,
-} from "../src/recovery.ts";
+} from "../../../packages/core/src/recovery.ts";
 
 const SHA_A = "a".repeat(40);
 const SHA_B = "b".repeat(40);
