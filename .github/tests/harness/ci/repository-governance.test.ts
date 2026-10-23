@@ -618,7 +618,7 @@ describe("release.yml", () => {
 		expect(declared).toContain(0);
 	});
 
-	it("test_release_workflow_is_idempotent_on_an_existing_tag: push and dispatch can both fire", () => {
+	it("rejects an already-used immutable tag on repeated manual or reusable invocations", () => {
 		expect(workflowScripts(release)).toContain("git rev-parse");
 	});
 
@@ -628,6 +628,21 @@ describe("release.yml", () => {
 		// The step used to be a Python heredoc and this read for its `sys.exit(1)`. It is a shell
 		// `exit 1` beside the same field now; the claim is unchanged and only the language moved.
 		expect(scripts).toContain("exit 1");
+	});
+
+	it("requires authorized manual promotion for the producer; ordinary main pushes never release", () => {
+		const declared = triggers(release);
+		expect(declared.push).toBeUndefined();
+		const dispatched = (declared.workflow_dispatch as { inputs: { bump: { required: boolean } } }).inputs.bump;
+		expect(dispatched.required).toBe(true);
+		const producerGuard = steps(release, "publish").find(
+			(step) => step.name === "Require explicit producer release promotion",
+		);
+		expect(producerGuard?.run).toContain('if [ "$DF_EVENT" != "workflow_dispatch" ]');
+		expect(producerGuard?.run).toContain('"1.0.0"');
+		const promotionIndex = steps(release, "publish").indexOf(producerGuard as never);
+		const tagIndex = steps(release, "publish").findIndex((step) => step.name === "Create the tag and the release");
+		expect(tagIndex).toBeGreaterThan(promotionIndex);
 	});
 
 	it("test_release_workflow_offers_an_explicit_bump: PrideVer's PROUD cannot be derived", () => {
@@ -723,7 +738,7 @@ describe("branch roles", () => {
 		const identity = repoConfig().identity;
 		expect(identity.default_branch).toBe("main");
 		expect(identity.development_branch).toBe("main");
-		for (const name of ["ci.yml", "project-automation.yml", "deploy-docs.yml", "release.yml"]) {
+		for (const name of ["ci.yml", "project-automation.yml", "deploy-docs.yml"]) {
 			const push = triggers(parseWorkflow(name)).push as { branches: string[] };
 			expect(push.branches, `${name} must follow the trunk`).toEqual(["main"]);
 		}
