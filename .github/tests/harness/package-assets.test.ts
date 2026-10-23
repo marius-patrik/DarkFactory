@@ -2,7 +2,7 @@ import { afterEach, describe, expect, test } from "bun:test";
 import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { dependencyAssetPath, nativeAssetCandidates } from "../scripts/package-assets.ts";
+import { dependencyAssetPath, nativeAssetCandidates } from "../../../packages/harness/scripts/package-assets.ts";
 
 const roots: string[] = [];
 afterEach(async () => {

@@ -7,8 +7,8 @@ import {
 	FileCredentialStore,
 	loginProviderAccount,
 	type OAuthAuthConfig,
-} from "../../keychain/src/index.ts";
-import type { ProviderConfig } from "../src/providers/schema.ts";
+} from "../../../packages/keychain/src/index.ts";
+import type { ProviderConfig } from "../../../packages/harness/src/providers/schema.ts";
 
 const roots: string[] = [];
 

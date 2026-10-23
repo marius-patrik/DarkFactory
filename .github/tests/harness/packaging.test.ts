@@ -2,7 +2,7 @@ import { describe, expect, it, test } from "bun:test";
 import { readFileSync } from "node:fs";
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
-import { nativeAssetCandidates } from "../scripts/package-assets.ts";
+import { nativeAssetCandidates } from "../../../packages/harness/scripts/package-assets.ts";
 
 const repoRoot = join(import.meta.dir, "..", "..", "..");
 
@@ -21,12 +21,12 @@ describe("standalone packaging", () => {
 	test("compiles the worker under the exact path used by pi at runtime", async () => {
 		// Bun's compiled worker identity must match the constructor's exact specifier.
 		// The CLI entry forwards to the harness implementation without duplicating it.
-		const build = await readFile(new URL("../scripts/build.ts", import.meta.url), "utf8");
-		const cli = await readFile(new URL("../../cli/src/cli.ts", import.meta.url), "utf8");
-		const entry = await readFile(new URL("../../cli/src/image-resize-worker.ts", import.meta.url), "utf8");
+		const build = await readFile(new URL("../../../packages/harness/scripts/build.ts", import.meta.url), "utf8");
+		const cli = await readFile(new URL("../../../packages/cli/src/cli.ts", import.meta.url), "utf8");
+		const entry = await readFile(new URL("../../../packages/cli/src/image-resize-worker.ts", import.meta.url), "utf8");
 		expect(build).toContain("./packages/cli/src/image-resize-worker.ts");
 		expect(cli).toContain('new Worker(new URL("./image-resize-worker.ts", import.meta.url))');
-		expect(entry).toContain('import "../../harness/src/image-resize-worker.ts"');
+		expect(entry).toContain('import "../../../packages/harness/src/image-resize-worker.ts"');
 	});
 });
 
@@ -36,7 +36,7 @@ describe("packageAssets without a native pi-tui module", () => {
 		const { tmpdir } = await import("node:os");
 		const { join } = await import("node:path");
 		const { existsSync } = await import("node:fs");
-		const { packageAssets } = await import("../scripts/package-assets.ts");
+		const { packageAssets } = await import("../../../packages/harness/scripts/package-assets.ts");
 		const root = await mkdtemp(join(tmpdir(), "df-pack-"));
 		try {
 			await makeDir(join(root, "node_modules", "@silvia-odwyer", "photon-node"), { recursive: true });

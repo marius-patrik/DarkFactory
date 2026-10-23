@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { buildNotes } from "../src/release/notes.ts";
+import { buildNotes } from "../../../packages/harness/src/release/notes.ts";
 
 describe("release notes", () => {
 	// Grouped by Conventional Commit type; empty sections are omitted.

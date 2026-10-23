@@ -1,6 +1,6 @@
 import { describe, expect, it } from "bun:test";
-import { GitHubClient } from "../../src/github/client.ts";
-import { planSweep, type SweepEnvironment } from "../../src/install/sweep.ts";
+import { GitHubClient } from "../../../../packages/github/src/client.ts";
+import { planSweep, type SweepEnvironment } from "../../../../packages/harness/src/install/sweep.ts";
 import { json, scripted } from "../github/helpers.ts";
 
 /**

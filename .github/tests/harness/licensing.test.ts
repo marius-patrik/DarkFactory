@@ -3,8 +3,8 @@ import { existsSync, readdirSync } from "node:fs";
 import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join, resolve, sep } from "node:path";
-import { applyLicence, declaredLicence, licenceBody, NO_LICENCE, OFFERED_LICENCES } from "../src/ci/licensing.ts";
-import type { GitHubClient } from "../src/github/client.ts";
+import { applyLicence, declaredLicence, licenceBody, NO_LICENCE, OFFERED_LICENCES } from "../../../packages/github/src/ci/licensing.ts";
+import type { GitHubClient } from "../../../packages/github/src/client.ts";
 
 const roots: string[] = [];
 // Under the OS temp directory, not the repository root. A run of this suite used to leave 17

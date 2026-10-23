@@ -2,10 +2,10 @@ import { afterEach, describe, expect, test } from "bun:test";
 import { mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { LimitLedger } from "../src/limits/ledger.ts";
-import { defaultLimit, mergeReset, observeLimits } from "../src/limits/observe.ts";
-import { assessCandidate, orderCandidates, type TaskEstimate } from "../src/limits/routing.ts";
-import type { LimitPolicyConfig } from "../src/providers/schema.ts";
+import { LimitLedger } from "../../../packages/harness/src/limits/ledger.ts";
+import { defaultLimit, mergeReset, observeLimits } from "../../../packages/harness/src/limits/observe.ts";
+import { assessCandidate, orderCandidates, type TaskEstimate } from "../../../packages/harness/src/limits/routing.ts";
+import type { LimitPolicyConfig } from "../../../packages/harness/src/providers/schema.ts";
 
 const temporary: string[] = [];
 const candidate = { provider: "google", account: "one", model: "flash" };

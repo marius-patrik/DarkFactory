@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
-import type { QuotaReport } from "../src/limits/quota-report.ts";
-import { operatorQuotaSnapshot } from "../src/limits/quota-report.ts";
+import type { QuotaReport } from "../../../packages/harness/src/limits/quota-report.ts";
+import { operatorQuotaSnapshot } from "../../../packages/harness/src/limits/quota-report.ts";
 
 describe("browser-safe operator quota protocol", () => {
 	test("preserves quota state while excluding provider configuration and secrets", () => {
