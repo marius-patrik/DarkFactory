@@ -290,8 +290,8 @@ export class BoardAutomation {
 		try {
 			// Imported lazily so a board run that never asks does not load the keychain package.
 			const { AppInstallationTokenProvider, appIdentityFromManifest } = await import("../../../keychain/src/index.ts");
-			const { GitHubClient } = await import("../github/client.ts");
-			const { GitHubAppInstallations } = await import("../github/app-installations.ts");
+			const { GitHubClient } = await import("../../../github/src/client.ts");
+			const { GitHubAppInstallations } = await import("../../../github/src/app-installations.ts");
 
 			// The private key lives in GitHub, never in this document. Board reconciliation runs on a
 			// schedule without it, so the credential is supplied by the caller when it has one.

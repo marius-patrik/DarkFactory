@@ -3,7 +3,7 @@ import {
 	type PrApprovalEnvironment,
 	type PrApprovalLogger,
 	runGh,
-} from "../approvals/pr-approval.ts";
+} from "../../../github/src/approvals/pr-approval.ts";
 import { BoardAutomation } from "./automation.ts";
 import type { BoardTarget } from "./client.ts";
 

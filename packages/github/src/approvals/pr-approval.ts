@@ -3,7 +3,7 @@
  * Project board writes use the canonical BoardTarget interface.
  */
 
-import type { BoardTarget } from "../board/client.ts";
+import type { BoardTarget } from "../../../harness/src/board/client.ts";
 import { ALLOWED_ASSOCIATIONS, isAllowedApprover, parsePrCommand } from "./commands.ts";
 
 /** Milliseconds between merge-completion polls, and how many polls to attempt. */
