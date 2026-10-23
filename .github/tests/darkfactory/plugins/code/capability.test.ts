@@ -3,8 +3,8 @@ import type {
 	CapabilityActionDefinition,
 	CapabilityActionKind,
 	CapabilityPackageContext,
-} from "../../../packages/capability/src/index.ts";
-import capability from "./capability.ts";
+} from "../../../../../packages/capability/src/index.ts";
+import capability from "../../../../../.darkfactory/plugins/code/capability.ts";
 
 /** Minimal detected package evidence; every field the action functions read is overridable. */
 function node(overrides: Partial<CapabilityPackageContext> = {}): CapabilityPackageContext {
