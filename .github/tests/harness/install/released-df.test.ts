@@ -10,7 +10,7 @@ import {
 	managedWrapper,
 	runReleasedInstaller,
 	selectPublishedBinary,
-} from "../../src/install/released-df.ts";
+} from "../../../../packages/harness/src/install/released-df.ts";
 
 const asset = assetForPlatform(process.platform, process.arch);
 const root = "https://github.com/marius-patrik/DarkFactory/releases/download";

@@ -3,7 +3,7 @@ import { existsSync } from "node:fs";
 import { chmod, cp, mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { BINARY_NAME, stage, WRAPPER_NAME } from "../scripts/install";
+import { BINARY_NAME, stage, WRAPPER_NAME } from "../../../packages/harness/scripts/install";
 
 const roots: string[] = [];
 afterEach(async () => {

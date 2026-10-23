@@ -2,7 +2,7 @@ import { afterAll, describe, expect, test } from "bun:test";
 import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join, relative } from "node:path";
-import { CANONICAL_STATUSES } from "../../../protocol/src/workflow.ts";
+import { CANONICAL_STATUSES } from "../../../../packages/protocol/src/workflow.ts";
 import {
 	AREA_COLOURS,
 	DEFAULT_AREAS,
@@ -11,8 +11,8 @@ import {
 	loadRepositoryManifest,
 	MANIFEST_PATH,
 	resolveManifestPath,
-} from "../../src/install/manifest.ts";
-import { TYPE_LABELS } from "../../src/pipeline/labels.ts";
+} from "../../../../packages/harness/src/install/manifest.ts";
+import { TYPE_LABELS } from "../../../../packages/harness/src/pipeline/labels.ts";
 
 // Four levels up: this suite is one directory deeper than `test/ci/`, and a test that reads
 // repository content has to derive the same root the pipeline does or it asserts against the wrong

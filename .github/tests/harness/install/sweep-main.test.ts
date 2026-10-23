@@ -3,8 +3,8 @@ import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterAll, beforeAll } from "bun:test";
-import { CONFIG_DOCUMENT_NAMES, renderReport, runSweep, sweepScope } from "../../src/install/sweep-main.ts";
-import { MANIFEST_PATH } from "../../src/install/manifest.ts";
+import { CONFIG_DOCUMENT_NAMES, renderReport, runSweep, sweepScope } from "../../../../packages/harness/src/install/sweep-main.ts";
+import { MANIFEST_PATH } from "../../../../packages/harness/src/install/manifest.ts";
 
 const roots: string[] = [];
 async function pipelineRoot(): Promise<string> {

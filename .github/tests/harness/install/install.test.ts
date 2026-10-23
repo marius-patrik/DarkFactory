@@ -11,12 +11,12 @@ import {
 	requiredContexts,
 	WORKFLOWS,
 	watchedWorkflows,
-} from "../../src/install/callers.ts";
-import { CONFIG_MARKER, configurationIssue } from "../../src/install/configuration-issue.ts";
-import { MANIFEST_PATH, resolveManifestPath } from "../../src/install/manifest.ts";
-import { declaredPythonPackageName, renderManifest } from "../../src/install/manifest-generation.ts";
-import { plan, refuseSelfInstall, SelfInstall, write } from "../../src/install/plan.ts";
-import { ensureSecretsPass, reconcileManifest, retarget } from "../../src/install/reinstall.ts";
+} from "../../../../packages/harness/src/install/callers.ts";
+import { CONFIG_MARKER, configurationIssue } from "../../../../packages/harness/src/install/configuration-issue.ts";
+import { MANIFEST_PATH, resolveManifestPath } from "../../../../packages/harness/src/install/manifest.ts";
+import { declaredPythonPackageName, renderManifest } from "../../../../packages/harness/src/install/manifest-generation.ts";
+import { plan, refuseSelfInstall, SelfInstall, write } from "../../../../packages/harness/src/install/plan.ts";
+import { ensureSecretsPass, reconcileManifest, retarget } from "../../../../packages/harness/src/install/reinstall.ts";
 import { repoConfig } from "../ci/pipeline-source.ts";
 
 /**

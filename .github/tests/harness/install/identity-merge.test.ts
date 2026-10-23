@@ -1,5 +1,5 @@
 import { describe, expect, it } from "bun:test";
-import { RepositoryManifest } from "../../src/install/manifest.ts";
+import { RepositoryManifest } from "../../../../packages/harness/src/install/manifest.ts";
 
 /**
  * `identities()` returned the declaration *or* the defaults. The consequence was invisible in the common

@@ -2,14 +2,14 @@ import { afterEach, describe, expect, test } from "bun:test";
 import { mkdtemp, rm } from "node:fs/promises";
 import { join } from "node:path";
 import type { OAuthCredential } from "@earendil-works/pi-ai";
-import { importAntigravityAccount } from "../../keychain/src/import/antigravity.ts";
-import { importClaudeAccount } from "../../keychain/src/import/claude.ts";
-import { importCodexAccount } from "../../keychain/src/import/codex.ts";
-import { importGrokAccount } from "../../keychain/src/import/grok.ts";
-import { CLAUDE_CREDENTIALS_SERVICE_PREFIX, type ClaudeKeyring } from "../../keychain/src/import/keyring.ts";
-import { importKimiAccount } from "../../keychain/src/import/kimi.ts";
-import type { HomeReader } from "../../keychain/src/import/reader.ts";
-import { FileCredentialStore } from "../../keychain/src/index.ts";
+import { importAntigravityAccount } from "../../../packages/keychain/src/import/antigravity.ts";
+import { importClaudeAccount } from "../../../packages/keychain/src/import/claude.ts";
+import { importCodexAccount } from "../../../packages/keychain/src/import/codex.ts";
+import { importGrokAccount } from "../../../packages/keychain/src/import/grok.ts";
+import { CLAUDE_CREDENTIALS_SERVICE_PREFIX, type ClaudeKeyring } from "../../../packages/keychain/src/import/keyring.ts";
+import { importKimiAccount } from "../../../packages/keychain/src/import/kimi.ts";
+import type { HomeReader } from "../../../packages/keychain/src/import/reader.ts";
+import { FileCredentialStore } from "../../../packages/keychain/src/index.ts";
 
 const roots: string[] = [];
 

@@ -3,8 +3,8 @@ import { mkdtemp, mkdir, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterAll } from "bun:test";
-import { ensureSecretsPass } from "../../src/install/reinstall.ts";
-import { loadRepositoryManifest } from "../../src/install/manifest.ts";
+import { ensureSecretsPass } from "../../../../packages/harness/src/install/reinstall.ts";
+import { loadRepositoryManifest } from "../../../../packages/harness/src/install/manifest.ts";
 
 const roots: string[] = [];
 afterAll(async () => {
