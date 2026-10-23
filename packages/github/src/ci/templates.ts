@@ -1,7 +1,7 @@
 import { createHash } from "node:crypto";
 import { existsSync, readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
-import { DEFAULT_PIPELINE_REF, DEFAULT_PIPELINE_REPO } from "../install/pipeline-defaults.ts";
+import { DEFAULT_PIPELINE_REF, DEFAULT_PIPELINE_REPO } from "../../../harness/src/install/pipeline-defaults.ts";
 
 const DARKFACTORY_WORKFLOW_VERSION = "0.2.0";
 
@@ -60,7 +60,7 @@ function computeContentHash(content: string): string {
 export function getWorkflowTemplateContent(templateName: string): string {
 	const cleanName = templateName.replace(/\.tmpl$/, "") as StandardWorkflowName;
 	const candidatePaths = [
-		join(import.meta.dir, "../../assets/workflows", `${cleanName}.tmpl`),
+		join(import.meta.dir, "../../../harness/assets/workflows", `${cleanName}.tmpl`),
 		join(process.cwd(), "assets/workflows", `${cleanName}.tmpl`),
 		join(dirname(process.execPath), "assets/workflows", `${cleanName}.tmpl`),
 	];

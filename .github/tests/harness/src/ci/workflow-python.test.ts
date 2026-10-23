@@ -2,8 +2,8 @@ import { describe, expect, it } from "bun:test";
 import { existsSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { basename, join, relative } from "node:path";
-import { resolveConfigDocumentPath } from "../../../protocol/src/config-document.ts";
-import { allSteps, parseWorkflow, repoRoot, workflowNames, workflowSource } from "../../test/ci/pipeline-source.ts";
+import { resolveConfigDocumentPath } from "../../../../../packages/protocol/src/config-document.ts";
+import { allSteps, parseWorkflow, repoRoot, workflowNames, workflowSource } from "../../ci/pipeline-source.ts";
 
 /**
  * The pipeline's own workflows, and the Python they must no longer run.
