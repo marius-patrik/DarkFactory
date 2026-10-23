@@ -22,7 +22,7 @@ import {
 	redactSecrets,
 	rewriteFileLinks,
 	SHORT_REPORT_LIMIT,
-} from "../../src/pipeline/signals.ts";
+} from "../../../../packages/harness/src/pipeline/signals.ts";
 
 describe("quota exhaustion", () => {
 	test.each([

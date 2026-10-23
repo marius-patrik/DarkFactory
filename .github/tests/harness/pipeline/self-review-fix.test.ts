@@ -1,8 +1,8 @@
 import { describe, expect, test } from "bun:test";
-import type { BoardEntity } from "../../src/pipeline/board-status.ts";
-import { reviewDigest } from "../../src/pipeline/review-convergence.ts";
-import { runSelfReviewFix } from "../../src/pipeline/self-review-fix.ts";
-import { AGENT_ERROR_PREFIX, QUOTA_EXHAUSTED_NOTICE } from "../../src/pipeline/signals.ts";
+import type { BoardEntity } from "../../../../packages/harness/src/pipeline/board-status.ts";
+import { reviewDigest } from "../../../../packages/harness/src/pipeline/review-convergence.ts";
+import { runSelfReviewFix } from "../../../../packages/harness/src/pipeline/self-review-fix.ts";
+import { AGENT_ERROR_PREFIX, QUOTA_EXHAUSTED_NOTICE } from "../../../../packages/harness/src/pipeline/signals.ts";
 import {
 	gitCommands,
 	type HandlerContextOptions,

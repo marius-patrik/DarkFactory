@@ -19,8 +19,8 @@ import {
 	parseReviewMarker,
 	parseReviewMarkerLenient,
 	reviewDigest,
-} from "../../src/pipeline/review-convergence.ts";
-import { parseReviewFindings, splitScopeFindings } from "../../src/pipeline/review-findings.ts";
+} from "../../../../packages/harness/src/pipeline/review-convergence.ts";
+import { parseReviewFindings, splitScopeFindings } from "../../../../packages/harness/src/pipeline/review-findings.ts";
 
 describe("parsing a review pass into findings", () => {
 	test("numbered items fold their continuation lines", () => {

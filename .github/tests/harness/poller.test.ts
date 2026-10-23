@@ -2,10 +2,10 @@ import { describe, expect, test } from "bun:test";
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { LimitLedger } from "../src/limits/ledger.ts";
-import type { CatalogModel, ModelCatalog } from "../src/models/catalog.ts";
-import { ModelPoller } from "../src/models/poller.ts";
-import type { ProviderConfig } from "../src/providers/schema.ts";
+import { LimitLedger } from "../../../packages/harness/src/limits/ledger.ts";
+import type { CatalogModel, ModelCatalog } from "../../../packages/harness/src/models/catalog.ts";
+import { ModelPoller } from "../../../packages/harness/src/models/poller.ts";
+import type { ProviderConfig } from "../../../packages/harness/src/providers/schema.ts";
 
 function catalog(models: CatalogModel[]): ModelCatalog {
 	return { get: async (provider: string) => ({ provider, models, source: "live" as const }) } as ModelCatalog;

@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { nextQuotaReset } from "../../src/pipeline/quota.ts";
+import { nextQuotaReset } from "../../../../packages/harness/src/pipeline/quota.ts";
 import {
 	isAuthFailure,
 	isPrintTimeout,
@@ -7,7 +7,7 @@ import {
 	isQuotaExhaustionNotice,
 	QUOTA_EXHAUSTED_NOTICE,
 	SHORT_REPORT_LIMIT,
-} from "../../src/pipeline/signals.ts";
+} from "../../../../packages/harness/src/pipeline/signals.ts";
 
 /** 2026-09-15T12:00:00Z, which is 05:00 in Los Angeles. */
 const NOW = 1789473600;

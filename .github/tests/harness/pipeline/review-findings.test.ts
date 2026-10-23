@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { parseReviewFindings } from "../../src/pipeline/review-findings.ts";
+import { parseReviewFindings } from "../../../../packages/harness/src/pipeline/review-findings.ts";
 
 describe("parseReviewFindings", () => {
 	test("numbered multi-line items become one finding each, with the prefix stripped", () => {

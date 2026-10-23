@@ -1,14 +1,14 @@
 import { describe, expect, test } from "bun:test";
 import { type Context, fauxAssistantMessage, fauxToolCall } from "@earendil-works/pi-ai";
-import { createConfiguredOAuth } from "../../keychain/src/oauth.ts";
-import { resolveGeneratedHeaders } from "../src/harness/runtime.ts";
-import { ProviderRegistry, prepareReplayPayload, providerFromConfig } from "../src/providers/runtime.ts";
+import { createConfiguredOAuth } from "../../../packages/keychain/src/oauth.ts";
+import { resolveGeneratedHeaders } from "../../../packages/harness/src/harness/runtime.ts";
+import { ProviderRegistry, prepareReplayPayload, providerFromConfig } from "../../../packages/harness/src/providers/runtime.ts";
 import {
 	BUILTIN_PROVIDER_CONFIG,
 	loadProviderConfig,
 	type ProviderConfig,
 	parseProviderConfigFile,
-} from "../src/providers/schema.ts";
+} from "../../../packages/harness/src/providers/schema.ts";
 
 function openAICompatible(id = "fixture-cloud"): ProviderConfig {
 	return {

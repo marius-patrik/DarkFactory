@@ -1,10 +1,10 @@
 import { describe, expect, test } from "bun:test";
-import type { BoardEntity } from "../../src/pipeline/board-status.ts";
-import { pipelineEnvironment } from "../../src/pipeline/handler-context.ts";
-import { reviewDigest } from "../../src/pipeline/review-convergence.ts";
-import { NO_FINDINGS_PREFIX } from "../../src/pipeline/review-findings.ts";
-import { runSelfReviewIteration, type SelfReviewContext } from "../../src/pipeline/self-review.ts";
-import { AGENT_ERROR_PREFIX, QUOTA_EXHAUSTED_NOTICE } from "../../src/pipeline/signals.ts";
+import type { BoardEntity } from "../../../../packages/harness/src/pipeline/board-status.ts";
+import { pipelineEnvironment } from "../../../../packages/harness/src/pipeline/handler-context.ts";
+import { reviewDigest } from "../../../../packages/harness/src/pipeline/review-convergence.ts";
+import { NO_FINDINGS_PREFIX } from "../../../../packages/harness/src/pipeline/review-findings.ts";
+import { runSelfReviewIteration, type SelfReviewContext } from "../../../../packages/harness/src/pipeline/self-review.ts";
+import { AGENT_ERROR_PREFIX, QUOTA_EXHAUSTED_NOTICE } from "../../../../packages/harness/src/pipeline/signals.ts";
 import {
 	type HandlerContextOptions,
 	handlerContext,

@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
-import { AgentRunFailure } from "../../src/pipeline/handler-context.ts";
-import { handleRespond } from "../../src/pipeline/respond.ts";
-import { AGENT_ERROR_PREFIX, QUOTA_EXHAUSTED_NOTICE } from "../../src/pipeline/signals.ts";
+import { AgentRunFailure } from "../../../../packages/harness/src/pipeline/handler-context.ts";
+import { handleRespond } from "../../../../packages/harness/src/pipeline/respond.ts";
+import { AGENT_ERROR_PREFIX, QUOTA_EXHAUSTED_NOTICE } from "../../../../packages/harness/src/pipeline/signals.ts";
 import { handlerContext, operations, postedComments, recordingIo } from "./handlers.ts";
 
 const REPO = "marius-patrik/DarkFactory";
