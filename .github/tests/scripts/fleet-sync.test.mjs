@@ -12,7 +12,7 @@ import {
 	renderConfig,
 	renderLegacyWorkflow,
 	renderWorkflow,
-} from "./fleet-sync.mjs";
+} from "../../../scripts/fleet-sync.mjs";
 import {
 	CONTROL_CONFIG,
 	CONTROL_RECEIPT,
@@ -22,7 +22,7 @@ import {
 	controlFiles,
 	renderDefaultBridge,
 	renderLegacyDefaultBridge,
-} from "./fleet-control.mjs";
+} from "../../../scripts/fleet-control.mjs";
 
 const old = {
 	tag: "v0.3.2",

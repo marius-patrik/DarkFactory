@@ -7,7 +7,7 @@ import {
 	readOwnerProjects,
 	registerProjectTitle,
 	selectedManagedProject,
-} from "./fleet-projects.mjs";
+} from "../../../scripts/fleet-projects.mjs";
 
 test("distinguishes exhausted owner GraphQL budget from normal failures", () => {
 	assert.equal(

@@ -2,7 +2,7 @@ import { afterEach, describe, expect, test } from "bun:test";
 import { mkdtemp, readdir, readFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { extname, join, resolve } from "node:path";
-import { accountId, CredentialRedactor, FileCredentialStore } from "../src/index.ts";
+import { accountId, CredentialRedactor, FileCredentialStore } from "../../../packages/keychain/src/index.ts";
 
 const roots: string[] = [];
 
@@ -68,7 +68,7 @@ describe("@darkfactory/keychain redaction", () => {
 
 describe("@darkfactory/keychain browser isolation", () => {
 	test("@darkfactory/web does not import the machine keychain boundary", async () => {
-		const webRoot = resolve(import.meta.dir, "../../web/src");
+		const webRoot = resolve(import.meta.dir, "../../../packages/web/src");
 		for (const path of await sourceFiles(webRoot)) {
 			const content = await readFile(path, "utf8");
 			expect(content).not.toContain("@darkfactory/keychain");

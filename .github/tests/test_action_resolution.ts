@@ -1,5 +1,5 @@
 import { describe, expect, it } from "bun:test";
-import { resolveRepositoryActions } from "../packages/capability/src/actions.ts";
+import { resolveRepositoryActions } from "../../packages/capability/src/actions.ts";
 
 describe("action resolution", () => {
 	it("should resolve required actions for packages", async () => {

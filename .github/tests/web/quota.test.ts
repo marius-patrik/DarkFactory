@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
-import type { OperatorQuotaSnapshot } from "../../protocol/src/quota.ts";
-import { quotaDashboardModels, quotaDashboardProviders } from "../src/quota.tsx";
+import type { OperatorQuotaSnapshot } from "../../../packages/protocol/src/quota.ts";
+import { quotaDashboardModels, quotaDashboardProviders } from "../../../packages/web/src/quota.tsx";
 
 function snapshot(): OperatorQuotaSnapshot {
 	return {

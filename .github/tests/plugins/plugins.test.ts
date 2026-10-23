@@ -2,9 +2,9 @@ import { afterEach, describe, expect, test } from "bun:test";
 import { mkdirSync, mkdtempSync, renameSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { discoverPlugins, discoverPluginSkills } from "../src/discover.ts";
-import { runPluginCli } from "../src/cli.ts";
-import { validatePlugins } from "../src/validate.ts";
+import { discoverPlugins, discoverPluginSkills } from "../../../packages/plugins/src/discover.ts";
+import { runPluginCli } from "../../../packages/plugins/src/cli.ts";
+import { validatePlugins } from "../../../packages/plugins/src/validate.ts";
 
 const roots: string[] = [];
 

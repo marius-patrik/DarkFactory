@@ -1,6 +1,6 @@
 import { expect, test } from "bun:test";
 import { renderToString } from "react-dom/server";
-import { DarkFactoryShell } from "../src/index";
+import { DarkFactoryShell } from "../../../packages/web/src/index";
 
 // A plain location hook rather than wouter's `memoryLocation`.
 //

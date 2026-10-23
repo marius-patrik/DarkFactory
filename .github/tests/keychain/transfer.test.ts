@@ -4,7 +4,7 @@ import {
 	exportCredentialAccount,
 	generateVaultKey,
 	importCredentialAccount,
-} from "../src/index.ts";
+} from "../../../packages/keychain/src/index.ts";
 
 describe("encrypted credential transfer", () => {
 	test("round-trips a complete account without plaintext secrets in the envelope", () => {

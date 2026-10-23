@@ -18,7 +18,7 @@ import {
 	retireLegacyReleaseBranches,
 	verifyControlReceipt,
 	verifyRelease,
-} from "./fleet-control.mjs";
+} from "../../../scripts/fleet-control.mjs";
 
 const release = { tag: "v0.290.0", sha: "a".repeat(40), digest: "b".repeat(64) };
 const slug = "marius-patrik/OASIS";
