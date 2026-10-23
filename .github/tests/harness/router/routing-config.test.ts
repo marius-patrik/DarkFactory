@@ -1,5 +1,5 @@
 import { expect, test } from "bun:test";
-import { buildRouterCatalog } from "../../src/router/catalog.ts";
+import { buildRouterCatalog } from "../../../../packages/harness/src/router/catalog.ts";
 
 test("routing config filters providers and models", () => {
 	const providers = [

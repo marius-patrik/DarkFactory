@@ -2,11 +2,11 @@ import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { emptyVault, generateVaultKey } from "../../../keychain/src/index.ts";
-import { savePushMap, saveVault } from "../../../keychain/src/vault-store.ts";
-import { GitHubClient } from "../../src/github/client.ts";
-import { GitHubRepository } from "../../src/github/repository.ts";
-import { secretsCommand } from "../../src/secrets/cli.ts";
+import { emptyVault, generateVaultKey } from "../../../../packages/keychain/src/index.ts";
+import { savePushMap, saveVault } from "../../../../packages/keychain/src/vault-store.ts";
+import { GitHubClient } from "../../../../packages/github/src/client.ts";
+import { GitHubRepository } from "../../../../packages/github/src/repository.ts";
+import { secretsCommand } from "../../../../packages/harness/src/secrets/cli.ts";
 import { json, scripted } from "../github/helpers.ts";
 
 const sodium: typeof import("libsodium-wrappers") = require("libsodium-wrappers");

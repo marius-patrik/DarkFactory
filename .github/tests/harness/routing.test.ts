@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
-import type { DfConfig } from "../src/config.ts";
-import { defaultSensitiveDataHook, resolveRouting } from "../src/harness/routing.ts";
+import type { DfConfig } from "../../../packages/harness/src/config.ts";
+import { defaultSensitiveDataHook, resolveRouting } from "../../../packages/harness/src/harness/routing.ts";
 
 const DEFAULT_CHAIN = "google/gemini-3.8-flash@default,groq/openai/gpt-oss-120b@default";
 

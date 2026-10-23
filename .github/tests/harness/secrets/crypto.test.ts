@@ -5,7 +5,7 @@ import {
 	generateVaultKey,
 	isValidVaultKey,
 	type Vault,
-} from "../../../keychain/src/index.ts";
+} from "../../../../packages/keychain/src/index.ts";
 
 describe("Secrets Crypto", () => {
 	test("generates valid 32-byte base64 vault key", () => {

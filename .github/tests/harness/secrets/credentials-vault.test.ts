@@ -2,8 +2,8 @@ import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { accountId, FileCredentialStore, generateVaultKey } from "../../../keychain/src/index.ts";
-import { saveVault } from "../../../keychain/src/vault-store.ts";
+import { accountId, FileCredentialStore, generateVaultKey } from "../../../../packages/keychain/src/index.ts";
+import { saveVault } from "../../../../packages/keychain/src/vault-store.ts";
 
 let root = "";
 let dfHome = "";

@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
-import type { PushMap, VaultMeta } from "../../../keychain/src/index.ts";
-import { GitHubClient } from "../../src/github/client.ts";
-import { detectDrift } from "../../src/secrets/drift.ts";
+import type { PushMap, VaultMeta } from "../../../../packages/keychain/src/index.ts";
+import { GitHubClient } from "../../../../packages/github/src/client.ts";
+import { detectDrift } from "../../../../packages/harness/src/secrets/drift.ts";
 import { json, scripted } from "../github/helpers.ts";
 
 describe("drift detection", () => {
