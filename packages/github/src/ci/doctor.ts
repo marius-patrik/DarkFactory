@@ -1,6 +1,6 @@
 import { requiredChecksForDetectedQuality } from "../../../capability/src/actions.ts";
-import type { GitHubRepository } from "../github/repository.ts";
-import { type DetectedQualityState, resolveDetectedQuality } from "./detected.ts";
+import type { GitHubRepository } from "../repository.ts";
+import { type DetectedQualityState, resolveDetectedQuality } from "../../../harness/src/ci/detected.ts";
 import { checkWorkflowsDrift } from "./installer.ts";
 import { computeRequiredChecks, verifyBranchProtection } from "./protection.ts";
 

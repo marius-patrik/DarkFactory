@@ -2,7 +2,7 @@ import { existsSync } from "node:fs";
 import { readFile, rm, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { configBlock, parseConfigDocument, resolveConfigDocumentPath } from "../../../protocol/src/config-document.ts";
-import type { GitHubClient } from "../github/client.ts";
+import type { GitHubClient } from "../client.ts";
 
 /**
  * Licences offered to a repository, as SPDX identifiers.
