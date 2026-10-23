@@ -32,8 +32,8 @@ import { loginProviderAccount } from "../../keychain/src/login.ts";
 import { runPluginCli } from "../../plugins/src/index.ts";
 import { runCiCli } from "./ci.ts";
 import { executableReleaseVersion, runReleasedInstaller } from "../../harness/src/install/released-df.ts";
-import { applyLicence } from "../../harness/src/ci/licensing.ts";
-import { observeWorkflowCompletion } from "../../harness/src/ci/report-failure.ts";
+import { applyLicence } from "../../github/src/ci/licensing.ts";
+import { observeWorkflowCompletion } from "../../github/src/ci/report-failure.ts";
 import {
 	DEFAULT_ROUTER_CONFIG,
 	type DfConfig,
@@ -41,8 +41,8 @@ import {
 	localCredentialFallback,
 } from "../../harness/src/config.ts";
 import type { Candidate } from "../../harness/src/failover.ts";
-import { GitHubClient } from "../../harness/src/github/client.ts";
-import { GitHubRepository } from "../../harness/src/github/repository.ts";
+import { GitHubClient } from "../../github/src/client.ts";
+import { GitHubRepository } from "../../github/src/repository.ts";
 import { bundledGraphPath } from "../../harness/src/graph/assets.ts";
 import { type GraphEvent, plan, type RunState, validateGraph } from "../../harness/src/graph/index.ts";
 import { parseCandidate, parseChain, resolveRouting } from "../../harness/src/harness/routing.ts";

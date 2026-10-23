@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { formatCaptureSchema } from "../src/capture-schema.ts";
+import { formatCaptureSchema } from "../../../packages/cli/src/capture-schema.ts";
 
 describe("capture schema CLI projection", () => {
 	test("renders registered schemas from the canonical protocol registry", () => {
