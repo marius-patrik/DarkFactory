@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import { join } from "node:path";
 
-const scripts = import.meta.dir;
+const scripts = join(import.meta.dir, "..", "..", "..", "scripts");
 const read = (name: string) => Bun.file(join(scripts, name)).text();
 
 describe("DarkFactory CLI wrappers", () => {

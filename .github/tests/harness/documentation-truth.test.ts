@@ -131,10 +131,10 @@ describe("canonical documentation truth", () => {
 	});
 
 	test("the path scan recognises a path that does not exist", () => {
-		expect(pathClaims("run `bun test` and read `tests/absent_governance.py` now")).toEqual([
-			"tests/absent_governance.py",
+		expect(pathClaims("run `bun test` and read `packages/absent_governance.py` now")).toEqual([
+			"packages/absent_governance.py",
 		]);
-		expect(existsSync(join(repoDir, "tests/absent_governance.py"))).toBe(false);
+		expect(existsSync(join(repoDir, "packages/absent_governance.py"))).toBe(false);
 	});
 
 	test("the path scan ignores globs, placeholders and non-path code spans", () => {

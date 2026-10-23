@@ -2,7 +2,7 @@ import { describe, expect, test } from "bun:test";
 import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import { join } from "node:path";
 
-const assetsDir = join(import.meta.dir, "..", "..", "assets");
+const assetsDir = join(import.meta.dir, "..", "..", "..", "..", "packages", "harness", "assets");
 
 /**
  * The exact set of files `packages/harness/assets/` is allowed to contain.

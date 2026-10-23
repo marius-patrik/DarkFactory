@@ -17,8 +17,8 @@ on:
       - "config.dfconfig"
       - ".dfconfig"
       - "packages/harness/src/install/manifest.ts"
-      - "packages/harness/src/ci/repo-settings.ts"
-      - "packages/harness/src/ci/protection.ts"
+      - "packages/github/src/ci/repo-settings.ts"
+      - "packages/github/src/ci/protection.ts"
       - ".github/workflows/branch-policy.yml"
   workflow_dispatch:
 
@@ -84,4 +84,4 @@ jobs:
           # "no token: set GH_TOKEN or GITHUB_TOKEN" without one. Set here rather than on the job
           # because the `steps` context is not available in `jobs.<id>.env`.
           GH_TOKEN: ${{ steps.app-token.outputs.token || secrets.GH_PROJECT_TOKEN || secrets.GITHUB_TOKEN }}
-        run: bun packages/harness/src/ci/repo-settings.ts --apply --branches-only
+        run: bun packages/github/src/ci/repo-settings.ts --apply --branches-only

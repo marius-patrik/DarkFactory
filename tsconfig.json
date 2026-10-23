@@ -1,15 +1,5 @@
 {
   "extends": "./tsconfig.base.json",
-  "include": [
-    "packages/*/src",
-    "packages/*/scripts",
-    ".github/tests",
-    "scripts",
-    ".darkfactory/plugins/*"
-  ],
-  "exclude": [
-    "node_modules",
-    "**/node_modules",
-    "**/dist"
-  ]
+  "include": ["packages/*/src", "packages/*/scripts", ".github/tests", "scripts", ".darkfactory/plugins/*"],
+  "exclude": ["node_modules", "**/node_modules", "**/dist"]
 }

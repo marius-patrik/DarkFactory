@@ -26,7 +26,7 @@ describe("standalone packaging", () => {
 		const entry = await readFile(new URL("../../../packages/cli/src/image-resize-worker.ts", import.meta.url), "utf8");
 		expect(build).toContain("./packages/cli/src/image-resize-worker.ts");
 		expect(cli).toContain('new Worker(new URL("./image-resize-worker.ts", import.meta.url))');
-		expect(entry).toContain('import "../../../packages/harness/src/image-resize-worker.ts"');
+		expect(entry).toContain('import "../../harness/src/image-resize-worker.ts"');
 	});
 });
 
@@ -53,7 +53,7 @@ describe("packageAssets without a native pi-tui module", () => {
 });
 
 describe("biome configuration", () => {
-	const harnessDir = join(import.meta.dir, "..");
+	const harnessDir = repoRoot;
 
 	test("uses tabs, width 120, double quotes and blocks unused imports and variables", async () => {
 		const json = JSON.parse(await readFile(new URL("../../../biome.json", import.meta.url), "utf8"));

@@ -5,7 +5,7 @@ test("df graph validate accepts the bundled standalone graph", () => {
 	const result = Bun.spawnSync(
 		[process.execPath, "../cli/src/cli.ts", "graph", "validate", "assets/graph.darkfactory.json"],
 		{
-			cwd: join(import.meta.dir, "../.."),
+			cwd: join(import.meta.dir, "../../../../packages/harness"),
 		},
 	);
 	expect(result.exitCode).toBe(0);
@@ -13,7 +13,7 @@ test("df graph validate accepts the bundled standalone graph", () => {
 });
 
 test("df graph plan reads event and state files", async () => {
-	const root = join(import.meta.dir, "../..");
+	const root = join(import.meta.dir, "../../../../packages/harness");
 	const event = join(import.meta.dir, "event.tmp.json");
 	const state = join(import.meta.dir, "state.tmp.json");
 	await Bun.write(

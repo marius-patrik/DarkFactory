@@ -349,4 +349,4 @@ jobs:
           DARKFACTORY_REPO_ROOT: ${{ github.workspace }}/target
         run: |
           cd .darkfactory-pipeline
-          bun packages/harness/src/ci/repo-settings.ts --apply --skip-protection
+          bun packages/github/src/ci/repo-settings.ts --apply --skip-protection
