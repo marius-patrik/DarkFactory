@@ -17,7 +17,11 @@ import {
 import { type Checkpoint, loadCheckpoint } from "../../../../packages/harness/src/pipeline/checkpoint.ts";
 import { DF_BINARY, DF_LABEL } from "../../../../packages/harness/src/pipeline/df-run.ts";
 import { QUOTA_PROVIDERS_VARIABLE, quotaRunVariable } from "../../../../packages/harness/src/pipeline/quota.ts";
-import { AGENT_ERROR_PREFIX, AUTH_FAILED_NOTICE, QUOTA_EXHAUSTED_NOTICE } from "../../../../packages/harness/src/pipeline/signals.ts";
+import {
+	AGENT_ERROR_PREFIX,
+	AUTH_FAILED_NOTICE,
+	QUOTA_EXHAUSTED_NOTICE,
+} from "../../../../packages/harness/src/pipeline/signals.ts";
 import {
 	operations,
 	postedComments,

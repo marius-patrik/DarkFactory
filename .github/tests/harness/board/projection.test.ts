@@ -16,8 +16,18 @@ import {
 	checkpointMaxAgeSeconds,
 	DEFAULT_CHECKPOINT_MAX_AGE_SECONDS,
 } from "../../../../packages/harness/src/board/checkpoint.ts";
-import { BoardRun, CommandFailure, describeFailure, isRateLimited } from "../../../../packages/harness/src/board/run.ts";
-import { type BoardItem, determineStatusFromLabels, expectedStatus, settledStatus } from "../../../../packages/harness/src/board/status.ts";
+import {
+	BoardRun,
+	CommandFailure,
+	describeFailure,
+	isRateLimited,
+} from "../../../../packages/harness/src/board/run.ts";
+import {
+	type BoardItem,
+	determineStatusFromLabels,
+	expectedStatus,
+	settledStatus,
+} from "../../../../packages/harness/src/board/status.ts";
 import { STATUS_NAMES } from "../../../../packages/harness/src/board/taxonomy.ts";
 
 /**

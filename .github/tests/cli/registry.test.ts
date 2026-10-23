@@ -1,6 +1,10 @@
 import { describe, expect, test } from "bun:test";
 import { type CapabilityRuntimeContext, defineCapability } from "../../../packages/capability/src/index.ts";
-import { CommandRegistry, type CoreCliCommandDefinition, createCommandRegistry } from "../../../packages/cli/src/registry.ts";
+import {
+	CommandRegistry,
+	type CoreCliCommandDefinition,
+	createCommandRegistry,
+} from "../../../packages/cli/src/registry.ts";
 
 const context: CapabilityRuntimeContext = {
 	repositoryRoot: "/repo",

@@ -1,7 +1,11 @@
 import { describe, expect, test } from "bun:test";
 import { HINT_MARKER } from "../../../../packages/github/src/approvals/commands.ts";
 import { COMMAND_HINT_BODY } from "../../../../packages/harness/src/pipeline/dispatch-effects.ts";
-import { type DispatchEventContext, dispatchEvent, normalisePayload } from "../../../../packages/harness/src/pipeline/event.ts";
+import {
+	type DispatchEventContext,
+	dispatchEvent,
+	normalisePayload,
+} from "../../../../packages/harness/src/pipeline/event.ts";
 import { CLAIM_PREFIX, CLAIM_SUFFIX } from "../../../../packages/harness/src/pipeline/failure-effect.ts";
 import { PLAN_MARKER } from "../../../../packages/harness/src/pipeline/plan-scope.ts";
 import { handlerContext, labelChanges, operations, postedComments, type RecordingIo, recordingIo } from "./handlers.ts";

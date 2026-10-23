@@ -1,6 +1,9 @@
 import { describe, expect, it } from "bun:test";
 import { renderWorkflowTemplate } from "../../../../packages/github/src/ci/templates.ts";
-import { DEFAULT_PIPELINE_REF, DEFAULT_PIPELINE_REPO } from "../../../../packages/harness/src/install/pipeline-defaults.ts";
+import {
+	DEFAULT_PIPELINE_REF,
+	DEFAULT_PIPELINE_REPO,
+} from "../../../../packages/harness/src/install/pipeline-defaults.ts";
 import { repoConfig, repoRoot } from "./pipeline-source.ts";
 
 /**

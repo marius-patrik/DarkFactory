@@ -1,5 +1,9 @@
 import { describe, expect, it } from "bun:test";
-import { applyBranchProtection, computeRequiredChecks, verifyBranchProtection } from "../../../../packages/github/src/ci/protection.ts";
+import {
+	applyBranchProtection,
+	computeRequiredChecks,
+	verifyBranchProtection,
+} from "../../../../packages/github/src/ci/protection.ts";
 import type { ResolvedCheck } from "../../../../packages/github/src/ci/schema.ts";
 import { GitHubClient } from "../../../../packages/github/src/client.ts";
 import { GitHubRepository } from "../../../../packages/github/src/repository.ts";

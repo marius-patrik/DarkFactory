@@ -2,7 +2,11 @@ import { describe, expect, it } from "bun:test";
 import { mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { IdentitiesValidationError, loadIdentities, validateIdentities } from "../../../../packages/harness/src/identities/index.ts";
+import {
+	IdentitiesValidationError,
+	loadIdentities,
+	validateIdentities,
+} from "../../../../packages/harness/src/identities/index.ts";
 
 describe("validateIdentities", () => {
 	it("validates a complete and valid identities manifest", () => {

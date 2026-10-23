@@ -25,7 +25,7 @@ const REQUEST = 1148;
 const PLAN_BODY = [
 	"## Scope",
 	"- `packages/harness/src/pipeline/plan-scope.ts`",
-	"- `packages/harness/test/pipeline/plan-scope.test.ts`",
+	"- `.github/tests/harness/pipeline/plan-scope.test.ts`",
 	"",
 	"## Verification",
 	"Run the suite.",

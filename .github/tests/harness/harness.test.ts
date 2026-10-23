@@ -11,7 +11,11 @@ import {
 	type Provider,
 } from "@earendil-works/pi-ai";
 import { createAssistantMessageEventStream } from "@earendil-works/pi-ai/utils/event-stream";
-import { ChainExhaustedError, createFailoverSupervisor, type HarnessEvent } from "../../../packages/harness/src/harness/supervisor.ts";
+import {
+	ChainExhaustedError,
+	createFailoverSupervisor,
+	type HarnessEvent,
+} from "../../../packages/harness/src/harness/supervisor.ts";
 import { BUILTIN_PROVIDER_CONFIG } from "../../../packages/harness/src/providers/schema.ts";
 import { OutcomeStore } from "../../../packages/harness/src/router/outcomes.ts";
 

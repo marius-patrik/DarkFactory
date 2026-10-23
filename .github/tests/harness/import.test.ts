@@ -6,7 +6,10 @@ import { importAntigravityAccount } from "../../../packages/keychain/src/import/
 import { importClaudeAccount } from "../../../packages/keychain/src/import/claude.ts";
 import { importCodexAccount } from "../../../packages/keychain/src/import/codex.ts";
 import { importGrokAccount } from "../../../packages/keychain/src/import/grok.ts";
-import { CLAUDE_CREDENTIALS_SERVICE_PREFIX, type ClaudeKeyring } from "../../../packages/keychain/src/import/keyring.ts";
+import {
+	CLAUDE_CREDENTIALS_SERVICE_PREFIX,
+	type ClaudeKeyring,
+} from "../../../packages/keychain/src/import/keyring.ts";
 import { importKimiAccount } from "../../../packages/keychain/src/import/kimi.ts";
 import type { HomeReader } from "../../../packages/keychain/src/import/reader.ts";
 import { FileCredentialStore } from "../../../packages/keychain/src/index.ts";

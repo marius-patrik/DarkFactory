@@ -3,7 +3,10 @@ import type { BoardEntity } from "../../../../packages/harness/src/pipeline/boar
 import { pipelineEnvironment } from "../../../../packages/harness/src/pipeline/handler-context.ts";
 import { reviewDigest } from "../../../../packages/harness/src/pipeline/review-convergence.ts";
 import { NO_FINDINGS_PREFIX } from "../../../../packages/harness/src/pipeline/review-findings.ts";
-import { runSelfReviewIteration, type SelfReviewContext } from "../../../../packages/harness/src/pipeline/self-review.ts";
+import {
+	runSelfReviewIteration,
+	type SelfReviewContext,
+} from "../../../../packages/harness/src/pipeline/self-review.ts";
 import { AGENT_ERROR_PREFIX, QUOTA_EXHAUSTED_NOTICE } from "../../../../packages/harness/src/pipeline/signals.ts";
 import {
 	type HandlerContextOptions,
@@ -26,7 +29,7 @@ const PLAN_BODY = [
 	"",
 	"## File Scope",
 	"- `packages/harness/src/pipeline/plan-scope.ts`",
-	"- `packages/harness/test/pipeline/plan-scope.test.ts`",
+	"- `.github/tests/harness/pipeline/plan-scope.test.ts`",
 	"",
 	"## Verification",
 	"Run the suite.",

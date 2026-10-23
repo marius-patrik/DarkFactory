@@ -4,7 +4,11 @@ import { join } from "node:path";
 import { CANONICAL_STATUSES } from "../../../../packages/protocol/src/workflow.ts";
 import { CONFIG_MARKER } from "../../../../packages/harness/src/install/configuration-issue.ts";
 import { TYPE_LABELS } from "../../../../packages/harness/src/pipeline/labels.ts";
-import { labelTaxonomy, PIPELINE_ROLE_LABELS, STATUS_OPTIONS } from "../../../../packages/harness/src/settings/taxonomy.ts";
+import {
+	labelTaxonomy,
+	PIPELINE_ROLE_LABELS,
+	STATUS_OPTIONS,
+} from "../../../../packages/harness/src/settings/taxonomy.ts";
 import {
 	allSteps,
 	declaredAreas,
@@ -104,7 +108,7 @@ describe("label taxonomy", () => {
 
 describe("shared repository settings", () => {
 	it("test_repo_settings_enables_bot_pr_approval: every bot pull request stalls at REVIEW_REQUIRED without it", () => {
-		const source = readFileSync(join(repoRoot, "packages/harness/src/ci/repo-settings.ts"), "utf8");
+		const source = readFileSync(join(repoRoot, "packages/github/src/ci/repo-settings.ts"), "utf8");
 		for (const setting of [
 			"can_approve_pull_request_reviews: true",
 			"delete_branch_on_merge: true",
@@ -121,7 +125,7 @@ describe("shared repository settings", () => {
 		// either. All of it is now in `repo.protection.lanes`, including the field the ruleset payload
 		// used to invent (`strict_required_status_checks_policy: true`) and the approvals the module
 		// had no field for at all. The claim is that the code holds none of it.
-		const source = readFileSync(join(repoRoot, "packages/harness/src/ci/protection.ts"), "utf8");
+		const source = readFileSync(join(repoRoot, "packages/github/src/ci/protection.ts"), "utf8");
 		for (const invented of ['"main"', "~DEFAULT_BRANCH", "main-source", "strict: true"]) {
 			expect(source, `protection.ts still contains ${invented}`).not.toContain(invented);
 		}
@@ -157,14 +161,14 @@ describe("shared repository settings", () => {
 		// truncation. There is no subprocess and no curl here: the client fetches directly, so the
 		// equivalent claim is that an unparseable body degrades to its raw text and a 5xx is
 		// retryable, which is what stops one lost response from failing a whole run.
-		const source = readFileSync(join(repoRoot, "packages/harness/src/github/client.ts"), "utf8");
+		const source = readFileSync(join(repoRoot, "packages/github/src/client.ts"), "utf8");
 		expect(source).toContain("function safeJson");
 		expect(source).toContain("response.status >= 500");
 		expect(source).toContain("X-GitHub-Api-Version");
 	});
 
 	it("test_repo_settings_can_configure_a_consumer_checkout: consumers carry no copy of these scripts", () => {
-		const source = readFileSync(join(repoRoot, "packages/harness/src/ci/repo-settings.ts"), "utf8");
+		const source = readFileSync(join(repoRoot, "packages/github/src/ci/repo-settings.ts"), "utf8");
 		expect(source).toContain("DARKFACTORY_REPO_ROOT");
 		// This used to pin `new RepositoryManifest(repositoryRoot, {})`, which never reads the
 		// document — so the reconcile reported no lanes and exited 0. The behaviour is asserted in
@@ -173,7 +177,7 @@ describe("shared repository settings", () => {
 	});
 
 	it("test_the_settings_script_honours_that_variable: the workflow and the script agree on the name", () => {
-		const source = readFileSync(join(repoRoot, "packages/harness/src/ci/repo-settings.ts"), "utf8");
+		const source = readFileSync(join(repoRoot, "packages/github/src/ci/repo-settings.ts"), "utf8");
 		expect(source).toContain("env.DARKFACTORY_REPO_ROOT");
 	});
 });

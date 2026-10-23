@@ -4,7 +4,12 @@ import { BoardAutomation, type BoardAutomationOptions } from "../../../../packag
 import { BoardGroup, ProjectClient, type ReconcilableBoard } from "../../../../packages/harness/src/board/client.ts";
 import type { BoardDeclaration } from "../../../../packages/harness/src/board/declaration.ts";
 import { BoardGraphqlClient } from "../../../../packages/harness/src/board/graphql.ts";
-import { type ReconcileDeps, reconcile, reconcileMembership, reconcileStatuses } from "../../../../packages/harness/src/board/reconcile.ts";
+import {
+	type ReconcileDeps,
+	reconcile,
+	reconcileMembership,
+	reconcileStatuses,
+} from "../../../../packages/harness/src/board/reconcile.ts";
 import { BoardRestClient, type RestIssue } from "../../../../packages/harness/src/board/rest.ts";
 import { BoardRun } from "../../../../packages/harness/src/board/run.ts";
 import { expectedStatus } from "../../../../packages/harness/src/board/status.ts";

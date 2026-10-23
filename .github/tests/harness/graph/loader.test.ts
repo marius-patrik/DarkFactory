@@ -3,7 +3,9 @@ import { join } from "node:path";
 import { loadGraph, loadManifestGraph } from "../../../../packages/harness/src/graph/index.ts";
 
 test("loads a standalone graph", async () =>
-	expect((await loadGraph(join(import.meta.dir, "../../../../packages/harness/assets/graph.darkfactory.json"))).version).toBe(1));
+	expect(
+		(await loadGraph(join(import.meta.dir, "../../../../packages/harness/assets/graph.darkfactory.json"))).version,
+	).toBe(1));
 test("loads the graph section of a manifest", async () => {
 	const path = join(import.meta.dir, "manifest.tmp.json");
 	await Bun.write(

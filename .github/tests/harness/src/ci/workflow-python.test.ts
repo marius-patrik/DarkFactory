@@ -60,17 +60,17 @@ const CONVERTED: Array<[workflow: string, step: string, expected: string]> = [
 	[
 		"verify-pr-issue.yml",
 		"Verify PR description binds a tracking issue",
-		'bun "$ROOT/packages/harness/src/ci/bound-issue.ts"',
+		'bun "$ROOT/packages/github/src/ci/bound-issue.ts"',
 	],
 	["release.yml", "Decide which build tooling is needed", "jq -r"],
 	["release.yml", "Build release assets", "jq -r"],
 	["project-automation.yml", "Run Project Board Automation", 'bun "$ROOT/packages/harness/src/board/main.ts"'],
-	["branch-policy.yml", "Reconcile default branch and protection", "bun packages/harness/src/ci/repo-settings.ts"],
+	["branch-policy.yml", "Reconcile default branch and protection", "bun packages/github/src/ci/repo-settings.ts"],
 	["pr-approval-automerge.yml", "Handle Approval and Auto-Merge", "pr-approval-main.ts"],
 	["agent.yml", "Resolve target environment", "bun -e"],
 	["install.yml", "Generate the installation", "bun packages/harness/src/install/main.ts"],
 	["install.yml", "Open the configuration issue", "configuration-issue.ts"],
-	["install.yml", "Reconcile labels, board and settings", "bun packages/harness/src/ci/repo-settings.ts"],
+	["install.yml", "Reconcile labels, board and settings", "bun packages/github/src/ci/repo-settings.ts"],
 	["release.yml", "Resolve the release", "bun packages/harness/src/release/cli.ts"],
 	["release.yml", "Verify package metadata agrees with the release", "exit 1"],
 	// Not `command -v`, which was here and was the bug: it is false on a stock runner, so the
@@ -174,9 +174,9 @@ describe("the Python the pipeline still runs", () => {
 		// The scripts it used to name are gone, so the filter names what now derives the policy: the
 		// manifest reader, the reconcile command and the protection module. A filter left naming a
 		// deleted path matches nothing, and reads as though it covers the reconcile.
-		expect(declared).toContain("packages/harness/src/ci/repo-settings.ts");
+		expect(declared).toContain("packages/github/src/ci/repo-settings.ts");
 		expect(declared).toContain("packages/harness/src/install/manifest.ts");
-		expect(declared).toContain("packages/harness/src/ci/protection.ts");
+		expect(declared).toContain("packages/github/src/ci/protection.ts");
 	});
 
 	it("no branch-policy.yml path filter entry can never match", () => {
@@ -210,7 +210,7 @@ function resolverAccepts(name: string): boolean {
  * A step that runs a file out of the repository needs the repository.
  *
  * `verify-pr-issue.yml` ran a `python3 -c` heredoc, so its job needed no checkout. Converting the
- * heredoc to `packages/harness/src/ci/bound-issue.ts` made the job depend on a file in the tree
+ * heredoc to `packages/github/src/ci/bound-issue.ts` made the job depend on a file in the tree
  * without adding the checkout, and the job failed with "module not found" naming a file that was
  * committed. The message points at the wrong cause, so nothing about the log invites the right fix.
  * This is the assertion that would have caught it.

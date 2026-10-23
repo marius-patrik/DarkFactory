@@ -10,7 +10,11 @@ import {
 	statusOptionPayload,
 	statusOptionsMatch,
 } from "../../../../packages/harness/src/settings/board.ts";
-import { assessRequiredChecks, protectionPaths, requiredStatusChecksBody } from "../../../../packages/harness/src/settings/required-checks.ts";
+import {
+	assessRequiredChecks,
+	protectionPaths,
+	requiredStatusChecksBody,
+} from "../../../../packages/harness/src/settings/required-checks.ts";
 import {
 	CONVENTIONAL_COMMIT_LABELS,
 	type LabelDefinition,
@@ -22,7 +26,11 @@ import {
 	statusPresentation,
 	TRIAGE_LABELS,
 } from "../../../../packages/harness/src/settings/taxonomy.ts";
-import { APP_CAPABLE_PATHS, appCanAuthenticate, ghEnvironment } from "../../../../packages/harness/src/settings/token.ts";
+import {
+	APP_CAPABLE_PATHS,
+	appCanAuthenticate,
+	ghEnvironment,
+} from "../../../../packages/harness/src/settings/token.ts";
 
 /** The repository root, derived from this file rather than from the working directory. */
 const REPO_ROOT = join(import.meta.dir, "..", "..", "..", "..");

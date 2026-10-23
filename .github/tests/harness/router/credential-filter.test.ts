@@ -2,13 +2,13 @@ import { afterAll, beforeAll, expect, test } from "bun:test";
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { FileCredentialStore } from "../../../keychain/src/index.ts";
-import defaultsJson from "../../assets/providers.defaults.json";
-import { routerModels } from "../../../cli/src/cli.ts";
-import type { DfConfig } from "../../src/config.ts";
-import { LimitLedger } from "../../src/limits/ledger.ts";
-import { ProviderRegistry } from "../../src/providers/runtime.ts";
-import { type ProviderConfigFile, parseProviderConfigFile } from "../../src/providers/schema.ts";
+import { FileCredentialStore } from "../../../../packages/keychain/src/index.ts";
+import defaultsJson from "../../../../packages/harness/assets/providers.defaults.json";
+import { routerModels } from "../../../../packages/cli/src/cli.ts";
+import type { DfConfig } from "../../../../packages/harness/src/config.ts";
+import { LimitLedger } from "../../../../packages/harness/src/limits/ledger.ts";
+import { ProviderRegistry } from "../../../../packages/harness/src/providers/runtime.ts";
+import { type ProviderConfigFile, parseProviderConfigFile } from "../../../../packages/harness/src/providers/schema.ts";
 
 // routerModels reads DF_HOME for its model catalog; point it at a temp directory and stay offline so the test never
 // touches the real ~/.df or the network.

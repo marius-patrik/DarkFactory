@@ -19,7 +19,7 @@ describe("testsTouched hook", () => {
 
 	test("source plus a test passes", async () => {
 		const result = await testsTouched.run(
-			createContext(["packages/harness/src/install/main.ts", "packages/harness/test/install/main.test.ts"]),
+			createContext(["packages/harness/src/install/main.ts", ".github/tests/harness/install/main.test.ts"]),
 		);
 		expect(result.status).toBe("pass");
 	});

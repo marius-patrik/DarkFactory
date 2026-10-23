@@ -86,7 +86,7 @@ describe("the scope partition", () => {
 		// #267's plan named tests/test_commands.py and the implementation added
 		// tests/test_footers.py. Tests accompany every change (DF-RULE-001).
 		const planFiles = new Set([".github/scripts/commands.py", "tests/test_commands.py"]);
-		const changed = [".github/scripts/commands.py", "tests/test_footers.py", "packages/harness/test/router.test.ts"];
+		const changed = [".github/scripts/commands.py", "tests/test_footers.py", ".github/tests/harness/router.test.ts"];
 		expect(checkScope(changed, planFiles)).toEqual({ inScope: changed, outOfScope: [] });
 	});
 
@@ -124,11 +124,11 @@ describe("matching a change against a plan", () => {
 describe("recognising a test", () => {
 	test.each([
 		"tests/test_footers.py",
-		"packages/harness/test/router.test.ts",
+		".github/tests/harness/router.test.ts",
 		"src/__tests__/thing.js",
 		"test_module.py",
 		"conftest.py",
-		"packages/web/test/web-shell.test.tsx",
+		".github/tests/web/web-shell.test.tsx",
 	])("%p is a test", (path) => {
 		expect(isTestFile(path)).toBe(true);
 	});

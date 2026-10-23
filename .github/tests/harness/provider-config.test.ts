@@ -2,7 +2,11 @@ import { describe, expect, test } from "bun:test";
 import { type Context, fauxAssistantMessage, fauxToolCall } from "@earendil-works/pi-ai";
 import { createConfiguredOAuth } from "../../../packages/keychain/src/oauth.ts";
 import { resolveGeneratedHeaders } from "../../../packages/harness/src/harness/runtime.ts";
-import { ProviderRegistry, prepareReplayPayload, providerFromConfig } from "../../../packages/harness/src/providers/runtime.ts";
+import {
+	ProviderRegistry,
+	prepareReplayPayload,
+	providerFromConfig,
+} from "../../../packages/harness/src/providers/runtime.ts";
 import {
 	BUILTIN_PROVIDER_CONFIG,
 	loadProviderConfig,

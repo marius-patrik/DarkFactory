@@ -28,7 +28,7 @@ const REQUEST_ISSUE = {
 };
 const PLAN_ISSUE = {
 	title: "Plan: scope gate fails on an unresolvable base",
-	body: "## Scope\n- `packages/harness/src/pipeline/plan-scope.ts`\n- `packages/harness/test/pipeline/plan-scope.test.ts`\n\n## Verification\nRun the suite.",
+	body: "## Scope\n- `packages/harness/src/pipeline/plan-scope.ts`\n- `.github/tests/harness/pipeline/plan-scope.test.ts`\n\n## Verification\nRun the suite.",
 };
 
 /** The branch name the plan title produces; the handler derives it and every git call names it. */

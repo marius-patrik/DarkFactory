@@ -31,7 +31,7 @@ function getSourceFiles(changedFiles: string[]): string[] {
 }
 
 function getTestFiles(changedFiles: string[]): string[] {
-	const testDirs = ["packages/harness/test/", "tests/"];
+	const testDirs = [".github/tests/harness/", "tests/"];
 	return changedFiles.filter((path) => {
 		return testDirs.some((dir) => path.startsWith(dir));
 	});

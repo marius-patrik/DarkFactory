@@ -1,6 +1,10 @@
 import { describe, expect, test } from "bun:test";
 import type { RepositoryEvidence } from "../../../packages/core/src/repository-evidence.ts";
-import { classifyDocumentationImpact, evaluateDocumentationImpact, parseDocsNoneAnnotation } from "../../../packages/docs/src/impact.ts";
+import {
+	classifyDocumentationImpact,
+	evaluateDocumentationImpact,
+	parseDocsNoneAnnotation,
+} from "../../../packages/docs/src/impact.ts";
 
 const evidence: RepositoryEvidence = {
 	root: "/repo",

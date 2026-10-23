@@ -4,7 +4,11 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fauxAssistantMessage, fauxProvider } from "@earendil-works/pi-ai";
 import { QuotaStore } from "../../../packages/harness/src/harness/quota-store.ts";
-import { ChainExhaustedError, createFailoverSupervisor, type HarnessEvent } from "../../../packages/harness/src/harness/supervisor.ts";
+import {
+	ChainExhaustedError,
+	createFailoverSupervisor,
+	type HarnessEvent,
+} from "../../../packages/harness/src/harness/supervisor.ts";
 import { LimitLedger } from "../../../packages/harness/src/limits/ledger.ts";
 import { BUILTIN_PROVIDER_CONFIG } from "../../../packages/harness/src/providers/schema.ts";
 import { classifyFailure } from "../../../packages/harness/src/quota.ts";

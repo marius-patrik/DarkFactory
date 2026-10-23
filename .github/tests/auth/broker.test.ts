@@ -1,5 +1,10 @@
 import { afterEach, describe, expect, test } from "bun:test";
-import { createBrokerSession, MemoryAuthTokenStore, refreshBrokerSession, revokeBrokerSession } from "../../../packages/auth/src/broker.ts";
+import {
+	createBrokerSession,
+	MemoryAuthTokenStore,
+	refreshBrokerSession,
+	revokeBrokerSession,
+} from "../../../packages/auth/src/broker.ts";
 
 /**
  * A `fetch` stand-in that returns a fixed status.

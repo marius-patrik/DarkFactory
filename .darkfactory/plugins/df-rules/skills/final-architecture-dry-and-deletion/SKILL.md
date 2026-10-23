@@ -41,7 +41,7 @@ contract.
 
 ## Enforcement
 
-`packages/harness/test/ci/repository-governance.test.ts` verifies that the first-party package dependency graph
+`.github/tests/harness/ci/repository-governance.test.ts` verifies that the first-party package dependency graph
 read from package manifests is closed and acyclic, and the documentation currentness check rejects
 retired documentation paths and broken discovery aliases.
 

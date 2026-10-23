@@ -1,5 +1,10 @@
 import { describe, expect, it } from "bun:test";
-import { BOUND_ISSUE_PATTERN, checkBoundIssue, findBoundIssues, renderBoundIssueReport } from "../../../../../packages/github/src/ci/bound-issue.ts";
+import {
+	BOUND_ISSUE_PATTERN,
+	checkBoundIssue,
+	findBoundIssues,
+	renderBoundIssueReport,
+} from "../../../../../packages/github/src/ci/bound-issue.ts";
 
 // `verify-bound-issue` is a required status check, so these are the claims that make it one: a
 // binding in any accepted spelling passes, and everything else fails. The gate ran as a Python

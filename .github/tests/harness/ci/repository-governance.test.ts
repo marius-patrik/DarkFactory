@@ -1,7 +1,10 @@
 import { describe, expect, it } from "bun:test";
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
-import { REQUEST_BINDING_REQUIRED_CHECK, requiredChecksForDetectedQuality } from "../../../../packages/capability/src/actions.ts";
+import {
+	REQUEST_BINDING_REQUIRED_CHECK,
+	requiredChecksForDetectedQuality,
+} from "../../../../packages/capability/src/actions.ts";
 import { MANIFEST_PATH } from "../../../../packages/harness/src/install/manifest.ts";
 import { plan } from "../../../../packages/harness/src/install/plan.ts";
 import type { Workflow } from "./pipeline-source.ts";

@@ -1,6 +1,11 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { EXPECTED_SELF_PROJECTS, nextProjectsUrl, parseProjectsPage, readProjectsRest } from "../../../scripts/self-projects-rest.mjs";
+import {
+	EXPECTED_SELF_PROJECTS,
+	nextProjectsUrl,
+	parseProjectsPage,
+	readProjectsRest,
+} from "../../../scripts/self-projects-rest.mjs";
 
 test("Projects REST pages cannot silently resolve to empty on unexpected response", () => {
 	assert.deepEqual(

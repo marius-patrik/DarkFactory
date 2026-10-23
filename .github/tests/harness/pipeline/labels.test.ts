@@ -1,5 +1,10 @@
 import { describe, expect, test } from "bun:test";
-import { type AreaTaxonomy, classifyTypeAndArea, TYPE_LABELS, type TypeLabel } from "../../../../packages/harness/src/pipeline/labels.ts";
+import {
+	type AreaTaxonomy,
+	classifyTypeAndArea,
+	TYPE_LABELS,
+	type TypeLabel,
+} from "../../../../packages/harness/src/pipeline/labels.ts";
 import { formatConventionalCommit } from "../../../../packages/harness/src/pipeline/pr-body.ts";
 
 /**

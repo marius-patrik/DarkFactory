@@ -2,7 +2,11 @@ import { afterEach, describe, expect, test } from "bun:test";
 import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { ConfiguredBorrowedCredentialCoordinator, type ExternalKeyring, FileCredentialStore } from "../../../packages/keychain/src/index.ts";
+import {
+	ConfiguredBorrowedCredentialCoordinator,
+	type ExternalKeyring,
+	FileCredentialStore,
+} from "../../../packages/keychain/src/index.ts";
 
 const roots: string[] = [];
 

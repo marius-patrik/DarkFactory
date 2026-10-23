@@ -2,7 +2,13 @@ import { describe, expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import type { CapabilityHookContext, CapabilityRuntimeContext } from "../../../../../packages/capability/src/index.ts";
-import { branchName, capability, commitTypes, conventionalCommit, testsTouched } from "../../../../../.darkfactory/plugins/hooks/capability.ts";
+import {
+	branchName,
+	capability,
+	commitTypes,
+	conventionalCommit,
+	testsTouched,
+} from "../../../../../.darkfactory/plugins/hooks/capability.ts";
 
 const runtime: CapabilityRuntimeContext = {
 	repositoryRoot: "/repo",
@@ -142,9 +148,9 @@ describe("the declared hooks are reachable by the runner", () => {
 				// Evidence every hook in this capability can evaluate: a source file, its test, a
 				// conforming commit message and a conforming branch name.
 				context({
-					changedFiles: ["packages/harness/src/ci/detected.ts", "packages/harness/test/ci/detected.test.ts"],
+					changedFiles: ["packages/harness/src/ci/detected.ts", ".github/tests/harness/ci/detected.test.ts"],
 					sourceFiles: ["packages/harness/src/ci/detected.ts"],
-					testFiles: ["packages/harness/test/ci/detected.test.ts"],
+					testFiles: [".github/tests/harness/ci/detected.test.ts"],
 					commitMessage: "fix(ci): a conforming subject",
 					branch: "v1/hookenforce",
 				}),

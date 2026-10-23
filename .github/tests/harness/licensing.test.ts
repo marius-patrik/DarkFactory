@@ -3,7 +3,13 @@ import { existsSync, readdirSync } from "node:fs";
 import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join, resolve, sep } from "node:path";
-import { applyLicence, declaredLicence, licenceBody, NO_LICENCE, OFFERED_LICENCES } from "../../../packages/github/src/ci/licensing.ts";
+import {
+	applyLicence,
+	declaredLicence,
+	licenceBody,
+	NO_LICENCE,
+	OFFERED_LICENCES,
+} from "../../../packages/github/src/ci/licensing.ts";
 import type { GitHubClient } from "../../../packages/github/src/client.ts";
 
 const roots: string[] = [];
