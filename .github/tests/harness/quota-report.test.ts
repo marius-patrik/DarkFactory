@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
-import { buildQuotaReport } from "../src/limits/quota-report.ts";
-import type { ProviderConfig } from "../src/providers/schema.ts";
+import { buildQuotaReport } from "../../../packages/harness/src/limits/quota-report.ts";
+import type { ProviderConfig } from "../../../packages/harness/src/providers/schema.ts";
 
 function provider(id: string, extra: Partial<ProviderConfig> = {}): ProviderConfig {
 	return {

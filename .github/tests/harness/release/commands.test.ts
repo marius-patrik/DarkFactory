@@ -12,7 +12,7 @@ import {
 	type PipelineCommand,
 	parseIssueCommand,
 	parsePrCommand,
-} from "../../src/approvals/commands.ts";
+} from "../../../../packages/github/src/approvals/commands.ts";
 
 describe("the strict command grammar", () => {
 	test.each(["/df approve", "/DF APPROVE", "  /df approve  ", "/approve", "/APPROVE"])(

@@ -3,11 +3,11 @@ import { mkdtemp, readFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fauxAssistantMessage, fauxProvider } from "@earendil-works/pi-ai";
-import { createFailoverSupervisor } from "../src/harness/supervisor.ts";
-import { LimitLedger } from "../src/limits/ledger.ts";
-import { matchesModel, QuotaEngine, windowBounds } from "../src/limits/quota-engine.ts";
-import { buildQuotaReport } from "../src/limits/quota-report.ts";
-import { BUILTIN_PROVIDER_CONFIG, type DeclaredLimitConfig, type ProviderConfig } from "../src/providers/schema.ts";
+import { createFailoverSupervisor } from "../../../packages/harness/src/harness/supervisor.ts";
+import { LimitLedger } from "../../../packages/harness/src/limits/ledger.ts";
+import { matchesModel, QuotaEngine, windowBounds } from "../../../packages/harness/src/limits/quota-engine.ts";
+import { buildQuotaReport } from "../../../packages/harness/src/limits/quota-report.ts";
+import { BUILTIN_PROVIDER_CONFIG, type DeclaredLimitConfig, type ProviderConfig } from "../../../packages/harness/src/providers/schema.ts";
 
 const temporary: string[] = [];
 async function home(): Promise<string> {

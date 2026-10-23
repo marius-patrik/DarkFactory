@@ -13,7 +13,7 @@ import {
 	readManualVersion,
 	resolveRelease,
 	type VersioningMode,
-} from "../../src/release/versioning.ts";
+} from "../../../../packages/harness/src/release/versioning.ts";
 
 /**
  * These tests pin the version scheme the owner already decided, so the TypeScript resolver that

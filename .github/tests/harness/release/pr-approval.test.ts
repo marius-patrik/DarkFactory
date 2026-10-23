@@ -12,7 +12,7 @@ import {
 	MERGE_POLL_ATTEMPTS,
 	type ProjectBoardClient,
 	submitProxyReview,
-} from "../../src/approvals/pr-approval.ts";
+} from "../../../../packages/github/src/approvals/pr-approval.ts";
 
 describe("approval workflow authentication and merge notifications", () => {
 	test("uses independent app/Actions and user Projects credentials", () => {

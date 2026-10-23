@@ -18,7 +18,7 @@ import {
 	recordVersion,
 	resolveRelease,
 	syncMetadata,
-} from "../../src/release/release.ts";
+} from "../../../../packages/harness/src/release/release.ts";
 
 const roots: string[] = [];
 
