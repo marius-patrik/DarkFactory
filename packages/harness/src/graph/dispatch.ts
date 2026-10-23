@@ -1,6 +1,6 @@
 import { readFile } from "node:fs/promises";
-import { GitHubClient } from "../github/client.ts";
-import { GitHubRepository } from "../github/repository.ts";
+import { GitHubClient } from "../../../github/src/client.ts";
+import { GitHubRepository } from "../../../github/src/repository.ts";
 import { bundledGraphPath } from "./assets.ts";
 import { type CheckStateSource, type ChecksGateResult, evaluateChecksGate } from "./checks-gate.ts";
 import { type TranslatedEvent, translateGitHubEvent } from "./events.ts";
