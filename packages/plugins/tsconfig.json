@@ -1,4 +1,8 @@
 {
   "extends": "../../tsconfig.base.json",
-  "include": ["src", "test"]
+  "include": [
+    "src",
+    "../../.github/tests/plugins",
+    "../../.github/tests/darkfactory/plugins"
+  ]
 }
