@@ -2,10 +2,10 @@ import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { CHECKPOINT_FILENAME, saveCheckpoint } from "../../src/pipeline/checkpoint.ts";
-import { AgentRunFailure } from "../../src/pipeline/handler-context.ts";
-import { handleImplement } from "../../src/pipeline/implement.ts";
-import { AGENT_ERROR_PREFIX, QUOTA_EXHAUSTED_NOTICE } from "../../src/pipeline/signals.ts";
+import { CHECKPOINT_FILENAME, saveCheckpoint } from "../../../../packages/harness/src/pipeline/checkpoint.ts";
+import { AgentRunFailure } from "../../../../packages/harness/src/pipeline/handler-context.ts";
+import { handleImplement } from "../../../../packages/harness/src/pipeline/implement.ts";
+import { AGENT_ERROR_PREFIX, QUOTA_EXHAUSTED_NOTICE } from "../../../../packages/harness/src/pipeline/signals.ts";
 import {
 	gitCommands,
 	implementContext,

@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { calculateBackoff } from "../../src/pipeline/backoff.ts";
+import { calculateBackoff } from "../../../../packages/harness/src/pipeline/backoff.ts";
 
 describe("calculateBackoff", () => {
 	test("backoff must grow and must stay finite", () => {

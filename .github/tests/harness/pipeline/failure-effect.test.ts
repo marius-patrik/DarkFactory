@@ -14,7 +14,7 @@ import {
 	decideClaimElection,
 	failureEffectId,
 	refailureEffectId,
-} from "../../src/pipeline/failure-effect.ts";
+} from "../../../../packages/harness/src/pipeline/failure-effect.ts";
 
 /** A failure report body, as `report-failure.yml`'s runtime writes it. */
 function failureBody(workflow: string, runId: string): string {

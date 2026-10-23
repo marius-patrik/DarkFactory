@@ -8,7 +8,7 @@ import {
 	routeIssuesEvent,
 	routeRepositoryDispatch,
 	routeReviewCommentEvent,
-} from "../../src/pipeline/dispatch.ts";
+} from "../../../../packages/harness/src/pipeline/dispatch.ts";
 
 /** A decision carrying nothing but what every caller already knows. */
 const NO_COMMAND: CommentDecision = { allowedApprover: true };

@@ -10,7 +10,7 @@ import { describe, expect, test } from "bun:test";
 import { mkdirSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { calculateBackoff } from "../../src/pipeline/backoff.ts";
+import { calculateBackoff } from "../../../../packages/harness/src/pipeline/backoff.ts";
 import {
 	CHECKPOINT_FILENAME,
 	type Checkpoint,
@@ -18,7 +18,7 @@ import {
 	excludeCheckpointFromGit,
 	loadCheckpoint,
 	saveCheckpoint,
-} from "../../src/pipeline/checkpoint.ts";
+} from "../../../../packages/harness/src/pipeline/checkpoint.ts";
 import {
 	type AreaTaxonomy,
 	areaLabels,
@@ -26,7 +26,7 @@ import {
 	classifyType,
 	classifyTypeAndArea,
 	TYPE_LABELS,
-} from "../../src/pipeline/labels.ts";
+} from "../../../../packages/harness/src/pipeline/labels.ts";
 
 /** DarkFactory's declared area taxonomy, in declaration order. */
 const TAXONOMY: AreaTaxonomy = {

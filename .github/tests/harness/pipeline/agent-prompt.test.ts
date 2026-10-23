@@ -7,17 +7,17 @@ const loadAccounts: ReadonlyArray<readonly [string, string]> = [["DF_ACCOUNT_OPE
 
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import type { QuotaBlockStore } from "../../src/pipeline/agent-failures.ts";
+import type { QuotaBlockStore } from "../../../../packages/harness/src/pipeline/agent-failures.ts";
 import {
 	ANSWER_CONTRACT,
 	agentPromptRunner,
 	type CommandResult,
 	type ProcessRunner,
-} from "../../src/pipeline/agent-prompt.ts";
-import { type Checkpoint, loadCheckpoint } from "../../src/pipeline/checkpoint.ts";
-import { DF_BINARY, DF_LABEL } from "../../src/pipeline/df-run.ts";
-import { QUOTA_PROVIDERS_VARIABLE, quotaRunVariable } from "../../src/pipeline/quota.ts";
-import { AGENT_ERROR_PREFIX, AUTH_FAILED_NOTICE, QUOTA_EXHAUSTED_NOTICE } from "../../src/pipeline/signals.ts";
+} from "../../../../packages/harness/src/pipeline/agent-prompt.ts";
+import { type Checkpoint, loadCheckpoint } from "../../../../packages/harness/src/pipeline/checkpoint.ts";
+import { DF_BINARY, DF_LABEL } from "../../../../packages/harness/src/pipeline/df-run.ts";
+import { QUOTA_PROVIDERS_VARIABLE, quotaRunVariable } from "../../../../packages/harness/src/pipeline/quota.ts";
+import { AGENT_ERROR_PREFIX, AUTH_FAILED_NOTICE, QUOTA_EXHAUSTED_NOTICE } from "../../../../packages/harness/src/pipeline/signals.ts";
 import {
 	operations,
 	postedComments,

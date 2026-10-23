@@ -9,7 +9,7 @@ import {
 	reportingTokenPersistence,
 	setupDfAccounts,
 	snapshotDfLoginFiles,
-} from "../../src/pipeline/agent-credentials.ts";
+} from "../../../../packages/harness/src/pipeline/agent-credentials.ts";
 
 let home = "";
 

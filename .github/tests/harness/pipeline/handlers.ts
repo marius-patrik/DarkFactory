@@ -7,15 +7,15 @@
  * did, rather than asserting that a function exists.
  */
 
-import type { AgentDispatchPayload } from "../../src/pipeline/dispatch.ts";
+import type { AgentDispatchPayload } from "../../../../packages/harness/src/pipeline/dispatch.ts";
 import {
 	type AgentPromptRequest,
 	type PipelineContext,
 	pipelineContext,
 	pipelineEnvironment,
-} from "../../src/pipeline/handler-context.ts";
-import type { ImplementContext } from "../../src/pipeline/implement.ts";
-import type { AreaTaxonomy } from "../../src/pipeline/labels.ts";
+} from "../../../../packages/harness/src/pipeline/handler-context.ts";
+import type { ImplementContext } from "../../../../packages/harness/src/pipeline/implement.ts";
+import type { AreaTaxonomy } from "../../../../packages/harness/src/pipeline/labels.ts";
 import type {
 	ClosingIssue,
 	IssueCommentRow,
@@ -25,8 +25,8 @@ import type {
 	PrCreateInput,
 	PrField,
 	PrView,
-} from "../../src/pipeline/pipeline-io.ts";
-import type { VerificationResult, WorkspaceIo } from "../../src/pipeline/workspace-io.ts";
+} from "../../../../packages/harness/src/pipeline/pipeline-io.ts";
+import type { VerificationResult, WorkspaceIo } from "../../../../packages/harness/src/pipeline/workspace-io.ts";
 
 /** One recorded operation, in the order the handler performed it. */
 interface RecordedCall {
