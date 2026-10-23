@@ -4,7 +4,7 @@ import {
 	assertLockstepPackageVersions,
 	canonicalVersionFromPackageJson,
 	validateLockstepPackageVersions,
-} from "./versioning.ts";
+} from "../../../../../.darkfactory/plugins/release/versioning.ts";
 
 describe("release lockstep versioning", () => {
 	test("reads the canonical version from root package metadata", () => {

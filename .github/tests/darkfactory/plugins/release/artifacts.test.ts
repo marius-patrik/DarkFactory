@@ -7,7 +7,7 @@ import {
 	renderSha256Sums,
 	serializeReleaseArtifactManifest,
 	verifyReleaseArtifactManifest,
-} from "./artifacts.ts";
+} from "../../../../../.darkfactory/plugins/release/artifacts.ts";
 
 const roots: string[] = [];
 
