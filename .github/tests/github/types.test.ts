@@ -6,7 +6,7 @@ import {
 	pullRequestSchema,
 	reviewSchema,
 	variableSchema,
-} from "../src/types.ts";
+} from "../../../packages/github/src/types.ts";
 
 const user = { login: "marius-patrik" };
 

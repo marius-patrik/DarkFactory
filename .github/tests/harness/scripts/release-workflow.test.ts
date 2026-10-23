@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
-import { RELEASE_TARGETS, releaseAssetName, releaseBuildMatrix, requireReleaseTarget } from "./release-targets.ts";
+import { RELEASE_TARGETS, releaseAssetName, releaseBuildMatrix, requireReleaseTarget } from "../../../../packages/harness/scripts/release-targets.ts";
 
 /**
  * The release workflow is the only thing that decides what a `df` user can download, so its shape

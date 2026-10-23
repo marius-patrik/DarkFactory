@@ -2,10 +2,10 @@ import { describe, expect, test } from "bun:test";
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import type { CapabilityDefinition } from "../../capability/src/index.ts";
-import type { RepositoryEvidence } from "../../core/src/repository-evidence.ts";
-import { documentationMetadata } from "../src/api.ts";
-import { type DocsContentGraph, includeCapabilityDocumentation } from "../src/content.ts";
+import type { CapabilityDefinition } from "../../../packages/capability/src/index.ts";
+import type { RepositoryEvidence } from "../../../packages/core/src/repository-evidence.ts";
+import { documentationMetadata } from "../../../packages/docs/src/api.ts";
+import { type DocsContentGraph, includeCapabilityDocumentation } from "../../../packages/docs/src/content.ts";
 
 describe("detected documentation metadata", () => {
 	test("projects repository and capability evidence without a second detector", () => {

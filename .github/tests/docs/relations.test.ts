@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
-import type { DocsContentGraph, DocsPage } from "../src/content.ts";
-import { analyzeRuleNoteRelations, assertRuleNoteRelations } from "../src/relations.ts";
+import type { DocsContentGraph, DocsPage } from "../../../packages/docs/src/content.ts";
+import { analyzeRuleNoteRelations, assertRuleNoteRelations } from "../../../packages/docs/src/relations.ts";
 
 function rule(id: string): DocsPage {
 	const number = Number(id.slice(-3));

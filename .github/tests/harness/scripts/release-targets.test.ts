@@ -11,7 +11,7 @@ import {
 	renderChecksums,
 	verifyReleaseChecksums,
 	writeReleaseChecksums,
-} from "./release-checksums.ts";
+} from "../../../../packages/harness/scripts/release-checksums.ts";
 import {
 	findReleaseTarget,
 	RELEASE_TARGETS,
@@ -20,7 +20,7 @@ import {
 	releaseBuildMatrix,
 	requireReleaseTarget,
 	resolveHostTarget,
-} from "./release-targets.ts";
+} from "../../../../packages/harness/scripts/release-targets.ts";
 
 describe("df release target matrix", () => {
 	// The five platforms a release ships. Adding a target here is what makes it build, so this list
