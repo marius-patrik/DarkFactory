@@ -11,20 +11,20 @@ import {
 	fauxToolCall,
 } from "@earendil-works/pi-ai";
 import { z } from "zod";
-import { CAPTURE_TOOL_NAME, captureCodeResult, extractJudgementResult } from "../../core/src/result-capture.ts";
+import { CAPTURE_TOOL_NAME, captureCodeResult, extractJudgementResult } from "../../../packages/core/src/result-capture.ts";
 import {
 	alignmentResultSchema,
 	CaptureError,
 	planningResultSchema,
 	reviewResultSchema,
-} from "../../protocol/src/index.ts";
-import type { Candidate } from "../src/failover.ts";
-import { createFailoverSupervisor } from "../src/harness/supervisor.ts";
-import { changedFiles } from "../src/workspace/changedFiles.ts";
-import { commitChunk } from "../src/workspace/commitChunk.ts";
-import { runGit } from "../src/workspace/git.ts";
-import { runDetectedVerification } from "../src/workspace/runVerify.ts";
-import { scopeCheck } from "../src/workspace/scopeCheck.ts";
+} from "../../../packages/protocol/src/index.ts";
+import type { Candidate } from "../../../packages/harness/src/failover.ts";
+import { createFailoverSupervisor } from "../../../packages/harness/src/harness/supervisor.ts";
+import { changedFiles } from "../../../packages/harness/src/workspace/changedFiles.ts";
+import { commitChunk } from "../../../packages/harness/src/workspace/commitChunk.ts";
+import { runGit } from "../../../packages/harness/src/workspace/git.ts";
+import { runDetectedVerification } from "../../../packages/harness/src/workspace/runVerify.ts";
+import { scopeCheck } from "../../../packages/harness/src/workspace/scopeCheck.ts";
 
 const workspaceOperations = {
 	changedFiles,

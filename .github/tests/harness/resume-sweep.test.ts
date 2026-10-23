@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
-import type { GitHubRepository } from "../src/github/repository";
-import { parseQuotaRecord, QUOTA_VARIABLE_PREFIX, sweepQuotaResumes } from "../src/limits/resume-sweep";
+import type { GitHubRepository } from "../../../packages/github/src/repository";
+import { parseQuotaRecord, QUOTA_VARIABLE_PREFIX, sweepQuotaResumes } from "../../../packages/harness/src/limits/resume-sweep";
 
 /** Minimal stand-in recording what the sweep asked GitHub to do. */
 function fakeRepo(variables: { name: string; value: string }[], failures: number[] = []) {

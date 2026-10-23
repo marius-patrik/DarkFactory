@@ -2,15 +2,15 @@ import { afterEach, describe, expect, test } from "bun:test";
 import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import type { Candidate } from "../src/failover.ts";
-import { LimitLedger } from "../src/limits/ledger.ts";
-import { QuotaEngine } from "../src/limits/quota-engine.ts";
-import type { DeclaredLimitConfig, ProviderConfig } from "../src/providers/schema.ts";
-import { buildRouterCatalog } from "../src/router/catalog.ts";
-import { OutcomeStore } from "../src/router/outcomes.ts";
-import { classifyTask, graphNodeRoutingHints } from "../src/router/profile.ts";
-import { routeTask } from "../src/router/router.ts";
-import type { ModelCapability, RouterConfig } from "../src/router/types.ts";
+import type { Candidate } from "../../../packages/harness/src/failover.ts";
+import { LimitLedger } from "../../../packages/harness/src/limits/ledger.ts";
+import { QuotaEngine } from "../../../packages/harness/src/limits/quota-engine.ts";
+import type { DeclaredLimitConfig, ProviderConfig } from "../../../packages/harness/src/providers/schema.ts";
+import { buildRouterCatalog } from "../../../packages/harness/src/router/catalog.ts";
+import { OutcomeStore } from "../../../packages/harness/src/router/outcomes.ts";
+import { classifyTask, graphNodeRoutingHints } from "../../../packages/harness/src/router/profile.ts";
+import { routeTask } from "../../../packages/harness/src/router/router.ts";
+import type { ModelCapability, RouterConfig } from "../../../packages/harness/src/router/types.ts";
 
 const temporary: string[] = [];
 afterEach(async () => {

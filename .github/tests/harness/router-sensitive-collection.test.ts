@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
-import { routeTask } from "../src/router/router.ts";
-import type { ModelCapability, RouterConfig } from "../src/router/types.ts";
+import { routeTask } from "../../../packages/harness/src/router/router.ts";
+import type { ModelCapability, RouterConfig } from "../../../packages/harness/src/router/types.ts";
 
 function model(provider: string, collection: ModelCapability["collection"]): ModelCapability {
 	return {

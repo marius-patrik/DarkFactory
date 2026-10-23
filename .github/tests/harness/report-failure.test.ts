@@ -14,8 +14,8 @@ import {
 	verifyWorkflowCompletion,
 	reportFailure,
 	resolveFailure,
-} from "../src/ci/report-failure";
-import type { GitHubRepository } from "../src/github/repository";
+} from "../../../packages/github/src/ci/report-failure";
+import type { GitHubRepository } from "../../../packages/github/src/repository";
 
 interface FakeIssue {
 	number: number;
