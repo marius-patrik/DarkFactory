@@ -1,5 +1,5 @@
 import { z } from "zod";
-import type { GitHubRepository } from "../github/repository";
+import type { GitHubRepository } from "../../../github/src/repository";
 
 /** Prefix of the repository variables that record a quota-blocked run. */
 export const QUOTA_VARIABLE_PREFIX = "DF_QUOTA_";

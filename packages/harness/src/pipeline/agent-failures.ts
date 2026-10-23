@@ -14,8 +14,8 @@
  * resume.
  */
 
-import type { GitHubClient } from "../github/client.ts";
-import { GitHubError } from "../github/errors.ts";
+import type { GitHubClient } from "../../../github/src/client.ts";
+import { GitHubError } from "../../../github/src/errors.ts";
 import { type BoardStatus, blockEntity } from "./board-status.ts";
 import { type Checkpoint, RESUME_INSTRUCTIONS, saveCheckpoint } from "./checkpoint.ts";
 import { DF_LABEL } from "./df-run.ts";
