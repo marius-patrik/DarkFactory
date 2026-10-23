@@ -1,5 +1,5 @@
 import { describe, expect, it } from "bun:test";
-import { CANONICAL_STATUSES } from "../../../protocol/src/workflow.ts";
+import { CANONICAL_STATUSES } from "../../../../packages/protocol/src/workflow.ts";
 import {
 	applyActionsPermissions,
 	applyBoardLinks,
@@ -8,8 +8,8 @@ import {
 	type ProjectRef,
 	type RepoSettingsBoardPort,
 	type RepoSettingsManifestView,
-} from "../../src/ci/repo-settings.ts";
-import type { GitHubClient } from "../../src/github/client.ts";
+} from "../../../../packages/github/src/ci/repo-settings.ts";
+import type { GitHubClient } from "../../../../packages/github/src/client.ts";
 
 /**
  * The four operations that let `install.yml` move off `repo_settings.py`.

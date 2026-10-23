@@ -1,10 +1,10 @@
 import { describe, expect, it } from "bun:test";
 import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
-import { CANONICAL_STATUSES } from "../../../protocol/src/workflow.ts";
-import { CONFIG_MARKER } from "../../src/install/configuration-issue.ts";
-import { TYPE_LABELS } from "../../src/pipeline/labels.ts";
-import { labelTaxonomy, PIPELINE_ROLE_LABELS, STATUS_OPTIONS } from "../../src/settings/taxonomy.ts";
+import { CANONICAL_STATUSES } from "../../../../packages/protocol/src/workflow.ts";
+import { CONFIG_MARKER } from "../../../../packages/harness/src/install/configuration-issue.ts";
+import { TYPE_LABELS } from "../../../../packages/harness/src/pipeline/labels.ts";
+import { labelTaxonomy, PIPELINE_ROLE_LABELS, STATUS_OPTIONS } from "../../../../packages/harness/src/settings/taxonomy.ts";
 import {
 	allSteps,
 	declaredAreas,

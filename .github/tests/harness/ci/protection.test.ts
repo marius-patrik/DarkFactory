@@ -1,8 +1,8 @@
 import { describe, expect, it } from "bun:test";
-import { applyBranchProtection, computeRequiredChecks, verifyBranchProtection } from "../../src/ci/protection.ts";
-import type { ResolvedCheck } from "../../src/ci/schema.ts";
-import { GitHubClient } from "../../src/github/client.ts";
-import { GitHubRepository } from "../../src/github/repository.ts";
+import { applyBranchProtection, computeRequiredChecks, verifyBranchProtection } from "../../../../packages/github/src/ci/protection.ts";
+import type { ResolvedCheck } from "../../../../packages/github/src/ci/schema.ts";
+import { GitHubClient } from "../../../../packages/github/src/client.ts";
+import { GitHubRepository } from "../../../../packages/github/src/repository.ts";
 import { json, scripted } from "../github/helpers.ts";
 
 describe("Branch protection & rulesets synchronizer", () => {

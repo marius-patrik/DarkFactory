@@ -2,10 +2,10 @@ import { describe, expect, it } from "bun:test";
 import { mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { runCiDoctor } from "../../src/ci/doctor.ts";
-import { installWorkflows } from "../../src/ci/installer.ts";
-import { GitHubClient } from "../../src/github/client.ts";
-import { GitHubRepository } from "../../src/github/repository.ts";
+import { runCiDoctor } from "../../../../packages/github/src/ci/doctor.ts";
+import { installWorkflows } from "../../../../packages/github/src/ci/installer.ts";
+import { GitHubClient } from "../../../../packages/github/src/client.ts";
+import { GitHubRepository } from "../../../../packages/github/src/repository.ts";
 import { json, scripted } from "../github/helpers.ts";
 
 describe("df ci doctor", () => {

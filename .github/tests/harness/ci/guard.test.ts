@@ -1,6 +1,6 @@
 import { describe, expect, it } from "bun:test";
-import { requiredChecksState, shouldAlert } from "../../src/ci/guard.ts";
-import type { ResolvedCheck } from "../../src/ci/schema.ts";
+import { requiredChecksState, shouldAlert } from "../../../../packages/github/src/ci/guard.ts";
+import type { ResolvedCheck } from "../../../../packages/github/src/ci/schema.ts";
 
 describe("CI required checks state guard", () => {
 	const checks: ResolvedCheck[] = [

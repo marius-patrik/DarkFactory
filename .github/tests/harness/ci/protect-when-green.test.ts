@@ -1,6 +1,6 @@
 import { describe, expect, it } from "bun:test";
-import { laneIsGreen } from "../../src/ci/protect-when-green.ts";
-import type { CheckRunItem } from "../../src/ci/schema.ts";
+import { laneIsGreen } from "../../../../packages/github/src/ci/protect-when-green.ts";
+import type { CheckRunItem } from "../../../../packages/github/src/ci/schema.ts";
 
 /**
  * The rule that makes this safe: a branch is protected only once the checks it requires have actually

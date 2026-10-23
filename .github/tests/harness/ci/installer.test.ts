@@ -3,9 +3,9 @@ import { readFileSync } from "node:fs";
 import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { checkWorkflowsDrift, installWorkflows, updateWorkflows } from "../../src/ci/installer.ts";
-import { renderWorkflowTemplate } from "../../src/ci/templates.ts";
-import { configurationIssue } from "../../src/install/configuration-issue.ts";
+import { checkWorkflowsDrift, installWorkflows, updateWorkflows } from "../../../../packages/github/src/ci/installer.ts";
+import { renderWorkflowTemplate } from "../../../../packages/github/src/ci/templates.ts";
+import { configurationIssue } from "../../../../packages/harness/src/install/configuration-issue.ts";
 import { repoRoot } from "./pipeline-source.ts";
 
 async function writeUpstream(temp: string, repo: string, ref: string): Promise<void> {
