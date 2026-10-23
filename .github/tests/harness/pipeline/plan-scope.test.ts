@@ -17,7 +17,7 @@ import {
 	PLAN_MARKER,
 	parseExplicitPlanFiles,
 	parsePlanFiles,
-} from "../../src/pipeline/plan-scope.ts";
+} from "../../../../packages/harness/src/pipeline/plan-scope.ts";
 
 /** A plan citing its files the three ways an agent actually cites them. */
 const CITING_PLAN =

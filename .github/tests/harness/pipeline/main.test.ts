@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { pipelineEnvironment } from "../../src/pipeline/handler-context.ts";
+import { pipelineEnvironment } from "../../../../packages/harness/src/pipeline/handler-context.ts";
 import {
 	parseRunnerArgs,
 	RUNNER_COMMANDS,
@@ -7,9 +7,9 @@ import {
 	type RunnerPorts,
 	runCommand,
 	runnerMain,
-} from "../../src/pipeline/main.ts";
-import { reviewDigest } from "../../src/pipeline/review-convergence.ts";
-import { AGENT_ERROR_PREFIX } from "../../src/pipeline/signals.ts";
+} from "../../../../packages/harness/src/pipeline/main.ts";
+import { reviewDigest } from "../../../../packages/harness/src/pipeline/review-convergence.ts";
+import { AGENT_ERROR_PREFIX } from "../../../../packages/harness/src/pipeline/signals.ts";
 import {
 	handlerContext,
 	operations,

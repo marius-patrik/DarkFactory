@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
-import { AgentRunFailure } from "../../src/pipeline/handler-context.ts";
-import { handleInterpret } from "../../src/pipeline/interpret.ts";
-import { AGENT_ERROR_PREFIX, QUOTA_EXHAUSTED_NOTICE } from "../../src/pipeline/signals.ts";
+import { AgentRunFailure } from "../../../../packages/harness/src/pipeline/handler-context.ts";
+import { handleInterpret } from "../../../../packages/harness/src/pipeline/interpret.ts";
+import { AGENT_ERROR_PREFIX, QUOTA_EXHAUSTED_NOTICE } from "../../../../packages/harness/src/pipeline/signals.ts";
 import { handlerContext, labelChanges, operations, postedComments, recordingIo } from "./handlers.ts";
 
 /** A Request as intake finds it: opened, labelled, and about the pipeline's own machinery. */

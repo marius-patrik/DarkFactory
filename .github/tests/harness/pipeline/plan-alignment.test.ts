@@ -2,12 +2,12 @@ import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { existsSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import type { BoardEntity } from "../../src/pipeline/board-status.ts";
-import { CHECKPOINT_FILENAME, saveCheckpoint } from "../../src/pipeline/checkpoint.ts";
-import type { PlanAlignmentContext } from "../../src/pipeline/plan-alignment.ts";
-import { handlePlanAlignment, MATCHES_PLAN } from "../../src/pipeline/plan-alignment.ts";
-import { SCOPE_AMENDMENT_MARKER } from "../../src/pipeline/pr-body.ts";
-import { AGENT_ERROR_PREFIX, QUOTA_EXHAUSTED_NOTICE } from "../../src/pipeline/signals.ts";
+import type { BoardEntity } from "../../../../packages/harness/src/pipeline/board-status.ts";
+import { CHECKPOINT_FILENAME, saveCheckpoint } from "../../../../packages/harness/src/pipeline/checkpoint.ts";
+import type { PlanAlignmentContext } from "../../../../packages/harness/src/pipeline/plan-alignment.ts";
+import { handlePlanAlignment, MATCHES_PLAN } from "../../../../packages/harness/src/pipeline/plan-alignment.ts";
+import { SCOPE_AMENDMENT_MARKER } from "../../../../packages/harness/src/pipeline/pr-body.ts";
+import { AGENT_ERROR_PREFIX, QUOTA_EXHAUSTED_NOTICE } from "../../../../packages/harness/src/pipeline/signals.ts";
 import {
 	type HandlerContextOptions,
 	handlerContext,

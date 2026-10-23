@@ -4,8 +4,8 @@ import {
 	extractPlanScope,
 	extractTestResultLine,
 	generateBranchName,
-} from "../../src/pipeline/pr-body.ts";
-import { boundedTail, rewriteFileLinks } from "../../src/pipeline/signals.ts";
+} from "../../../../packages/harness/src/pipeline/pr-body.ts";
+import { boundedTail, rewriteFileLinks } from "../../../../packages/harness/src/pipeline/signals.ts";
 
 describe("rewriteFileLinks", () => {
 	test("a file:// URL becomes a GitHub blob link for the file path", () => {

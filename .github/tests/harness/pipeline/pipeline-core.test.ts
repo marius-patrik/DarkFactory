@@ -13,7 +13,7 @@ import {
 	dfSetupSecretNames,
 	parseDfErrorMessage,
 	parseDfJsonOutput,
-} from "../../src/pipeline/df-events.ts";
+} from "../../../../packages/harness/src/pipeline/df-events.ts";
 import {
 	approvedPlanText,
 	buildPrBody,
@@ -22,7 +22,7 @@ import {
 	formatConventionalCommit,
 	fullPlanScope,
 	generateBranchName,
-} from "../../src/pipeline/pr-body.ts";
+} from "../../../../packages/harness/src/pipeline/pr-body.ts";
 import {
 	alreadyExists,
 	exhaustedProviders,
@@ -33,7 +33,7 @@ import {
 	pacificOffsetHours,
 	quotaBlockRecord,
 	quotaRunVariable,
-} from "../../src/pipeline/quota.ts";
+} from "../../../../packages/harness/src/pipeline/quota.ts";
 
 /** 2026-09-15T12:00:00Z, which is 05:00 in Los Angeles. */
 const NOW = 1789473600;

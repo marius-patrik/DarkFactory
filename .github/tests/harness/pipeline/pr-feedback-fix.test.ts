@@ -1,8 +1,8 @@
 import { describe, expect, test } from "bun:test";
-import type { BoardEntity } from "../../src/pipeline/board-status.ts";
-import { SCOPE_AMENDMENT_MARKER } from "../../src/pipeline/pr-body.ts";
-import { runPrFeedbackFix } from "../../src/pipeline/pr-feedback-fix.ts";
-import { AGENT_ERROR_PREFIX, QUOTA_EXHAUSTED_NOTICE } from "../../src/pipeline/signals.ts";
+import type { BoardEntity } from "../../../../packages/harness/src/pipeline/board-status.ts";
+import { SCOPE_AMENDMENT_MARKER } from "../../../../packages/harness/src/pipeline/pr-body.ts";
+import { runPrFeedbackFix } from "../../../../packages/harness/src/pipeline/pr-feedback-fix.ts";
+import { AGENT_ERROR_PREFIX, QUOTA_EXHAUSTED_NOTICE } from "../../../../packages/harness/src/pipeline/signals.ts";
 import {
 	gitCommands,
 	type HandlerContextOptions,
