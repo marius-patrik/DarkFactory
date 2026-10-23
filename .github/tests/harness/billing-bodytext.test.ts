@@ -1,6 +1,6 @@
 import { expect, test } from "bun:test";
-import { observeLimits } from "../src/limits/observe.ts";
-import type { LimitPolicyConfig } from "../src/providers/schema.ts";
+import { observeLimits } from "../../../packages/harness/src/limits/observe.ts";
+import type { LimitPolicyConfig } from "../../../packages/harness/src/providers/schema.ts";
 
 const candidate = { provider: "test", account: "default", model: "m" } as const;
 const policy: LimitPolicyConfig = { observe: true };

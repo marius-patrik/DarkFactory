@@ -1,12 +1,12 @@
 import { describe, expect, test } from "bun:test";
-import type { CanonicalStatus } from "../../../protocol/src/workflow.ts";
-import { BoardAutomation } from "../../src/board/automation.ts";
-import { BoardGroup, ProjectClient } from "../../src/board/client.ts";
-import { ghEnvironment } from "../../src/board/gh.ts";
-import { BoardGraphqlClient } from "../../src/board/graphql.ts";
-import { BoardRestClient } from "../../src/board/rest.ts";
-import { BoardRun } from "../../src/board/run.ts";
-import { CANONICAL_STATUS_OPTIONS, STATUS_NAMES } from "../../src/board/taxonomy.ts";
+import type { CanonicalStatus } from "../../../../packages/protocol/src/workflow.ts";
+import { BoardAutomation } from "../../../../packages/harness/src/board/automation.ts";
+import { BoardGroup, ProjectClient } from "../../../../packages/harness/src/board/client.ts";
+import { ghEnvironment } from "../../../../packages/harness/src/board/gh.ts";
+import { BoardGraphqlClient } from "../../../../packages/harness/src/board/graphql.ts";
+import { BoardRestClient } from "../../../../packages/harness/src/board/rest.ts";
+import { BoardRun } from "../../../../packages/harness/src/board/run.ts";
+import { CANONICAL_STATUS_OPTIONS, STATUS_NAMES } from "../../../../packages/harness/src/board/taxonomy.ts";
 import { type FakeAnswer, fakeTransport, type RecordedRequest, routedTransport } from "./fakes.ts";
 
 /**

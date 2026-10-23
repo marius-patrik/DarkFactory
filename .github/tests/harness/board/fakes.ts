@@ -1,7 +1,7 @@
-import type { CanonicalStatus } from "../../../protocol/src/workflow.ts";
-import type { BoardTarget, StateReason, TrackOptions } from "../../src/board/client.ts";
-import type { LabelSource } from "../../src/board/status.ts";
-import type { GitHubFetch } from "../../src/github/transport.ts";
+import type { CanonicalStatus } from "../../../../packages/protocol/src/workflow.ts";
+import type { BoardTarget, StateReason, TrackOptions } from "../../../../packages/harness/src/board/client.ts";
+import type { LabelSource } from "../../../../packages/harness/src/board/status.ts";
+import type { GitHubFetch } from "../../../../packages/github/src/transport.ts";
 
 /**
  * Doubles for the board automation's edges.

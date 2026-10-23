@@ -2,16 +2,16 @@ import { describe, expect, test } from "bun:test";
 import { mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import type { CanonicalStatus } from "../../../protocol/src/workflow.ts";
-import { CHECKPOINT_FILENAME } from "../../src/board/checkpoint.ts";
+import type { CanonicalStatus } from "../../../../packages/protocol/src/workflow.ts";
+import { CHECKPOINT_FILENAME } from "../../../../packages/harness/src/board/checkpoint.ts";
 import {
 	type BoardEventContext,
 	handleIssueEvent,
 	handlePullRequestEvent,
 	handlePushEvent,
 	type WebhookPayload,
-} from "../../src/board/events.ts";
-import { BoardRun } from "../../src/board/run.ts";
+} from "../../../../packages/harness/src/board/events.ts";
+import { BoardRun } from "../../../../packages/harness/src/board/run.ts";
 import { RecordingTarget } from "./fakes.ts";
 
 /**

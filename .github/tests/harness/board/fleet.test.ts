@@ -1,6 +1,6 @@
 import { describe, expect, it } from "bun:test";
-import { BoardAutomation } from "../../src/board/automation.ts";
-import type { BoardDeclaration } from "../../src/board/declaration.ts";
+import { BoardAutomation } from "../../../../packages/harness/src/board/automation.ts";
+import type { BoardDeclaration } from "../../../../packages/harness/src/board/declaration.ts";
 
 /**
  * Which repositories board reconciliation may touch.

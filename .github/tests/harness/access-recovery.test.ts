@@ -2,9 +2,9 @@ import { afterEach, expect, test } from "bun:test";
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { FileCredentialStore } from "../../keychain/src/index.ts";
-import { LimitLedger } from "../src/limits/ledger.ts";
-import { observeLimits } from "../src/limits/observe.ts";
+import { FileCredentialStore } from "../../../packages/keychain/src/index.ts";
+import { LimitLedger } from "../../../packages/harness/src/limits/ledger.ts";
+import { observeLimits } from "../../../packages/harness/src/limits/observe.ts";
 
 const roots: string[] = [];
 afterEach(() => {

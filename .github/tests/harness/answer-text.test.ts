@@ -1,8 +1,8 @@
 import { describe, expect, test } from "bun:test";
-import type { Candidate } from "../src/failover.ts";
-import { observeLimits } from "../src/limits/observe.ts";
-import type { LimitObservation } from "../src/limits/types.ts";
-import type { LimitPolicyConfig } from "../src/providers/schema.ts";
+import type { Candidate } from "../../../packages/harness/src/failover.ts";
+import { observeLimits } from "../../../packages/harness/src/limits/observe.ts";
+import type { LimitObservation } from "../../../packages/harness/src/limits/types.ts";
+import type { LimitPolicyConfig } from "../../../packages/harness/src/providers/schema.ts";
 
 const candidate: Candidate = { provider: "test", account: "a", model: "m" };
 
