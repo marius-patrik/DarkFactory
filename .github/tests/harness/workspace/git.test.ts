@@ -1,5 +1,5 @@
 import { afterEach, expect, test } from "bun:test";
-import { GitError, runGit } from "../../src/workspace/git.ts";
+import { GitError, runGit } from "../../../../packages/harness/src/workspace/git.ts";
 import { createTempRepo, type TempRepo } from "./helpers.ts";
 
 let temp: TempRepo | undefined;

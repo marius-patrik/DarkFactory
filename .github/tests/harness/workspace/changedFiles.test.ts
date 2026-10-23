@@ -1,9 +1,9 @@
 import { afterAll, beforeAll, describe, expect, it } from "bun:test";
 import { mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { changedFiles } from "../../src/workspace/changedFiles.ts";
-import { createWorktree } from "../../src/workspace/createWorktree.ts";
-import { runGit } from "../../src/workspace/git.ts";
+import { changedFiles } from "../../../../packages/harness/src/workspace/changedFiles.ts";
+import { createWorktree } from "../../../../packages/harness/src/workspace/createWorktree.ts";
+import { runGit } from "../../../../packages/harness/src/workspace/git.ts";
 import { createTempRepo, TEST_IDENTITY } from "./helpers.ts";
 
 describe("changedFiles utility", () => {

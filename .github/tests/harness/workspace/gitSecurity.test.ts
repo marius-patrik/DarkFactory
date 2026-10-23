@@ -1,5 +1,5 @@
 import { describe, expect, it } from "bun:test";
-import { runGit } from "../../src/workspace/git.ts";
+import { runGit } from "../../../../packages/harness/src/workspace/git.ts";
 
 describe("runGit Security", () => {
 	it("should reject repo paths starting with -", () => {

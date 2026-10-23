@@ -1,5 +1,5 @@
 import { describe, expect, it } from "bun:test";
-import { GitAuthError, GitConflictError, GitNetworkError, parseGitError } from "../../src/workspace/gitErrors.ts";
+import { GitAuthError, GitConflictError, GitNetworkError, parseGitError } from "../../../../packages/harness/src/workspace/gitErrors.ts";
 
 describe("Git Error Parser", () => {
 	it("should identify Auth errors", () => {

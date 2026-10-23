@@ -1,7 +1,7 @@
 import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { runGit } from "../../src/workspace/git.ts";
+import { runGit } from "../../../../packages/harness/src/workspace/git.ts";
 
 /** A throwaway repository with a bare `origin`, created under the OS temp directory. */
 export interface TempRepo {

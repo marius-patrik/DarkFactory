@@ -1,8 +1,8 @@
 import { afterAll, beforeAll, describe, expect, test } from "bun:test";
 import { existsSync, mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { createWorktree } from "../../src/workspace/createWorktree.ts";
-import { runGit } from "../../src/workspace/git.ts";
+import { createWorktree } from "../../../../packages/harness/src/workspace/createWorktree.ts";
+import { runGit } from "../../../../packages/harness/src/workspace/git.ts";
 import { createTempRepo, TEST_IDENTITY } from "./helpers.ts";
 
 let temp: ReturnType<typeof createTempRepo>;

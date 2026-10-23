@@ -1,8 +1,8 @@
 import { afterEach, beforeEach, expect, test } from "bun:test";
 import { mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { runWorkspaceCli } from "../../src/workspace/cli.ts";
-import { runGit } from "../../src/workspace/git.ts";
+import { runWorkspaceCli } from "../../../../packages/harness/src/workspace/cli.ts";
+import { runGit } from "../../../../packages/harness/src/workspace/git.ts";
 import {
 	abortOperation,
 	createBranch,
@@ -11,7 +11,7 @@ import {
 	pushWithLease,
 	rebase,
 	switchBranch,
-} from "../../src/workspace/gitWorkspace.ts";
+} from "../../../../packages/harness/src/workspace/gitWorkspace.ts";
 import { createTempRepo, TEST_IDENTITY, type TempRepo } from "./helpers.ts";
 
 let temp: TempRepo | undefined;

@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, expect, test } from "bun:test";
-import { runWorkspaceCli } from "../../src/workspace/cli.ts";
+import { runWorkspaceCli } from "../../../../packages/harness/src/workspace/cli.ts";
 import { createTempRepo, type TempRepo } from "./helpers.ts";
 
 let temp: TempRepo | undefined;

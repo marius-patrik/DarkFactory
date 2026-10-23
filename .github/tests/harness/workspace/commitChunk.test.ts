@@ -1,8 +1,8 @@
 import { afterEach, describe, expect, it } from "bun:test";
 import { existsSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { commitChunk } from "../../src/workspace/commitChunk.ts";
-import { runGit } from "../../src/workspace/git.ts";
+import { commitChunk } from "../../../../packages/harness/src/workspace/commitChunk.ts";
+import { runGit } from "../../../../packages/harness/src/workspace/git.ts";
 import { createTempRepo, TEST_IDENTITY } from "./helpers.ts";
 
 describe("commitChunk utility", () => {

@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
-import type { GitHubPullRequest } from "../../src/github/types.ts";
-import { openPullRequest } from "../../src/workspace/openPullRequest.ts";
+import type { GitHubPullRequest } from "../../../../packages/github/src/types.ts";
+import { openPullRequest } from "../../../../packages/harness/src/workspace/openPullRequest.ts";
 
 describe("openPullRequest", () => {
 	const mockPr: GitHubPullRequest = {

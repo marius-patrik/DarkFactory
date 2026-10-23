@@ -2,7 +2,7 @@ import { afterEach, beforeEach, expect, test } from "bun:test";
 import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { runGit } from "../../src/workspace/git.ts";
+import { runGit } from "../../../../packages/harness/src/workspace/git.ts";
 import {
 	abortOperation,
 	cherryPick,
@@ -19,7 +19,7 @@ import {
 	rebase,
 	resolveDefaultBranch,
 	switchBranch,
-} from "../../src/workspace/gitWorkspace.ts";
+} from "../../../../packages/harness/src/workspace/gitWorkspace.ts";
 import { createTempRepo, TEST_IDENTITY, type TempRepo } from "./helpers.ts";
 
 let temp: TempRepo | undefined;
