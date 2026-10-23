@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
-import { type CheckStateSource, evaluateChecksGate } from "../../src/graph/index.ts";
-import type { WorkflowGraph } from "../../src/graph/types.ts";
+import { type CheckStateSource, evaluateChecksGate } from "../../../../packages/harness/src/graph/index.ts";
+import type { WorkflowGraph } from "../../../../packages/harness/src/graph/types.ts";
 
 function fakeSource(states: Map<string, "success" | "pending" | "failure">): CheckStateSource {
 	return { checkStates: async () => states };

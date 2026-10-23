@@ -2,8 +2,8 @@
 import { afterAll, beforeAll, describe, expect, it } from "bun:test";
 import { promises as fs } from "node:fs";
 import * as path from "node:path";
-import type { CheckStateSource } from "../../src/graph/checks-gate.ts";
-import { dispatch } from "../../src/graph/dispatch.ts";
+import type { CheckStateSource } from "../../../../packages/harness/src/graph/checks-gate.ts";
+import { dispatch } from "../../../../packages/harness/src/graph/dispatch.ts";
 
 const tmpDir = path.join(__dirname, "tmp");
 

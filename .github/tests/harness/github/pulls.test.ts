@@ -1,6 +1,6 @@
 import { expect, test } from "bun:test";
-import { GitHubClient } from "../../src/github/client.ts";
-import { GitHubRepository } from "../../src/github/repository.ts";
+import { GitHubClient } from "../../../../packages/github/src/client.ts";
+import { GitHubRepository } from "../../../../packages/github/src/repository.ts";
 import { json, scripted } from "./helpers.ts";
 
 test("PR approval requires APPROVED plus an authorized association", async () => {

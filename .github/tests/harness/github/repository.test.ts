@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
-import { GitHubClient } from "../../src/github/client.ts";
-import { GitHubRepository, isAuthorizedAssociation, isBotLogin } from "../../src/github/repository.ts";
+import { GitHubClient } from "../../../../packages/github/src/client.ts";
+import { GitHubRepository, isAuthorizedAssociation, isBotLogin } from "../../../../packages/github/src/repository.ts";
 import { json, scripted } from "./helpers.ts";
 
 test("issues/comments/labels/sub-issues are typed and encoded", async () => {
