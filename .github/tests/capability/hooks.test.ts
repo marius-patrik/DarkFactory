@@ -1,6 +1,6 @@
 import { describe, expect, it } from "bun:test";
-import { CAPABILITY_ABI_VERSION, type CapabilityHookContext, defineCapability } from "../src/abi.ts";
-import { hooksForEvent, runHooks } from "../src/hooks.ts";
+import { CAPABILITY_ABI_VERSION, type CapabilityHookContext, defineCapability } from "../../../packages/capability/src/abi.ts";
+import { hooksForEvent, runHooks } from "../../../packages/capability/src/hooks.ts";
 
 const runtime = { repositoryRoot: "/repo" } as never;
 const context: CapabilityHookContext = { repositoryRoot: "/repo", changedFiles: [] };
