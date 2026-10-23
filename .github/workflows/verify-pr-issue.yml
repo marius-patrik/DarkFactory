@@ -56,7 +56,7 @@ jobs:
           if [ -d "$GITHUB_WORKSPACE/.darkfactory-pipeline" ]; then
             ROOT="$GITHUB_WORKSPACE/.darkfactory-pipeline"
           fi
-          bun "$ROOT/packages/harness/src/ci/bound-issue.ts"
+          bun "$ROOT/packages/github/src/ci/bound-issue.ts"
         env:
           PR_BODY: ${{ github.event.pull_request.body }}
           GITHUB_EVENT_NAME: ${{ github.event_name }}

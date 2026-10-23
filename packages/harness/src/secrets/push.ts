@@ -1,5 +1,5 @@
 import type { PushMap, Vault } from "../../../keychain/src/index.ts";
-import type { GitHubRepository } from "../github/repository.ts";
+import type { GitHubRepository } from "../../../github/src/repository.ts";
 
 interface PushResult {
 	name: string;

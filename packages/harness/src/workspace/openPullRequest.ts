@@ -1,5 +1,5 @@
-import type { GitHubRepository } from "../github/repository.ts";
-import type { GitHubPullRequest } from "../github/types.ts";
+import type { GitHubRepository } from "../../../github/src/repository.ts";
+import type { GitHubPullRequest } from "../../../github/src/types.ts";
 
 /**
  * Opens a pull request, or returns an existing open pull request for the same head and base if one already exists.

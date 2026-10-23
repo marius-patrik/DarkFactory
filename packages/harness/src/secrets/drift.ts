@@ -1,5 +1,5 @@
 import type { PushMap, VaultMeta } from "../../../keychain/src/index.ts";
-import type { GitHubClient } from "../github/client.ts";
+import type { GitHubClient } from "../../../github/src/client.ts";
 
 interface GitHubSecretInfo {
 	name: string;

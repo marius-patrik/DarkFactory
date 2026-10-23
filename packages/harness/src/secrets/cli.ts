@@ -17,8 +17,8 @@ import {
 	vaultRm,
 	vaultSet,
 } from "../../../keychain/src/vault-store.ts";
-import type { GitHubClient } from "../github/client.ts";
-import type { GitHubRepository } from "../github/repository.ts";
+import type { GitHubClient } from "../../../github/src/client.ts";
+import type { GitHubRepository } from "../../../github/src/repository.ts";
 import { detectDrift } from "./drift.ts";
 import { pushSecrets } from "./push.ts";
 import { isGitRepo, syncDataRepo } from "./sync.ts";
