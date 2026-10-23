@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "test": "bun test --timeout=30000 .github/tests",
+    "test": "bun scripts/run-tests.ts",
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "build": "bun packages/harness/scripts/build.ts",
     "install:df": "bun packages/harness/scripts/install.ts",
