@@ -17,8 +17,10 @@ describe("Workflow templates & managed headers", () => {
 		expect(rendered).toContain('repository: "marius-patrik/DarkFactory"');
 		expect(rendered).toContain('ref: "abc1234def5678"');
 		expect(rendered).toContain('branches: ["trunk"]');
-		expect(rendered).toContain("Resolve detected quality matrix");
-		expect(rendered).toContain("fromJSON(needs.detect.outputs.matrix)");
+		expect(rendered).toContain("Resolve complete detected quality plan");
+		expect(rendered).toContain("Execute quality actions in one runner");
+		expect(rendered).toContain("needs: [docs-check, nix-agent]");
+		expect(rendered).not.toContain("fromJSON(needs.detect.outputs.matrix)");
 		expect(rendered).toContain("Build native documentation");
 		expect(rendered).toContain("name: quality");
 		expect(rendered).not.toContain("uses: marius-patrik/DarkFactory/.github/workflows/ci.yml");

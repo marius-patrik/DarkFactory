@@ -200,14 +200,19 @@ describe("workflow inventory", () => {
 describe("ci.yml", () => {
 	const ci = parseWorkflow("ci.yml");
 
-	it("test_ci_quality_matrix_is_detector_driven: quality comes from repository evidence", () => {
-		const detect = steps(ci, "detect").map((step) => step.name);
-		expect(detect).toContain("Resolve detected quality matrix");
-		expect(ci.jobs["quality-run"]?.strategy).toEqual({
-			"fail-fast": false,
-			matrix: { include: expression("fromJSON(needs.detect.outputs.matrix)") },
-		});
-		expect(steps(ci, "quality-run").map((step) => step.name)).toContain("Run detected quality action");
+	it("executes all detected quality actions in one bounded runner, without a GitHub matrix", () => {
+		const quality = steps(ci, "quality");
+		const names = quality.map((step) => step.name);
+		expect(names).toContain("Resolve complete detected quality plan");
+		expect(names).toContain("Execute quality actions in one runner");
+		expect(ci.jobs["detect"]).toBeUndefined();
+		expect(ci.jobs["quality-run"]).toBeUndefined();
+		expect(ci.jobs.quality?.strategy).toBeUndefined();
+		const scripts = jobScripts(ci, "quality");
+		expect(scripts).toContain("ci matrix");
+		expect(scripts).toContain("ci quality");
+		expect(scripts).toContain("--workers 4");
+		expect(scripts).toContain("set -euo pipefail");
 		const serialized = JSON.stringify(ci);
 		expect(serialized).not.toContain("hashFiles('Cargo.toml')");
 		for (const handwritten of ["rust", "harness", "pipeline", "paper", "math", "web", "docs"]) {
@@ -215,10 +220,11 @@ describe("ci.yml", () => {
 		}
 	});
 
-	it("test_ci_has_one_aggregate_quality_context: branch protection consumes one stable result", () => {
+	it("has one aggregate quality context that rejects failed or skipped companion checks", () => {
 		expect(ci.jobs.quality).toBeDefined();
 		expect(ci.jobs.quality?.name).toBe("quality");
-		expect(ci.jobs.quality?.needs).toEqual(["detect", "quality-run", "docs-check", "nix-agent"]);
+		expect(ci.jobs.quality?.needs).toEqual(["docs-check", "nix-agent"]);
+		expect(jobScripts(ci, "quality")).toContain('test "$DF_DOCS_RESULT" = "success"');
 	});
 
 	it("test_production_nix_image_is_in_aggregate_quality_on_both_architectures", () => {
@@ -239,8 +245,8 @@ describe("ci.yml", () => {
 	it("test_python_actions_and_docs_have_separate_final_owners: capability actions versus the native compiler", () => {
 		const scripts = workflowScripts(ci);
 		expect(scripts).not.toContain("pytest -v tests");
-		expect(steps(ci, "quality-run").find((step) => step.name === "Run detected quality action")?.env).toHaveProperty(
-			"DF_ACTION_COMMAND",
+		expect(steps(ci, "quality").find((step) => step.name === "Execute quality actions in one runner")?.run).toContain(
+			"ci quality",
 		);
 		expect(workflowSource("ci.yml")).toContain("repo.dfconfig");
 		expect(scripts).toContain('bun "$ROOT/scripts/build-docs.ts"');
@@ -260,7 +266,7 @@ describe("ci.yml", () => {
 	});
 
 	it("test_consumer_ci_uses_a_pinned_darkfactory_runtime_checkout: detector code from the pinned checkout", () => {
-		const runtime = steps(ci, "detect").find((step) => step.with?.path === ".darkfactory-runtime");
+		const runtime = steps(ci, "quality").find((step) => step.with?.path === ".darkfactory-runtime");
 		expect(runtime?.with?.repository).toBe(declaredSlug());
 		expect(workflowSource("ci.yml")).not.toContain("PYTHONPATH");
 	});
