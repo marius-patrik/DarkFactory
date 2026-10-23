@@ -38,6 +38,8 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          # The branch token cannot rewrite workflows; retain those changes for an authenticated review commit.
+          git restore -- .github/workflows
           git add -u
           if ! git diff --cached --quiet; then
             git commit -m "fix(refactor): reconcile moved paths and normalize formatting"
