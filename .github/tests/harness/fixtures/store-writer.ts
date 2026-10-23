@@ -1,5 +1,5 @@
-import { FileCredentialStore } from "../../../keychain/src/index.ts";
-import { QuotaStore } from "../../src/harness/quota-store.ts";
+import { FileCredentialStore } from "../../../../packages/keychain/src/index.ts";
+import { QuotaStore } from "../../../../packages/harness/src/harness/quota-store.ts";
 
 const [mode, home, id] = process.argv.slice(2);
 if (!mode || !home || !id) throw new Error("store-writer requires mode, home, and id");

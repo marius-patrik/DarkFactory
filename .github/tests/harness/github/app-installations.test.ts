@@ -1,6 +1,6 @@
 import { describe, expect, it } from "bun:test";
-import { GitHubAppInstallations } from "../../src/github/app-installations.ts";
-import { GitHubClient } from "../../src/github/client.ts";
+import { GitHubAppInstallations } from "../../../../packages/github/src/app-installations.ts";
+import { GitHubClient } from "../../../../packages/github/src/client.ts";
 import { json, scripted } from "./helpers.ts";
 
 /**

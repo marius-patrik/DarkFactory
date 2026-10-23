@@ -1,6 +1,6 @@
 import { expect, test } from "bun:test";
-import { executableChainFor } from "../../cli/src/cli.ts";
-import type { RankedCandidate } from "../src/router/types.ts";
+import { executableChainFor } from "../../../packages/cli/src/cli.ts";
+import type { RankedCandidate } from "../../../packages/harness/src/router/types.ts";
 
 const candidate = (provider: string, model: string) => ({ provider, model, account: "plskynech" });
 const ranked = (

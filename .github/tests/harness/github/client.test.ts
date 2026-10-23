@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
-import { GitHubClient } from "../../src/github/client.ts";
-import { GitHubError } from "../../src/github/errors.ts";
+import { GitHubClient } from "../../../../packages/github/src/client.ts";
+import { GitHubError } from "../../../../packages/github/src/errors.ts";
 import { json, scripted } from "./helpers.ts";
 
 describe("GitHubClient", () => {

@@ -6,8 +6,8 @@ import {
 	appIdentityFromManifest,
 	normalisePrivateKey,
 	resolveGitHubCredential,
-} from "../../../keychain/src/index.ts";
-import { GitHubClient } from "../../src/github/client.ts";
+} from "../../../../packages/keychain/src/index.ts";
+import { GitHubClient } from "../../../../packages/github/src/client.ts";
 import { json, scripted } from "./helpers.ts";
 
 test("App JWT resolves installation and single-flights a long opaque token", async () => {

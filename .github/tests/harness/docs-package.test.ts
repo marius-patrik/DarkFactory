@@ -8,8 +8,8 @@ import {
 	loadDocsConfig,
 	parseDocsConfig,
 	resolveDocsConfigPath,
-} from "../../docs/src/index.ts";
-import { renderDocsSite } from "../../web/src/docs.ts";
+} from "../../../packages/docs/src/index.ts";
+import { renderDocsSite } from "../../../packages/web/src/docs.ts";
 
 const roots: string[] = [];
 

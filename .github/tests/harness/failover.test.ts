@@ -8,7 +8,7 @@ import {
 	fauxToolCall,
 	type Models,
 } from "@earendil-works/pi-ai";
-import { CandidateExhaustion, runFailoverTurn } from "../src/failover.ts";
+import { CandidateExhaustion, runFailoverTurn } from "../../../packages/harness/src/failover.ts";
 
 describe("runFailoverTurn", () => {
 	test("fails over a quota response and preserves cross-provider tool/thinking history", async () => {

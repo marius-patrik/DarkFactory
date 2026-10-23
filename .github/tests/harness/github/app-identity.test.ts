@@ -2,7 +2,7 @@ import { expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { exportPKCS8, generateKeyPair } from "jose";
-import { AppInstallationTokenProvider, appIdentityFromManifest } from "../../../keychain/src/index.ts";
+import { AppInstallationTokenProvider, appIdentityFromManifest } from "../../../../packages/keychain/src/index.ts";
 import { json, scripted } from "./helpers.ts";
 import { repoRoot } from "../ci/pipeline-source.ts";
 

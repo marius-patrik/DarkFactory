@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
-import { RUNNER_COMMANDS } from "../src/pipeline/main.ts";
+import { RUNNER_COMMANDS } from "../../../packages/harness/src/pipeline/main.ts";
 
 // Paths come from this file, never from process.cwd(): the suite runs from packages/harness/ and from the repository root.
 const harnessDir = join(import.meta.dir, "..");
