@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
-import graph from "../../assets/graph.darkfactory.json";
-import { GraphValidationError, validateGraph } from "../../src/graph/index.ts";
+import graph from "../../../../packages/harness/assets/graph.darkfactory.json";
+import { GraphValidationError, validateGraph } from "../../../../packages/harness/src/graph/index.ts";
 
 function invalid(change: (value: any) => void): string[] {
 	const value = structuredClone(graph) as any;

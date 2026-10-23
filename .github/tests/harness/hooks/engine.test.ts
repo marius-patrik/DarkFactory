@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
-import { hookFailures, runHooks } from "../../src/hooks/engine.ts";
-import { hookById } from "../../src/hooks/registry.ts";
-import type { Hook, HookContext, HookResult } from "../../src/hooks/types.ts";
+import { hookFailures, runHooks } from "../../../../packages/harness/src/hooks/engine.ts";
+import { hookById } from "../../../../packages/harness/src/hooks/registry.ts";
+import type { Hook, HookContext, HookResult } from "../../../../packages/harness/src/hooks/types.ts";
 
 // Helper to create a fake context; only readFile is needed for type completeness.
 const fakeCtx: HookContext = {

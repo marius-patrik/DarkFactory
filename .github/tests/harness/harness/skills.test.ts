@@ -3,7 +3,7 @@ import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fauxProvider } from "@earendil-works/pi-ai";
-import { createHarnessRuntime, namedSkillPaths } from "../../src/harness/runtime.ts";
+import { createHarnessRuntime, namedSkillPaths } from "../../../../packages/harness/src/harness/runtime.ts";
 
 const roots: string[] = [];
 afterEach(() => {

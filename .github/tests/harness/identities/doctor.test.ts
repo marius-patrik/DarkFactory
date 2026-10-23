@@ -5,7 +5,7 @@ const FIXED_CHAIN = "google/gemini-3.8-flash@default,claude/claude-3-5-sonnet@de
 import { mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { checkDoctorIdentities, runDoctorIdentities } from "../../src/identities/index.ts";
+import { checkDoctorIdentities, runDoctorIdentities } from "../../../../packages/harness/src/identities/index.ts";
 
 describe("doctor identities", () => {
 	it("succeeds when all providers in defaultChain have identity entries", async () => {

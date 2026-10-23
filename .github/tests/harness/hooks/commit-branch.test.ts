@@ -1,8 +1,8 @@
 import { describe, expect, test } from "bun:test";
-import { branchName } from "../../src/hooks/branch-name.ts";
-import { conventionalCommit } from "../../src/hooks/conventional-commit.ts";
-import { hookById } from "../../src/hooks/registry.ts";
-import type { HookContext } from "../../src/hooks/types.ts";
+import { branchName } from "../../../../packages/harness/src/hooks/branch-name.ts";
+import { conventionalCommit } from "../../../../packages/harness/src/hooks/conventional-commit.ts";
+import { hookById } from "../../../../packages/harness/src/hooks/registry.ts";
+import type { HookContext } from "../../../../packages/harness/src/hooks/types.ts";
 
 const context = (extra: Partial<HookContext>): HookContext => ({
 	repoDir: "/repo",

@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
-import { hookById } from "../../src/hooks/registry.ts";
-import { testsTouched } from "../../src/hooks/tests-touched.ts";
+import { hookById } from "../../../../packages/harness/src/hooks/registry.ts";
+import { testsTouched } from "../../../../packages/harness/src/hooks/tests-touched.ts";
 
 function createContext(changedFiles: string[]) {
 	return {

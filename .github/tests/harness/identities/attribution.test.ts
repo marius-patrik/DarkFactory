@@ -1,6 +1,6 @@
 import { describe, expect, it } from "bun:test";
-import { botCommitAuthor, renderAttribution } from "../../src/identities/index.ts";
-import type { ManifestIdentities } from "../../src/identities/types.ts";
+import { botCommitAuthor, renderAttribution } from "../../../../packages/harness/src/identities/index.ts";
+import type { ManifestIdentities } from "../../../../packages/harness/src/identities/types.ts";
 
 const sampleIdentities: ManifestIdentities = {
 	app: {
