@@ -7,7 +7,7 @@
  * lands on is read back.
  */
 
-import { PLAN_FOOTER } from "../approvals/commands.ts";
+import { PLAN_FOOTER } from "../../../github/src/approvals/commands.ts";
 import { type PipelineContext, PLAN_TIMEOUT } from "./handler-context.ts";
 import { bestEffort } from "./pipeline-io.ts";
 import { isPlanComment, PLAN_MARKER } from "./plan-scope.ts";

@@ -12,7 +12,7 @@
  * {@link PipelineIo.addComment}.
  */
 
-import type { GitHubClient } from "../github/client.ts";
+import type { GitHubClient } from "../../../github/src/client.ts";
 import type { AgentDispatchPayload, LabelLike } from "./dispatch.ts";
 
 /** The issue fields a handler can ask for, mirroring `gh issue view --json`. */

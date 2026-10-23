@@ -27,7 +27,7 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { BoardAutomation } from "../board/automation.ts";
-import { GitHubClient } from "../github/client.ts";
+import { GitHubClient } from "../../../github/src/client.ts";
 import { loadRepositoryManifest } from "../install/manifest.ts";
 import { setupDfAccounts } from "./agent-credentials.ts";
 import { githubQuotaBlockStore } from "./agent-failures.ts";
