@@ -43,6 +43,27 @@ async function run(command: string[], label: string, quiet = false, cwd = harnes
 await run([binary, "--help"], "help", true);
 await run([binary, "__packaging-smoke"], "packaging smoke");
 
+/**
+ * Windows may keep a transient executable mapped briefly after the launched
+ * wrapper exits. Limit cleanup retries to disposable verification staging only.
+ */
+async function removeWrapperStage(stage: string): Promise<void> {
+	for (let attempt = 0; attempt < 12; attempt++) {
+		try {
+			await rm(stage, { recursive: true, force: true });
+			return;
+		} catch (error) {
+			const code = (error as NodeJS.ErrnoException).code;
+			if (process.platform !== "win32" || (code !== "EBUSY" && code !== "EPERM")) throw error;
+			if (attempt === 11) {
+				console.warn(`Windows retained temporary smoke executable: ${stage}`);
+				return;
+			}
+			await Bun.sleep(250);
+		}
+	}
+}
+
 if (target.platform === "win32") {
 	// The Windows wrapper is only executable on Windows, so this is the one place its contract can
 	// actually be checked rather than read. It is staged the way an install stages it: the wrapper
@@ -60,9 +81,7 @@ if (target.platform === "win32") {
 		if (code !== 0) throw new Error(`df.cmd providers failed for ${target.name} with exit ${code}: ${err.trim()}`);
 		process.stdout.write("df.cmd: reached the DarkFactory binary\n");
 	} finally {
-		// Windows can retain child executable handles briefly after cmd.exe exits.
-		// Drain both streams and let rm retry EBUSY/EPERM rather than failing a verified release.
-		await rm(stage, { recursive: true, force: true, maxRetries: 12, retryDelay: 250 });
+		await removeWrapperStage(stage);
 	}
 }
 
