@@ -1,8 +1,8 @@
-import { BoardGraphqlClient } from "../board/graphql.ts";
-import { BoardRun } from "../board/run.ts";
-import { GitHubClient } from "../github/client.ts";
-import { GitHubRepository } from "../github/repository.ts";
-import { loadRepositoryManifest, RepositoryManifest } from "../install/manifest.ts";
+import { BoardGraphqlClient } from "../../../harness/src/board/graphql.ts";
+import { BoardRun } from "../../../harness/src/board/run.ts";
+import { GitHubClient } from "../client.ts";
+import { GitHubRepository } from "../repository.ts";
+import { loadRepositoryManifest, RepositoryManifest } from "../../../harness/src/install/manifest.ts";
 import { type ApplyProtectionResult, applyBranchProtection } from "./protection.ts";
 
 /**

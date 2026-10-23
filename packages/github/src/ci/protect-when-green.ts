@@ -18,7 +18,7 @@
 import { requiredChecksState } from "./guard.ts";
 import { applyBranchProtection } from "./protection.ts";
 import type { CheckRunItem } from "./schema.ts";
-import type { GitHubRepository } from "../github/repository.ts";
+import type { GitHubRepository } from "../repository.ts";
 
 /** A lane as `repo.protection.lanes` declares it. */
 export interface DeclaredLane {

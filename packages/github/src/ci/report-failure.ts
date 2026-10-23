@@ -1,5 +1,5 @@
-import type { GitHubClient } from "../github/client.ts";
-import type { GitHubRepository } from "../github/repository";
+import type { GitHubClient } from "../client.ts";
+import type { GitHubRepository } from "../repository";
 
 /**
  * An incident is resolved only by an observed successful workflow run.

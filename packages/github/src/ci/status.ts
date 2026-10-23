@@ -1,4 +1,4 @@
-import type { GitHubRepository } from "../github/repository.ts";
+import type { GitHubRepository } from "../repository.ts";
 import { requiredChecksState } from "./guard.ts";
 import type { CheckRunItem, CheckState, RequiredChecksResult, ResolvedCheck } from "./schema.ts";
 

@@ -1,4 +1,4 @@
-import type { GitHubRepository } from "../github/repository.ts";
+import type { GitHubRepository } from "../repository.ts";
 import type { ResolvedCheck } from "./schema.ts";
 
 interface ProtectionVerificationReport {
