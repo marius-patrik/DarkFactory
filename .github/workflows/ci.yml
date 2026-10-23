@@ -135,10 +135,7 @@ jobs:
         env:
           DF_CONFIG_DIR: ${{ env.DF_CONFIG_DIR }}
         run: |
-          # The one-config-per-scope candidate matrix. It is the same rule
-          # `.github/scripts/resolver.py` enforces for the runtime, and
-          # `tests/test_workflows.py::test_the_workflow_gate_and_the_resolver_agree_on_the_candidate_matrix`
-          # runs both against the same fixtures so the two cannot drift.
+          # Recognize exactly one configuration document before attempting documentation checks.
           CONFIG_FILENAMES="repo.dfconfig config.dfconfig .dfconfig"
           DEFAULT_CONFIG_DIR=".darkfactory"
           # Lexical path normalisation, the equivalent of the resolver's `os.path.normpath`: collapse
