@@ -1,7 +1,9 @@
 import { requiredChecksForDetectedQuality } from "../../capability/src/actions.ts";
 import { GitHubClient } from "../../github/src/client.ts";
 import { GitHubRepository } from "../../github/src/repository.ts";
-import { assertQualityCoverage, resolveDetectedQuality, runDetectedQuality } from "../../harness/src/ci/detected.ts";
+import { assertQualityCoverage, resolveDetectedQuality } from "../../harness/src/ci/detected.ts";
+import { executeQualityPlan } from "../../harness/src/ci/quality-runner.ts";
+import { reconcileNativeConfigs, type NativeConfigStatus } from "../../harness/src/ci/native-config.ts";
 import { runCiDoctor } from "../../github/src/ci/doctor.ts";
 import { installWorkflows, updateWorkflows } from "../../github/src/ci/installer.ts";
 import {
@@ -26,6 +28,10 @@ function hasFlag(args: string[], ...names: string[]): boolean {
 	return names.some((name) => args.includes(name));
 }
 
+function nativeConfigDriftMessage(drift: readonly NativeConfigStatus[]): string {
+	return "Native tool config drift: " + drift.map((item) => `${item.file} (${item.state})`).join(", ");
+}
+
 function resolveRepoClient(_repoPath: string, explicitRepo?: GitHubRepository): GitHubRepository | undefined {
 	if (explicitRepo) return explicitRepo;
 	const token = process.env.GH_TOKEN ?? process.env.GITHUB_TOKEN;
@@ -48,6 +54,16 @@ export async function runCiCli(args: string[], context: CiCliContext = {}): Prom
 	const isJson = hasFlag(args, "--json");
 
 	switch (subcommand) {
+		case "native-config": {
+			const statuses = await reconcileNativeConfigs(repoPath, hasFlag(args, "--write"));
+			log(JSON.stringify(statuses, null, 2));
+			const drift = statuses.filter((item) => item.state !== "in_sync");
+			if (drift.length > 0) {
+				error(nativeConfigDriftMessage(drift));
+			}
+			return drift.length > 0 ? 1 : 0;
+		}
+
 		case "matrix": {
 			const capabilitiesRoot = getOption(args, "--capabilities-root");
 			const state = await resolveDetectedQuality(repoPath, capabilitiesRoot);
@@ -67,6 +83,11 @@ export async function runCiCli(args: string[], context: CiCliContext = {}): Prom
 			);
 			try {
 				assertQualityCoverage(state);
+				const drift = (await reconcileNativeConfigs(repoPath)).filter((item) => item.state !== "in_sync");
+				if (drift.length > 0) {
+					error(nativeConfigDriftMessage(drift));
+					return 1;
+				}
 				return 0;
 			} catch (cause) {
 				error(cause instanceof Error ? cause.message : String(cause));
@@ -75,33 +96,30 @@ export async function runCiCli(args: string[], context: CiCliContext = {}): Prom
 		}
 
 		case "quality": {
-			const capabilitiesRoot = getOption(args, "--capabilities-root");
-			let executions: Awaited<ReturnType<typeof runDetectedQuality>>;
 			try {
-				executions = await runDetectedQuality(repoPath, { capabilitiesRoot });
+				const drift = (await reconcileNativeConfigs(repoPath)).filter((item) => item.state !== "in_sync");
+				if (drift.length > 0) throw new Error(nativeConfigDriftMessage(drift));
+				const capabilitiesRoot = getOption(args, "--capabilities-root");
+				const state = await resolveDetectedQuality(repoPath, capabilitiesRoot);
+				assertQualityCoverage(state);
+				const workerArg = getOption(args, "--workers");
+				const workers = workerArg === undefined ? undefined : Number(workerArg);
+				const summary = await executeQualityPlan(repoPath, state.matrix, {
+					...(workers === undefined ? {} : { workers }),
+					log: isJson ? undefined : log,
+				});
+				if (isJson) log(JSON.stringify(summary, null, 2));
+				else
+					log(
+						`Quality: ${summary.passed}/${summary.planned} passed; ${summary.failed} failed; ${summary.blocked} blocked; ${summary.executed} executed`,
+					);
+				return summary.failed === 0 && summary.blocked === 0 && summary.executed === summary.planned ? 0 : 1;
 			} catch (cause) {
 				const message = cause instanceof Error ? cause.message : String(cause);
 				if (isJson) log(JSON.stringify({ error: message, executions: [] }, null, 2));
 				error(message);
 				return 1;
 			}
-			if (isJson) {
-				log(JSON.stringify(executions, null, 2));
-			} else {
-				for (const execution of executions) {
-					if (!execution.supported) {
-						const label = execution.notApplicable ? "not applicable" : "unsupported";
-						log(`[${label}] ${execution.packageId} ${execution.kind}: ${execution.reason ?? "missing action"}`);
-						continue;
-					}
-					const result = execution.result!;
-					log(
-						`[${result.exitCode === 0 ? "pass" : "fail"}] ${execution.packageId} ${execution.kind}: ${execution.command}`,
-					);
-					if (result.outputTail) log(result.outputTail);
-				}
-			}
-			return executions.some((execution) => execution.result && execution.result.exitCode !== 0) ? 1 : 0;
 		}
 
 		case "install": {
@@ -372,7 +390,7 @@ export async function runCiCli(args: string[], context: CiCliContext = {}): Prom
 		default:
 			log(`df ci commands:
   df ci matrix  [--repo <path>] [--capabilities-root <path>]
-  df ci quality [--repo <path>] [--capabilities-root <path>] [--json]
+  df ci quality [--repo <path>] [--capabilities-root <path>] [--workers 1..32] [--json]
   df ci install [--repo <path>] [--dry-run] [--force]
   df ci update  [--repo <path>] [--dry-run] [--force]
   df ci status  [--repo <path>] [--pr <n> | --ref <r>] [--json]

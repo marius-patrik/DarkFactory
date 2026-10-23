@@ -1,6 +1,8 @@
 # DarkFactory — Product Requirements Document
 
-**Status: NORMATIVE.**
+**Status: NORMATIVE PRODUCT CONTRACT — NOT A CLAIM THAT EVERY FEATURE IS SHIPPED.**
+
+The single living finish/master Request is [#2070](https://github.com/marius-patrik/DarkFactory/issues/2070). Its linked, non-overlapping child issues own precise implementation and acceptance work. The project is production-complete only when its exact-head reviewed release, real operator surfaces and approved consumer fleet pass the release gate; earlier published version tags are not evidence of that final acceptance. Source history and closed predecessor PRs are provenance, not competing active specifications.
 
 DarkFactory is a self-hosting autonomous software-delivery system built around a declarable workflow graph, versioned capabilities and GitHub as its durable control plane. This document defines stable product outcomes and architectural constraints. The active Request/Planning record carries the concrete implementation checklist, approvals and validation evidence in GitHub.
 
