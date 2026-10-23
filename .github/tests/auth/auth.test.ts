@@ -6,7 +6,7 @@ import {
 	persistSession,
 	restoreSession,
 	restoreSessionWithRefresh,
-} from "../src/client.ts";
+} from "../../../packages/auth/src/client.ts";
 
 class MemoryStorage implements Storage {
 	#values = new Map<string, string>();

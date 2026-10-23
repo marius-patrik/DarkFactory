@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { createMutationIntent, projectAuthority } from "../src/permissions.ts";
+import { createMutationIntent, projectAuthority } from "../../../packages/auth/src/permissions.ts";
 
 describe("@darkfactory/auth authority projection", () => {
 	test("authority is the intersection of user and App repository authority", () => {

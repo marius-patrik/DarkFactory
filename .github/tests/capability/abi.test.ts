@@ -13,8 +13,8 @@ import {
 	defineCapability,
 	type PiToolRegistration,
 	supportsCapabilityAbi,
-} from "../src/index.ts";
-import { discoverCapabilities, resolveCapabilities } from "../src/loader.ts";
+} from "../../../packages/capability/src/index.ts";
+import { discoverCapabilities, resolveCapabilities } from "../../../packages/capability/src/loader.ts";
 
 const temporary: string[] = [];
 afterEach(async () => {
