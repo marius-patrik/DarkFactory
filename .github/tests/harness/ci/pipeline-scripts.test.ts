@@ -150,6 +150,7 @@ describe("shared repository settings", () => {
 		expect(trunk?.required_checks, "the surviving lane is the full gate, not the weaker one").toEqual([
 			"quality",
 			"verify-bound-issue",
+			"candidate",
 		]);
 		expect(trunk?.approvals).toBe(1);
 		expect(trunk?.strict).toBe(true);

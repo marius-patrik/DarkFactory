@@ -259,15 +259,23 @@ describe("the workflow registry", () => {
 	// The declared lane and the checks this function reports are two statements of the same fact.
 	// A lane naming a check nothing reports blocks every merge on that branch, which is what a
 	// re-install did to ChessWithQuests. So the install side is pinned to the declaration here.
-	test("the installed checks satisfy every configured lane", () => {
+	test("the installed checks satisfy every configured lane", async () => {
 		const configured = repoConfig().protection?.lanes ?? [];
-		const reported = requiredContexts(["ci", "verify-pr-issue"]);
+		const installed = requiredContexts(["ci", "verify-pr-issue"]);
+		// The producer additionally requires its own source-free candidate workflow.
+		// That check is not installed into consumers or inferred by the generic caller registry.
+		const candidate = Bun.YAML.parse(
+			await Bun.file(join(repoRoot, ".github", "workflows", "candidate-release.yml")).text(),
+		) as { jobs: { candidate?: { name?: string } } };
+		const producer = [...installed, candidate.jobs.candidate?.name].filter(
+			(value): value is string => value !== undefined,
+		);
 
 		expect(configured.length).toBeGreaterThan(0);
 		for (const lane of configured) {
 			const checks = Array.isArray(lane?.required_checks) ? lane.required_checks.map(String) : [];
-			expect({ lane: lane?.branch, required: checks.sort(), reported: [...reported].sort() }).toMatchObject({
-				required: [...reported].sort(),
+			expect({ lane: lane?.branch, required: checks.sort(), reported: [...producer].sort() }).toMatchObject({
+				required: [...producer].sort(),
 			});
 		}
 	});
