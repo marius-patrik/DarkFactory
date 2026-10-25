@@ -25,4 +25,4 @@ jobs:
       - name: Verify real Python 3.10 and 3.13 isolation
         env:
           DF_PYTHON_RUNTIME_SMOKE: "true"
-        run: bun test --timeout=180000 .github/tests/harness/ci/python-runtime.integration.test.ts
+        run: bun test --timeout=180000 ./.github/tests/harness/ci/python-runtime.integration.test.ts

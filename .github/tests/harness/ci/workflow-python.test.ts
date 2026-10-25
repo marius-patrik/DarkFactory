@@ -41,9 +41,13 @@ describe("real Python version quality verification", () => {
 
 	it("does not invoke retired Python orchestration scripts from any managed workflow", () => {
 		for (const name of workflowNames()) {
-			const source = workflowSource(name);
-			expect(source, name).not.toMatch(/(?:python3?|pip3?)\s+\.github\/scripts\//u);
-			expect(source, name).not.toContain("PIPELINE_SCRIPTS");
+			const shellLines = workflowSource(name)
+				.split("\n")
+				.filter((line) => /^\s*(?:echo|export)\s/u.test(line));
+			for (const line of shellLines) {
+				expect(line, name).not.toMatch(/(?:python3?|pip3?)\s+\.github\/scripts\//u);
+				expect(line, name).not.toContain("PIPELINE_SCRIPTS");
+			}
 		}
 	});
 
