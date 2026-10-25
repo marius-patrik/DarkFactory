@@ -120,7 +120,9 @@ try {
 		new Response(child.stderr).text(),
 	]);
 	if (exit !== 0 || output.trim() !== `df v${declaredVersion}`) {
-		throw new Error(`Source-free version mismatch: expected df v${declaredVersion}, observed ${output.trim()} ${diagnostics.trim()}`);
+		throw new Error(
+			`Source-free version mismatch: expected df v${declaredVersion}, observed ${output.trim()} ${diagnostics.trim()}`,
+		);
 	}
 	// Official capabilities are bundled JS: this invocation must work without the source tree
 	// and prove that ci matrix can discover them dynamically from the installed executable.
