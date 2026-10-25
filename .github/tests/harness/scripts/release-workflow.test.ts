@@ -15,7 +15,7 @@ import {
  * build matrix is derived from the target table rather than written out again, so a target cannot
  * be added to one and forgotten in the other.
  */
-const workflowPath = join(import.meta.dir, "..", "..", "..", ".github", "workflows", "release.yml");
+const workflowPath = join(import.meta.dir, "..", "..", "..", "..", ".github", "workflows", "release.yml");
 const source = await readFile(workflowPath, "utf8");
 interface WorkflowStep {
 	name: string;
