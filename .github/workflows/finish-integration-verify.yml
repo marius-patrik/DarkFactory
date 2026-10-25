@@ -68,3 +68,59 @@ jobs:
         env:
           DF_PYTHON_RUNTIME_SMOKE: "true"
         run: bun test --timeout=180000 ./.github/tests/harness/ci/python-runtime.integration.test.ts
+
+  native-targets:
+    name: Enumerate supported release targets
+    runs-on: ubuntu-24.04
+    outputs:
+      matrix: ${{ steps.targets.outputs.matrix }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+      - name: Derive the official release target matrix
+        id: targets
+        run: |
+          bun packages/harness/scripts/release-targets.ts > "$RUNNER_TEMP/targets.json"
+          echo "matrix=$(jq -c . "$RUNNER_TEMP/targets.json")" >> "$GITHUB_OUTPUT"
+
+  native-source-free:
+    name: Source-free candidate ${{ matrix.target }}
+    needs: native-targets
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJSON(needs.native-targets.outputs.matrix) }}
+    runs-on: ${{ matrix.runner }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+      - run: bun install --frozen-lockfile
+      - name: Compile complete native artifact
+        run: bun run build --target=${{ matrix.target }}
+      - name: Execute actual source-free build and validate SHA-256
+        run: bun packages/harness/scripts/verify-target.ts --target ${{ matrix.target }}
+      - name: Retain exact verified candidate bytes
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: candidate-${{ matrix.target }}
+          path: |
+            packages/harness/dist/${{ matrix.asset }}
+            packages/harness/dist/${{ matrix.asset }}.tar.gz
+            packages/harness/dist/${{ matrix.asset }}.sha256
+          if-no-files-found: error
+          retention-days: 3
+
+  nonroot-container:
+    name: Real non-root agent container
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - run: docker build --progress=plain -f docker/Dockerfile.agent -t darkfactory-agent:integration .
+      - name: Exercise published entrypoints without root
+        shell: bash
+        run: |
+          set -euo pipefail
+          docker run --rm darkfactory-agent:integration --help | grep -q 'providers'
+          docker run --rm darkfactory-agent:integration providers > "$RUNNER_TEMP/df-providers.txt"
+          test -s "$RUNNER_TEMP/df-providers.txt"
+          test "$(docker run --rm --entrypoint id darkfactory-agent:integration -u)" = "1001"
