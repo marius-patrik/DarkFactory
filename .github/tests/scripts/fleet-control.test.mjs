@@ -38,39 +38,30 @@ test("the event bridge only calls the same-commit local workflow on main", () =>
 	assert.notEqual(legacy, bridge);
 });
 
-test("control workflow uses main checkout, released quality and immutable governance refs", () => {
+test("control workflow executes the released single-runner quality plan with immutable governance refs", () => {
 	const rendered = renderControlWorkflow(slug, release);
 	assert.match(rendered, /sha256sum --check/);
 	assert.match(rendered, / ci matrix --repo /);
-	assert.match(rendered, /Run detected quality action/);
-	assert.match(rendered, /needs: \[detect, execute-quality\]/);
+	assert.match(rendered, / ci quality --repo /);
+	assert.match(rendered, /name: Execute complete quality plan on one runner/);
+	assert.doesNotMatch(rendered, /Run detected quality action/);
 	assert.match(rendered, /agent\.yml@a{40}/);
 	assert.match(rendered, /verify-pr-issue\.yml@a{40}/);
 	assert.match(rendered, /pr-approval-automerge\.yml@a{40}/);
 	assert.doesNotMatch(rendered, /ref: darkfactory|\.darkfactory-managed/);
-	assert.match(rendered, /name: Install inferred Python quality tooling/);
+	assert.match(rendered, /Install Python package managers and quality tooling/);
 	assert.match(rendered, /python -m pip install pytest/);
-	assert.match(rendered, /python -m pip install black/);
-	assert.match(rendered, /DF_ACTION_COMMAND/);
-	assert.match(rendered, /npm install --no-package-lock/);
-	assert.ok(rendered.includes("node_modules/.bin"));
-	assert.match(rendered, /bash -c "\$DF_ACTION_COMMAND"/);
-	assert.doesNotMatch(rendered, /bash -lc/);
-	assert.match(rendered, /! -f package-lock.json/);
+	assert.match(rendered, /--workers 4/);
+
 	const workflow = Bun.YAML.parse(rendered);
 	const bridge = Bun.YAML.parse(renderDefaultBridge(slug));
 	assert.ok(Object.hasOwn(workflow.on, "workflow_call"));
-	assert.deepEqual(Object.keys(workflow.jobs).sort(), [
-		"agent",
-		"approvals",
-		"detect",
-		"execute-quality",
-		"issue-binding",
-		"quality",
-	]);
+	assert.deepEqual(Object.keys(workflow.jobs).sort(), ["agent", "approvals", "issue-binding", "quality"]);
 	assert.equal(bridge.jobs.governed.uses, "./.github/workflows/darkfactory-control.yml");
-	assert.ok(workflow.jobs.detect.steps.every((step) => step.with?.ref !== "darkfactory"));
-	assert.ok(workflow.jobs["execute-quality"].steps.every((step) => step.with?.ref !== "darkfactory"));
+	assert.ok(workflow.jobs.quality.steps.every((step) => step.with?.ref !== "darkfactory"));
+	assert.equal(workflow.jobs["detect"], undefined);
+	assert.equal(workflow.jobs["execute-quality"], undefined);
+	assert.match(rendered, /\$RUNNER_TEMP\/darkfactory\/df-linux-x64/);
 });
 
 test("generated manifest keeps caller's other domains and scopes the boards", () => {
