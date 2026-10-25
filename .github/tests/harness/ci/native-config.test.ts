@@ -3,7 +3,12 @@ import { mkdtemp, readFile, rm, symlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { runCiCli } from "../../../../packages/cli/src/ci.ts";
-import { reconcileNativeConfigs, renderMkdocs, renderProperdocs, renderPyproject } from "../../../../packages/harness/src/ci/native-config.ts";
+import {
+	reconcileNativeConfigs,
+	renderMkdocs,
+	renderProperdocs,
+	renderPyproject,
+} from "../../../../packages/harness/src/ci/native-config.ts";
 
 const roots: string[] = [];
 async function fixture() {

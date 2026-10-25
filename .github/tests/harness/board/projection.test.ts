@@ -452,7 +452,10 @@ describe("the canonical taxonomy", () => {
 	});
 
 	test("the status taxonomy is not hardcoded into the port either", () => {
-		const source = readFileSync(join(import.meta.dir, "..", "..", "..", "..", "packages", "harness", "src", "board", "taxonomy.ts"), "utf8");
+		const source = readFileSync(
+			join(import.meta.dir, "..", "..", "..", "..", "packages", "harness", "src", "board", "taxonomy.ts"),
+			"utf8",
+		);
 		expect(source).toContain("@darkfactory/protocol/workflow");
 	});
 });

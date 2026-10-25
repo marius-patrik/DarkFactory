@@ -134,7 +134,18 @@ describe("Workflow installer & updater", () => {
 
 describe("shipped workflow templates", () => {
 	const template = readFileSync(
-		join(import.meta.dir, "..", "..", "..", "..", "packages", "harness", "assets", "workflows", "verify-bound-issue.yml.tmpl"),
+		join(
+			import.meta.dir,
+			"..",
+			"..",
+			"..",
+			"..",
+			"packages",
+			"harness",
+			"assets",
+			"workflows",
+			"verify-bound-issue.yml.tmpl",
+		),
 		"utf-8",
 	);
 
@@ -167,7 +178,10 @@ describe("the shipped CI template agrees with this repository's own", () => {
 	// root resolves to zero rows rather than an error, so a consumer's quality gate reported
 	// nothing to check instead of failing.
 	it("resolves the capabilities root where the plugins now live", () => {
-		const template = readFileSync(join(import.meta.dir, "..", "..", "..", "..", "packages", "harness", "assets", "workflows", "ci.yml.tmpl"), "utf-8");
+		const template = readFileSync(
+			join(import.meta.dir, "..", "..", "..", "..", "packages", "harness", "assets", "workflows", "ci.yml.tmpl"),
+			"utf-8",
+		);
 		expect(template).toContain('--capabilities-root "$ROOT/.darkfactory/plugins"');
 		expect(template).not.toContain("$ROOT/capabilities");
 	});

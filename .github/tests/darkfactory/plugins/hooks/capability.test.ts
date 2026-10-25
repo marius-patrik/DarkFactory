@@ -98,9 +98,9 @@ describe("official hooks capability", () => {
 	test("the hook's commit-type taxonomy is the taxonomy the `commits-and-repository-taxonomy` skill declares", () => {
 		const rule = readFileSync(
 			join(
-			import.meta.dir,
-			"../../../../../.darkfactory/plugins/df-rules/skills/commits-and-repository-taxonomy/SKILL.md",
-		),
+				import.meta.dir,
+				"../../../../../.darkfactory/plugins/df-rules/skills/commits-and-repository-taxonomy/SKILL.md",
+			),
 			"utf8",
 		);
 		const declared = /^Allowed base types are (.+)\.$/mu.exec(rule);

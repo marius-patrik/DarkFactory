@@ -45,4 +45,3 @@ export function assertQualityCoverage(state: DetectedQualityState): void {
 	if (state.matrix.length === 0)
 		throw new Error("No executable quality actions detected; refusing a vacuous green quality check");
 }
-
