@@ -332,15 +332,17 @@ export function resolveRelease(repoRoot: string, requested?: string | null): Rel
 
 	const declared = readManualVersion(repoRoot);
 	const prefer = declared === null ? null : (parseVersion(declared)?.scheme ?? null);
-	// ZeroVer is a distinct release line. Historical 3a.* tags carry a different numbering
-	// scheme, and treating one as the latest ZeroVer release caused v0.4.0 to be chosen
-	// again despite that tag already existing. ZeroVer must never inherit legacy tags.
+	// Numeric SemVer and ZeroVer are distinct from historical scheme-suffixed releases.
+	// Only tags with this repository's prefix and three numeric components belong
+	// to those lines. Otherwise an older 3a.* release could hide the current 0.* tag.
 	const tags = gitTags(repoRoot);
 	const eligibleTags =
-		config.mode === "zerover"
+		config.mode === "zerover" || config.mode === "semver"
 			? tags.filter((tag) => {
-					const parsed = tag.startsWith(prefix) ? parseVersion(tag.slice(prefix.length)) : null;
-					return parsed !== null && parsed.scheme === "" && parsed.numbers[0] === 0;
+					if (!tag.startsWith(prefix)) return false;
+					const version = tag.slice(prefix.length);
+					if (!/^\d+\.\d+\.\d+$/u.test(version)) return false;
+					return config.mode === "semver" || version.startsWith("0.");
 				})
 			: tags;
 	const currentTag = latestTag(eligibleTags, prefer);
@@ -380,6 +382,15 @@ export function resolveRelease(repoRoot: string, requested?: string | null): Rel
 
 	if (requested && parseVersion(requested)) {
 		const upcoming = requested.replace(/^v/, "");
+		if (config.mode === "semver" && !/^\d+\.\d+\.\d+$/u.test(upcoming)) {
+			throw new VersioningError("SemVer releases require three numeric components");
+		}
+		if (config.mode === "zerover" && !upcoming.startsWith("0.")) {
+			throw new VersioningError("ZeroVer cannot publish a stable major version");
+		}
+		if (!isAhead(upcoming, current)) {
+			throw new VersioningError(`Requested version ${upcoming} is not newer than ${current ?? "the initial release"}`);
+		}
 		return {
 			mode: config.mode,
 			current,
@@ -390,6 +401,9 @@ export function resolveRelease(repoRoot: string, requested?: string | null): Rel
 		};
 	}
 
+	if (requested && !(BUMPS as readonly string[]).includes(requested)) {
+		throw new VersioningError(`Unknown release request: ${requested}`);
+	}
 	const bump: Bump = requested ? (requested as Bump) : classifyCommits(commitsSince(repoRoot, currentTag));
 	const upcoming = current === null && bump !== null ? config.initial : nextVersion(config.mode, current, bump);
 	return {

@@ -264,7 +264,31 @@ describe("resolving against a real repository", () => {
 		expect(answers["zerover"]).toBe("0.1.0");
 		expect(answers["pridever"]).toBe("0.1.0");
 	});
-	test("ZeroVer excludes legacy 3a tags and never reuses a reserved 0.x tag", async () => {
+	test("stable SemVer promotion uses the last numeric 0.x release, not legacy scheme tags", async () => {
+		const repo = await initRepo("semver", [CHORE]);
+		runGit(repo, ["tag", "v3a.9.0"]);
+		runGit(repo, ["tag", "v0.292.4"]);
+		await later(repo, BREAKING);
+		expect(resolveRelease(repo)).toMatchObject({
+			mode: "semver",
+			current: "0.292.4",
+			current_tag: "v0.292.4",
+			next: "1.0.0",
+			tag: "v1.0.0",
+		});
+		expect(resolveRelease(repo, "major").next).toBe("1.0.0");
+		expect(resolveRelease(repo, "1.0.0").tag).toBe("v1.0.0");
+		expect(() => resolveRelease(repo, "0.292.4")).toThrow(VersioningError);
+		expect(() => resolveRelease(repo, "0.292.3")).toThrow(VersioningError);
+		expect(() => resolveRelease(repo, "v1.0")).toThrow(VersioningError);
+		expect(() => resolveRelease(repo, "1.0.0-rc.1")).toThrow(VersioningError);
+		runGit(repo, ["tag", "v1.0.0"]);
+		expect(() => resolveRelease(repo, "1.0.0")).toThrow(VersioningError);
+		expect(resolveRelease(repo, "patch").next).toBe("1.0.1");
+		expect(resolveRelease(repo, "minor").next).toBe("1.1.0");
+	});
+
+		test("ZeroVer excludes legacy 3a tags and never reuses a reserved 0.x tag", async () => {
 		const repo = await initRepo("zerover", [CHORE]);
 		runGit(repo, ["tag", "v3a.3.2"]);
 		runGit(repo, ["tag", "v0.3.3"]);
