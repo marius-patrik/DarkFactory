@@ -163,3 +163,30 @@ describe("release workflow", () => {
 		}
 	});
 });
+
+describe("source-free candidate gate", () => {
+	const candidatePath = join(import.meta.dir, "..", "..", "..", "..", ".github", "workflows", "candidate-release.yml");
+
+	test("executes for every final PR and merge queue revision without path-filter omissions", async () => {
+		const doc = Bun.YAML.parse(await readFile(candidatePath, "utf8")) as {
+			on: { pull_request?: { paths?: string[] }; merge_group?: unknown };
+		};
+		expect(doc.on.pull_request).toBeDefined();
+		expect(doc.on.pull_request?.paths).toBeUndefined();
+		expect(doc.on.merge_group).toBeDefined();
+	});
+
+	test("provides one fail-closed aggregate candidate check for every native target and Docker", async () => {
+		const doc = Bun.YAML.parse(await readFile(candidatePath, "utf8")) as {
+			jobs: Record<string, { name?: string; needs?: string[]; if?: string; steps?: WorkflowStep[] }>;
+		};
+		const gate = doc.jobs.candidate;
+		expect(gate?.name).toBe("candidate");
+		expect(gate?.needs).toEqual(["targets", "build", "docker-agent-smoke"]);
+		expect(gate?.if).toBe("always()");
+		const checks = gate?.steps?.[0]?.run ?? "";
+		for (const value of ["DF_TARGETS_RESULT", "DF_BUILD_RESULT", "DF_DOCKER_RESULT"]) {
+			expect(checks).toContain(`test "$${value}" = "success"`);
+		}
+	});
+});

@@ -31,7 +31,8 @@
           "branch": "main",
           "required_checks": [
             "quality",
-            "verify-bound-issue"
+            "verify-bound-issue",
+            "candidate"
           ],
           "approvals": 1,
           "enforce_admins": false,

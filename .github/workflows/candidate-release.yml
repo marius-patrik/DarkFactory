@@ -1,13 +1,9 @@
 name: Verify Source-Free Candidate
 on:
   pull_request:
-    paths:
-      - "packages/**"
-      - ".darkfactory/plugins/**"
-      - "scripts/**"
-      - ".github/workflows/candidate-release.yml"
-      - "bun.lock"
-      - "package.json"
+    types: [opened, edited, synchronize, reopened, ready_for_review]
+  merge_group:
+    branches: [main]
   workflow_dispatch:
 permissions:
   contents: read
@@ -74,3 +70,20 @@ jobs:
           docker run --rm darkfactory-agent:candidate providers > "$RUNNER_TEMP/df-container-providers.txt"
           test -s "$RUNNER_TEMP/df-container-providers.txt"
           test "$(docker run --rm --entrypoint id darkfactory-agent:candidate -u)" = "1001"
+
+  candidate:
+    name: candidate
+    if: always()
+    needs: [targets, build, docker-agent-smoke]
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Require complete native and non-root evidence
+        env:
+          DF_TARGETS_RESULT: ${{ needs.targets.result }}
+          DF_BUILD_RESULT: ${{ needs.build.result }}
+          DF_DOCKER_RESULT: ${{ needs.docker-agent-smoke.result }}
+        run: |
+          set -euo pipefail
+          test "$DF_TARGETS_RESULT" = "success"
+          test "$DF_BUILD_RESULT" = "success"
+          test "$DF_DOCKER_RESULT" = "success"
