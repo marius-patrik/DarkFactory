@@ -1,0 +1,49 @@
+# Two-stage production image: Bun and the source tree exist only in the build stage.
+FROM oven/bun:1.4.4 AS build
+WORKDIR /src
+COPY package.json bun.lock tsconfig.json tsconfig.base.json ./
+COPY packages/ ./packages/
+COPY scripts/ ./scripts/
+COPY .darkfactory/ ./.darkfactory/
+RUN bun install --frozen-lockfile
+RUN bun run build --target=linux-x64 \
+    && bun packages/harness/scripts/verify-target.ts --target linux-x64
+
+FROM debian:bookworm-slim
+LABEL org.opencontainers.image.source="https://github.com/marius-patrik/DarkFactory"
+LABEL org.opencontainers.image.description="Source-free DarkFactory agent runtime"
+
+ENV DEBIAN_FRONTEND=noninteractive
+RUN set -eux; \
+    apt-get update; \
+    apt-get install -y --no-install-recommends \
+        ca-certificates curl git jq gnupg dbus-x11 gnome-keyring libsecret-tools tini tmux; \
+    curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg \
+        -o /usr/share/keyrings/githubcli-archive-keyring.gpg; \
+    chmod go+r /usr/share/keyrings/githubcli-archive-keyring.gpg; \
+    echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" \
+        > /etc/apt/sources.list.d/github-cli.list; \
+    apt-get update; \
+    apt-get install -y --no-install-recommends gh; \
+    rm -rf /var/lib/apt/lists/*
+
+COPY --from=build /src/packages/harness/dist/df-linux-x64.tar.gz /tmp/df.tar.gz
+RUN set -eux; \
+    mkdir -p /opt/darkfactory; \
+    tar -xzf /tmp/df.tar.gz -C /opt/darkfactory; \
+    rm /tmp/df.tar.gz; \
+    chmod 755 /opt/darkfactory/df-linux-x64; \
+    /opt/darkfactory/df-linux-x64 __packaging-smoke
+
+ARG AGENT_UID=1001
+ARG AGENT_GID=1001
+RUN set -eux; \
+    groupadd --gid "$AGENT_GID" agent; \
+    useradd --uid "$AGENT_UID" --gid "$AGENT_GID" --create-home --shell /bin/bash agent; \
+    mkdir -p /workspace /home/agent/.config; \
+    chown -R agent:agent /workspace /home/agent
+
+ENV HOME=/home/agent
+WORKDIR /workspace
+USER agent
+ENTRYPOINT ["tini", "--", "dbus-run-session", "--", "/opt/darkfactory/df-linux-x64"]

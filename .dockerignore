@@ -9,3 +9,9 @@ site/
 # image, so copying the leaves without the store yields a runtime ENOENT rather than a build error.
 node_modules/
 **/node_modules/
+
+# Source control, workflow configuration and local build outputs stay out of the Docker context.
+.git/
+.github/
+**/dist/
+dist/

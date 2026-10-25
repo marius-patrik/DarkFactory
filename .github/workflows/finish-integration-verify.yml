@@ -124,3 +124,7 @@ jobs:
           docker run --rm darkfactory-agent:integration providers > "$RUNNER_TEMP/df-providers.txt"
           test -s "$RUNNER_TEMP/df-providers.txt"
           test "$(docker run --rm --entrypoint id darkfactory-agent:integration -u)" = "1001"
+      - name: Prove runtime image contains compiled df rather than source or Bun
+        run: |
+          docker run --rm --entrypoint /bin/sh darkfactory-agent:integration -ec \
+            'test -x /opt/darkfactory/df-linux-x64 && test ! -e /src && test ! -e /opt/darkfactory/packages && ! command -v bun'
