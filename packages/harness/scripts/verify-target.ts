@@ -40,6 +40,8 @@ async function run(command: string[], label: string, quiet = false, cwd = harnes
 }
 
 // `--help` is a multi-page usage dump, so only its exit status is interesting here.
+const declaredVersion = (await Bun.file(join(repositoryRoot, "VERSION")).text()).trim();
+await run([binary, "--version"], "release version", false);
 await run([binary, "--help"], "help", true);
 await run([binary, "__packaging-smoke"], "packaging smoke");
 
@@ -111,6 +113,15 @@ const standalone = await mkdtemp(join(tmpdir(), "df-standalone-"));
 try {
 	await tarCommand(["-xzf", join(dist, bundle), "-C", standalone], standalone);
 	await run([join(standalone, asset), "__packaging-smoke"], "standalone packaging smoke", true, standalone);
+	const child = Bun.spawn([join(standalone, asset), "--version"], { cwd: standalone, stdout: "pipe", stderr: "pipe" });
+	const [exit, output, diagnostics] = await Promise.all([
+		child.exited,
+		new Response(child.stdout).text(),
+		new Response(child.stderr).text(),
+	]);
+	if (exit !== 0 || output.trim() !== `df v${declaredVersion}`) {
+		throw new Error(`Source-free version mismatch: expected df v${declaredVersion}, observed ${output.trim()} ${diagnostics.trim()}`);
+	}
 	// Official capabilities are bundled JS: this invocation must work without the source tree
 	// and prove that ci matrix can discover them dynamically from the installed executable.
 	await writeFile(

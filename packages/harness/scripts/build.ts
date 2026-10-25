@@ -1,4 +1,4 @@
-import { existsSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { $ } from "bun";
 import { packageAssets } from "./package-assets.ts";
@@ -31,10 +31,13 @@ const asset = releaseAssetName(target.name);
 // One root, one dist: `packageAssets` below derives the same directory from the root it is given,
 // and this script used `process.cwd()` twice for two different purposes, which is how they drifted.
 const root = process.cwd();
+const version = readFileSync(join(root, "VERSION"), "utf8").trim();
+if (!/^\d+\.\d+\.\d+$/u.test(version)) throw new Error(`Invalid native release VERSION: ${version}`);
+const versionDefine = `DF_BUILD_VERSION=${JSON.stringify(version)}`;
 const dist = join(root, "packages", "harness", "dist");
 // Bun appends `.exe` for a Windows target, so the requested and produced names have to be compared
 // rather than assumed. A name that drifts would publish an asset no installer resolves.
-await $`bun build ./packages/cli/src/cli.ts ./packages/cli/src/image-resize-worker.ts --compile --target=${target.bunTarget} --outfile ${join(dist, asset)}`;
+await $`bun build ./packages/cli/src/cli.ts ./packages/cli/src/image-resize-worker.ts --compile --target=${target.bunTarget} --define ${versionDefine} --outfile ${join(dist, asset)}`;
 if (!existsSync(join(dist, asset))) {
 	throw new Error(`bun build reported success but produced no dist/${asset} for target ${target.name}.`);
 }

@@ -58,11 +58,23 @@ export function managedWrapper(platform: NodeJS.Platform, asset: string): string
 	return `#!/usr/bin/env sh\n# ${MANAGED}\nset -eu\nDF_HOME=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)\nIFS= read -r DF_RELEASE < "$DF_HOME/current.txt"\nexec "$DF_HOME/versions/$DF_RELEASE/${asset}" "$@"\n`;
 }
 
+// Bun replaces this identifier when compiling the immutable native artifact.
+// An interpreted source checkout has no build stamp and remains "development/unmanaged".
+declare const DF_BUILD_VERSION: string;
+
 export function executableReleaseVersion(path = process.execPath): string | undefined {
 	const fragments = resolve(path).split(sep);
 	const i = fragments.lastIndexOf("versions");
-	const tag = fragments[i + 1];
-	return i >= 0 && tag && TAG.test(tag) ? tag : undefined;
+	const tag = i >= 0 ? fragments[i + 1] : undefined;
+	const installed = tag && TAG.test(tag) ? tag : undefined;
+	const embedded = typeof DF_BUILD_VERSION === "string" ? `v${DF_BUILD_VERSION}` : undefined;
+	if (embedded && (!TAG.test(embedded) || !/^v\d+\.\d+\.\d+$/u.test(embedded))) {
+		throw new Error("Compiled DarkFactory binary has an invalid release version");
+	}
+	if (embedded && installed && embedded !== installed) {
+		throw new Error(`Installed DarkFactory version mismatch: ${installed} versus ${embedded}`);
+	}
+	return embedded ?? installed;
 }
 
 function parseFlags(args: string[]): { prefix: string; check: boolean; dryRun: boolean } {
