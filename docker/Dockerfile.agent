@@ -1,7 +1,7 @@
 # Two-stage production image: Bun and the source tree exist only in the build stage.
 FROM oven/bun:1.4.4 AS build
 WORKDIR /src
-COPY package.json bun.lock tsconfig.json tsconfig.base.json ./
+COPY package.json bun.lock tsconfig.json tsconfig.base.json VERSION ./
 COPY packages/ ./packages/
 COPY scripts/ ./scripts/
 COPY .darkfactory/ ./.darkfactory/
