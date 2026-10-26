@@ -55,7 +55,7 @@ export interface ObservedWorkflowRun {
 }
 
 export interface IncidentInvocation {
-	/** The effective GitHub event and ref of the completed-workflow observer. */
+	/** The effective original GitHub event and ref of a direct or reusable observer. */
 	eventName: string;
 	ref: string;
 	/** Immutable ID from github.event.workflow_run.id, not user-provided workflow_call inputs. */

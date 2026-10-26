@@ -275,21 +275,28 @@ describe("workflow conclusion classification", () => {
 		expect(failureActionForConclusion(undefined)).toBe("ignore");
 	});
 
-	test("does not advertise unreachable reusable invocation and binds incident metadata to the event", () => {
+	test("reusable callers derive incident identity only from the original GitHub event", () => {
 		const workflow = Bun.YAML.parse(
 			readFileSync(new URL("../../../.github/workflows/report-failure.yml", import.meta.url), "utf8"),
 		) as {
-			on: { workflow_run: unknown; workflow_call?: unknown };
+			on: { workflow_call: { inputs: Record<string, unknown> } };
 			jobs: { report: { steps: { env?: Record<string, string> }[] } };
 		};
-		expect(workflow.on.workflow_run).toBeDefined();
-		expect(workflow.on.workflow_call).toBeUndefined();
+		for (const key of ["workflow-name", "conclusion", "run-url", "run-id"])
+			expect(workflow.on.workflow_call.inputs).not.toHaveProperty(key);
 		const observed = workflow.jobs.report.steps.at(-1)?.env;
 		expect(observed?.WORKFLOW_NAME).toBe("${{ github.event.workflow_run.name }}");
 		expect(observed?.CONCLUSION).toBe("${{ github.event.workflow_run.conclusion }}");
 		expect(observed?.RUN_URL).toBe("${{ github.event.workflow_run.html_url }}");
 		expect(observed?.RUN_ID).toBe("${{ github.event.workflow_run.id }}");
 		expect(observed?.TRIGGER_RUN_ID).toBe(observed?.RUN_ID);
+		const gate = workflow.jobs.report.steps.find(
+			(step) => (step as { name?: string }).name === "Validate pinned runtime source for callable observers",
+		) as { run?: string; if?: string } | undefined;
+		expect(gate?.if).toBe("inputs.pipeline-ref != ''");
+		expect(gate?.run).toContain('"$DF_PIPELINE_REPO" != "marius-patrik/DarkFactory"');
+		expect(gate?.run).toContain("DF_PIPELINE_REF");
+		expect(gate?.run).toContain("{40}");
 		expect(observed?.ACTIONS_READ_TOKEN).toBe("${{ github.token }}");
 		expect(observed?.GH_TOKEN).toBe("${{ steps.app-token.outputs.token || github.token }}");
 	});
