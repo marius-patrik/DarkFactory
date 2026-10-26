@@ -437,7 +437,7 @@ describe("agent.yml", () => {
 		for (const name of ["agent.yml", "pr-approval-automerge.yml"]) {
 			const refs = [...workflowSource(name).matchAll(/^\s*-\s+uses:\s+([^\s#]+)/gmu)].map((match) => match[1]);
 			expect(refs.length, `${name} must actually use externally maintained actions`).toBeGreaterThan(0);
-		for (const ref of refs) {
+			for (const ref of refs) {
 				expect(ref, `${name} has a mutable action reference`).toMatch(/^[\w.-]+\/[\w.-]+@[0-9a-f]{40}$/u);
 			}
 		}
