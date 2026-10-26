@@ -433,6 +433,24 @@ describe("agent.yml", () => {
 		}
 	});
 
+	it("does not execute unreviewed PR code in a privileged agent build", () => {
+		const jobSteps = steps(agent, "run-agent");
+		const resolverIndex = jobSteps.findIndex((step) => step.name === "Resolve trusted target default branch");
+		const checkoutIndex = jobSteps.findIndex((step) => step.name === "Checkout repository");
+		const nixIndex = jobSteps.findIndex((step) => step.name === "Build and load Nix agent image");
+		const resolver = jobSteps[resolverIndex];
+		const checkout = jobSteps[checkoutIndex];
+		expect(resolverIndex).toBeGreaterThan(-1);
+		expect(checkoutIndex).toBeGreaterThan(resolverIndex);
+		expect(nixIndex).toBeGreaterThan(checkoutIndex);
+		expect(resolver?.run).toContain('gh api "repos/$TARGET_REPOSITORY"');
+		expect(resolver?.run).toContain("git check-ref-format --branch");
+		expect(resolver?.env?.TARGET_REPOSITORY).toBe("${{ steps.target-env.outputs.repo }}");
+		expect(checkout?.with?.ref).toBe("${{ steps.trusted-target.outputs.ref }}");
+		expect(checkout?.with?.repository).toBe("${{ steps.target-env.outputs.repo }}");
+		expect(checkout?.with?.["fetch-depth"]).toBe(0);
+	});
+
 	it("test_the_agent_image_is_built_from_the_pipeline: consumers run the same Nix image", () => {
 		const build = steps(agent, "run-agent").find((step) => step.name === "Build and load Nix agent image");
 		expect(build?.run).toContain('CONTEXT="./.darkfactory-pipeline"');

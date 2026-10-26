@@ -224,6 +224,27 @@ jobs:
           );
           ' >> /dev/null
 
+      - name: Resolve trusted target default branch
+        id: trusted-target
+        if: steps.delegate.outputs.delegated != 'true'
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token || secrets.GH_PROJECT_TOKEN || secrets.GITHUB_TOKEN }}
+          TARGET_REPOSITORY: ${{ steps.target-env.outputs.repo }}
+        run: |
+          set -euo pipefail
+          # A repository_dispatch payload is not an authority to select executable code.
+          # Resolve the actual repository through the authenticated GitHub API.
+          if [[ ! "$TARGET_REPOSITORY" =~ ^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$ ]]; then
+            echo "::error::Invalid target repository identity" >&2
+            exit 1
+          fi
+          branch=$(gh api "repos/$TARGET_REPOSITORY" --jq '.default_branch')
+          if [ -z "$branch" ] || ! git check-ref-format --branch "$branch" >/dev/null; then
+            echo "::error::Cannot determine trusted target default branch" >&2
+            exit 1
+          fi
+          echo "ref=$branch" >> "$GITHUB_OUTPUT"
+
       - name: Checkout repository
         # Checked out with the App's token, so the branches the agent pushes are pushed by the App
         # and the checks on them run. A push made with GITHUB_TOKEN triggers no workflow at all,
@@ -237,6 +258,9 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: ${{ steps.target-env.outputs.repo }}
+          # Review-comment events may otherwise default to an untrusted PR merge ref.
+          # Agent runtime/image assembly must come only from reviewed default-branch code.
+          ref: ${{ steps.trusted-target.outputs.ref }}
           token: ${{ steps.app-token.outputs.token || secrets.GH_PROJECT_TOKEN || secrets.GITHUB_TOKEN }}
           fetch-depth: 0
 
