@@ -89,6 +89,44 @@ describe("@darkfactory/auth browser client", () => {
 		expect(localStorage.getItem("df-auth-session")).toBeNull();
 	});
 
+	test("a pending refresh cannot resurrect an account after logout", async () => {
+		persistSession({ id: "old", expiresAt: 2_000 });
+		let complete!: (value: { id: string; expiresAt: number }) => void;
+		const refresh = new Promise<{ id: string; expiresAt: number }>((resolve) => {
+			complete = resolve;
+		});
+		const pending = restoreSessionWithRefresh(() => refresh, 3_000);
+		clearSession();
+		complete({ id: "old", expiresAt: 5_000 });
+		expect(await pending).toBeNull();
+		expect(restoreSession(3_000)).toBeNull();
+	});
+
+	test("stale refresh success or failure cannot replace a newer login", async () => {
+		for (const fail of [false, true]) {
+			persistSession({ id: "old", expiresAt: 2_000 });
+			let complete!: () => void;
+			const gate = new Promise<void>((resolve) => {
+				complete = resolve;
+			});
+			const pending = restoreSessionWithRefresh(async () => {
+				await gate;
+				if (fail) throw new Error("Expired broker token");
+				return { id: "old", expiresAt: 5_000 };
+			}, 3_000);
+			persistSession({ id: "new", expiresAt: 10_000 });
+			complete();
+			expect(await pending).toEqual({ id: "new", expiresAt: 10_000 });
+			expect(restoreSession(3_000)?.id).toBe("new");
+		}
+	});
+
+	test("a broker cannot silently replace the refreshed session identity", async () => {
+		persistSession({ id: "old", expiresAt: 2_000 });
+		expect(await restoreSessionWithRefresh(async () => ({ id: "other", expiresAt: 5_000 }), 3_000)).toBeNull();
+		expect(restoreSession(3_000)).toBeNull();
+	});
+
 	test("clearSession removes the opaque browser descriptor", () => {
 		persistSession({ id: "opaque-session", expiresAt: Date.now() + 10_000 });
 		clearSession();
