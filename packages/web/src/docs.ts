@@ -28,8 +28,12 @@ function renderInline(raw: string, page: DocsPage, graph: DocsContentGraph): str
 		// Browser URL parsing strips some control characters and whitespace before
 		// interpreting schemes. Never emit an executable javascript:/data:/file:
 		// destination from repository-provided Markdown into a documentation page.
+		const containsControl = [...target].some((character) => {
+			const code = character.charCodeAt(0);
+			return code < 32 || code === 127;
+		});
 		const unsafe =
-			/[\u0000-\u001f\u007f]/u.test(target) ||
+			containsControl ||
 			(/^(?:[a-z][a-z0-9+.-]*:|\/\/)/iu.test(target) && !/^(?:https?:|mailto:)/iu.test(target));
 		if (unsafe) {
 			output += label;
