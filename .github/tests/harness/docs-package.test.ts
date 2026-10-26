@@ -119,6 +119,21 @@ describe("@darkfactory/docs", () => {
 		expect(JSON.stringify(graph.api)).toContain("FixtureApi");
 	}, 30_000);
 
+	test("does not emit executable schemes from Markdown hyperlinks", async () => {
+		const root = await fixture();
+		await writeFile(
+			join(root, "README.md"),
+			'# Home\n\n[unsafe](javascript:alert) [data](data:text/html) [spaced]( javascript:alert ) [valid](https://github.com)\n',
+		);
+		const site = join(root, "site");
+		await renderDocsSite(compileDocsContentGraph(root), site);
+		const html = await readFile(join(site, "index.html"), "utf8");
+		expect(html).not.toContain('href="javascript:');
+		expect(html).not.toContain('href="data:');
+		expect(html).toContain("unsafe");
+		expect(html).toContain('href="https://github.com"');
+	});
+
 	test("renders the content graph through @darkfactory/web", async () => {
 		const root = await fixture(true);
 		const graph = await compileDocsContentGraphWithApi(root);

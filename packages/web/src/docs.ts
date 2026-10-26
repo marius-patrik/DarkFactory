@@ -24,8 +24,16 @@ function renderInline(raw: string, page: DocsPage, graph: DocsContentGraph): str
 		const index = match.index ?? 0;
 		output += escapeHtml(raw.slice(cursor, index));
 		const label = escapeHtml(match[1] ?? "");
-		const target = match[2] ?? "";
-		if (/^(?:https?:|mailto:|#)/u.test(target)) {
+		const target = (match[2] ?? "").trim();
+		// Browser URL parsing strips some control characters and whitespace before
+		// interpreting schemes. Never emit an executable javascript:/data:/file:
+		// destination from repository-provided Markdown into a documentation page.
+		const unsafe =
+			/[\u0000-\u001f\u007f]/u.test(target) ||
+			(/^(?:[a-z][a-z0-9+.-]*:|\/\/)/iu.test(target) && !/^(?:https?:|mailto:)/iu.test(target));
+		if (unsafe) {
+			output += label;
+		} else if (/^(?:https?:|mailto:|#)/iu.test(target)) {
 			output += `<a href="${escapeHtml(target)}">${label}</a>`;
 		} else {
 			const [pathPart, anchor] = target.split("#", 2);
