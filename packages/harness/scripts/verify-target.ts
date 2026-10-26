@@ -9,7 +9,7 @@
  */
 import { copyFile, mkdir, mkdtemp, readdir, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
-import { dirname, join, resolve } from "node:path";
+import { delimiter, dirname, join, resolve } from "node:path";
 import { RECORD_SUFFIX, writeReleaseChecksums } from "./release-checksums.ts";
 import { releaseAssetName, requireReleaseTarget } from "./release-targets.ts";
 
@@ -153,8 +153,14 @@ try {
 		failed: number;
 		blocked: number;
 	}> {
+		// Source-free df cannot infer the Bun installation of the test runner. Explicitly
+		// provide the external consumer toolchain, including on Windows where Path/PATH
+		// duplicates can cause cmd.exe to choose a stale PATH value.
+		const env = Object.fromEntries(Object.entries(process.env).filter(([name]) => name.toUpperCase() !== "PATH"));
+		env.PATH = [dirname(process.execPath), process.env.PATH ?? process.env.Path ?? ""].join(delimiter);
 		const child = Bun.spawn([installed, "ci", "quality", "--repo", consumer, "--workers", "2", "--json"], {
 			cwd: consumer,
+			env,
 			stdout: "pipe",
 			stderr: "pipe",
 		});
