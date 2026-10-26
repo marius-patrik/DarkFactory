@@ -52,6 +52,7 @@ export class GitHubClient {
 	readonly #userAgent: string;
 	readonly #onAuthenticationFailure?: () => void;
 	readonly #cache = new Map<string, CacheEntry>();
+	#cacheToken?: string;
 	rateLimit?: RateLimitSnapshot;
 
 	constructor(options: GitHubClientOptions) {
@@ -60,6 +61,10 @@ export class GitHubClient {
 		this.#transport = new FetchTransport({ fetch: options.fetch, timeoutMs: options.timeoutMs });
 		this.#apiBase = (options.apiBase ?? "https://api.github.com").replace(/\/$/, "");
 		this.#graphqlUrl = options.graphqlUrl ?? `${this.#apiBase}/graphql`;
+		// The credential is scoped to one GitHub API origin. Do not let caller-supplied
+		// absolute REST URLs or a configured GraphQL endpoint exfiltrate it.
+		this.#assertTrustedUrl(this.#apiBase);
+		this.#assertTrustedUrl(this.#graphqlUrl);
 		this.#maxRetries = options.maxRetries ?? 3;
 		this.#random = options.random ?? Math.random;
 		this.#sleep = options.sleep ?? ((ms) => Bun.sleep(ms));
@@ -162,7 +167,14 @@ export class GitHubClient {
 		useEtag: boolean,
 		accept = "application/vnd.github+json",
 	): Promise<{ value: T; headers: Headers; status: number; requestId?: string }> {
+		this.#assertTrustedUrl(url);
 		const token = await this.#getToken();
+		// An App token source can rotate or switch installation/account. A 304
+		// must never hydrate a different principal's ETag-cached response.
+		if (this.#cacheToken !== token) {
+			this.#cache.clear();
+			this.#cacheToken = token;
+		}
 		const cacheKey = `${url}|${accept}`;
 		const cached = method === "GET" && useEtag ? this.#cache.get(cacheKey) : undefined;
 		for (let attempt = 0; ; attempt++) {
@@ -224,6 +236,25 @@ export class GitHubClient {
 				requestId,
 				retryAt: classification.retryAt,
 			});
+		}
+	}
+
+	#assertTrustedUrl(value: string): void {
+		let actual: URL;
+		let expected: URL;
+		try {
+			actual = new URL(value);
+			expected = new URL(this.#apiBase);
+		} catch {
+			throw this.#protocol("GET", value, "invalid GitHub API URL");
+		}
+		if (
+			actual.origin !== expected.origin ||
+			!["https:", "http:"].includes(actual.protocol) ||
+			actual.username ||
+			actual.password
+		) {
+			throw this.#protocol("GET", value, "GitHub API URL is outside the configured credential origin");
 		}
 	}
 

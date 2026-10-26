@@ -70,6 +70,49 @@ describe("GitHubClient", () => {
 		expect(await client.collectRest<{ id: number }>("/items")).toEqual([{ id: 1 }, { id: 2 }]);
 	});
 
+	test("rejects absolute URLs outside the configured GitHub API origin before sending credentials", async () => {
+		const mock = scripted([json({ ok: true })]);
+		const client = new GitHubClient({ token: "secret", fetch: mock.fetch });
+		await expect(client.rest("GET", "https://attacker.example/repos/o/r")).rejects.toThrow(
+			"outside the configured credential origin",
+		);
+		await expect(client.rest("POST", "https://api.github.com.attacker.example/actions", {})).rejects.toThrow(
+			"outside the configured credential origin",
+		);
+		expect(mock.calls).toHaveLength(0);
+		expect(await client.rest("GET", "https://api.github.com/repos/o/r")).toEqual({ ok: true });
+		expect(mock.calls).toHaveLength(1);
+	});
+
+	test("does not follow attacker-controlled REST pagination links with bearer credentials", async () => {
+		const mock = scripted([
+			json([{ id: 1 }], 200, { link: '<https://attacker.example/collect-token>; rel="next"' }),
+		]);
+		const client = new GitHubClient({ token: "secret", fetch: mock.fetch });
+		await expect(client.collectRest("/repos/o/r/issues")).rejects.toThrow("outside the configured credential origin");
+		expect(mock.calls).toHaveLength(1);
+	});
+
+	test("refuses a cross-origin GraphQL endpoint when constructing a credentialed client", () => {
+		expect(
+			() => new GitHubClient({ token: "secret", graphqlUrl: "https://attacker.example/graphql" }),
+		).toThrow("outside the configured credential origin");
+	});
+
+	test("never reuses another installation token's cached ETag response", async () => {
+		let currentToken = "installation-A";
+		const mock = scripted([
+			json({ owner: "A" }, 200, { etag: '"install-A"' }),
+			json({ owner: "B" }, 200, { etag: '"install-B"' }),
+		]);
+		const client = new GitHubClient({ token: () => currentToken, fetch: mock.fetch });
+		expect(await client.rest("GET", "/user")).toEqual({ owner: "A" });
+		currentToken = "installation-B";
+		expect(await client.rest("GET", "/user")).toEqual({ owner: "B" });
+		expect(new Headers(mock.calls[1]?.init?.headers).get("authorization")).toBe("Bearer installation-B");
+		expect(new Headers(mock.calls[1]?.init?.headers).has("if-none-match")).toBe(false);
+	});
+
 	test("invalidates ETags after writes", async () => {
 		const mock = scripted([
 			json({ version: 1 }, 200, { etag: '"old"' }),
