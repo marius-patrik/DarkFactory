@@ -363,10 +363,17 @@ jobs:
         env:
           DF_REPOSITORY: ${{ github.repository }}
           DF_EVENT: ${{ github.event_name }}
+          DF_REF: ${{ github.ref }}
+          DF_DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+          DF_COMMIT: ${{ github.sha }}
           DF_REQUESTED_VERSION: ${{ inputs.bump }}
         run: |
           set -euo pipefail
           if [ "$DF_REPOSITORY" = "marius-patrik/DarkFactory" ]; then
+            if [ "$DF_REF" != "refs/heads/$DF_DEFAULT_BRANCH" ] || [ "$(git rev-parse HEAD)" != "$DF_COMMIT" ]; then
+              echo "::error::Producer release must build the exact protected default-branch commit." >&2
+              exit 1
+            fi
             if [ "$DF_EVENT" != "workflow_dispatch" ]; then
               echo "::error::DarkFactory releases require explicit operator dispatch." >&2
               exit 1

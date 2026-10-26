@@ -19,6 +19,7 @@ const workflowPath = join(import.meta.dir, "..", "..", "..", "..", ".github", "w
 const source = await readFile(workflowPath, "utf8");
 interface WorkflowStep {
 	name: string;
+	env?: Record<string, string>;
 	id?: string;
 	uses?: string;
 	run?: string;
@@ -53,6 +54,17 @@ describe("release workflow", () => {
 
 	// A floating `@v4` is a tag the action's owner can repoint at new code. In the job that creates
 	// a tag and a release that is a supply-chain hole, so every reference names a commit id.
+	test("authorizes producer publication only from the exact protected default-branch SHA", () => {
+		const gate = workflow.jobs.publish?.steps.find((step) => step.name === "Require explicit producer release promotion");
+		expect(gate).toBeDefined();
+		expect(gate?.env?.DF_REF).toBe("${{ github.ref }}");
+		expect(gate?.env?.DF_COMMIT).toBe("${{ github.sha }}");
+		expect(gate?.env?.DF_DEFAULT_BRANCH).toBe("${{ github.event.repository.default_branch }}");
+		expect(gate?.run).toContain('"$DF_REF" != "refs/heads/$DF_DEFAULT_BRANCH"');
+		expect(gate?.run).toContain('"$(git rev-parse HEAD)" != "$DF_COMMIT"');
+		expect(gate?.run).toContain('"$DF_EVENT" != "workflow_dispatch"');
+	});
+
 	test("pins every action to a full commit id", () => {
 		const references = actionReferences(source);
 		expect(references.length).toBeGreaterThan(0);
