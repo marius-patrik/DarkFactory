@@ -83,11 +83,11 @@ jobs:
       HAS_APP_KEY: ${{ secrets.DARKFACTORY_APP_PRIVATE_KEY != '' }}
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
 
       - name: Check out the pinned pipeline
         if: inputs.pipeline-ref != ''
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
           repository: ${{ inputs.pipeline-repo }}
           ref: ${{ inputs.pipeline-ref }}
@@ -99,14 +99,14 @@ jobs:
         # organisations and these boards are user-owned.
         id: app-token
         if: env.HAS_APP_KEY == 'true'
-        uses: actions/create-github-app-token@v1
+        uses: actions/create-github-app-token@d72941d797fd3113feb6b93fd0dec494b13a2547 # v1.11.0
         continue-on-error: true
         with:
           app-id: ${{ vars.DARKFACTORY_APP_ID || '4861004' }}
           private-key: ${{ secrets.DARKFACTORY_APP_PRIVATE_KEY }}
 
       - name: Set up Bun
-        uses: oven-sh/setup-bun@v2
+        uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
 
       - name: Install DarkFactory runtime
         run: |

@@ -433,8 +433,8 @@ describe("agent.yml", () => {
 		}
 	});
 
-	it("pins credentialed agent and approval workflow actions to immutable commits", () => {
-		for (const name of ["agent.yml", "pr-approval-automerge.yml"]) {
+	it("pins credentialed agent, approval and incident workflows to immutable commits", () => {
+		for (const name of ["agent.yml", "pr-approval-automerge.yml", "report-failure.yml"]) {
 			const refs = allSteps(parseWorkflow(name))
 				.map(({ step }) => step.uses)
 				.filter((value): value is string => value !== undefined);
