@@ -177,6 +177,8 @@ export class GitHubClient {
 		}
 		const cacheKey = `${url}|${accept}`;
 		const cached = method === "GET" && useEtag ? this.#cache.get(cacheKey) : undefined;
+		let currentUrl = url;
+		let redirects = 0;
 		for (let attempt = 0; ; attempt++) {
 			const headers = new Headers({
 				Accept: accept,
@@ -188,10 +190,13 @@ export class GitHubClient {
 			if (cached) headers.set("If-None-Match", cached.etag);
 			let response: Response;
 			try {
-				response = await this.#transport.request(url, {
+				response = await this.#transport.request(currentUrl, {
 					method,
 					headers,
 					body: body === undefined ? undefined : JSON.stringify(body),
+					// Never delegate bearer-token redirects to the default fetch policy.
+					// Inspect every hop before issuing another credentialed request.
+					redirect: "manual",
 				});
 			} catch (cause) {
 				if (attempt < this.#maxRetries) {
@@ -204,6 +209,23 @@ export class GitHubClient {
 					method,
 					path: safePath(url),
 				});
+			}
+			if ([301, 302, 303, 307, 308].includes(response.status)) {
+				const location = response.headers.get("location");
+				if (!location || redirects >= 5)
+					throw this.#protocol(method, currentUrl, "missing or excessive GitHub API redirect");
+				if (method !== "GET" && method !== "HEAD" && response.status !== 307 && response.status !== 308)
+					throw this.#protocol(method, currentUrl, "unsafe GitHub API method redirect");
+				let destination: string;
+				try {
+					destination = new URL(location, currentUrl).href;
+				} catch {
+					throw this.#protocol(method, currentUrl, "invalid GitHub API redirect");
+				}
+				this.#assertTrustedUrl(destination);
+				currentUrl = destination;
+				redirects += 1;
+				continue;
 			}
 			const requestId = response.headers.get("x-github-request-id") ?? undefined;
 			this.#readRestRate(response.headers);

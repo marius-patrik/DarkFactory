@@ -97,6 +97,29 @@ describe("GitHubClient", () => {
 		);
 	});
 
+	test("does not forward bearer credentials across an HTTP redirect", async () => {
+		const mock = scripted([
+			new Response(null, { status: 302, headers: { location: "https://attacker.example/collect-token" } }),
+		]);
+		const client = new GitHubClient({ token: "top-secret", fetch: mock.fetch });
+		await expect(client.rest("GET", "/redirect")).rejects.toThrow("outside the configured credential origin");
+		expect(mock.calls).toHaveLength(1);
+		expect(mock.calls[0]?.init?.redirect).toBe("manual");
+	});
+
+	test("follows a same-origin API redirect after validating its destination", async () => {
+		const mock = scripted([
+			new Response(null, { status: 301, headers: { location: "/repos/renamed" } }),
+			json({ full_name: "owner/renamed" }),
+		]);
+		const client = new GitHubClient({ token: "access-token", fetch: mock.fetch });
+		expect(await client.rest<{ full_name: string }>("GET", "/repos/old")).toEqual({ full_name: "owner/renamed" });
+		expect(mock.calls.map((call) => call.url)).toEqual([
+			"https://api.github.com/repos/old",
+			"https://api.github.com/repos/renamed",
+		]);
+	});
+
 	test("never reuses another installation token's cached ETag response", async () => {
 		let currentToken = "installation-A";
 		const mock = scripted([
