@@ -54,6 +54,22 @@ describe("release workflow", () => {
 
 	// A floating `@v4` is a tag the action's owner can repoint at new code. In the job that creates
 	// a tag and a release that is a supply-chain hole, so every reference names a commit id.
+	test("checks protected producer source before executing any release implementation", () => {
+		const steps = workflow.jobs.resolve?.steps ?? [];
+		const checkout = steps.findIndex((step) => step.name === "Checkout repository");
+		const gateIndex = steps.findIndex(
+			(step) => step.name === "Require trusted producer source before executing release code",
+		);
+		const runtime = steps.findIndex((step) => step.name === "Resolve the next release version");
+		const gate = steps[gateIndex];
+		expect(gateIndex).toBeGreaterThan(checkout);
+		expect(runtime).toBeGreaterThan(gateIndex);
+		expect(gate?.env?.DF_REF).toBe("${{ github.ref }}");
+		expect(gate?.env?.DF_COMMIT).toBe("${{ github.sha }}");
+		expect(gate?.run).toContain('"$DF_REF" != "refs/heads/$DF_DEFAULT_BRANCH"');
+		expect(gate?.run).toContain('"$(git rev-parse HEAD)" != "$DF_COMMIT"');
+	});
+
 	test("authorizes producer publication only from the exact protected default-branch SHA", () => {
 		const gate = workflow.jobs.publish?.steps.find(
 			(step) => step.name === "Require explicit producer release promotion",

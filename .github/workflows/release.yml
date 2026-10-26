@@ -56,6 +56,27 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Require trusted producer source before executing release code
+        env:
+          DF_REPOSITORY: ${{ github.repository }}
+          DF_REF: ${{ github.ref }}
+          DF_DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+          DF_COMMIT: ${{ github.sha }}
+          DF_EVENT: ${{ github.event_name }}
+          DF_REQUESTED_VERSION: ${{ inputs.bump }}
+        run: |
+          set -euo pipefail
+          if [ "$DF_REPOSITORY" = "marius-patrik/DarkFactory" ]; then
+            if [ "$DF_EVENT" != "workflow_dispatch" ] || [ "$DF_REF" != "refs/heads/$DF_DEFAULT_BRANCH" ]; then
+              echo "::error::DarkFactory release evaluation requires explicit dispatch from the protected default branch." >&2
+              exit 1
+            fi
+            if [ "$(git rev-parse HEAD)" != "$DF_COMMIT" ] || [ -z "$DF_REQUESTED_VERSION" ]; then
+              echo "::error::Missing exact source identity or explicit release version." >&2
+              exit 1
+            fi
+          fi
+
       - name: Check out the pinned pipeline
         if: inputs.pipeline-ref != ''
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
