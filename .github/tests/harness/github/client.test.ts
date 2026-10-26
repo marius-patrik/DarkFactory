@@ -113,6 +113,36 @@ describe("GitHubClient", () => {
 		expect(new Headers(mock.calls[1]?.init?.headers).has("if-none-match")).toBe(false);
 	});
 
+	test("an old in-flight token cannot overwrite a newer principal's cache", async () => {
+		let token = "installation-A";
+		let startFirst!: () => void;
+		let completeFirst!: (response: Response) => void;
+		const firstRequested = new Promise<void>((resolve) => {
+			startFirst = resolve;
+		});
+		const requests: RequestInit[] = [];
+		const fetch = async (_input: string | URL | Request, init?: RequestInit): Promise<Response> => {
+			requests.push(init ?? {});
+			if (requests.length === 1) {
+				startFirst();
+				return new Promise<Response>((resolve) => {
+					completeFirst = resolve;
+				});
+			}
+			if (requests.length === 2) return json({ owner: "B" }, 200, { etag: '"B"' });
+			return new Response(null, { status: 304 });
+		};
+		const client = new GitHubClient({ token: () => token, fetch });
+		const pendingA = client.rest("GET", "/resource");
+		await firstRequested;
+		token = "installation-B";
+		expect(await client.rest("GET", "/resource")).toEqual({ owner: "B" });
+		completeFirst(json({ owner: "A" }, 200, { etag: '"A"' }));
+		expect(await pendingA).toEqual({ owner: "A" });
+		expect(await client.rest("GET", "/resource")).toEqual({ owner: "B" });
+		expect(new Headers(requests[2]?.headers).get("if-none-match")).toBe('"B"');
+	});
+
 	test("invalidates ETags after writes", async () => {
 		const mock = scripted([
 			json({ version: 1 }, 200, { etag: '"old"' }),

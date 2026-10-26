@@ -213,7 +213,8 @@ export class GitHubClient {
 			const value = raw ? (accept.includes("json") ? safeJson(raw) : raw) : undefined;
 			if (response.ok) {
 				const etag = response.headers.get("etag");
-				if (method === "GET" && useEtag && etag) this.#cache.set(cacheKey, { etag, value });
+				if (method === "GET" && useEtag && etag && this.#cacheToken === token)
+					this.#cache.set(cacheKey, { etag, value });
 				if (method !== "GET") this.invalidate();
 				return { value: value as T, headers: response.headers, status: response.status, requestId };
 			}
