@@ -131,6 +131,7 @@ try {
 	await mkdir(consumer, { recursive: true });
 	const manifest = {
 		name: "df-release-smoke",
+		packageManager: "bun@1.4.4",
 		version: "1.0.0",
 		private: true,
 		scripts: {
@@ -145,7 +146,13 @@ try {
 	const installed = join(standalone, asset);
 	await run([installed, "ci", "matrix", "--repo", consumer], "standalone capability discovery", true, consumer);
 
-	async function qualitySummary(): Promise<{ planned: number; executed: number; passed: number; failed: number; blocked: number }> {
+	async function qualitySummary(): Promise<{
+		planned: number;
+		executed: number;
+		passed: number;
+		failed: number;
+		blocked: number;
+	}> {
 		const child = Bun.spawn([installed, "ci", "quality", "--repo", consumer, "--workers", "2", "--json"], {
 			cwd: consumer,
 			stdout: "pipe",
@@ -169,13 +176,19 @@ try {
 		return summary;
 	}
 	const green = await qualitySummary();
-	if (green.planned < 4 || green.executed !== green.planned || green.passed !== green.planned || green.failed || green.blocked) {
+	if (
+		green.planned < 4 ||
+		green.executed !== green.planned ||
+		green.passed !== green.planned ||
+		green.failed ||
+		green.blocked
+	) {
 		throw new Error(`Packaged quality did not execute every required action: ${JSON.stringify(green)}`);
 	}
 	// A real failing consumer command must produce a failed action and a failing exit.
 	await writeFile(
 		join(consumer, "package.json"),
-		JSON.stringify({ ...manifest, scripts: { ...manifest.scripts, test: "bun -e \"process.exit(17)\"" } }),
+		JSON.stringify({ ...manifest, scripts: { ...manifest.scripts, test: 'bun -e "process.exit(17)"' } }),
 	);
 	const red = await qualitySummary();
 	if (red.failed !== 1 || red.executed !== red.planned || red.passed !== red.planned - 1 || red.blocked) {
