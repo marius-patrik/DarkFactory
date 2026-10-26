@@ -29,21 +29,6 @@ on:
       - Verify DarkFactory Self-Installation
     types: [completed]
 
-  # Consumers call this rather than copying it, so the runtime it runs lives in one place.
-  workflow_call:
-    inputs:
-      pipeline-ref:
-        description: "Commit SHA of the pipeline repository to run. Empty means this repository."
-        required: false
-        type: string
-        default: ""
-      pipeline-repo:
-        description: "Repository holding the shared scripts."
-        required: false
-        type: string
-        default: "marius-patrik/DarkFactory"
-    secrets:
-      DARKFACTORY_APP_PRIVATE_KEY: {required: false}
 
 permissions:
   actions: read
@@ -57,8 +42,7 @@ jobs:
   report:
     # Only a default-branch failure is a repository-wide operational incident.
     # PR checks report on their own PR, and must never open/close main failures.
-    # Reusable callers inherit their caller event name, not workflow_call itself.
-    # Only workflow_run event contexts qualify, and the runtime binds claimed
+    # This is an event-only observer, not a callable workflow. The runtime binds claimed
     # run metadata to the original triggering run ID.
     # The CLI separately verifies the observed run through the authenticated
     # Actions REST API before performing any incident issue mutations.
@@ -85,14 +69,6 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
 
-      - name: Check out the pinned pipeline
-        if: inputs.pipeline-ref != ''
-        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
-        with:
-          repository: ${{ inputs.pipeline-repo }}
-          ref: ${{ inputs.pipeline-ref }}
-          path: .darkfactory-pipeline
-
       - name: Mint an installation token for the App
         # Issue and pull request work belongs to the App, which has its own rate limit. Only
         # Projects v2 needs a person's token, because GitHub scopes project permissions to
@@ -109,22 +85,11 @@ jobs:
         uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
 
       - name: Install DarkFactory runtime
-        run: |
-          ROOT="$GITHUB_WORKSPACE"
-          if [ -d "$GITHUB_WORKSPACE/.darkfactory-pipeline" ]; then
-            ROOT="$GITHUB_WORKSPACE/.darkfactory-pipeline"
-          fi
-          bun install --frozen-lockfile --cwd "$ROOT"
+        run: bun install --frozen-lockfile
 
       - name: File or resolve the failure issue
-        # A df subcommand rather than a pipeline script: the same runtime that decides a run failed
-        # is what turns that into an issue.
-        run: |
-          ROOT="$GITHUB_WORKSPACE"
-          if [ -d "$GITHUB_WORKSPACE/.darkfactory-pipeline" ]; then
-            ROOT="$GITHUB_WORKSPACE/.darkfactory-pipeline"
-          fi
-          bun "$ROOT/packages/cli/src/bin.ts" report-failure
+        # A df subcommand rather than a separate pipeline script.
+        run: bun packages/cli/src/bin.ts report-failure
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token || github.token }}
           GITHUB_REPOSITORY: ${{ github.repository }}

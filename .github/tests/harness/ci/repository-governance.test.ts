@@ -70,6 +70,9 @@ const NOT_CALLABLE = [
 	"branch-policy.yml",
 	"deploy-docs.yml",
 	"preview-docs.yml",
+	// Incident observation belongs to workflow_run events; the old workflow_call
+	// trigger could never enter its job and falsely promised consumers a reusable API.
+	"report-failure.yml",
 	// `install-sweep.yml` is not callable because it is the one workflow a consumer cannot want: it
 	// enumerates *this* App's installations, which are the pipeline's own. A consumer calling it would
 	// be asking the pipeline to install itself into the pipeline's installations, which it already does

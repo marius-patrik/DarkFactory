@@ -275,15 +275,15 @@ describe("workflow conclusion classification", () => {
 		expect(failureActionForConclusion(undefined)).toBe("ignore");
 	});
 
-	test("reusable callers derive incident identity only from the original GitHub event", () => {
+	test("does not advertise unreachable reusable invocation and binds incident metadata to the event", () => {
 		const workflow = Bun.YAML.parse(
 			readFileSync(new URL("../../../.github/workflows/report-failure.yml", import.meta.url), "utf8"),
 		) as {
-			on: { workflow_call: { inputs: Record<string, unknown> } };
+			on: { workflow_run: unknown; workflow_call?: unknown };
 			jobs: { report: { steps: { env?: Record<string, string> }[] } };
 		};
-		for (const key of ["workflow-name", "conclusion", "run-url", "run-id"])
-			expect(workflow.on.workflow_call.inputs).not.toHaveProperty(key);
+		expect(workflow.on.workflow_run).toBeDefined();
+		expect(workflow.on.workflow_call).toBeUndefined();
 		const observed = workflow.jobs.report.steps.at(-1)?.env;
 		expect(observed?.WORKFLOW_NAME).toBe("${{ github.event.workflow_run.name }}");
 		expect(observed?.CONCLUSION).toBe("${{ github.event.workflow_run.conclusion }}");
