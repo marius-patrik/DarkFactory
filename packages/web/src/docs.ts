@@ -33,8 +33,7 @@ function renderInline(raw: string, page: DocsPage, graph: DocsContentGraph): str
 			return code < 32 || code === 127;
 		});
 		const unsafe =
-			containsControl ||
-			(/^(?:[a-z][a-z0-9+.-]*:|\/\/)/iu.test(target) && !/^(?:https?:|mailto:)/iu.test(target));
+			containsControl || (/^(?:[a-z][a-z0-9+.-]*:|\/\/)/iu.test(target) && !/^(?:https?:|mailto:)/iu.test(target));
 		if (unsafe) {
 			output += label;
 		} else if (/^(?:https?:|mailto:|#)/iu.test(target)) {
