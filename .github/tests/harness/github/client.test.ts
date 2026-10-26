@@ -104,9 +104,9 @@ describe("GitHubClient", () => {
 			json({ owner: "B" }, 200, { etag: '"install-B"' }),
 		]);
 		const client = new GitHubClient({ token: () => currentToken, fetch: mock.fetch });
-		expect(await client.rest("GET", "/user")).toEqual({ owner: "A" });
+		expect(await client.rest<{ owner: string }>("GET", "/user")).toEqual({ owner: "A" });
 		currentToken = "installation-B";
-		expect(await client.rest("GET", "/user")).toEqual({ owner: "B" });
+		expect(await client.rest<{ owner: string }>("GET", "/user")).toEqual({ owner: "B" });
 		expect(new Headers(mock.calls[1]?.init?.headers).get("authorization")).toBe("Bearer installation-B");
 		expect(new Headers(mock.calls[1]?.init?.headers).has("if-none-match")).toBe(false);
 	});
