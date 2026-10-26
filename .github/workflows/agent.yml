@@ -132,7 +132,7 @@ jobs:
         # user-owned board still needs GH_PROJECT_TOKEN. That is the only thing that does.
         id: app-token
         if: env.HAS_APP_KEY == 'true'
-        uses: actions/create-github-app-token@v1
+        uses: actions/create-github-app-token@d72941d797fd3113feb6b93fd0dec494b13a2547 # v1.11.0
         continue-on-error: true
         with:
           app-id: ${{ vars.DARKFACTORY_APP_ID || '4861004' }}
@@ -168,7 +168,7 @@ jobs:
         #
         # The container (step "Dispatch agent in container") has its own Bun; this is only about
         # the host-side step that precedes it.
-        uses: oven-sh/setup-bun@v2
+        uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
 
       - name: Resolve target environment
         id: target-env
@@ -255,7 +255,7 @@ jobs:
         # commit and no other refs, so every `origin/<base>` it tried was unresolvable. The diff
         # then returned nothing and the scope gate passed on an empty file list.
         if: steps.delegate.outputs.delegated != 'true'
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
           repository: ${{ steps.target-env.outputs.repo }}
           # Review-comment events may otherwise default to an untrusted PR merge ref.
@@ -266,7 +266,7 @@ jobs:
 
       - name: Check out the pinned pipeline
         if: steps.delegate.outputs.delegated != 'true' && (inputs.pipeline-ref != '' || steps.target-env.outputs.is_external == 'true')
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
           repository: ${{ inputs.pipeline-repo || 'marius-patrik/DarkFactory' }}
           # `main` is the pipeline repository's default branch. The previous `darkfactory` default
@@ -277,7 +277,7 @@ jobs:
 
       - name: Install Nix
         if: steps.delegate.outputs.delegated != 'true'
-        uses: cachix/install-nix-action@v31
+        uses: cachix/install-nix-action@75c75c31ebece974e48ebc36b4ad125bd97bd97b # v31
 
       - name: Build and load Nix agent image
         if: steps.delegate.outputs.delegated != 'true'
