@@ -7,7 +7,7 @@
  * runner that is natively that platform and architecture, and the binary is run here before it is
  * allowed to become a release artifact.
  */
-import { copyFile, mkdtemp, readdir, rm, writeFile } from "node:fs/promises";
+import { copyFile, mkdir, mkdtemp, readdir, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { RECORD_SUFFIX, writeReleaseChecksums } from "./release-checksums.ts";
@@ -124,21 +124,64 @@ try {
 			`Source-free version mismatch: expected df v${declaredVersion}, observed ${output.trim()} ${diagnostics.trim()}`,
 		);
 	}
-	// Official capabilities are bundled JS: this invocation must work without the source tree
-	// and prove that ci matrix can discover them dynamically from the installed executable.
+	// The extracted source-free binary must discover AND execute real capability actions
+	// against a separate consumer directory. Matrix discovery alone is not proof that the
+	// packaged scheduler or subprocess runner works.
+	const consumer = join(standalone, "consumer");
+	await mkdir(consumer, { recursive: true });
+	const manifest = {
+		name: "df-release-smoke",
+		version: "1.0.0",
+		private: true,
+		scripts: {
+			test: "bun -e \"console.log('real test')\"",
+			lint: "bun -e \"console.log('real lint')\"",
+			typecheck: "bun -e \"console.log('real typecheck')\"",
+			"format:check": "bun -e \"console.log('real formatting')\"",
+		},
+	};
+	await writeFile(join(consumer, "package.json"), JSON.stringify(manifest));
+	await run(["bun", "install"], "fixture dependency resolution", true, consumer);
+	const installed = join(standalone, asset);
+	await run([installed, "ci", "matrix", "--repo", consumer], "standalone capability discovery", true, consumer);
+
+	async function qualitySummary(): Promise<{ planned: number; executed: number; passed: number; failed: number; blocked: number }> {
+		const child = Bun.spawn([installed, "ci", "quality", "--repo", consumer, "--workers", "2", "--json"], {
+			cwd: consumer,
+			stdout: "pipe",
+			stderr: "pipe",
+		});
+		const [exit, output, diagnostics] = await Promise.all([
+			child.exited,
+			new Response(child.stdout).text(),
+			new Response(child.stderr).text(),
+		]);
+		const summary = JSON.parse(output) as {
+			planned: number;
+			executed: number;
+			passed: number;
+			failed: number;
+			blocked: number;
+		};
+		if (exit !== (summary.failed === 0 && summary.blocked === 0 ? 0 : 1)) {
+			throw new Error(`Packaged quality exit ${exit} disagrees with summary: ${diagnostics || output}`);
+		}
+		return summary;
+	}
+	const green = await qualitySummary();
+	if (green.planned < 4 || green.executed !== green.planned || green.passed !== green.planned || green.failed || green.blocked) {
+		throw new Error(`Packaged quality did not execute every required action: ${JSON.stringify(green)}`);
+	}
+	// A real failing consumer command must produce a failed action and a failing exit.
 	await writeFile(
-		join(standalone, "package.json"),
-		JSON.stringify({
-			name: "df-release-smoke",
-			scripts: { test: "echo ok", lint: "echo ok", typecheck: "echo ok", "format:check": "echo ok" },
-		}),
+		join(consumer, "package.json"),
+		JSON.stringify({ ...manifest, scripts: { ...manifest.scripts, test: "bun -e \"process.exit(17)\"" } }),
 	);
-	await run(
-		[join(standalone, asset), "ci", "matrix", "--repo", standalone],
-		"standalone capability smoke",
-		true,
-		standalone,
-	);
+	const red = await qualitySummary();
+	if (red.failed !== 1 || red.executed !== red.planned || red.passed !== red.planned - 1 || red.blocked) {
+		throw new Error(`Packaged quality concealed a failing consumer: ${JSON.stringify(red)}`);
+	}
+	process.stdout.write("standalone quality: required actions executed; a failing action remained fatal\n");
 } finally {
 	await rm(standalone, { recursive: true, force: true, maxRetries: 12, retryDelay: 250 });
 }
