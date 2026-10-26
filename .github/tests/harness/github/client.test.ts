@@ -80,23 +80,21 @@ describe("GitHubClient", () => {
 			"outside the configured credential origin",
 		);
 		expect(mock.calls).toHaveLength(0);
-		expect(await client.rest("GET", "https://api.github.com/repos/o/r")).toEqual({ ok: true });
+		expect(await client.rest<{ ok: boolean }>("GET", "https://api.github.com/repos/o/r")).toEqual({ ok: true });
 		expect(mock.calls).toHaveLength(1);
 	});
 
 	test("does not follow attacker-controlled REST pagination links with bearer credentials", async () => {
-		const mock = scripted([
-			json([{ id: 1 }], 200, { link: '<https://attacker.example/collect-token>; rel="next"' }),
-		]);
+		const mock = scripted([json([{ id: 1 }], 200, { link: '<https://attacker.example/collect-token>; rel="next"' })]);
 		const client = new GitHubClient({ token: "secret", fetch: mock.fetch });
 		await expect(client.collectRest("/repos/o/r/issues")).rejects.toThrow("outside the configured credential origin");
 		expect(mock.calls).toHaveLength(1);
 	});
 
 	test("refuses a cross-origin GraphQL endpoint when constructing a credentialed client", () => {
-		expect(
-			() => new GitHubClient({ token: "secret", graphqlUrl: "https://attacker.example/graphql" }),
-		).toThrow("outside the configured credential origin");
+		expect(() => new GitHubClient({ token: "secret", graphqlUrl: "https://attacker.example/graphql" })).toThrow(
+			"outside the configured credential origin",
+		);
 	});
 
 	test("never reuses another installation token's cached ETag response", async () => {
@@ -133,13 +131,13 @@ describe("GitHubClient", () => {
 			return new Response(null, { status: 304 });
 		};
 		const client = new GitHubClient({ token: () => token, fetch });
-		const pendingA = client.rest("GET", "/resource");
+		const pendingA = client.rest<{ owner: string }>("GET", "/resource");
 		await firstRequested;
 		token = "installation-B";
-		expect(await client.rest("GET", "/resource")).toEqual({ owner: "B" });
+		expect(await client.rest<{ owner: string }>("GET", "/resource")).toEqual({ owner: "B" });
 		completeFirst(json({ owner: "A" }, 200, { etag: '"A"' }));
 		expect(await pendingA).toEqual({ owner: "A" });
-		expect(await client.rest("GET", "/resource")).toEqual({ owner: "B" });
+		expect(await client.rest<{ owner: string }>("GET", "/resource")).toEqual({ owner: "B" });
 		expect(new Headers(requests[2]?.headers).get("if-none-match")).toBe('"B"');
 	});
 
