@@ -327,6 +327,8 @@ async function runGraphUnlocked(
 			state.reviews[currentNode.approves_review] = approveReview(review, options.now?.() ?? new Date());
 		}
 		if (currentNode?.id === "merge-gate" && currentNode.kind === "gate" && action.type === "run" && isApprovalEvent(current)) {
+			if (!reviewApprovalFresh(state.reviews.planning))
+				throw new Error("Final merge authorization requires fresh approved Planning");
 			if (!("actor" in current) || !current.actor.login) throw new Error("Final approval has no attributable actor");
 			state.outputs.merge_authorization = {
 				fingerprint: mergeProposalFingerprint(state.outputs),
@@ -363,6 +365,11 @@ async function runGraphUnlocked(
 		if (!node) throw new Error(`Planner chose unknown node ${nodeId}`);
 		if (++steps > maxSteps)
 			throw new Error(`Run ${state.run_id} exceeded ${maxSteps} node runs; check the graph for an undeclared loop`);
+		if (node.kind === "agent" && node.requires_review_approval) {
+			const review = state.reviews[node.requires_review_approval];
+			if (!reviewApprovalFresh(review))
+				throw new Error(`Node ${node.id} requires a fresh approved ${node.requires_review_approval} review`);
+		}
 		const iteration = (state.iterations[node.id] ?? 0) + 1;
 		state.iterations[node.id] = iteration;
 		state.current_node = node.id;
@@ -373,11 +380,6 @@ async function runGraphUnlocked(
 			delete state.pending_node;
 			// A check or gate is an external wait, not a successful mutation.
 			return finishIngress();
-		}
-		if (node.kind === "agent" && node.requires_review_approval) {
-			const review = state.reviews[node.requires_review_approval];
-			if (!reviewApprovalFresh(review))
-				throw new Error(`Node ${node.id} requires a fresh approved ${node.requires_review_approval} review`);
 		}
 		state.pending_node = { node: node.id, iteration };
 		await save();
