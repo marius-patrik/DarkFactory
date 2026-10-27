@@ -93,7 +93,7 @@ function translateReview(p: Record<string, unknown>): TranslatedEvent {
 		const head = asRecord(pr.head);
 		return {
 			kind: "event",
-			event: { type: "review", state: String(review.state ?? "").toUpperCase(), actor },
+			event: { type: "review", state: String(review.state ?? "").toUpperCase(), actor, ref: String(head?.sha ?? "") } as GraphEvent,
 			subject: { number: toNumber(pr.number), is_pr: true, ref: String(head?.sha ?? "") },
 		};
 	}
