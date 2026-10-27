@@ -1,5 +1,4 @@
 name: Project Board Automation
-run-name: "Project Board Automation${{ inputs.effect_id && format(' [{0}]', inputs.effect_id) || '' }}"
 
 on:
   issues:
@@ -7,19 +6,13 @@ on:
   pull_request:
     types: [opened, edited, synchronize, closed, ready_for_review, reopened]
   push:
-    branches: [develop]
+    branches: [main]
   # Membership is reconciled on a schedule as well as on demand. An item reaches a board only by
   # passing through a lifecycle event, so anything opened while the automation was unable to write
   # is absent and stays absent - the boards are never wrong, only quietly incomplete.
   schedule:
     - cron: "43 5 * * *"
   workflow_dispatch:
-    inputs:
-      effect_id:
-        description: "Optional deterministic graph effect identity for reconciliation."
-        required: false
-        type: string
-        default: ""
 
   # Consumers call this rather than copying it, so the scripts it runs live in one place.
   workflow_call:
@@ -71,15 +64,8 @@ jobs:
           ref: ${{ inputs.pipeline-ref }}
           path: .darkfactory-pipeline
 
-      - name: Put the pipeline scripts on the path
-        run: |
-          if [ -d .darkfactory-pipeline/.github/scripts ]; then
-            echo "PYTHONPATH=$GITHUB_WORKSPACE/.darkfactory-pipeline/.github/scripts" >> "$GITHUB_ENV"
-            echo "PIPELINE_SCRIPTS=$GITHUB_WORKSPACE/.darkfactory-pipeline/.github/scripts" >> "$GITHUB_ENV"
-          else
-            echo "PYTHONPATH=$GITHUB_WORKSPACE/.github/scripts" >> "$GITHUB_ENV"
-            echo "PIPELINE_SCRIPTS=$GITHUB_WORKSPACE/.github/scripts" >> "$GITHUB_ENV"
-          fi
+      # The caller's source checkout already contains its canonical repo.dfconfig.
+      # No second branch or out-of-band managed configuration is involved.
 
       - name: Mint an installation token for the App
         # Issue and pull request work belongs to the App, which has its own rate limit. Only
@@ -93,14 +79,32 @@ jobs:
           app-id: ${{ vars.DARKFACTORY_APP_ID || '4861004' }}
           private-key: ${{ secrets.DARKFACTORY_APP_PRIVATE_KEY }}
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
+      - name: Set up Bun
+        uses: oven-sh/setup-bun@v2
+
+      - name: Install the pipeline runtime
+        # ROOT resolves the pinned pipeline the way the other converted workflows do, so a
+        # repository pinned to a pipeline ref runs that ref's code rather than its own.
+        run: |
+          ROOT="$GITHUB_WORKSPACE"
+          if [ -d "$GITHUB_WORKSPACE/.darkfactory-pipeline" ]; then
+            ROOT="$GITHUB_WORKSPACE/.darkfactory-pipeline"
+          fi
+          bun install --frozen-lockfile --cwd "$ROOT"
 
       - name: Run Project Board Automation
+        # `board/main.ts` is the entry `project_automation.py` was, on the same port: the same three
+        # shapes (sweep on demand, or the webhook named by GITHUB_EVENT_NAME and read from
+        # GITHUB_EVENT_PATH), the same environment, and the same exit contract -- a rate limit exits
+        # zero because the work is deferred to the next run, while a recorded board failure exits
+        # non-zero, because a board that silently stopped accepting writes is the failure this
+        # reports.
         run: |
-          python3 "${PIPELINE_SCRIPTS:-.github/scripts}/project_automation.py"
+          ROOT="$GITHUB_WORKSPACE"
+          if [ -d "$GITHUB_WORKSPACE/.darkfactory-pipeline" ]; then
+            ROOT="$GITHUB_WORKSPACE/.darkfactory-pipeline"
+          fi
+          bun "$ROOT/packages/harness/src/board/main.ts"
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token || secrets.GH_PROJECT_TOKEN || secrets.GITHUB_TOKEN }}
           GH_PROJECT_TOKEN: ${{ secrets.GH_PROJECT_TOKEN }}

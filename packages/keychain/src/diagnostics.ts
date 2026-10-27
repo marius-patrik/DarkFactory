@@ -1,10 +1,10 @@
 import type { AccountAuthMetadata, AccountRecord, FileCredentialStore, OAuthCredentialSlot } from "./credentials.ts";
 
 /** Redacted machine credential health status. */
-export type CredentialHealth = "valid" | "expiring" | "expired" | "rotation_due" | "non_oauth";
+type CredentialHealth = "valid" | "expiring" | "expired" | "rotation_due" | "non_oauth";
 
 /** Secret-free credential diagnostic for one account. */
-export interface CredentialDiagnostic {
+interface CredentialDiagnostic {
 	accountId: string;
 	provider: string;
 	label: string;
@@ -25,7 +25,11 @@ function primaryOAuth(account: AccountRecord): OAuthCredentialSlot | undefined {
 	return undefined;
 }
 
-function health(oauth: OAuthCredentialSlot | undefined, auth: AccountAuthMetadata | undefined, now: number): CredentialHealth {
+function health(
+	oauth: OAuthCredentialSlot | undefined,
+	auth: AccountAuthMetadata | undefined,
+	now: number,
+): CredentialHealth {
 	if (auth?.rotationDue && Date.parse(auth.rotationDue) <= now) return "rotation_due";
 	if (!oauth) return "non_oauth";
 	if (oauth.expires <= now) return "expired";

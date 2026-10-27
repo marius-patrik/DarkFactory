@@ -2,10 +2,19 @@ name: CI
 
 on:
   push:
-    branches: [develop]
+    branches: [main]
+  # No `branches` filter on `pull_request`. That filter matches the pull request's *base* ref, so
+  # scoping it to `develop` left every stacked pull request in the delivery chain with zero
+  # check-runs: no `detect`, no `quality`, and a `CLEAN` mergeStateStatus computed from nothing
+  # (the stack branches are unprotected, so no required check ever gated them). One pull request
+  # in that state showed a `success` that had been computed against a different base.
+  # `edited` is in `types` because a base-only change is the one pull request edit that invalidates
+  # the previous base's results; GitHub emits no `synchronize` for it. `push` and `merge_group`
+  # stay scoped to the trunk, so a stack branch's own pushes do not fan out.
   pull_request:
+    types: [opened, edited, synchronize, reopened, ready_for_review]
   merge_group:
-    branches: [develop]
+    branches: [main]
   workflow_dispatch:
 
 permissions:
@@ -16,19 +25,29 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  detect:
-    name: detect
+  quality:
+    name: quality
+    if: always()
+    needs: [docs-check, nix-agent]
     runs-on: ubuntu-latest
-    outputs:
-      matrix: ${{ steps.matrix.outputs.matrix }}
-      has-actions: ${{ steps.matrix.outputs.has-actions }}
-      has-gaps: ${{ steps.matrix.outputs.has-gaps }}
     steps:
+      - name: Enforce required companion jobs
+        env:
+          DF_DOCS_RESULT: ${{ needs.docs-check.result }}
+          DF_NIX_RESULT: ${{ needs.nix-agent.result }}
+          DF_REPOSITORY: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          test "$DF_DOCS_RESULT" = "success"
+          if [ "$DF_REPOSITORY" = 'marius-patrik/DarkFactory' ]; then
+            test "$DF_NIX_RESULT" = "success"
+          else
+            test "$DF_NIX_RESULT" = "skipped"
+          fi
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-
       - name: Check out pinned DarkFactory runtime
         if: github.repository != 'marius-patrik/DarkFactory'
         uses: actions/checkout@v4
@@ -36,135 +55,71 @@ jobs:
           repository: "marius-patrik/DarkFactory"
           ref: "main"
           path: .darkfactory-runtime
-
       - name: Set up Bun
         uses: oven-sh/setup-bun@v2
-
       - name: Install DarkFactory runtime
         run: |
           ROOT="$GITHUB_WORKSPACE"
-          if [ -d "$GITHUB_WORKSPACE/.darkfactory-runtime" ]; then
-            ROOT="$GITHUB_WORKSPACE/.darkfactory-runtime"
-          fi
+          if [ -d "$GITHUB_WORKSPACE/.darkfactory-runtime" ]; then ROOT="$GITHUB_WORKSPACE/.darkfactory-runtime"; fi
           bun install --frozen-lockfile --cwd "$ROOT"
-
-      - name: Resolve detected quality matrix
-        id: matrix
+      - name: Resolve complete detected quality plan
+        id: inventory
         run: |
+          set -euo pipefail
           ROOT="$GITHUB_WORKSPACE"
-          if [ -d "$GITHUB_WORKSPACE/.darkfactory-runtime" ]; then
-            ROOT="$GITHUB_WORKSPACE/.darkfactory-runtime"
-          fi
-          bun "$ROOT/packages/cli/src/bin.ts" ci matrix             --repo "$GITHUB_WORKSPACE"             --capabilities-root "$ROOT/capabilities" > "$RUNNER_TEMP/darkfactory-quality.json"
-          jq -c '.matrix' "$RUNNER_TEMP/darkfactory-quality.json"             | sed 's/^/matrix=/' >> "$GITHUB_OUTPUT"
-          if [ "$(jq '.matrix | length' "$RUNNER_TEMP/darkfactory-quality.json")" -gt 0 ]; then
-            echo "has-actions=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "has-actions=false" >> "$GITHUB_OUTPUT"
-          fi
-          if [ "$(jq '.gaps | length' "$RUNNER_TEMP/darkfactory-quality.json")" -gt 0 ]; then
-            echo "has-gaps=true" >> "$GITHUB_OUTPUT"
-            echo "::error::DarkFactory detected unsupported or missing required deterministic actions:"
-            jq -r '.gaps[] | "  \(.packageId) \(.kind): \(.reason // .description)"'               "$RUNNER_TEMP/darkfactory-quality.json"
-            exit 1
-          fi
-          echo "has-gaps=false" >> "$GITHUB_OUTPUT"
-
-  quality-run:
-    name: ${{ matrix.id }}
-    needs: detect
-    if: needs.detect.outputs.has-actions == 'true'
-    runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        include: ${{ fromJSON(needs.detect.outputs.matrix) }}
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: Set up Bun
-        if: matrix.packageManager == 'bun' || matrix.setupCommand == 'bun install --frozen-lockfile'
-        uses: oven-sh/setup-bun@v2
-
+          if [ -d "$GITHUB_WORKSPACE/.darkfactory-runtime" ]; then ROOT="$GITHUB_WORKSPACE/.darkfactory-runtime"; fi
+          bun "$ROOT/packages/cli/src/bin.ts" ci matrix --repo "$GITHUB_WORKSPACE" --capabilities-root "$ROOT/.darkfactory/plugins" > "$RUNNER_TEMP/df-quality.json"
+          echo "ecosystems=$(jq -c .ecosystems "$RUNNER_TEMP/df-quality.json")" >> "$GITHUB_OUTPUT"
+          echo "managers=$(jq -c '[.packages[].packageManager] | unique' "$RUNNER_TEMP/df-quality.json")" >> "$GITHUB_OUTPUT"
       - name: Set up Node
-        if: matrix.ecosystem == 'node' && matrix.packageManager != 'bun'
+        if: contains(fromJSON(steps.inventory.outputs.ecosystems), 'node')
         uses: actions/setup-node@v4
         with:
           node-version: "24"
-
       - name: Enable Corepack
-        if: matrix.packageManager == 'pnpm' || matrix.packageManager == 'yarn'
+        if: contains(fromJSON(steps.inventory.outputs.managers), 'pnpm') || contains(fromJSON(steps.inventory.outputs.managers), 'yarn')
         run: corepack enable
-
       - name: Set up Python
-        if: matrix.ecosystem == 'python'
+        if: contains(fromJSON(steps.inventory.outputs.ecosystems), 'python')
         uses: actions/setup-python@v5
         with:
-          python-version: ${{ matrix.version || '3.13' }}
-
-      - name: Install Python package manager
-        if: matrix.packageManager == 'uv' || matrix.packageManager == 'poetry' || matrix.packageManager == 'pipenv'
-        env:
-          DF_PACKAGE_MANAGER: ${{ matrix.packageManager }}
-        run: python -m pip install "$DF_PACKAGE_MANAGER"
-
+          python-version: "3.13"
+      - name: Install Python package managers
+        if: contains(fromJSON(steps.inventory.outputs.ecosystems), 'python')
+        run: python -m pip install uv poetry pipenv pytest black ruff mypy flake8 isort
       - name: Set up Rust
-        if: matrix.ecosystem == 'rust'
+        if: contains(fromJSON(steps.inventory.outputs.ecosystems), 'rust')
         uses: dtolnay/rust-toolchain@stable
         with:
           components: rustfmt, clippy
-
       - name: Set up Go
-        if: matrix.ecosystem == 'go'
+        if: contains(fromJSON(steps.inventory.outputs.ecosystems), 'go')
         uses: actions/setup-go@v5
         with:
           go-version: stable
-
       - name: Set up Deno
-        if: matrix.ecosystem == 'deno'
-        uses: denoland/setup-deno@v2
+        if: contains(fromJSON(steps.inventory.outputs.ecosystems), 'deno')
+        uses: denoland/setup-deno@v2.0.5
         with:
           deno-version: v2.x
-
       - name: Set up Typst
-        if: matrix.ecosystem == 'typst' || matrix.id == 'node:paper:test'
+        if: contains(fromJSON(steps.inventory.outputs.ecosystems), 'typst')
         uses: typst-community/setup-typst@v5
-        with:
-          version: ${{ matrix.version || '0.15.1' }}
-
       - name: Set up Lean
-        if: matrix.ecosystem == 'lean'
+        if: contains(fromJSON(steps.inventory.outputs.ecosystems), 'lean')
         uses: leanprover/lean-action@v1
         with:
           build: false
           test: false
-
-      - name: Set up TeX Live
-        if: matrix.ecosystem == 'latex'
+      - name: Install TeX Live
+        if: contains(fromJSON(steps.inventory.outputs.ecosystems), 'latex')
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends texlive-latex-recommended texlive-latex-extra texlive-fonts-recommended latexmk
+      - name: Execute quality actions in one runner
         run: |
-          sudo apt-get update
-          sudo apt-get install -y --no-install-recommends             texlive-latex-recommended texlive-latex-extra texlive-fonts-recommended latexmk
-
-      - name: Install package dependencies
-        if: matrix.setupCommand != ''
-        env:
-          DF_SETUP_COMMAND: ${{ matrix.setupCommand }}
-          DF_SETUP_CWD: ${{ matrix.setupCwd }}
-        run: |
-          cd "$GITHUB_WORKSPACE/$DF_SETUP_CWD"
-          bash -lc "$DF_SETUP_COMMAND"
-
-      - name: Run detected quality action
-        env:
-          DF_ACTION_COMMAND: ${{ matrix.command }}
-          DF_ACTION_CWD: ${{ matrix.cwd }}
-          DF_BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before || '' }}
-        run: |
-          cd "$GITHUB_WORKSPACE/$DF_ACTION_CWD"
-          bash -lc "$DF_ACTION_COMMAND"
+          set -euo pipefail
+          ROOT="$GITHUB_WORKSPACE"
+          if [ -d "$GITHUB_WORKSPACE/.darkfactory-runtime" ]; then ROOT="$GITHUB_WORKSPACE/.darkfactory-runtime"; fi
+          bun "$ROOT/packages/cli/src/bin.ts" ci quality --repo "$GITHUB_WORKSPACE" --capabilities-root "$ROOT/.darkfactory/plugins" --workers 4
 
   docs-check:
     name: docs-check
@@ -180,29 +135,49 @@ jobs:
         env:
           DF_CONFIG_DIR: ${{ env.DF_CONFIG_DIR }}
         run: |
-          ROOT_REPO=false
-          ROOT_CONFIG=false
-          ROOT_EMPTY=false
-          FOLDER_REPO=false
-          FOLDER_CONFIG=false
-          FOLDER_EMPTY=false
-          [ -f "$GITHUB_WORKSPACE/repo.dfconfig" ] && ROOT_REPO=true
-          [ -f "$GITHUB_WORKSPACE/config.dfconfig" ] && ROOT_CONFIG=true
-          [ -f "$GITHUB_WORKSPACE/.dfconfig" ] && ROOT_EMPTY=true
-          CONFIG_DIR="${DF_CONFIG_DIR:-.darkfactory}"
+          # Recognize exactly one configuration document before attempting documentation checks.
+          CONFIG_FILENAMES="repo.dfconfig config.dfconfig .dfconfig"
+          DEFAULT_CONFIG_DIR=".darkfactory"
+          # Lexical path normalisation, the equivalent of the resolver's `os.path.normpath`: collapse
+          # `.`, `..` and repeated separators without touching the filesystem. `realpath -m` would
+          # also resolve symlinks, which the resolver does not, and is a GNU-only option.
+          normpath() {
+            local path="$1" out="" part saved_ifs="$IFS"
+            IFS="/"
+            set -f
+            for part in $path; do
+              case "$part" in
+                ""|".") ;;
+                "..") out="${out%/*}" ;;
+                *) out="$out/$part" ;;
+              esac
+            done
+            set +f
+            IFS="$saved_ifs"
+            printf '%s' "${out:-/}"
+          }
+          count_candidates() {
+            local dir="$1" n=0 name
+            for name in $CONFIG_FILENAMES; do
+              if [ -f "$dir/$name" ]; then n=$((n + 1)); fi
+            done
+            printf '%s' "$n"
+          }
+          # A blank or whitespace-only value is the default, matching the resolver's `.strip() or`.
+          CONFIG_DIR="${DF_CONFIG_DIR}"
+          CONFIG_DIR="${CONFIG_DIR#"${CONFIG_DIR%%[![:space:]]*}"}"
+          CONFIG_DIR="${CONFIG_DIR%"${CONFIG_DIR##*[![:space:]]}"}"
+          CONFIG_DIR="${CONFIG_DIR:-$DEFAULT_CONFIG_DIR}"
+          WORKSPACE="$(normpath "$GITHUB_WORKSPACE")"
           case "$CONFIG_DIR" in
-            /*) FOLDER="$(realpath -m "$CONFIG_DIR")" ;;
-            *) FOLDER="$(realpath -m "$GITHUB_WORKSPACE/$CONFIG_DIR")" ;;
+            /*) FOLDER="$(normpath "$CONFIG_DIR")" ;;
+            *) FOLDER="$(normpath "$WORKSPACE/$CONFIG_DIR")" ;;
           esac
-          if [ "$FOLDER" != "$GITHUB_WORKSPACE" ]; then
-            [ -f "$FOLDER/repo.dfconfig" ] && FOLDER_REPO=true
-            [ -f "$FOLDER/config.dfconfig" ] && FOLDER_CONFIG=true
-            [ -f "$FOLDER/.dfconfig" ] && FOLDER_EMPTY=true
+          COUNT="$(count_candidates "$WORKSPACE")"
+          if [ "$FOLDER" != "$WORKSPACE" ]; then
+            COUNT=$((COUNT + $(count_candidates "$FOLDER")))
           fi
-          COUNT=0
-          for PRESENT in "$ROOT_REPO" "$ROOT_CONFIG" "$ROOT_EMPTY" "$FOLDER_REPO" "$FOLDER_CONFIG" "$FOLDER_EMPTY"; do
-            [ "$PRESENT" = true ] && COUNT=$((COUNT + 1))
-          done
+
           if [ "$COUNT" -gt 1 ]; then
             echo "Ambiguous DarkFactory configuration: keep only one repo.dfconfig, config.dfconfig, or .dfconfig candidate." >&2
             exit 1
@@ -247,25 +222,23 @@ jobs:
         if: steps.docs.outputs.present != 'true'
         run: echo "No combined configuration docs block; native documentation check is not applicable."
 
-  quality:
-    name: quality
-    if: always()
-    needs: [detect, quality-run, docs-check]
-    runs-on: ubuntu-latest
+  nix-agent:
+    name: nix-agent (${{ matrix.system }})
+    # The production image belongs to DarkFactory, not to consumer repositories. Its result
+    # participates in the single protected quality check; consumers skip it explicitly.
+    if: github.repository == 'marius-patrik/DarkFactory'
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - system: x86_64-linux
+            runner: ubuntu-24.04
+          - system: aarch64-linux
+            runner: ubuntu-24.04-arm
+    runs-on: ${{ matrix.runner }}
     steps:
-      - name: Enforce detected quality result
-        env:
-          DF_DETECT_RESULT: ${{ needs.detect.result }}
-          DF_HAS_ACTIONS: ${{ needs.detect.outputs.has-actions }}
-          DF_HAS_GAPS: ${{ needs.detect.outputs.has-gaps }}
-          DF_QUALITY_RESULT: ${{ needs.quality-run.result }}
-          DF_DOCS_RESULT: ${{ needs.docs-check.result }}
-        run: |
-          test "$DF_DETECT_RESULT" = "success"
-          test "$DF_HAS_GAPS" = "false"
-          test "$DF_DOCS_RESULT" = "success"
-          if [ "$DF_HAS_ACTIONS" = "true" ]; then
-            test "$DF_QUALITY_RESULT" = "success"
-          else
-            test "$DF_QUALITY_RESULT" = "skipped"
-          fi
+      - uses: actions/checkout@v4
+      - uses: cachix/install-nix-action@v31
+      - name: Build and exercise the production agent image
+        run: bash .github/scripts/verify-nix-agent.sh
+

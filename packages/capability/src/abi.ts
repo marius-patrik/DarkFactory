@@ -1,16 +1,13 @@
-import type { TaskKind } from "@darkfactory/protocol/model";
-import type { GraphNode } from "@darkfactory/protocol/workflow";
+import type { TaskKind } from "../../protocol/src/model.ts";
 
 /** Current capability ABI compatibility version. */
 export const CAPABILITY_ABI_VERSION = "1" as const;
-/** Literal type of the supported capability ABI version. */
-export type CapabilityAbiVersion = typeof CAPABILITY_ABI_VERSION;
 
 /** JSON Schema object used to describe capability tool inputs. */
 export type JsonSchema = Readonly<Record<string, unknown>>;
 
 /** Declares a scoped credential requirement for a capability. */
-export interface CapabilityCredentialRequirement {
+interface CapabilityCredentialRequirement {
 	id: string;
 	purpose: string;
 	provider?: string;
@@ -19,19 +16,19 @@ export interface CapabilityCredentialRequirement {
 }
 
 /** Credential values resolved for one declared requirement. */
-export interface CapabilityCredentialHandle {
+interface CapabilityCredentialHandle {
 	requirementId: string;
 	account?: string;
 	values: Readonly<Record<string, string>>;
 }
 
 /** Runtime interface that resolves scoped credential handles. */
-export interface CapabilityCredentialBroker {
+interface CapabilityCredentialBroker {
 	get(requirementId: string): Promise<CapabilityCredentialHandle | undefined>;
 }
 
 /** Structured audit event emitted by a capability. */
-export interface CapabilityAuditEvent {
+interface CapabilityAuditEvent {
 	capability: string;
 	action: string;
 	details?: Readonly<Record<string, unknown>>;
@@ -65,46 +62,20 @@ export interface CapabilityCommandDefinition {
 }
 
 /** Defines evidence used to activate a capability. */
-export interface CapabilityDetectorDefinition {
+interface CapabilityDetectorDefinition {
 	id: string;
 	description: string;
 	domains?: readonly string[];
 }
 
-/** Scoped execution context supplied to a capability-owned graph handler. */
-export interface CapabilityGraphContext extends CapabilityRuntimeContext {
-	runDir: string;
-	runId: string;
-	outputs: Readonly<Record<string, unknown>>;
-	item?: unknown;
-	feedback?: string;
-	iteration: number;
-	eventId?: string;
-	alerts?: readonly string[];
-}
-
-/** Result returned by a capability-owned graph handler. */
-export interface CapabilityGraphResult {
-	outcome: "success" | "failure" | "quota_exhausted";
-	outputs: Record<string, unknown>;
-}
-
-/** Executes one graph node kind contributed by a capability. */
-export type CapabilityGraphHandler = (
-	node: GraphNode,
-	context: CapabilityGraphContext,
-) => Promise<CapabilityGraphResult> | CapabilityGraphResult;
-
 /** Declares graph-node kinds contributed by a capability. */
-export interface CapabilityGraphContribution {
+interface CapabilityGraphContribution {
 	id: string;
 	nodeKinds: readonly string[];
-	/** Executable handler used by the capability graph registry for each declared node kind. */
-	handler?: CapabilityGraphHandler;
 }
 
 /** Declares a deterministic verification action. */
-export interface CapabilityVerificationDefinition {
+interface CapabilityVerificationDefinition {
 	id: string;
 	description: string;
 }
@@ -143,8 +114,10 @@ export interface CapabilityHookDefinition {
 	id: string;
 	/** Human-readable purpose shown in diagnostics and generated documentation. */
 	description?: string;
-	/** Deterministic trigger points where this hook executes. */
-	events: readonly CapabilityHookEvent[];
+	/** Legacy single-event declaration retained for ABI-v1 compatibility. */
+	event?: CapabilityHookEvent;
+	/** Preferred declaration for hooks that apply to multiple deterministic trigger points. */
+	events?: readonly CapabilityHookEvent[];
 	/** Capability-owned rule behavior. Invocation timing/effect ownership remains in core. */
 	execute?(
 		input: CapabilityHookContext,
@@ -164,14 +137,16 @@ export interface CapabilityPackageContext {
 	domains: readonly string[];
 	scripts: readonly string[];
 	apiEntryPoints: readonly string[];
+	/** Setup strategy inferred from Python package metadata; not from tool config alone. */
+	pythonSetupKind?: "editable" | "requirements" | "requirements-dev" | "none";
 }
 
 /** Deterministic repository action kinds shared by doctor, CI, verification and docs. */
 export type CapabilityActionKind =
 	| "test"
 	| "lint"
+	| "typecheck"
 	| "format_check"
-	| "docs_check"
 	| "docs_extract"
 	| "setup"
 	| "release";
@@ -185,11 +160,13 @@ export interface CapabilityActionDefinition {
 	domains?: readonly string[];
 	requiredScripts?: readonly string[];
 	command?: string | ((pkg: CapabilityPackageContext) => string | undefined);
-	metadata?: Readonly<Record<string, unknown>> | ((pkg: CapabilityPackageContext) => Readonly<Record<string, unknown>> | undefined);
+	metadata?:
+		| Readonly<Record<string, unknown>>
+		| ((pkg: CapabilityPackageContext) => Readonly<Record<string, unknown>> | undefined);
 }
 
 /** Metadata for documentation, web, release, and audit surfaces. */
-export interface CapabilitySurfaceMetadata {
+interface CapabilitySurfaceMetadata {
 	docs?: readonly string[];
 	web?: readonly string[];
 	release?: readonly string[];
@@ -247,23 +224,15 @@ export function defineCapability<const T extends CapabilityDefinition>(definitio
 			if (!requirementIds.has(requirement))
 				throw new Error(`command ${command.name} references undeclared credential requirement ${requirement}`);
 
-	const graphIds = new Set<string>();
-	for (const graph of definition.graph ?? []) {
-		identifier(graph.id, "graph contribution id");
-		if (graphIds.has(graph.id)) throw new Error(`capability ${definition.id} contains duplicate graph contribution ${graph.id}`);
-		graphIds.add(graph.id);
-		if (graph.nodeKinds.length === 0) throw new Error(`graph contribution ${graph.id} must declare at least one node kind`);
-		if (new Set(graph.nodeKinds).size !== graph.nodeKinds.length)
-			throw new Error(`graph contribution ${graph.id} contains duplicate node kinds`);
-	}
-
 	const hookIds = new Set<string>();
 	for (const hook of definition.hooks ?? []) {
 		identifier(hook.id, "hook id");
 		if (hookIds.has(hook.id)) throw new Error(`capability ${definition.id} contains duplicate hook ${hook.id}`);
 		hookIds.add(hook.id);
-		if (hook.events.length === 0) throw new Error(`hook ${hook.id} must declare at least one event`);
-		if (new Set(hook.events).size !== hook.events.length) throw new Error(`hook ${hook.id} contains duplicate events`);
+		if (hook.event && hook.events) throw new Error(`hook ${hook.id} must declare event or events, not both`);
+		const events = hook.events ?? (hook.event ? [hook.event] : []);
+		if (events.length === 0) throw new Error(`hook ${hook.id} must declare at least one event`);
+		if (new Set(events).size !== events.length) throw new Error(`hook ${hook.id} contains duplicate events`);
 	}
 	return definition;
 }

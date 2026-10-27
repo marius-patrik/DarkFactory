@@ -2,12 +2,12 @@ import { readdir } from "node:fs/promises";
 import { join, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 import type { CapabilityDefinition, CapabilityModule } from "./abi.ts";
-import { definitionFromModule } from "./abi-version.ts";
+import { definitionFromModule } from "./compatibility.ts";
 
 const ENTRYPOINTS = ["capability.ts", "capability.js", "capability.mjs"] as const;
 
 /** Loads and validates one capability module from disk. */
-export async function loadCapability(path: string): Promise<CapabilityDefinition> {
+async function loadCapability(path: string): Promise<CapabilityDefinition> {
 	const module = (await import(pathToFileURL(resolve(path)).href)) as CapabilityModule;
 	return definitionFromModule(module);
 }
@@ -25,7 +25,10 @@ export async function discoverCapabilities(root: string): Promise<CapabilityDefi
 				loaded = await loadCapability(join(root, entry.name, filename));
 				break;
 			} catch (error) {
-				if ((error as NodeJS.ErrnoException).code === "ENOENT" || /Cannot find module|ModuleNotFound/u.test(String(error)))
+				if (
+					(error as NodeJS.ErrnoException).code === "ENOENT" ||
+					/Cannot find module|ModuleNotFound/u.test(String(error))
+				)
 					continue;
 				throw error;
 			}
@@ -41,7 +44,7 @@ export async function discoverCapabilities(root: string): Promise<CapabilityDefi
 }
 
 /** Resolved domains and the capabilities applicable to them. */
-export interface CapabilityResolution {
+interface CapabilityResolution {
 	domains: readonly string[];
 	capabilities: readonly CapabilityDefinition[];
 }

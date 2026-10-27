@@ -2,13 +2,13 @@
  * Repository/package/domain evidence discovery owned by the DarkFactory core mechanism.
  */
 
-import { configBlock, parseConfigDocument, resolveConfigDocumentPath } from "@darkfactory/protocol/config-document";
-import { access, readFile, readdir } from "node:fs/promises";
+import type { Dirent } from "node:fs";
+import { access, readdir, readFile } from "node:fs/promises";
 import { basename, dirname, join, relative, resolve } from "node:path";
+import { configBlock, parseConfigDocument, resolveConfigDocumentPath } from "../../protocol/src/config-document.ts";
 
-export type RepositoryEcosystem = "node" | "python" | "rust" | "go" | "deno" | "typst" | "latex" | "lean";
-
-export type PackageManager =
+type RepositoryEcosystem = "node" | "python" | "rust" | "go" | "deno" | "typst" | "latex" | "lean";
+type PackageManager =
 	| "bun"
 	| "npm"
 	| "pnpm"
@@ -36,7 +36,7 @@ const ECOSYSTEM_DOMAIN: Readonly<Record<RepositoryEcosystem, string>> = {
 };
 
 /** One package discovered in repository evidence. */
-export interface RepositoryPackageEvidence {
+interface RepositoryPackageEvidence {
 	id: string;
 	path: string;
 	name: string;
@@ -48,10 +48,11 @@ export interface RepositoryPackageEvidence {
 	domains: readonly string[];
 	scripts: readonly string[];
 	apiEntryPoints: readonly string[];
+	pythonSetupKind?: "editable" | "requirements" | "requirements-dev" | "none";
 }
 
 /** Explicit deterministic-action override declared in the combined configuration's repo block. */
-export interface RepositoryActionOverride {
+interface RepositoryActionOverride {
 	command?: string;
 	enabled?: boolean;
 	versions?: readonly string[];
@@ -59,7 +60,7 @@ export interface RepositoryActionOverride {
 }
 
 /** Minimal repository fields used by evidence. Unknown product fields remain opaque. */
-export interface RepositoryDfEvidence {
+interface RepositoryDfEvidence {
 	identity?: { default_branch?: string; [key: string]: unknown };
 	upstream?: { repo?: string | null; ref?: string | null; [key: string]: unknown };
 	environment?: {
@@ -77,6 +78,12 @@ export interface RepositoryDfEvidence {
 		docs_check?: Readonly<Record<string, RepositoryActionOverride>>;
 		docs_extract?: Readonly<Record<string, RepositoryActionOverride>>;
 		setup?: Readonly<Record<string, RepositoryActionOverride>>;
+		/**
+		 * Actions the repository explicitly exempts per ecosystem, each with a reason. Keyed
+		 * snake_case to match the rest of the canonical contract (`docs_check`, `package_manager`);
+		 * an exemption for a tool that does not exist is the only escape from a required gap.
+		 */
+		not_applicable?: Readonly<Record<string, Readonly<Record<string, { reason: string; [key: string]: unknown }>>>>;
 		release?: Readonly<Record<string, RepositoryActionOverride>>;
 	};
 	[key: string]: unknown;
@@ -226,7 +233,11 @@ function evidence(
 	name: string,
 	packageManager: PackageManager,
 	packageManagerRoot: string,
-	options: { scripts?: readonly string[]; apiEntryPoints?: readonly string[] } = {},
+	options: {
+		scripts?: readonly string[];
+		apiEntryPoints?: readonly string[];
+		pythonSetupKind?: RepositoryPackageEvidence["pythonSetupKind"];
+	} = {},
 ): RepositoryPackageEvidence {
 	const path = repoPath(root, directory);
 	return {
@@ -240,6 +251,7 @@ function evidence(
 		domains: [ECOSYSTEM_DOMAIN[ecosystem]],
 		scripts: options.scripts ?? [],
 		apiEntryPoints: options.apiEntryPoints ?? [],
+		...(options.pythonSetupKind ? { pythonSetupKind: options.pythonSetupKind } : {}),
 	};
 }
 
@@ -292,7 +304,20 @@ async function discoveredPackages(directory: string, root: string): Promise<Repo
 			} catch {}
 		}
 		const { manager, managerRoot } = await pythonManager(directory, root);
-		found.push(evidence(root, directory, "python", pythonManifest, name, manager, managerRoot));
+		let pythonSetupKind: RepositoryPackageEvidence["pythonSetupKind"] = "editable";
+		if (pythonManifest === "requirements.txt") pythonSetupKind = "requirements";
+		else if (pythonManifest === "pyproject.toml") {
+			const source = await readFile(pyproject, "utf8");
+			const installable = /^\s*\[(?:project|tool\.poetry)\]\s*$/mu.test(source);
+			pythonSetupKind = installable
+				? "editable"
+				: (await exists(join(directory, "requirements-dev.txt")))
+					? "requirements-dev"
+					: (await exists(join(directory, "requirements.txt")))
+						? "requirements"
+						: "none";
+		}
+		found.push(evidence(root, directory, "python", pythonManifest, name, manager, managerRoot, { pythonSetupKind }));
 	}
 
 	if (await exists(join(directory, "Cargo.toml")))
@@ -340,7 +365,7 @@ async function scan(
 	const rel = repoPath(root, directory);
 	if (rel !== "." && (ignored.has(rel) || rel.split("/").some((part) => ignored.has(part)))) return;
 	output.push(...(await discoveredPackages(directory, root)));
-	let entries;
+	let entries: Dirent[];
 	try {
 		entries = await readdir(directory, { withFileTypes: true });
 	} catch {
@@ -348,10 +373,23 @@ async function scan(
 	}
 	for (const entry of entries) {
 		if (!entry.isDirectory()) continue;
+		// Agent plugin bundles vendor installed packages into their runtime payload.
+		// These are not source packages of the consumer and must never get CI jobs.
+		if (rel === ".codex-plugin" && entry.name === "runtime") continue;
 		if (
 			[
 				".git",
 				".darkfactory",
+				// Where `ci.yml` and `install.yml` check the pinned pipeline out beside the repository
+				// being built. It is the pipeline's own source, so a consumer's matrix must not acquire
+				// the pipeline's packages as its own. Unpruned, detection walked into it and emitted
+				// rows such as `node:.darkfactory-runtime/packages/plugins:test`, building the
+				// pipeline from inside a consumer's build against the consumer's working directory.
+				// This is the list `ci matrix` uses; `PRUNED_DIRECTORIES` in
+				// `packages/harness/src/env/tables.ts` is a different one and does not apply here.
+				".darkfactory-runtime",
+				".worktrees",
+				".opencode",
 				"node_modules",
 				"target",
 				"dist",
@@ -386,7 +424,7 @@ function explicitPackages(repoDf: RepositoryDfEvidence): RepositoryPackageEviden
 	});
 }
 
-/** Detects repository/package/domain evidence using combined configuration resolution plus filesystem manifests. */
+/** Detects repository/package/domain evidence using final .df resolution plus filesystem manifests. */
 export async function detectRepositoryEvidence(rootDir = process.cwd()): Promise<RepositoryEvidence> {
 	const root = resolve(rootDir);
 	const repoDfPath = resolveConfigDocumentPath(root);

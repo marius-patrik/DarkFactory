@@ -4,7 +4,7 @@ import { dirname } from "node:path";
 const localQueues = new Map<string, Promise<unknown>>();
 
 /** Timing and stale-lock behavior for cross-process file locking. */
-export interface FileLockOptions {
+interface FileLockOptions {
 	staleMs?: number;
 	timeoutMs?: number;
 	retryMs?: number;
@@ -74,8 +74,11 @@ export function withFileLock<T>(path: string, task: () => Promise<T>, options: F
 		await previous.catch(() => undefined);
 		await mkdir(dirname(path), { recursive: true });
 		const release = await acquire(path, options);
-		try { return await task(); }
-		finally { await release(); }
+		try {
+			return await task();
+		} finally {
+			await release();
+		}
 	})();
 	const settled = current.catch(() => undefined);
 	localQueues.set(path, settled);

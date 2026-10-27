@@ -1,26 +1,42 @@
 import { join } from "node:path";
-import { discoverCapabilities, resolveCapabilities } from "./loader.ts";
 import type {
 	CapabilityActionDefinition,
 	CapabilityActionKind,
 	CapabilityDefinition,
 	CapabilityPackageContext,
 } from "./abi.ts";
+import { discoverCapabilities, resolveCapabilities } from "./loader.ts";
+
+/** Per-ecosystem command/versions override declared in the canonical repository contract. */
+type ActionOverride = { command?: string; enabled?: boolean; versions?: readonly string[] };
+
+/** Canonical exception declaring that one action has no implementation for one ecosystem. */
+interface NotApplicableDeclaration {
+	reason: string;
+}
 
 /** Structural repository evidence consumed by capability action resolution. */
-export interface RepositoryActionEvidence {
+interface RepositoryActionEvidence {
 	root: string;
 	domains: readonly string[];
 	packages: readonly CapabilityPackageContext[];
 	repoDf: {
 		environment?: {
-			testing?: Readonly<Record<string, { command?: string; enabled?: boolean; versions?: readonly string[] }>>;
-			linting?: Readonly<Record<string, { command?: string; enabled?: boolean; versions?: readonly string[] }>>;
-			formatting?: Readonly<Record<string, { command?: string; enabled?: boolean; versions?: readonly string[] }>>;
-			docs_check?: Readonly<Record<string, { command?: string; enabled?: boolean; versions?: readonly string[] }>>;
-			docs_extract?: Readonly<Record<string, { command?: string; enabled?: boolean; versions?: readonly string[] }>>;
-			setup?: Readonly<Record<string, { command?: string; enabled?: boolean; versions?: readonly string[] }>>;
-			release?: Readonly<Record<string, { command?: string; enabled?: boolean; versions?: readonly string[] }>>;
+			testing?: Readonly<Record<string, ActionOverride>>;
+			typecheck?: Readonly<Record<string, ActionOverride>>;
+			linting?: Readonly<Record<string, ActionOverride>>;
+			formatting?: Readonly<Record<string, ActionOverride>>;
+			docs_extract?: Readonly<Record<string, ActionOverride>>;
+			setup?: Readonly<Record<string, ActionOverride>>;
+			release?: Readonly<Record<string, ActionOverride>>;
+			/**
+			 * Action kinds the repository explicitly exempts per ecosystem, with a reason. This is the
+			 * only escape from a required gap: the `ci-readiness` skill permits a not-applicable exception solely
+			 * from the canonical repository contract, and forbids inferring it from a missing tool.
+			 */
+			not_applicable?: Readonly<
+				Partial<Record<CapabilityActionKind, Readonly<Record<string, NotApplicableDeclaration>>>>
+			>;
 		};
 	};
 }
@@ -37,10 +53,12 @@ export interface ResolvedRepositoryAction {
 	source: "repo.dfconfig" | "capability" | "unsupported";
 	capabilityId?: string;
 	reason?: string;
+	/** Set only when the canonical contract exempted this action for the package's ecosystem. */
+	notApplicable?: NotApplicableDeclaration & { ecosystem: string };
 }
 
 /** All deterministic actions for one detected package. */
-export interface ResolvedPackageActions {
+interface ResolvedPackageActions {
 	package: CapabilityPackageContext;
 	actions: Readonly<Record<CapabilityActionKind, ResolvedRepositoryAction>>;
 }
@@ -49,30 +67,30 @@ export interface ResolvedPackageActions {
 export interface ResolvedRepositoryActions {
 	packages: readonly ResolvedPackageActions[];
 	gaps: readonly ResolvedRepositoryAction[];
+	/** Actions the canonical contract exempted, reported beside the gaps so a green matrix cannot hide one. */
+	notApplicable: readonly ResolvedRepositoryAction[];
 }
 
 const ACTION_KINDS: readonly CapabilityActionKind[] = [
 	"test",
 	"lint",
+	"typecheck",
 	"format_check",
-	"docs_check",
 	"docs_extract",
 	"setup",
 	"release",
 ];
 
-const REQUIRED_QUALITY_ACTIONS = new Set<CapabilityActionKind>([
-	"test",
-	"lint",
-	"format_check",
-	"docs_check",
-	"docs_extract",
-]);
+/** The required quality actions, in the order the executable matrix emits them. */
+const REQUIRED_QUALITY_ACTIONS = ["test", "typecheck", "lint", "format_check"] as const;
+
+/** Literal action kind carried by one executable matrix row. */
+type QualityActionKind = (typeof REQUIRED_QUALITY_ACTIONS)[number];
 
 function overrideGroup(
 	evidence: RepositoryActionEvidence,
 	kind: CapabilityActionKind,
-): Readonly<Record<string, { command?: string; enabled?: boolean; versions?: readonly string[] }>> | undefined {
+): Readonly<Record<string, ActionOverride>> | undefined {
 	const environment = evidence.repoDf.environment;
 	if (!environment) return undefined;
 	switch (kind) {
@@ -82,8 +100,8 @@ function overrideGroup(
 			return environment.linting;
 		case "format_check":
 			return environment.formatting;
-		case "docs_check":
-			return environment.docs_check;
+		case "typecheck":
+			return environment.typecheck;
 		case "docs_extract":
 			return environment.docs_extract;
 		case "setup":
@@ -93,11 +111,47 @@ function overrideGroup(
 	}
 }
 
+/**
+ * Fails closed on a malformed not-applicable contract before any matrix is constructed, so an
+ * exemption can never be a silent coverage hole: an unknown action kind, an ecosystem no detected
+ * package belongs to, or a missing reason are all configuration errors rather than exemptions.
+ */
+function assertNotApplicableDeclarations(evidence: RepositoryActionEvidence): void {
+	const declarations = evidence.repoDf.environment?.not_applicable;
+	if (declarations === undefined) return;
+	const detected = new Set(evidence.packages.map((pkg) => pkg.ecosystem));
+	for (const [kind, group] of Object.entries(declarations)) {
+		// `$comment` is this contract's established documentation key and appears in every other
+		// environment block, so it is prose rather than a declaration.
+		if (kind.startsWith("$")) continue;
+		if (!ACTION_KINDS.includes(kind as CapabilityActionKind))
+			throw new Error(`not_applicable declares unknown action kind ${kind}`);
+		if (!group || typeof group !== "object" || Array.isArray(group))
+			throw new Error(`not_applicable.${kind} must map ecosystems to a reason`);
+		for (const [ecosystem, declaration] of Object.entries(group)) {
+			if (!detected.has(ecosystem))
+				throw new Error(`not_applicable.${kind} names ecosystem ${ecosystem}, which no detected package belongs to`);
+			const reason = (declaration as Partial<NotApplicableDeclaration> | null)?.reason;
+			if (typeof reason !== "string" || !reason.trim())
+				throw new Error(`not_applicable.${kind}.${ecosystem} must state a reason`);
+		}
+	}
+}
+
+function notApplicableException(
+	evidence: RepositoryActionEvidence,
+	pkg: CapabilityPackageContext,
+	kind: CapabilityActionKind,
+): (NotApplicableDeclaration & { ecosystem: string }) | undefined {
+	const declaration = evidence.repoDf.environment?.not_applicable?.[kind]?.[pkg.ecosystem];
+	return declaration ? { ...declaration, ecosystem: pkg.ecosystem } : undefined;
+}
+
 function explicitOverride(
 	evidence: RepositoryActionEvidence,
 	pkg: CapabilityPackageContext,
 	kind: CapabilityActionKind,
-): { command?: string; enabled?: boolean; versions?: readonly string[] } | undefined {
+): ActionOverride | undefined {
 	const group = overrideGroup(evidence, kind);
 	return group?.[pkg.packageManager] ?? group?.[pkg.ecosystem];
 }
@@ -123,35 +177,25 @@ function contributionResult(
 	};
 }
 
-function isRequiredRepositoryAction(
-	evidence: RepositoryActionEvidence,
-	pkg: CapabilityPackageContext,
-	kind: CapabilityActionKind,
-): boolean {
-	const override = explicitOverride(evidence, pkg, kind);
-	if (override?.enabled === false) return false;
-	switch (kind) {
-		case "test":
-			return true;
-		case "lint":
-			return pkg.scripts.includes("lint") || override !== undefined;
-		case "format_check":
-			return pkg.scripts.includes("format:check") || override !== undefined;
-		case "docs_check":
-		case "docs_extract":
-			return pkg.apiEntryPoints.length > 0 || override !== undefined;
-		case "setup":
-		case "release":
-			return false;
-	}
-}
-
 function resolveOne(
 	evidence: RepositoryActionEvidence,
 	definitions: readonly CapabilityDefinition[],
 	pkg: CapabilityPackageContext,
 	kind: CapabilityActionKind,
 ): ResolvedRepositoryAction {
+	const exception = notApplicableException(evidence, pkg, kind);
+	if (exception) {
+		return {
+			kind,
+			packageId: pkg.id,
+			cwd: pkg.path,
+			supported: false,
+			description: `${kind} has no implementation for ${pkg.ecosystem}`,
+			source: "repo.dfconfig",
+			notApplicable: exception,
+			reason: `not applicable: ${exception.reason}`,
+		};
+	}
 	const override = explicitOverride(evidence, pkg, kind);
 	if (override) {
 		if (override.enabled === false) {
@@ -237,18 +281,21 @@ export function resolveRepositoryActions(
 	evidence: RepositoryActionEvidence,
 	definitions: readonly CapabilityDefinition[],
 ): ResolvedRepositoryActions {
+	assertNotApplicableDeclarations(evidence);
 	const packages = evidence.packages.map((pkg) => {
 		const actions = Object.fromEntries(
 			ACTION_KINDS.map((kind) => [kind, resolveOne(evidence, definitions, pkg, kind)]),
 		) as Record<CapabilityActionKind, ResolvedRepositoryAction>;
 		return { package: pkg, actions };
 	});
-	const gaps = packages.flatMap(({ package: pkg, actions }) =>
-		ACTION_KINDS.filter(
-			(kind) => REQUIRED_QUALITY_ACTIONS.has(kind) && isRequiredRepositoryAction(evidence, pkg, kind) && !actions[kind].supported,
-		).map((kind) => actions[kind]),
+	const every = packages.flatMap(({ actions }) => ACTION_KINDS.map((kind) => actions[kind]));
+	const gaps = every.filter(
+		(action) =>
+			REQUIRED_QUALITY_ACTIONS.includes(action.kind as QualityActionKind) &&
+			!action.notApplicable &&
+			(!action.supported || typeof action.command !== "string" || !action.command.trim()),
 	);
-	return { packages, gaps };
+	return { packages, gaps, notApplicable: every.filter((action) => action.notApplicable) };
 }
 
 /** Returns executable quality actions for only packages touched by repository-relative paths. */
@@ -270,10 +317,10 @@ export function actionsForTouchedFiles(
 }
 
 /** One executable CI quality matrix entry. */
-export interface QualityMatrixEntry {
+interface QualityMatrixEntry {
 	id: string;
 	packageId: string;
-	kind: "test" | "lint" | "format_check" | "docs_check";
+	kind: QualityActionKind;
 	command: string;
 	cwd: string;
 	ecosystem: string;
@@ -288,9 +335,9 @@ export function qualityMatrix(resolution: ResolvedRepositoryActions): readonly Q
 	const result: QualityMatrixEntry[] = [];
 	for (const { package: pkg, actions } of resolution.packages) {
 		const setup = actions.setup;
-		for (const kind of ["test", "lint", "format_check", "docs_check"] as const) {
+		for (const kind of REQUIRED_QUALITY_ACTIONS) {
 			const action = actions[kind];
-			if (!action.supported || !action.command) continue;
+			if (!action || !action.supported || !action.command) continue;
 			const rawVersions = action.metadata?.versions;
 			const versions = Array.isArray(rawVersions)
 				? rawVersions.filter((value): value is string => typeof value === "string" && value.length > 0)
@@ -318,7 +365,7 @@ export function qualityMatrix(resolution: ResolvedRepositoryActions): readonly Q
 /** Loads applicable capability definitions and resolves the canonical repository action result. */
 export async function resolveDetectedRepositoryActions(
 	evidence: RepositoryActionEvidence,
-	capabilitiesRoot = join(evidence.root, "capabilities"),
+	capabilitiesRoot = join(evidence.root, ".darkfactory", "plugins"),
 ): Promise<ResolvedRepositoryActions> {
 	const definitions = await discoverCapabilities(capabilitiesRoot);
 	const applicable = resolveCapabilities(definitions, evidence.domains).capabilities;

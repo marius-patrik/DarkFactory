@@ -13,7 +13,7 @@ export interface VaultEntry {
 }
 
 /** Redacted metadata corresponding to a vault entry. */
-export interface VaultMetaEntry {
+interface VaultMetaEntry {
 	name: string;
 	scope: SecretScope;
 	targets?: string[];
@@ -44,7 +44,7 @@ export interface EncryptedVaultEnvelope {
 }
 
 /** Mapping from a vault secret to an external secret target. */
-export interface PushMapEntry {
+interface PushMapEntry {
 	repos: string[];
 	ghName: string;
 }

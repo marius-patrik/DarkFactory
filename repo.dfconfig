@@ -8,7 +8,7 @@
       "project_title": "DarkFactory",
       "agent_slug": "darkfactory-agent",
       "default_branch": "main",
-      "development_branch": "develop",
+      "development_branch": "main",
       "description": "Self-hosting autonomous software delivery built around a declarable workflow graph, versioned capabilities and GitHub as the durable control plane.",
       "topics": [
         "agentic-coding",
@@ -24,6 +24,24 @@
         "workspace"
       ]
     },
+    "protection": {
+      "$comment": "Branch protection is declared here, not in the code that applies it. Every field the reconcile sends to GitHub is in this block, so the policy a reviewer reads is the policy that runs. A lane names its own branch rather than being a role, because which branch is the integration lane and which is the release lane is a fact about this repository and not about the pipeline.",
+      "lanes": [
+        {
+          "branch": "main",
+          "required_checks": [
+            "quality",
+            "verify-bound-issue",
+            "candidate"
+          ],
+          "approvals": 1,
+          "enforce_admins": false,
+          "strict": true,
+          "resolve_conversations": true,
+          "$comment": "The single lane. `develop` and `main` were two lanes with two gates; the integration branch was renamed onto `main`, so one branch carries the full gate. The release lane's weaker check (`main-source`) was dropped rather than merged: it asserted that a pull request into `main` came *from* `develop`, which cannot hold once there is no `develop`."
+        }
+      ]
+    },
     "license": {
       "$comment": "The licence is declared here and the file is written from GitHub's canonical text, so it cannot drift from the wording it claims to be. `spdx` must be one of the identifiers licensing.OFFERED lists; NONE means deliberately not licensed for reuse, which is different from having forgotten to choose.",
       "spdx": "GPL-3.0",
@@ -31,61 +49,35 @@
       "year": "2026"
     },
     "upstream": {
-      "$comment": "DarkFactory is its own upstream; consumer installation/update uses released DarkFactory artifacts.",
       "repo": null,
       "ref": null
     },
     "versioning": {
-      "mode": "manual",
+      "mode": "semver",
       "tag_prefix": "v",
-      "initial": "3a.1.0"
+      "initial": "1.0.0"
     },
     "environment": {
-      "testing": {
-        "typst": {
-          "command": "bun run publication -- --check",
-          "versions": [
-            "0.15.1"
-          ]
-        }
-      },
-      "linting": {
-        "typst": {
-          "enabled": false
-        }
-      },
-      "formatting": {
-        "typst": {
-          "enabled": false
-        }
-      },
+      "$comment": "No packages are declared. The repository is a TypeScript workspace, and its packages are resolved from the workspace layout rather than asserted here. The typst exemptions were removed with the paper: it moved to marius-patrik/DarkFactory-Paper, so this repository detects no typst package and an exemption naming an ecosystem no package belongs to is rejected when the contract loads.",
+      "packages": [],
+      "testing": {},
+      "formatting": {},
       "release": {
-        "typst": {
-          "command": "bun run publication",
-          "artifacts": [
-            "../PAPER.pdf"
-          ]
+        "$comment": "Release actions are declared per ecosystem. #360 enables the final first-party package/native/web release artifacts.",
+        "python": {
+          "enabled": false,
+          "$comment": "pyproject.toml is tooling-only; DarkFactory does not publish a Python package."
+        },
+        "node": {
+          "$comment": "Node package/native/web publishing is enabled by #360 when the final release surface is complete.",
+          "enabled": false
         }
       },
-      "setup": {
-        "typst": {
-          "command": "bun install --frozen-lockfile"
-        }
-      }
+      "setup": {}
     },
     "areas": {
       "$comment": "Area labels, commit scopes and agent routing all read this one list, so they cannot drift apart. Declaration order is match order - the first area whose keywords hit wins - so specific areas come before general ones. A consumer repository replaces this block wholesale with its own domains.",
       "$default": "ci",
-      "paper": {
-        "description": "Paper manuscript, scholarly evidence and publication outputs",
-        "keywords": [
-          "paper",
-          "thesis",
-          "typst",
-          "manuscript",
-          "publication"
-        ]
-      },
       "agents": {
         "description": "Agent runtime, routing, providers, planning/review orchestration and model execution",
         "keywords": [
@@ -153,14 +145,88 @@
         ]
       }
     },
+    "accounts": {
+      "$comment": "The `df` accounts this repository provisions. `set` rows are [variable, account, slot] for a credential handed to df with `df account set`; `load` rows are [variable, account] for a subscription record df loads itself. Which providers are used, what the accounts are called and which slot each holds are facts about this repository, so they are declared here rather than listed in the code that applies them.",
+      "set": [
+        [
+          "GEMINI_API_KEY",
+          "google:default",
+          "api_key"
+        ],
+        [
+          "GEMINI_API_KEY_2",
+          "google:key2",
+          "api_key"
+        ],
+        [
+          "GEMINI_API_KEY_3",
+          "google:key3",
+          "api_key"
+        ],
+        [
+          "OPENROUTER_API_KEY",
+          "openrouter:default",
+          "api_key"
+        ],
+        [
+          "OPENROUTER_API_KEY_2",
+          "openrouter:acct2",
+          "api_key"
+        ],
+        [
+          "GROQ_API_KEY",
+          "groq:default",
+          "api_key"
+        ]
+      ],
+      "load": [
+        [
+          "DF_ACCOUNT_OPENAI_CODEX",
+          "openai-codex:pipeline"
+        ],
+        [
+          "DF_ACCOUNT_GROK_SUB",
+          "grok-sub:pipeline"
+        ]
+      ]
+    },
+    "labels": {
+      "$comment": "Label vocabularies. Each is data about this repository — which statuses exist, which conventional-commit types are permitted, which colours area labels take — so it is declared here rather than as a constant in the code that applies it. The code holds the mechanism, not the list.",
+      "area_colours": [
+        "5319e7",
+        "1f883d",
+        "0052cc",
+        "a2eeef",
+        "f9d0c4",
+        "c2e0c6",
+        "e99695",
+        "006b75",
+        "0075ca"
+      ],
+      "types": [
+        "feat",
+        "bug",
+        "chore",
+        "refactor",
+        "test",
+        "ci",
+        "docs"
+      ],
+      "statuses": [
+        "Backlog",
+        "ToDo",
+        "In Progress",
+        "Blocked",
+        "Done",
+        "Superseded",
+        "Dropped"
+      ]
+    },
     "board": {
-      "$comment": "Boards are owned by the account, not by a repository. Every board listed here is linked to this repository so it appears in its Projects tab; the global board aggregates issues from every repository using this pipeline.",
-      "global_title": "Global",
-      "link_boards": [
+      "global": "Global",
+      "boards": [
         "Global",
-        "DarkFactory",
-        "Omnis",
-        "ChessWithQuests"
+        "DarkFactory"
       ]
     },
     "pages": {
@@ -190,14 +256,17 @@
         }
       },
       "installation_id": 159771550,
-      "installed_on": [
-        "marius-patrik/DarkFactory",
-        "marius-patrik/omnis",
-        "marius-patrik/ChessWithQuests",
-        "marius-patrik/OdbornaPrace-paper",
-        "marius-patrik/template-OdbornaPrace",
-        "marius-patrik/OdbornaPrace-mono"
-      ]
+      "installed_on": [],
+      "credentials": {
+        "$comment": "Names of the repository secrets and variables this pipeline reads. These are *names*, not values - the values live in GitHub and this document never sees them. They are declared here because a name is a fact about the repository: the workflow that reads `vars.<name>`, the configuration issue that tells a person to create `<name>`, and the reinstaller that passes it into a caller all have to spell it the same way, and a disagreement is silent. `private_key_secret` above is itself one of these and is read from there rather than repeated.",
+        "agent_enabled_variable": "AGENT_ENABLED",
+        "project_token_secret": "GH_PROJECT_TOKEN"
+      },
+      "sweep": {
+        "$comment": "Which repositories `install-sweep.yml` may install into. The App is installed on an account, so `GET /installation/repositories` returns every repository that account can reach - 66 of them here - and most were never meant to receive a pipeline. An installation is a statement that the App *has access*; it is not a request to install anything. So the sweep installs into this list and nothing else, and reports the rest rather than acting on them.",
+        "repositories": []
+      },
+      "$comment_installed_on": "DEPRECATED. This was the hand-maintained list of repositories the App is installed on, and board automation read it as the fleet it may reconcile. It drifted: of six entries, two repositories no longer existed and two more had been renamed, and a name in a list resolves to nothing rather than failing, so nothing reported it. `GET /app/installations` reports the same fact and is now the source - the same endpoint `install-sweep.yml` reads. This is kept, and empty, only as the fallback for a run with no App credential to ask with. Do not add entries here; they will not be read when a credential is present, and a run without one should reconcile less rather than more."
     },
     "identities": {
       "$comment": "repo.dfconfig-defined agent and pipeline identities. Verified providers emit canonical Co-authored-by trailers; unverified providers get note-only attribution. Bot author is darkfactory-pipeline[bot].",
@@ -300,7 +369,7 @@
       "name": "DarkFactory",
       "description": "Autonomous, governed software delivery built around a self-hosting df engine, versioned capabilities and GitHub as the durable control plane."
     },
-    "home": ".agents/README.md"
+    "home": "README.md"
   },
   "providers": {
     "cooldownTtlMs": 120000,
@@ -316,9 +385,7 @@
           },
           "prefer": {
             "preferModels": [
-              "space-bunny",
-              "qwen3.6-plus",
-              "gpt-oss"
+              "space-bunny"
             ],
             "preferProviders": [
               "opencode-zen",

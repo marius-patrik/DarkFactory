@@ -3,14 +3,14 @@
  */
 
 /** Repository permissions reported for the authenticated GitHub user. */
-export interface RepositoryPermissions {
+interface RepositoryPermissions {
 	admin: boolean;
 	push: boolean;
 	pull: boolean;
 }
 
 /** Effective repository authority available to the installed DarkFactory GitHub App. */
-export interface AppRepositoryAuthority {
+interface AppRepositoryAuthority {
 	installed: boolean;
 	repositorySelected: boolean;
 	canRead: boolean;
@@ -19,7 +19,7 @@ export interface AppRepositoryAuthority {
 }
 
 /** Browser-visible authority after intersecting user and App authority. */
-export interface ProjectedAuthority {
+interface ProjectedAuthority {
 	canRead: boolean;
 	canMutate: boolean;
 	isAdmin: boolean;
@@ -42,7 +42,7 @@ export function projectAuthority(
 }
 
 /** Human-attributed mutation intent forwarded to the privileged App/df execution path. */
-export interface MutationIntent {
+interface MutationIntent {
 	action: string;
 	actor: string;
 	timestamp: string;

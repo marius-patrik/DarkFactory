@@ -1,0 +1,20 @@
+export type {
+	Actor,
+	AgentNode,
+	AuthorAssociation,
+	AutomationNode,
+	BaseNode,
+	CanonicalStatus,
+	CheckReferenceNode,
+	EdgeOn,
+	GateNode,
+	GraphEdge,
+	GraphEvent,
+	GraphNode,
+	LoopKind,
+	NodeKind,
+	PlanAction,
+	RunState,
+	WorkflowGraph,
+} from "../../../protocol/src/workflow.ts";
+export { CANONICAL_STATUSES } from "../../../protocol/src/workflow.ts";

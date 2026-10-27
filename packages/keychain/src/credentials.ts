@@ -14,7 +14,11 @@ import { resolveDataRepoPath } from "./vault-store.ts";
 
 const VAULT_PREFIX = "vault:";
 
-async function resolveVaultValue(home: string, vaultName: string, repositoryRoot = process.cwd()): Promise<string | undefined> {
+async function resolveVaultValue(
+	home: string,
+	vaultName: string,
+	repositoryRoot = process.cwd(),
+): Promise<string | undefined> {
 	const dataRepoPath = await resolveDataRepoPath(home, repositoryRoot);
 	try {
 		// Try file fallback first (0600) — used in tests with --insecure-file-key
@@ -72,9 +76,6 @@ export type CredentialSlot =
 	| { type: "cookie"; value: string }
 	| { type: "other"; value: string };
 
-/** Credential slot types that can be written directly. */
-export type WritableSlotType = Exclude<CredentialSlot["type"], "oauth">;
-
 /** Typed non-secret OAuth/account metadata retained alongside credential slots. */
 export interface AccountAuthMetadata {
 	/** OAuth scopes granted to the account. */
@@ -103,7 +104,7 @@ interface CredentialFile {
 }
 
 /** Redacted account metadata safe for diagnostics/UI surfaces. */
-export interface AccountSummary {
+interface AccountSummary {
 	id: string;
 	provider: string;
 	label: string;
@@ -116,7 +117,7 @@ export interface AccountSummary {
 export type CredentialFallback = (provider: string, label: string) => Promise<Credential | undefined>;
 
 /** Refresh policy for credentials whose authoritative owner is an external CLI. */
-export type BorrowedRefreshMode = "reimport-only" | "never";
+type BorrowedRefreshMode = "reimport-only" | "never";
 
 /** Current credential material read from an authoritative borrowed source. */
 export interface BorrowedCredentialPlan {
@@ -147,7 +148,7 @@ function isNonEmptyString(value: unknown): value is string {
 }
 
 /** Checks whether an unknown value is a valid credential slot. */
-export function isSlot(value: unknown): value is CredentialSlot {
+function isSlot(value: unknown): value is CredentialSlot {
 	if (!value || typeof value !== "object") return false;
 	const slot = value as Record<string, unknown>;
 	if (slot.type === "oauth")
@@ -164,7 +165,7 @@ export function isSlot(value: unknown): value is CredentialSlot {
 }
 
 /** Checks whether an unknown value is valid credential metadata. */
-export function isMetadata(value: unknown): value is Record<string, string> | undefined {
+function isMetadata(value: unknown): value is Record<string, string> | undefined {
 	return (
 		value === undefined ||
 		(typeof value === "object" && value !== null && Object.values(value).every((entry) => typeof entry === "string"))
@@ -172,7 +173,7 @@ export function isMetadata(value: unknown): value is Record<string, string> | un
 }
 
 /** Checks whether an unknown value is valid non-secret account auth metadata. */
-export function isAccountAuthMetadata(value: unknown): value is AccountAuthMetadata | undefined {
+function isAccountAuthMetadata(value: unknown): value is AccountAuthMetadata | undefined {
 	if (value === undefined) return true;
 	if (!value || typeof value !== "object" || Array.isArray(value)) return false;
 	const auth = value as Record<string, unknown>;
@@ -199,7 +200,7 @@ export function isAccountAuthMetadata(value: unknown): value is AccountAuthMetad
 }
 
 /** Checks whether an unknown value is a credential account record. */
-export function isAccount(value: unknown, id: string): value is AccountRecord {
+function isAccount(value: unknown, id: string): value is AccountRecord {
 	if (!value || typeof value !== "object") return false;
 	const account = value as Record<string, unknown>;
 	return (
@@ -471,7 +472,8 @@ export class FileCredentialStore {
 		}
 		for (const [headerName, slotName] of Object.entries(slotHeaders)) {
 			const slot = account.slots[slotName];
-			if (slot?.type !== "oauth" && slot?.value) headers[headerName] = await resolveSlotValue(this.home, slot.value, this.repositoryRoot);
+			if (slot?.type !== "oauth" && slot?.value)
+				headers[headerName] = await resolveSlotValue(this.home, slot.value, this.repositoryRoot);
 		}
 		if (cookies.length > 0) headers.Cookie = cookies.join("; ");
 		return headers;
@@ -521,7 +523,7 @@ export class FileCredentialStore {
 }
 
 /** pi's one-provider CredentialStore view of exactly one df account. */
-export class AccountCredentialStore implements CredentialStore {
+class AccountCredentialStore implements CredentialStore {
 	constructor(
 		private readonly store: FileCredentialStore,
 		readonly id: string,
@@ -608,21 +610,17 @@ export class AccountCredentialStore implements CredentialStore {
 			.then((account) => (account ? toPiCredential(account) : undefined));
 	}
 
+	/**
+	 * Removes the account and every slot it holds.
+	 *
+	 * pi models one credential per provider, so its `delete` is a logout. Stripping only the
+	 * primary oauth/api_key slot would leave the account row behind — listed by
+	 * {@link FileCredentialStore.listAccounts} and resolvable by a chain, yet unable to
+	 * authenticate — which is the residue a retired credential must not leave. This matches
+	 * `df logout`, which already deletes the whole record.
+	 */
 	delete(providerId: string, options?: AuthOperationOptions): Promise<void> {
 		this.assertProvider(providerId);
-		return this.store
-			.modifyAccount(
-				this.id,
-				async (current) => {
-					if (!current) return undefined;
-					const oauth = primarySlot(current, "oauth")?.[0];
-					const apiKey = primarySlot(current, "api_key")?.[0];
-					if (oauth) delete current.slots[oauth];
-					else if (apiKey) delete current.slots[apiKey];
-					return current;
-				},
-				options,
-			)
-			.then(() => undefined);
+		return this.store.deleteAccount(this.id, options).then(() => undefined);
 	}
 }

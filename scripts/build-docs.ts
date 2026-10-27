@@ -1,6 +1,6 @@
 import { mkdir, writeFile } from "node:fs/promises";
 import { join, resolve } from "node:path";
-import { assertCurrentDocumentation, compileDocsContentGraphWithDetectedApi, renderAgentsMarkdown, renderNotesMarkdown, renderPrdMarkdown } from "../packages/docs/src/index.ts";
+import { assertCurrentDocumentation, compileDocsContentGraphWithDetectedApi } from "../packages/docs/src/index.ts";
 import { renderDocsSite } from "../packages/web/src/docs.ts";
 
 function option(name: string): string | undefined {
@@ -11,7 +11,9 @@ function option(name: string): string | undefined {
 const repoRoot = resolve(option("--repo-root") ?? process.cwd());
 const outputDir = resolve(option("--out") ?? join(repoRoot, "site"));
 const check = process.argv.includes("--check");
-const graph = await compileDocsContentGraphWithDetectedApi(repoRoot, { capabilitiesRoot: resolve(import.meta.dir, "..", "capabilities") });
+const graph = await compileDocsContentGraphWithDetectedApi(repoRoot, {
+	capabilitiesRoot: resolve(import.meta.dir, "..", ".darkfactory", "plugins"),
+});
 
 if (check) {
 	assertCurrentDocumentation(repoRoot, graph);
@@ -19,15 +21,10 @@ if (check) {
 	process.exit(0);
 }
 
-const agentsMarkdown = renderAgentsMarkdown(graph);
-const prdMarkdown = renderPrdMarkdown(graph);
-const readmeMarkdown = renderNotesMarkdown(graph);
-await mkdir(join(repoRoot, ".agents"), { recursive: true });
-await writeFile(join(repoRoot, ".agents", "AGENTS.md"), agentsMarkdown);
-await writeFile(join(repoRoot, ".agents", "PRD.md"), prdMarkdown);
-await writeFile(join(repoRoot, ".agents", "README.md"), readmeMarkdown);
 await renderDocsSite(graph, outputDir);
 await mkdir(join(repoRoot, ".darkfactory", "generated"), { recursive: true });
 await writeFile(join(repoRoot, ".darkfactory", "generated", "docs.json"), JSON.stringify(graph, null, 2) + "\n");
 
-console.log(`Built ${graph.pages.length} documentation pages${graph.api ? " plus API reference" : ""} into ${outputDir}`);
+console.log(
+	`Built ${graph.pages.length} documentation pages${graph.api ? " plus API reference" : ""} into ${outputDir}`,
+);

@@ -1,5 +1,5 @@
 /** Versioned Request snapshot captured for Planning. */
-export interface PlanningRequestSnapshot {
+interface PlanningRequestSnapshot {
 	issue: number;
 	body: string;
 	version: string;
@@ -8,14 +8,14 @@ export interface PlanningRequestSnapshot {
 }
 
 /** Dependency state captured into Planning context. */
-export interface PlanningDependencySnapshot {
+interface PlanningDependencySnapshot {
 	id: string;
 	state: string;
 	version?: string;
 }
 
 /** Repository base revision used to validate Planning freshness. */
-export interface PlanningBaseSnapshot {
+interface PlanningBaseSnapshot {
 	sha: string;
 	defaultBranch: string;
 }
@@ -53,4 +53,4 @@ export interface PlanningArtifact {
 	};
 }
 
-export { planningResultSchema, alignmentResultSchema } from "./result-capture.ts";
+export { alignmentResultSchema, planningResultSchema } from "./result-capture.ts";

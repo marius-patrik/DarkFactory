@@ -4,7 +4,7 @@
  * Machine credentials, OAuth refresh/access tokens, client secrets and GitHub App private-key operations remain outside
  * this browser-safe root. Confidential token operations are exported only from `@darkfactory/auth/broker`.
  */
-export type { AuthorAssociation } from "@darkfactory/protocol/workflow";
+export type { AuthorAssociation } from "../../protocol/src/workflow.ts";
 export * from "./client.ts";
 export * from "./permissions.ts";
 export type { BrowserSession } from "./types.ts";

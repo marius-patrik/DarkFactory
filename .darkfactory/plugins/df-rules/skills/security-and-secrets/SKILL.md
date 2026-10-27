@@ -1,0 +1,46 @@
+---
+name: security-and-secrets
+description: Use when changing code, committing, logging, writing issues or pull requests, generating documentation or web assets, or handling credentials, tokens, cookies, client secrets or private keys: keep machine custody in the keychain and browser sessions in auth, scope other capabilities to declared access, keep private-key code out of browser bundles, and never commit, log, publish or leak secrets.
+title: Security and secrets
+status: normative
+applies_to: [agents, automation, contributors]
+activation: always
+owners: [keychain, auth]
+license: MIT
+---
+
+# Security and secrets
+
+## Requirement
+
+No credential, access token, refresh token, cookie, client secret or private key may be committed, logged, written to issues/PRs, included in generated docs or embedded in static web assets.
+
+`@darkfactory/keychain` is the sole machine/runtime credential-custody owner. Other packages/capabilities declare credential requirements and receive scoped access; they do not read raw credential files, secret environment variables or OS keychains directly.
+
+`@darkfactory/auth` separately owns human/browser GitHub App authentication and sessions. Browser bundles cannot import keychain/private-key/server-confidential code.
+
+The web auth broker may hold only credentials required for confidential user-token exchange/refresh and is not a DarkFactory state/execution backend.
+
+GitHub user authority and GitHub App installation authority remain distinct.
+
+Secret-bearing recovery material remains preserved locally and blocked from publication rather than leaked or discarded.
+
+## Rationale
+
+Centralized custody and explicit browser/machine trust boundaries minimize secret lifetime and prevent capability/plugin code from silently widening access.
+
+## Enforcement
+
+Keychain and auth import-boundary, redaction and credential-flow tests exist and enforce the custody
+and browser-trust boundaries above.
+
+Two checks this rule names do not exist. No secret scan runs over repository, generated or published
+content, and no browser artifact audit inspects built web output for embedded credentials.
+
+## Exceptions
+
+None.
+
+## Change control
+
+Credential names/values are never copied into rule text. Provider-specific flows belong to keychain/provider capability contracts.

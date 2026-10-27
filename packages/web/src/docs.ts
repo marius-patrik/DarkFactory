@@ -1,6 +1,6 @@
 import { mkdir, rm, writeFile } from "node:fs/promises";
 import { join, posix } from "node:path";
-import type { DocsApiSymbol, DocsContentGraph, DocsPage } from "@darkfactory/docs/content";
+import type { DocsApiSymbol, DocsContentGraph, DocsPage } from "../../docs/src/content.ts";
 
 function escapeHtml(value: string): string {
 	return value.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;").replaceAll('"', "&quot;");
@@ -24,8 +24,19 @@ function renderInline(raw: string, page: DocsPage, graph: DocsContentGraph): str
 		const index = match.index ?? 0;
 		output += escapeHtml(raw.slice(cursor, index));
 		const label = escapeHtml(match[1] ?? "");
-		const target = match[2] ?? "";
-		if (/^(?:https?:|mailto:|#)/u.test(target)) {
+		const target = (match[2] ?? "").trim();
+		// Browser URL parsing strips some control characters and whitespace before
+		// interpreting schemes. Never emit an executable javascript:/data:/file:
+		// destination from repository-provided Markdown into a documentation page.
+		const containsControl = [...target].some((character) => {
+			const code = character.charCodeAt(0);
+			return code < 32 || code === 127;
+		});
+		const unsafe =
+			containsControl || (/^(?:[a-z][a-z0-9+.-]*:|\/\/)/iu.test(target) && !/^(?:https?:|mailto:)/iu.test(target));
+		if (unsafe) {
+			output += label;
+		} else if (/^(?:https?:|mailto:|#)/iu.test(target)) {
 			output += `<a href="${escapeHtml(target)}">${label}</a>`;
 		} else {
 			const [pathPart, anchor] = target.split("#", 2);
@@ -37,11 +48,19 @@ function renderInline(raw: string, page: DocsPage, graph: DocsContentGraph): str
 		cursor = index + match[0].length;
 	}
 	output += escapeHtml(raw.slice(cursor));
-	return output.replace(/`([^`]+)`/gu, "<code>$1</code>").replace(/\*\*([^*]+)\*\*/gu, "<strong>$1</strong>").replace(/\*([^*]+)\*/gu, "<em>$1</em>");
+	return output
+		.replace(/`([^`]+)`/gu, "<code>$1</code>")
+		.replace(/\*\*([^*]+)\*\*/gu, "<strong>$1</strong>")
+		.replace(/\*([^*]+)\*/gu, "<em>$1</em>");
 }
 
 function tableCells(line: string): string[] {
-	return line.trim().replace(/^\|/u, "").replace(/\|$/u, "").split("|").map((cell) => cell.trim());
+	return line
+		.trim()
+		.replace(/^\|/u, "")
+		.replace(/\|$/u, "")
+		.split("|")
+		.map((cell) => cell.trim());
 }
 
 function renderMarkdown(markdown: string, page: DocsPage, graph: DocsContentGraph): string {
@@ -66,7 +85,9 @@ function renderMarkdown(markdown: string, page: DocsPage, graph: DocsContentGrap
 			flushParagraph();
 			closeList();
 			if (code) {
-				html.push(`<pre><code${language ? ` class="language-${escapeHtml(language)}"` : ""}>${escapeHtml(code.join("\n"))}</code></pre>`);
+				html.push(
+					`<pre><code${language ? ` class="language-${escapeHtml(language)}"` : ""}>${escapeHtml(code.join("\n"))}</code></pre>`,
+				);
 				code = null;
 				language = "";
 			} else {
@@ -90,7 +111,10 @@ function renderMarkdown(markdown: string, page: DocsPage, graph: DocsContentGrap
 			closeList();
 			const level = heading[1]!.length;
 			const title = heading[2]!;
-			const id = title.toLowerCase().replace(/[^a-z0-9]+/gu, "-").replace(/^-|-$/gu, "");
+			const id = title
+				.toLowerCase()
+				.replace(/[^a-z0-9]+/gu, "-")
+				.replace(/^-|-$/gu, "");
 			html.push(`<h${level} id="${id}">${renderInline(title, page, graph)}</h${level}>`);
 			continue;
 		}
@@ -100,9 +124,15 @@ function renderMarkdown(markdown: string, page: DocsPage, graph: DocsContentGrap
 			const headers = tableCells(line);
 			i++;
 			const rows: string[][] = [];
-			while (i + 1 < lines.length && (lines[i + 1] ?? "").includes("|") && (lines[i + 1] ?? "").trim()) rows.push(tableCells(lines[++i] ?? ""));
-			html.push("<table><thead><tr>" + headers.map((cell) => `<th>${renderInline(cell, page, graph)}</th>`).join("") + "</tr></thead><tbody>");
-			for (const row of rows) html.push("<tr>" + row.map((cell) => `<td>${renderInline(cell, page, graph)}</td>`).join("") + "</tr>");
+			while (i + 1 < lines.length && (lines[i + 1] ?? "").includes("|") && (lines[i + 1] ?? "").trim())
+				rows.push(tableCells(lines[++i] ?? ""));
+			html.push(
+				"<table><thead><tr>" +
+					headers.map((cell) => `<th>${renderInline(cell, page, graph)}</th>`).join("") +
+					"</tr></thead><tbody>",
+			);
+			for (const row of rows)
+				html.push("<tr>" + row.map((cell) => `<td>${renderInline(cell, page, graph)}</td>`).join("") + "</tr>");
 			html.push("</tbody></table>");
 			continue;
 		}
@@ -141,7 +171,10 @@ function renderMarkdown(markdown: string, page: DocsPage, graph: DocsContentGrap
 }
 
 function navigation(page: DocsPage, graph: DocsContentGraph): string {
-	const links = graph.pages.map((target) => `<a${target.id === page.id ? ' aria-current="page"' : ""} href="${pageHref(page, target)}">${escapeHtml(target.title)}</a>`);
+	const links = graph.pages.map(
+		(target) =>
+			`<a${target.id === page.id ? ' aria-current="page"' : ""} href="${pageHref(page, target)}">${escapeHtml(target.title)}</a>`,
+	);
 	if (graph.api) {
 		const relative = posix.relative(posix.dirname(pageOutput(page)), "api") || ".";
 		links.push(`<a href="${relative}/">API</a>`);
@@ -166,13 +199,19 @@ export async function renderDocsSite(graph: DocsContentGraph, outputDir: string)
 	for (const page of graph.pages) {
 		const output = join(outputDir, pageOutput(page));
 		await mkdir(join(output, ".."), { recursive: true });
-		await writeFile(output, shell(page.title, navigation(page, graph), renderMarkdown(page.markdown, page, graph), graph.site.description));
+		await writeFile(
+			output,
+			shell(page.title, navigation(page, graph), renderMarkdown(page.markdown, page, graph), graph.site.description),
+		);
 	}
 	if (graph.api) {
 		const apiPage: DocsPage = { id: "api", kind: "home", title: graph.api.name, source: "api", markdown: "" };
 		const body = `<h1>${escapeHtml(graph.api.name)}</h1>${graph.api.symbols.map((symbol) => renderApiSymbol(symbol)).join("")}`;
 		await mkdir(join(outputDir, "api"), { recursive: true });
-		await writeFile(join(outputDir, "api", "index.html"), shell(graph.api.name, navigation(apiPage, graph), body, graph.site.description));
+		await writeFile(
+			join(outputDir, "api", "index.html"),
+			shell(graph.api.name, navigation(apiPage, graph), body, graph.site.description),
+		);
 	}
 	await writeFile(join(outputDir, "content.json"), JSON.stringify(graph, null, 2) + "\n");
 	await writeFile(join(outputDir, ".nojekyll"), "");

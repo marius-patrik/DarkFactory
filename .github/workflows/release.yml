@@ -1,8 +1,7 @@
 name: Release
 
 on:
-  push:
-    branches: [main]
+  # Release publication is an explicitly authorized operation, never a default-branch push side effect.
   workflow_call:
     inputs:
       bump:
@@ -23,169 +22,217 @@ on:
     inputs:
       bump:
         description: "Explicit bump: patch, minor, major, proud (pridever only), or an exact version"
-        required: false
+        required: true
         type: string
 
-# The version, the notes, the assets and the metadata check are all decided by
-# `.github/scripts/release.py`, which reads the mode from the `repo` block of `repo.dfconfig`. This workflow
-# only sequences them, so changing versioning scheme never means editing a workflow.
+# The version comes from `packages/harness/src/release/versioning.ts` and the `df` build matrix comes from
+# `packages/harness/scripts/release-targets.ts`. Adding a published platform is therefore a change to
+# table, not to this file, and there is one place where the two agree on what is being released.
+#
+# Every action is pinned to a full commit id. A floating `@v4` is a tag whoever controls the action
+# can repoint at new code, which in a job holding `contents: write` is a supply-chain hole rather
+# than a convenience. The version each pin names is in the trailing comment.
+# Parsing release metadata and compiling user packages must never carry a write token.
+# Only the final explicitly authorized publish job receives repository mutation rights.
 permissions:
-  contents: write
+  contents: read
 
 concurrency:
   group: release
   cancel-in-progress: false
 
 jobs:
-  release:
-    name: release
+  resolve:
+    name: resolve
     runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      tag: ${{ steps.version.outputs.tag }}
+      warranted: ${{ steps.version.outputs.warranted }}
+      matrix: ${{ steps.targets.outputs.matrix }}
+      has-assets: ${{ steps.assets.outputs.has }}
     steps:
       - name: Checkout repository
         # Tags decide the current version, so a shallow clone would compute the wrong next one.
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
           fetch-depth: 0
 
+      - name: Require trusted producer source before executing release code
+        env:
+          DF_REPOSITORY: ${{ github.repository }}
+          DF_REF: ${{ github.ref }}
+          DF_DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+          DF_COMMIT: ${{ github.sha }}
+          DF_EVENT: ${{ github.event_name }}
+          DF_REQUESTED_VERSION: ${{ inputs.bump }}
+        run: |
+          set -euo pipefail
+          if [ "$DF_REPOSITORY" = "marius-patrik/DarkFactory" ]; then
+            if [ "$DF_EVENT" != "workflow_dispatch" ] || [ "$DF_REF" != "refs/heads/$DF_DEFAULT_BRANCH" ]; then
+              echo "::error::DarkFactory release evaluation requires explicit dispatch from the protected default branch." >&2
+              exit 1
+            fi
+            if [ "$(git rev-parse HEAD)" != "$DF_COMMIT" ] || [ -z "$DF_REQUESTED_VERSION" ]; then
+              echo "::error::Missing exact source identity or explicit release version." >&2
+              exit 1
+            fi
+          fi
+
       - name: Check out the pinned pipeline
         if: inputs.pipeline-ref != ''
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
           repository: ${{ inputs.pipeline-repo }}
           ref: ${{ inputs.pipeline-ref }}
           path: .darkfactory-pipeline
 
-      - name: Put the pipeline scripts on the path
-        run: |
-          if [ -d .darkfactory-pipeline/.github/scripts ]; then
-            echo "PIPELINE_SCRIPTS=$GITHUB_WORKSPACE/.darkfactory-pipeline/.github/scripts" >> "$GITHUB_ENV"
-          else
-            echo "PIPELINE_SCRIPTS=$GITHUB_WORKSPACE/.github/scripts" >> "$GITHUB_ENV"
-          fi
+      - name: Set up Bun
+        uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
-
-      - name: Install dependencies
-        # A repository with no Python has no requirements file, which is every paper. The pipeline
-        # scripts need only the standard library, so the plan is still readable.
-        run: |
-          python -m pip install --upgrade pip
-          if [ -f requirements-dev.txt ]; then
-            pip install -r requirements-dev.txt
-          else
-            echo "No requirements-dev.txt; nothing to install."
-          fi
-
-      - name: Resolve the next release
-        id: resolve
+      - name: Resolve the next release version
+        id: version
         env:
           REQUESTED_BUMP: ${{ inputs.bump }}
         run: |
-          python "${PIPELINE_SCRIPTS:-.github/scripts}/release.py" \
-            --repo-root . \
-            --notes-out "$RUNNER_TEMP/notes.md" > "$RUNNER_TEMP/release.json"
-          cat "$RUNNER_TEMP/release.json"
-          python - <<'PY' >> "$GITHUB_OUTPUT"
-          import json, os
-          data = json.load(open(os.environ["RUNNER_TEMP"] + "/release.json"))
-          print(f"version={data['version'] or ''}")
-          print(f"tag={data['tag'] or ''}")
-          print(f"warranted={'true' if data['version'] else 'false'}")
-          PY
+          bun packages/harness/src/release/versioning.ts --repo-root . > "$RUNNER_TEMP/version.json"
+          cat "$RUNNER_TEMP/version.json"
+          # An empty `next` means nothing is release-worthy, which is a clean no-op rather than a
+          # failure, and every job that would publish is gated on it.
+          jq -r '"version=\(.next // "")", "tag=\(.tag // "")", "warranted=\(if .next then "true" else "false" end)"' \
+            "$RUNNER_TEMP/version.json" >> "$GITHUB_OUTPUT"
+
+      - name: Derive the df build matrix
+        id: targets
+        run: |
+          bun packages/harness/scripts/release-targets.ts > "$RUNNER_TEMP/matrix.json"
+          cat "$RUNNER_TEMP/matrix.json"
+          echo "matrix=$(jq -c . "$RUNNER_TEMP/matrix.json")" >> "$GITHUB_OUTPUT"
 
       - name: Report that no release is warranted
-        if: steps.resolve.outputs.warranted != 'true'
+        if: steps.version.outputs.warranted != 'true'
         run: |
           echo "No release-worthy commits since the last tag." >> "$GITHUB_STEP_SUMMARY"
 
-      - name: Verify package metadata agrees with the release
-        if: steps.resolve.outputs.warranted == 'true'
+      - name: Resolve the release
+        if: steps.version.outputs.warranted == 'true'
+        # `REQUESTED_BUMP` again, not only on the gate step above. `cli.ts` reads it to decide what to
+        # release, so without it here an explicitly requested version reached the *gate* — which
+        # reported `warranted=true` — and then nothing was resolved, `notes.md` was never written, and
+        # the run died on `No files were found with the provided path: .../notes.md`.
+        #
+        # `manual` mode hid this: it resolves from `VERSION` and never consults the request. Any mode
+        # that does consult it — `zerover` among them — lost the request on the way through.
+        env:
+          REQUESTED_BUMP: ${{ inputs.bump }}
+        # One resolver, not two cross-checked against each other. The TypeScript release CLI is a
+        # drop-in for `release.py --repo-root ...`: same version, same tag, same notes file, same
+        # JSON on stdout. `release.json` is produced here for the metadata check, the tooling
+        # decision and the paper build below. The two resolvers existed only because the Python one
+        # was still live, and a resolver agreeing with itself is not a check.
         run: |
-          python - <<'PY'
-          import json, os, sys
-          data = json.load(open(os.environ["RUNNER_TEMP"] + "/release.json"))
-          problems = data["metadata_problems"]
-          if problems:
-              print("Package metadata disagrees with the release version:")
-              for problem in problems:
-                  print(f"  - {problem}")
-              sys.exit(1)
-          print("Package metadata is conformant.")
-          PY
+          bun packages/harness/src/release/cli.ts \
+            --repo-root . \
+            --notes-out "$RUNNER_TEMP/notes.md" > "$RUNNER_TEMP/release.json"
+          cat "$RUNNER_TEMP/release.json"
+
+      - name: Verify package metadata agrees with the release
+        if: steps.version.outputs.warranted == 'true'
+        # `repository-governance.test.ts` asserts this step fails on `metadata_problems`, and the
+        # `exit 1` beside that field is what it looks for. The assertion is unchanged in meaning; only
+        # the language it is read out of changed.
+        run: |
+          problems=$(jq -r '(.metadata_problems // [])[]' "$RUNNER_TEMP/release.json")
+          if [ -n "$problems" ]; then
+            echo "Package metadata disagrees with the release version:" >&2
+            echo "$problems" | sed 's/^/  - /' >&2
+            exit 1
+          fi
+          echo "Package metadata is conformant."
 
       - name: Detect the paper domain
-        if: steps.resolve.outputs.warranted == 'true'
+        if: steps.version.outputs.warranted == 'true'
         id: paper
-        # The release job builds the same artifacts CI does, so it needs the same toolchains. A
-        # paper's asset is its PDF, which cannot be produced without a typesetting engine.
+        # Which engine this repository *needs*, not which one the runner already has. This asked
+        # `command -v typst`, which is false on a stock `ubuntu-latest`, so the conditional install
+        # below was skipped and the build then died at `typst: command not found` (exit 127) — after
+        # the version had already been resolved. The probe was deciding not to install the very
+        # thing whose absence it was detecting.
+        #
+        # Detection reads the tree instead, which is what the release itself keys off. `main.typ`
+        # means typst; a LaTeX manifest or `.latexmkrc` means latex. `environment.ts` maps the same
+        # filenames to the same engines, so this probe and the release cannot disagree about what the
+        # repository builds with — and a paper's PDF, the asset itself, is never declared optional.
         run: |
-          python - <<'PY' >> "$GITHUB_OUTPUT"
-          import os, sys
-          sys.path.insert(0, os.environ.get("PIPELINE_SCRIPTS", ".github/scripts"))
-          import environment
-
-          env = environment.configure(".")
-          print(f"typst={str(env.has('typst')).lower()}")
-          print(f"latex={str(env.has('latex')).lower()}")
-          versions = env.test_plan().get("typst", {}).get("versions", [])
-          print(f"typst_version={versions[0] if versions else 'latest'}")
-          PY
+          if compgen -G "paper/main.typ" > /dev/null || compgen -G "**/*.typ" > /dev/null; then
+            echo "typst=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "typst=false" >> "$GITHUB_OUTPUT"
+          fi
+          if compgen -G "paper/main.tex" > /dev/null || compgen -G "**/*.tex" > /dev/null || compgen -G ".latexmkrc" > /dev/null; then
+            echo "latex=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "latex=false" >> "$GITHUB_OUTPUT"
+          fi
 
       - name: Set up Typst
-        if: steps.resolve.outputs.warranted == 'true' && steps.paper.outputs.typst == 'true'
-        uses: typst-community/setup-typst@v5
-        with:
-          version: ${{ steps.paper.outputs.typst_version }}
-
-      - name: Set up Bun
-        if: steps.resolve.outputs.warranted == 'true' && steps.paper.outputs.typst == 'true'
-        uses: oven-sh/setup-bun@v2
-
-      - name: Install publication dependencies
-        if: steps.resolve.outputs.warranted == 'true' && steps.paper.outputs.typst == 'true'
-        run: bun install --frozen-lockfile
+        if: steps.version.outputs.warranted == 'true' && steps.paper.outputs.typst == 'true'
+        uses: typst-community/setup-typst@9107b8dd77d7a7fd6c5faebbb507cac28069042e # v5.3.0b1
 
       - name: Set up TeX Live
-        if: steps.resolve.outputs.warranted == 'true' && steps.paper.outputs.latex == 'true'
+        if: steps.version.outputs.warranted == 'true' && steps.paper.outputs.latex == 'true'
         run: |
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends \
             texlive-latex-recommended texlive-latex-extra texlive-fonts-recommended latexmk
 
       - name: Decide which build tooling is needed
-        if: steps.resolve.outputs.warranted == 'true'
+        if: steps.version.outputs.warranted == 'true'
         id: tooling
         # Read once into an output rather than testing inline: a suppressed error in a conditional
         # silently takes the "nothing needed" branch, which is how a missing build backend went
-        # unnoticed across three repositories.
+        # unnoticed across three repositories. The steps array is required for the same reason.
+        # Bun is the only backend the pipeline supports now, so the question is whether a build step
+        # was declared at all, not which interpreter's name it happens to contain. A consumer that
+        # declares a `python -m build` step gets that failure at the build, honestly, rather than the
+        # pipeline quietly provisioning an interpreter it no longer has.
         run: |
-          python - <<'PY' >> "$GITHUB_OUTPUT"
-          import json, os
+          needs_build=$(jq -r '
+            if (.steps | type) != "array"
+            then error("release.json does not carry a steps array")
+            else ([.steps[] | .command // ""] | join(" ") | test("\\bbun (run )?build\\b")) end
+          ' "$RUNNER_TEMP/release.json")
+          echo "build=$needs_build" >> "$GITHUB_OUTPUT"
 
-          steps = json.load(open(os.environ["RUNNER_TEMP"] + "/release.json"))["steps"]
-          commands = " ".join(step.get("command") or "" for step in steps)
-          print(f"python={'true' if 'python -m build' in commands else 'false'}")
-          PY
-
-      - name: Install the build backend
+      - name: Confirm the build backend is available
         # The pipeline provides the tooling its own default commands need. Requiring every consumer
         # to remember `build` in its requirements file is how this failed in three repositories.
-        if: steps.tooling.outputs.python == 'true'
-        run: python -m pip install --upgrade build
+        if: steps.tooling.outputs.build == 'true'
+        run: |
+          if ! command -v bun > /dev/null 2>&1; then
+            echo "A build step was declared but bun is not on PATH." >&2
+            exit 1
+          fi
+          bun --version
 
       - name: Build release assets
-        if: steps.resolve.outputs.warranted == 'true'
+        if: steps.version.outputs.warranted == 'true'
         run: |
-          python - <<'PY' > "$RUNNER_TEMP/steps.sh"
-          import json, os, shlex
-          data = json.load(open(os.environ["RUNNER_TEMP"] + "/release.json"))
-          for step in data["steps"]:
-              if step.get("command"):
-                  print(f"( cd {shlex.quote(step['cwd'])} && {step['command']} )")
-          PY
+          # `@sh` is the quoting the generated script depends on: a cwd with a space in it would
+          # otherwise split the line into two commands. Both `steps` and each step's `cwd` are
+          # required, because a step the script cannot enter is a release that builds the wrong
+          # thing quietly.
+          jq -r '
+            if (.steps | type) != "array"
+            then error("release.json does not carry a steps array")
+            else .steps[]
+              | select((.command // "") != "")
+              | if (.cwd | type) != "string"
+                then error("a build step carries no cwd")
+                else "( cd \(.cwd | @sh) && \(.command) )"
+                end
+            end
+          ' "$RUNNER_TEMP/release.json" > "$RUNNER_TEMP/steps.sh"
           # Only where a document is going to be written; an unconditional mkdir leaves a stray
           # directory that setuptools then discovers as a rival top-level package.
           if [ "${{ steps.paper.outputs.typst }}" = "true" ] \
@@ -196,59 +243,260 @@ jobs:
             echo "Build steps:"; cat "$RUNNER_TEMP/steps.sh"
             bash -euxo pipefail "$RUNNER_TEMP/steps.sh"
           else
-            echo "Nothing to build; this release carries no assets."
+            echo "Nothing to build; this release carries no project assets."
           fi
 
       - name: Collect release assets
-        if: steps.resolve.outputs.warranted == 'true'
+        if: steps.version.outputs.warranted == 'true'
+        id: assets
+        # `collectAssets` is the port of `release.collect_assets`; it resolves the artifact globs the
+        # build steps declare. The list is written twice because the publish job needs it as a file
+        # to iterate and this job needs it as a step output to gate on.
+        run: |
+          bun -e '
+          import { collectAssets } from "./packages/harness/src/release/release.ts";
+          const data = await Bun.file(process.env.RUNNER_TEMP + "/release.json").json();
+          const found = collectAssets(".", data.steps);
+          await Bun.write(process.env.RUNNER_TEMP + "/assets.txt", found.map((p) => p + "\n").join(""));
+          console.log(`has=${found.length > 0}`);
+          console.log("files<<EOF");
+          for (const path of found) console.log(path);
+          console.log("EOF");
+          ' >> "$GITHUB_OUTPUT"
+
+      - name: Stage the collected release assets
+        if: steps.version.outputs.warranted == 'true' && steps.assets.outputs.has == 'true'
+        run: |
+          mkdir -p "$RUNNER_TEMP/release-assets"
+          while IFS= read -r asset; do
+            [ -n "$asset" ] || continue
+            mkdir -p "$RUNNER_TEMP/release-assets/$(dirname "$asset")"
+            cp "$asset" "$RUNNER_TEMP/release-assets/$asset"
+          done < "$RUNNER_TEMP/assets.txt"
+          find "$RUNNER_TEMP/release-assets" -type f
+
+      - name: Upload the collected release assets
+        if: steps.version.outputs.warranted == 'true' && steps.assets.outputs.has == 'true'
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: release-assets
+          path: ${{ runner.temp }}/release-assets
+          if-no-files-found: error
+          retention-days: 1
+
+      # The release notes are written to the runner's temporary directory, which does not survive
+      # into another job, so they travel as their own artifact rather than being regenerated.
+      - name: Upload the release notes
+        if: steps.version.outputs.warranted == 'true'
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: release-notes
+          path: ${{ runner.temp }}/notes.md
+          if-no-files-found: error
+          retention-days: 1
+
+  # One job per published target, each on a runner that is natively that platform and architecture,
+  # because the build is verified by running the artifact. A cross-compiled binary cannot be run by
+  # the runner that produced it, so a target without a native runner would ship bytes nothing ever
+  # executed. The matrix is not written here: it is derived from
+  # packages/harness/scripts/release-targets.ts.
+  build:
+    name: build ${{ matrix.target }}
+    needs: resolve
+    if: needs.resolve.outputs.warranted == 'true'
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJSON(needs.resolve.outputs.matrix) }}
+    runs-on: ${{ matrix.runner }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+
+      - name: Set up Bun
+        uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+
+      - name: Install package dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Build df for ${{ matrix.target }}
+        run: bun run build --target=${{ matrix.target }}
+
+      # Compiling for a platform is not the same as working on it: a bundle can build for all five
+      # targets and still fail on one because a native module is missing or a worker cannot be
+      # found. The binary is run here, on its own platform, before it is allowed to become an asset.
+      - name: Run the built binary and record its digest
+        run: bun packages/harness/scripts/verify-target.ts --target ${{ matrix.target }}
+
+      - name: Upload the built binary and its digest
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: df-${{ matrix.target }}
+          path: |
+            packages/harness/dist/${{ matrix.asset }}
+            packages/harness/dist/${{ matrix.asset }}.tar.gz
+            packages/harness/dist/${{ matrix.asset }}.sha256
+          if-no-files-found: error
+          retention-days: 1
+
+  publish:
+    name: publish
+    needs: [resolve, build]
+    if: needs.resolve.outputs.warranted == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    env:
+      # The secrets context cannot be read from a step-level `if`, so the test is hoisted to the job.
+      HAS_APP_KEY: ${{ secrets.DARKFACTORY_APP_PRIVATE_KEY != '' }}
+    steps:
+      - name: Mint an installation token for the App
+        # `GITHUB_TOKEN` cannot open a pull request: GitHub deliberately withholds
+        # `pull_requests: write` from the token a workflow gets for itself, so
+        # `Record the released version` died on every release with
+        # `GraphQL: Resource not accessible by integration (createPullRequest)` — after the tag, the
+        # release and every asset had already been published.
+        #
+        # The App has `Pull requests: Read and write`, so its installation token can. `continue-on-error`
+        # keeps a missing key from failing the job before the fallback below is tried.
+        id: app-token
+        if: env.HAS_APP_KEY == 'true'
+        uses: actions/create-github-app-token@d72941d797fd3113feb6b93fd0dec494b13a2547 # v1.11.0
+        continue-on-error: true
+        with:
+          app-id: ${{ vars.DARKFACTORY_APP_ID || '4861004' }}
+          private-key: ${{ secrets.DARKFACTORY_APP_PRIVATE_KEY }}
+          owner: ${{ github.repository_owner }}
+          repositories: ${{ github.event.repository.name }}
+      - name: Checkout repository
+        # Tags decide whether this release already exists, so the history has to be here.
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          fetch-depth: 0
+
+      - name: Check out the pinned pipeline
+        if: inputs.pipeline-ref != ''
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          repository: ${{ inputs.pipeline-repo }}
+          ref: ${{ inputs.pipeline-ref }}
+          path: .darkfactory-pipeline
+
+      - name: Set up Bun
+        uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+
+      - name: Require explicit producer release promotion
+        env:
+          DF_REPOSITORY: ${{ github.repository }}
+          DF_EVENT: ${{ github.event_name }}
+          DF_REF: ${{ github.ref }}
+          DF_DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+          DF_COMMIT: ${{ github.sha }}
+          DF_REQUESTED_VERSION: ${{ inputs.bump }}
+        run: |
+          set -euo pipefail
+          if [ "$DF_REPOSITORY" = "marius-patrik/DarkFactory" ]; then
+            if [ "$DF_REF" != "refs/heads/$DF_DEFAULT_BRANCH" ] || [ "$(git rev-parse HEAD)" != "$DF_COMMIT" ]; then
+              echo "::error::Producer release must build the exact protected default-branch commit." >&2
+              exit 1
+            fi
+            if [ "$DF_EVENT" != "workflow_dispatch" ]; then
+              echo "::error::DarkFactory releases require explicit operator dispatch." >&2
+              exit 1
+            fi
+            if [ -z "$DF_REQUESTED_VERSION" ]; then
+              echo "::error::An explicit release version is required." >&2
+              exit 1
+            fi
+            if [ -z "$(git tag --list 'v1.*')" ] && [ "$DF_REQUESTED_VERSION" != "1.0.0" ]; then
+              echo "::error::The first stable DarkFactory release must be exactly v1.0.0." >&2
+              exit 1
+            fi
+          fi
+
+      - name: Download the release notes
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: release-notes
+          path: notes
+
+      - name: Download every built df artifact
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          pattern: df-*
+          path: dist
+          merge-multiple: true
+
+      - name: Download the collected release assets
+        if: needs.resolve.outputs.has-assets == 'true'
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: release-assets
+          path: release-assets
+
+      # Every df artifact is re-hashed here against the digest taken in the job that built and ran
+      # it. This is the only place the published bytes and the built bytes are compared, so a
+      # corrupted upload fails the release instead of being checksummed as if it were correct.
+      - name: Re-verify every df artifact and write the release checksums
+        run: bun packages/harness/scripts/release-checksums.ts dist
+
+      - name: List the assets to attach
         id: assets
         run: |
-          python - <<'PY' >> "$GITHUB_OUTPUT"
-          import json, os
-          import sys
-          sys.path.insert(0, os.environ.get("PIPELINE_SCRIPTS", ".github/scripts"))
-          import release
-          data = json.load(open(os.environ["RUNNER_TEMP"] + "/release.json"))
-          found = release.collect_assets(".", data["steps"])
-          print("files<<EOF")
-          for path in found:
-              print(path)
-          print("EOF")
-          PY
+          # The per-target `.sha256` files are the records just verified against, not release
+          # assets. `checksums.txt` supersedes them, so attaching them would publish two answers
+          # to the same question.
+          mapfile -t ASSETS < <(find dist -type f ! -name '*.sha256' | sort)
+          if [ "${{ needs.resolve.outputs.has-assets }}" = "true" ]; then
+            mapfile -t PROJECT < <(find release-assets -type f | sort)
+            ASSETS+=("${PROJECT[@]}")
+          fi
+          if [ "${#ASSETS[@]}" -lt 1 ]; then
+            echo "No release assets were produced; refusing to publish an empty release." >&2
+            exit 1
+          fi
+          printf '%s\n' "${ASSETS[@]}" | tee "$RUNNER_TEMP/asset-list.txt"
+          echo "Assets: ${#ASSETS[@]}" >> "$GITHUB_STEP_SUMMARY"
 
       - name: Create the tag and the release
-        if: steps.resolve.outputs.warranted == 'true'
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          TAG: ${{ steps.resolve.outputs.tag }}
+          # The App first, as below: `GITHUB_TOKEN` cannot open the pull request that records the
+          # version, and using one credential for both steps keeps the release attributable.
+          GH_TOKEN: ${{ steps.app-token.outputs.token || secrets.GITHUB_TOKEN }}
+          TAG: ${{ needs.resolve.outputs.tag }}
         run: |
-          if git rev-parse "$TAG" >/dev/null 2>&1; then
-            echo "$TAG already exists; nothing to do."
-            exit 0
+          # A colliding immutable release tag is a *hard* failure. Previously the job
+          # exited green here after five successful native builds but published no assets.
+          # Never move an existing tag and never claim success for a skipped release.
+          if git rev-parse -q --verify "refs/tags/$TAG" >/dev/null 2>&1; then
+            echo "::error title=Existing release tag::$TAG already exists. Fix the version resolver instead of reusing or rewriting a tag." >&2
+            exit 1
           fi
           git tag "$TAG"
           git push origin "$TAG"
 
-          mapfile -t ASSETS < <(printf '%s' "${{ steps.assets.outputs.files }}" | sed '/^$/d')
+          # Every asset is attached by one `gh release create`, so a reader never sees a release
+          # that is missing a platform the matrix claims to publish.
+          mapfile -t ASSETS < "$RUNNER_TEMP/asset-list.txt"
           gh release create "$TAG" \
             --title "$TAG" \
-            --notes-file "$RUNNER_TEMP/notes.md" \
+            --notes-file notes/notes.md \
             "${ASSETS[@]}"
 
           {
             echo "## Released \`$TAG\`"
             echo
-            echo "Assets: ${#ASSETS[@]}"
+            sed 's/^/- /' "$RUNNER_TEMP/asset-list.txt"
           } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Record the released version
-        if: steps.resolve.outputs.warranted == 'true'
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          VERSION: ${{ steps.resolve.outputs.version }}
-          TAG: ${{ steps.resolve.outputs.tag }}
+          # The App first: only its installation token may open a pull request. `GITHUB_TOKEN` is the
+          # fallback for a repository with no App key.
+          GH_TOKEN: ${{ steps.app-token.outputs.token || secrets.GITHUB_TOKEN }}
+          VERSION: ${{ needs.resolve.outputs.version }}
+          TAG: ${{ needs.resolve.outputs.tag }}
         run: |
-          python "${PIPELINE_SCRIPTS:-.github/scripts}/release.py" \
+          bun packages/harness/src/release/cli.ts \
             --repo-root . \
             --record-version "$VERSION" \
             --released-tag "$TAG"

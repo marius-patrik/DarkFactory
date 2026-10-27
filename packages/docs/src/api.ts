@@ -1,33 +1,31 @@
-import type { CapabilityDefinition } from "@darkfactory/capability";
-import { resolveRepositoryActions } from "@darkfactory/capability/actions";
-import { discoverCapabilities, resolveCapabilities } from "@darkfactory/capability/loader";
-import { detectRepositoryEvidence, type RepositoryEvidence } from "@darkfactory/core/repository-evidence";
 import { mkdtemp, readFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join, relative, resolve } from "node:path";
-import { Application, ReflectionKind, type JSONOutput } from "typedoc";
+import { Application, type JSONOutput, ReflectionKind } from "typedoc";
+import { resolveRepositoryActions } from "../../capability/src/actions.ts";
+import type { CapabilityDefinition } from "../../capability/src/index.ts";
+import { discoverCapabilities, resolveCapabilities } from "../../capability/src/loader.ts";
+import { detectRepositoryEvidence, type RepositoryEvidence } from "../../core/src/repository-evidence.ts";
+import { type DocsConfig, type DocsTypeScriptApiConfig, loadDocsConfig } from "./config.ts";
 import {
 	compileDocsContentGraph,
-	includeCapabilityDocumentation,
 	type DocsApiReference,
 	type DocsApiSymbol,
 	type DocsCapabilitySummary,
 	type DocsContentGraph,
 	type DocsRepositorySummary,
+	includeCapabilityDocumentation,
 } from "./content.ts";
-import { loadDocsConfig, type DocsConfig, type DocsTypeScriptApiConfig } from "./config.ts";
 
 /** Inputs required to extract a TypeScript API model. */
-export interface TypeScriptApiExtractionOptions {
+interface TypeScriptApiExtractionOptions {
 	entryPoints: readonly string[];
 	tsconfig: string;
 	name?: string;
 }
 
 /** Strictly extracts TypeScript/TSDoc API metadata as TypeDoc JSON without rendering HTML. */
-export async function extractTypeScriptApi(
-	options: TypeScriptApiExtractionOptions,
-): Promise<JSONOutput.ProjectReflection> {
+async function extractTypeScriptApi(options: TypeScriptApiExtractionOptions): Promise<JSONOutput.ProjectReflection> {
 	const app = await Application.bootstrap({
 		name: options.name,
 		entryPoints: [...options.entryPoints],
@@ -100,7 +98,7 @@ function apiSymbol(reflection: any): DocsApiSymbol {
 }
 
 /** Converts strict TypeDoc JSON into the browser-safe API reference carried by the docs graph. */
-export function apiReferenceFromTypeDoc(project: JSONOutput.ProjectReflection): DocsApiReference {
+function apiReferenceFromTypeDoc(project: JSONOutput.ProjectReflection): DocsApiReference {
 	return { name: project.name || "API", symbols: (project.children ?? []).map(apiSymbol) };
 }
 
@@ -171,7 +169,7 @@ export async function compileDocsContentGraphWithDetectedApi(
 ): Promise<DocsContentGraph> {
 	const config = options.config ?? loadDocsConfig(repoRoot);
 	const evidence = await detectRepositoryEvidence(repoRoot);
-	const capabilitiesRoot = options.capabilitiesRoot ?? resolve(repoRoot, "capabilities");
+	const capabilitiesRoot = options.capabilitiesRoot ?? resolve(repoRoot, ".darkfactory", "plugins");
 	const definitions = await discoverCapabilities(capabilitiesRoot);
 	const applicable = resolveCapabilities(definitions, evidence.domains).capabilities;
 	const resolution = resolveRepositoryActions(evidence, applicable);

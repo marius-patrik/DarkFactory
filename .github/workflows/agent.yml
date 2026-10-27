@@ -2,7 +2,10 @@ name: Autonomous Agent
 
 on:
   issues:
-    types: [opened]
+    # `labeled` is what lets the pipeline be started on an issue that already exists. Without it a
+    # failure report filed by report-failure.yml - and any issue a human opened before this trigger
+    # existed - can never enter the graph, because the only entry edge carries the `Request` label.
+    types: [opened, labeled]
   issue_comment:
     types: [created]
   pull_request_review_comment:
@@ -77,8 +80,43 @@ jobs:
     # Comments written by a bot (the agent's own Interpretation, plan and review comments, board
     # automation) are skipped here rather than inside the container: the runner ignores them anyway,
     # and reaching that check cost a container build and two OAuth refreshes per comment.
-    if: (vars.AGENT_ENABLED == 'true' || inputs.agent-enabled == 'true') && !endsWith(github.event.comment.user.login, '[bot]') && !contains(github.event.issue.labels.*.name, 'pipeline-failure')
+    #
+    # `Failed again:` is the exception, and it is a narrow one. The failure reporter posts it on the
+    # already-open failure issue when a red build recurs after a repair, so it is the only signal
+    # that resumes a muted loop; it is recognised by shape because its author is the pipeline itself.
+    #
+    # A `pipeline-failure` issue is deliberately NOT skipped. It used to be, which muted the whole
+    # loop: report-failure.yml files exactly that issue when a red build needs attention, and the
+    # guard then refused to act on it, so every failure was reported and ignored forever. The label
+    # stays for board and triage purposes; the loop is bounded by the deterministic effect identity
+    # the runner claims in agent_runner.py (`claim_failure_dispatch`), not by a label test.
     runs-on: ubuntu-latest
+    # The pipeline's own failure reports are not work. `report-failure.yml` fires on
+    # `workflow_run: completed` and opens a `pipeline-failure`-labelled issue whenever a workflow
+    # fails. This job triggers on `issues: [opened]` with no label filter, so it started on each of
+    # those; it then failed on every run (no `setup-bun` step — see below), which produced another
+    # failure report, which woke it again. 100 consecutive Autonomous Agent failures and a
+    # 1,411-run Actions backlog came from this alone.
+    #
+    # The graph's entry edge requires the `Request` label, but the workflow is dispatched before the
+    # graph is consulted, so nothing downstream could decline the run. Gating here is what stops it.
+    # A human opening an issue, or labelling any issue `Request`, is unaffected.
+    # Kept the existing clauses intact: the agent stays opt-in via `AGENT_ENABLED`, and bot comments
+    # are still declined except for the pipeline's own `Failed again:` ones, which it wants to see so
+    # a recovered workflow closes its issue.
+    #
+    # Added: `issues: [opened]` has no label filter, so this job started on *every* opened issue —
+    # including each `pipeline-failure` issue `report-failure.yml` opens when a workflow fails. The
+    # graph's entry edge requires the `Request` label, but the workflow is dispatched before the
+    # graph is consulted, so nothing downstream could decline the run. Combined with the job failing
+    # on every run (no `setup-bun` step — below), that was self-sustaining: 100 consecutive Autonomous
+    # Agent failures and a 1,411-run Actions backlog.
+    if: >-
+      (vars.AGENT_ENABLED == 'true' || inputs.agent-enabled == 'true')
+      && (!endsWith(github.event.comment.user.login, '[bot]') || startsWith(github.event.comment.body, 'Failed again:'))
+      && (github.event_name != 'issues'
+          || github.event.issue.labels == null
+          || !contains(github.event.issue.labels.*.name, 'pipeline-failure'))
     env:
       # The secrets context cannot be read from a step-level `if`, so the test
       # is hoisted to the job, where it can.
@@ -94,7 +132,7 @@ jobs:
         # user-owned board still needs GH_PROJECT_TOKEN. That is the only thing that does.
         id: app-token
         if: env.HAS_APP_KEY == 'true'
-        uses: actions/create-github-app-token@v1
+        uses: actions/create-github-app-token@d72941d797fd3113feb6b93fd0dec494b13a2547 # v1.11.0
         continue-on-error: true
         with:
           app-id: ${{ vars.DARKFACTORY_APP_ID || '4861004' }}
@@ -119,6 +157,19 @@ jobs:
             echo "delegated=false" >> "$GITHUB_OUTPUT"
           fi
 
+      - name: Set up Bun
+        # `Resolve target environment` below runs `bun -e` on the host, before the agent container
+        # exists. The job had no `setup-bun` step at all, so that step died at
+        # `bun: command not found` (exit 127) on every run. Because this workflow triggers on
+        # `issues: [opened, labeled]`, and `report-failure.yml` opens a labelled issue every time
+        # any workflow fails, that made it a fixed point of its own failure: agent fails -> report
+        # opens an issue -> agent runs on it -> fails -> report opens another. 100 consecutive
+        # Autonomous Agent failures, and a 1,411-run Actions backlog.
+        #
+        # The container (step "Dispatch agent in container") has its own Bun; this is only about
+        # the host-side step that precedes it.
+        uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+
       - name: Resolve target environment
         id: target-env
         if: steps.delegate.outputs.delegated != 'true'
@@ -126,72 +177,116 @@ jobs:
           INPUT_TARGET_REPO: ${{ inputs.target-repo }}
           INPUT_EVENT_NAME: ${{ inputs.event-name }}
         run: |
-          python3 - << 'PY'
-          import json, os
+          # Unwraps a re-dispatched event: a dispatch that carries its own `client_payload.payload`
+          # has the real event one level down, and the runner has to be handed that rather than the
+          # wrapper. An inner payload that is a string is parsed when it parses and kept verbatim
+          # when it does not, because a non-JSON payload is still the payload.
+          bun -e '
+          import { appendFileSync, writeFileSync } from "node:fs";
+          const event = await Bun.file(process.env.GITHUB_EVENT_PATH).json();
+          const payload = (event && typeof event === "object" ? event.client_payload : null) ?? {};
+          const targetRepo =
+            payload.repository ||
+            process.env.INPUT_TARGET_REPO ||
+            process.env.GITHUB_REPOSITORY ||
+            "";
+          const eventName =
+            payload.event_name ||
+            process.env.INPUT_EVENT_NAME ||
+            process.env.GITHUB_EVENT_NAME ||
+            "";
+          const owner = targetRepo ? targetRepo.split("/")[0] : "";
+          let eventPath = process.env.GITHUB_EVENT_PATH;
+          if (event?.action === "agent-dispatch" || "client_payload" in (event ?? {})) {
+            const inner = payload.payload;
+            if (inner) {
+              let value = inner;
+              if (typeof value === "string") {
+                try { value = JSON.parse(value); } catch { /* kept verbatim */ }
+              }
+              const serialised =
+                value !== null && typeof value === "object" ? JSON.stringify(value) : String(value);
+              writeFileSync("/tmp/event.json", serialised);
+              eventPath = "/tmp/event.json";
+            }
+          }
+          const isExternal = targetRepo !== process.env.GITHUB_REPOSITORY;
+          appendFileSync(
+            process.env.GITHUB_OUTPUT,
+            [
+              `repo=${targetRepo}`,
+              `owner=${owner}`,
+              `event_name=${eventName}`,
+              `event_path=${eventPath}`,
+              `is_external=${isExternal}`,
+              "",
+            ].join("\n"),
+          );
+          ' >> /dev/null
 
-          with open(os.environ["GITHUB_EVENT_PATH"], encoding="utf-8") as f:
-              event = json.load(f)
-
-          payload = event.get("client_payload", {}) if isinstance(event, dict) else {}
-          target_repo = payload.get("repository") or os.environ.get("INPUT_TARGET_REPO") or os.environ.get("GITHUB_REPOSITORY") or ""
-          event_name = payload.get("event_name") or os.environ.get("INPUT_EVENT_NAME") or os.environ.get("GITHUB_EVENT_NAME") or ""
-          owner = target_repo.partition("/")[0] if target_repo else ""
-
-          if event.get("action") == "agent-dispatch" or "client_payload" in event:
-              inner = payload.get("payload")
-              if inner:
-                  if isinstance(inner, str):
-                      try:
-                          inner = json.loads(inner)
-                      except Exception:
-                          pass
-                  with open("/tmp/event.json", "w", encoding="utf-8") as f:
-                      if isinstance(inner, (dict, list)):
-                          json.dump(inner, f)
-                      else:
-                          f.write(str(inner))
-                  event_path = "/tmp/event.json"
-              else:
-                  event_path = os.environ["GITHUB_EVENT_PATH"]
-          else:
-              event_path = os.environ["GITHUB_EVENT_PATH"]
-
-          is_external = "true" if target_repo != os.environ.get("GITHUB_REPOSITORY") else "false"
-
-          with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as f:
-              f.write(f"repo={target_repo}\n")
-              f.write(f"owner={owner}\n")
-              f.write(f"event_name={event_name}\n")
-              f.write(f"event_path={event_path}\n")
-              f.write(f"is_external={is_external}\n")
-          PY
+      - name: Resolve trusted target default branch
+        id: trusted-target
+        if: steps.delegate.outputs.delegated != 'true'
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token || secrets.GH_PROJECT_TOKEN || secrets.GITHUB_TOKEN }}
+          TARGET_REPOSITORY: ${{ steps.target-env.outputs.repo }}
+        run: |
+          set -euo pipefail
+          # A repository_dispatch payload is not an authority to select executable code.
+          # Resolve the actual repository through the authenticated GitHub API.
+          if [[ ! "$TARGET_REPOSITORY" =~ ^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$ ]]; then
+            echo "::error::Invalid target repository identity" >&2
+            exit 1
+          fi
+          branch=$(gh api "repos/$TARGET_REPOSITORY" --jq '.default_branch')
+          if [ -z "$branch" ] || ! git check-ref-format --branch "$branch" >/dev/null; then
+            echo "::error::Cannot determine trusted target default branch" >&2
+            exit 1
+          fi
+          echo "ref=$branch" >> "$GITHUB_OUTPUT"
 
       - name: Checkout repository
         # Checked out with the App's token, so the branches the agent pushes are pushed by the App
         # and the checks on them run. A push made with GITHUB_TOKEN triggers no workflow at all,
         # which is why a person's token was reached for here in the first place.
+        #
+        # `fetch-depth: 0` is required, not a preference. The runner diffs the branch against its
+        # base to decide what is out of plan scope, and the default shallow checkout contains one
+        # commit and no other refs, so every `origin/<base>` it tried was unresolvable. The diff
+        # then returned nothing and the scope gate passed on an empty file list.
         if: steps.delegate.outputs.delegated != 'true'
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
           repository: ${{ steps.target-env.outputs.repo }}
+          # Review-comment events may otherwise default to an untrusted PR merge ref.
+          # Agent runtime/image assembly must come only from reviewed default-branch code.
+          ref: ${{ steps.trusted-target.outputs.ref }}
           token: ${{ steps.app-token.outputs.token || secrets.GH_PROJECT_TOKEN || secrets.GITHUB_TOKEN }}
+          fetch-depth: 0
 
       - name: Check out the pinned pipeline
         if: steps.delegate.outputs.delegated != 'true' && (inputs.pipeline-ref != '' || steps.target-env.outputs.is_external == 'true')
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
           repository: ${{ inputs.pipeline-repo || 'marius-patrik/DarkFactory' }}
-          ref: ${{ inputs.pipeline-ref || 'darkfactory' }}
+          # `main` is the pipeline repository's default branch. The previous `darkfactory` default
+          # names a branch that no longer exists, so this checkout failed and the agent container
+          # was never built for an external run.
+          ref: ${{ inputs.pipeline-ref || 'main' }}
           path: .darkfactory-pipeline
 
-      - name: Build agent container
-        # The image is built from the pipeline's definition, so every consumer runs the same
-        # runner; the repository being worked on is still the caller's checkout, mounted below.
+      - name: Install Nix
+        if: steps.delegate.outputs.delegated != 'true'
+        uses: cachix/install-nix-action@75c75c31ebece974e48ebc36b4ad125bd97bd97b # v31
+
+      - name: Build and load Nix agent image
         if: steps.delegate.outputs.delegated != 'true'
         run: |
           CONTEXT="."
-          [ -d .darkfactory-pipeline ] && CONTEXT=".darkfactory-pipeline"
-          docker build -t darkfactory-agent -f "$CONTEXT/docker/Dockerfile.agent" "$CONTEXT"
+          [ -d .darkfactory-pipeline ] && CONTEXT="./.darkfactory-pipeline"
+          nix build "$CONTEXT#agentImage" --no-write-lock-file -L -o "$RUNNER_TEMP/agent-image"
+          docker load -i "$RUNNER_TEMP/agent-image"
+          docker image inspect darkfactory-agent:nix >/dev/null
 
       - name: Dispatch agent in container
         if: steps.delegate.outputs.delegated != 'true'
@@ -231,5 +326,5 @@ jobs:
             -e GITHUB_REPOSITORY_OWNER="${{ steps.target-env.outputs.owner }}" \
             -e PROJECT_NUMBER \
             -v "${{ github.workspace }}:/workspace" \
-            darkfactory-agent dispatch
+            darkfactory-agent:nix dispatch
 

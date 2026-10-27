@@ -4,7 +4,7 @@ import { rename } from "node:fs/promises";
 const TRANSIENT_CODES = new Set(["EPERM", "EACCES", "EBUSY"]);
 
 /** Options for durable atomic file replacement. */
-export interface ReplaceFileOptions {
+interface ReplaceFileOptions {
 	/** Rename implementation; injectable for tests. */
 	rename?: (from: string, to: string) => Promise<void>;
 	/** Wait before each retry, in milliseconds. The default totals a little over 3 seconds. */

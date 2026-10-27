@@ -1,0 +1,28 @@
+name: Verify Python Quality Versions
+on:
+  pull_request:
+    paths:
+      - "packages/harness/src/ci/quality-runner.ts"
+      - ".github/tests/harness/ci/python-runtime.integration.test.ts"
+      - ".github/workflows/quality-python-versions.yml"
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  python-quality-versions:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - uses: oven-sh/setup-bun@v2
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - name: Install runtime tools
+        run: |
+          bun install --frozen-lockfile
+          python -m pip install uv
+      - name: Verify real Python 3.10 and 3.13 isolation
+        env:
+          DF_PYTHON_RUNTIME_SMOKE: "true"
+        run: bun test --timeout=180000 ./.github/tests/harness/ci/python-runtime.integration.test.ts

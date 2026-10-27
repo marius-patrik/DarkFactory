@@ -1,17 +1,24 @@
 name: Branch Policy
 
 on:
-  pull_request:
-    branches: [main]
-    types: [opened, synchronize, reopened]
+  # The `pull_request` trigger and the `main-source` job it served are both gone. `main-source`
+  # asserted that a pull request into `main` came *from* `develop`, which is unsatisfiable once the
+  # integration branch has been renamed onto `main` -- there is no `develop` left to require. It was
+  # also the weaker of the two gates (one check, no approvals), so collapsing to a single lane loses
+  # nothing: `main` keeps the full gate (`quality` + `verify-bound-issue`, one approval, strict).
   push:
-    branches: [develop]
+    branches: [main]
+    # What the reconcile actually reads: the configuration document (default branch, development
+    # branch, required checks) and the two scripts that apply it. `repo.df` and `config.df` were
+    # named here and are not repository files, so the one file the policy is derived from was not
+    # in the filter and a change to the required checks reconciled nothing.
     paths:
       - "repo.dfconfig"
       - "config.dfconfig"
       - ".dfconfig"
-      - ".github/scripts/manifest.py"
-      - ".github/scripts/repo_settings.py"
+      - "packages/harness/src/install/manifest.ts"
+      - "packages/github/src/ci/repo-settings.ts"
+      - "packages/github/src/ci/protection.ts"
       - ".github/workflows/branch-policy.yml"
   workflow_dispatch:
 
@@ -19,31 +26,62 @@ permissions:
   contents: read
 
 jobs:
-  main-source:
-    name: main-source
-    if: github.event_name == 'pull_request'
-    runs-on: ubuntu-latest
-    env:
-      HEAD_REPOSITORY: ${{ github.event.pull_request.head.repo.full_name }}
-      HEAD_BRANCH: ${{ github.event.pull_request.head.ref }}
-    steps:
-      - name: Require the repository develop branch
-        run: |
-          test "$HEAD_REPOSITORY" = "$GITHUB_REPOSITORY"
-          test "$HEAD_BRANCH" = "develop"
-
   reconcile:
     name: reconcile-branch-policy
-    if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     env:
+      # The secrets context cannot be read from a step-level `if`, so the test is hoisted to the
+      # job, where it can. Same shape as `install.yml`.
+      HAS_APP_KEY: ${{ secrets.DARKFACTORY_APP_PRIVATE_KEY != '' }}
       GH_PROJECT_TOKEN: ${{ secrets.GH_PROJECT_TOKEN }}
     steps:
+      - name: Mint an installation token when the App key is available
+        # Applying branch protection needs repository administration. `GH_PROJECT_TOKEN` answers
+        # `GET /repos/{slug}/rulesets` with 404, which GitHub returns for a resource the token
+        # cannot see rather than one that does not exist -- so the reconcile reported
+        # "failed: Not Found" on both declared lanes. The App is the credential `install.yml`
+        # already prefers for this same command; `continue-on-error` so a missing key falls back
+        # rather than failing the run before the fallback is tried.
+        id: app-token
+        if: env.HAS_APP_KEY == 'true'
+        uses: actions/create-github-app-token@v1
+        continue-on-error: true
+        with:
+          app-id: ${{ vars.DARKFACTORY_APP_ID || '4861004' }}
+          private-key: ${{ secrets.DARKFACTORY_APP_PRIVATE_KEY }}
+          owner: ${{ github.repository_owner }}
+          repositories: ${{ github.event.repository.name }}
+
       - name: Require repository-administration credentials
-        run: test -n "$GH_PROJECT_TOKEN"
+        # Through `env`, never interpolated into the script: a secret pasted into a `run:` block is
+        # a script-injection surface, which the repository's own governance test enforces.
+        env:
+          CREDENTIAL: ${{ steps.app-token.outputs.token || secrets.GH_PROJECT_TOKEN }}
+        run: test -n "$CREDENTIAL"
 
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Set up Bun
+        uses: oven-sh/setup-bun@v2
+
+      - name: Install the harness dependencies
+        # The command is a file in the checked-out tree, so the tree has to be installable. Frozen,
+        # because the lockfile is what the branch this reconciles is meant to be protected by.
+        run: bun install --frozen-lockfile
+
       - name: Reconcile default branch and protection
-        run: python3 "${PIPELINE_SCRIPTS:-.github/scripts}/repo_settings.py" --apply --branches-only
+        # `repo-settings.ts` implements the `--branches-only` half of `repo_settings.py`: the
+        # default branch from the manifest, then branch protection, then exit 1 if either failed.
+        #
+        # This command rejects the flags that would select the three still-unported operations
+        # (`apply_labels`, `apply_project_board`, `apply_pages`) rather than accepting and ignoring
+        # them. A flag that parses and does nothing is how a workflow comes to believe it applied
+        # protection it never touched. The other four are ported: `install.yml` runs the full path
+        # with `--skip-protection` and no Python.
+        env:
+          # `repo-settings.ts` reads `GH_TOKEN` (or `GITHUB_TOKEN`) and throws
+          # "no token: set GH_TOKEN or GITHUB_TOKEN" without one. Set here rather than on the job
+          # because the `steps` context is not available in `jobs.<id>.env`.
+          GH_TOKEN: ${{ steps.app-token.outputs.token || secrets.GH_PROJECT_TOKEN || secrets.GITHUB_TOKEN }}
+        run: bun packages/github/src/ci/repo-settings.ts --apply --branches-only

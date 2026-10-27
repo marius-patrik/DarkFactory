@@ -5,7 +5,7 @@ import { isValidVaultKey } from "./vault-crypto.ts";
 const ALGORITHM = "aes-256-gcm";
 
 /** Encrypted authenticated credential-account transfer envelope. */
-export interface EncryptedCredentialExport {
+interface EncryptedCredentialExport {
 	version: 1;
 	algorithm: typeof ALGORITHM;
 	iv: string;
@@ -58,7 +58,10 @@ export function importCredentialAccount(
 		]).toString("utf8");
 		return validateAccountRecord(JSON.parse(plaintext) as unknown, expectedId);
 	} catch (error) {
-		if (error instanceof Error && /Account record|Invalid account|credential slot|metadata|does not match/iu.test(error.message)) {
+		if (
+			error instanceof Error &&
+			/Account record|Invalid account|credential slot|metadata|does not match/iu.test(error.message)
+		) {
 			throw error;
 		}
 		throw new Error("Failed to decrypt credential export: bad key or corrupted ciphertext");

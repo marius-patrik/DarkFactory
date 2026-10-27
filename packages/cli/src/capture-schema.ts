@@ -3,7 +3,7 @@ import {
 	captureJsonSchema,
 	getCaptureSchema,
 	listCaptureSchemas,
-} from "@darkfactory/protocol/result-capture";
+} from "../../protocol/src/result-capture.ts";
 
 /**
  * Format registered capture schemas for `--capture-schema [name]`.
@@ -18,9 +18,7 @@ export function formatCaptureSchema(name?: string): string {
 	}
 	const schema = getCaptureSchema(name);
 	if (!schema) {
-		throw new Error(
-			`Unknown capture schema: ${name}. Available: ${Object.keys(CAPTURE_SCHEMAS).join(", ")}`,
-		);
+		throw new Error(`Unknown capture schema: ${name}. Available: ${Object.keys(CAPTURE_SCHEMAS).join(", ")}`);
 	}
 	return JSON.stringify(captureJsonSchema(schema), null, 2);
 }

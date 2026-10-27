@@ -4,7 +4,7 @@ import { promisify } from "node:util";
 const execFileAsync = promisify(execFile);
 
 /** Metadata-only argv used to enumerate macOS keychain items. */
-export const KEYCHAIN_ENUMERATION_ARGV: readonly string[] = ["dump-keychain"];
+const KEYCHAIN_ENUMERATION_ARGV: readonly string[] = ["dump-keychain"];
 
 /** Read-only external keyring access used by credential importers. */
 export interface ExternalKeyring {
@@ -13,7 +13,7 @@ export interface ExternalKeyring {
 }
 
 /** Parse service/account metadata from `security dump-keychain` output. */
-export function parseKeychainDump(dump: string): Array<{ service: string; account: string | null }> {
+function parseKeychainDump(dump: string): Array<{ service: string; account: string | null }> {
 	const items: Array<{ service: string; account: string | null }> = [];
 	let service: string | null = null;
 	let account: string | null = null;
@@ -51,7 +51,13 @@ export function decodeExternalKeyringPayload(value: string): string {
 	}
 }
 
-/** macOS read-only external keyring adapter. Other platforms return no entries. */
+/**
+ * macOS read-only external keyring adapter. Other platforms return no entries.
+ *
+ * Exported so `df account borrow` can construct it: the borrowed-credential path is only reachable
+ * when something supplies an `ExternalKeyring`, and this is the implementation for the one platform
+ * that has a readable system keyring.
+ */
 export class OsExternalKeyring implements ExternalKeyring {
 	async listServices(): Promise<Array<{ service: string; account: string | null }>> {
 		if (process.platform !== "darwin") return [];

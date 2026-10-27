@@ -1,6 +1,11 @@
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
-import type { AccountRecord, BorrowedCredentialCoordinator, BorrowedCredentialPlan, OAuthCredentialSlot } from "./credentials.ts";
+import type {
+	AccountRecord,
+	BorrowedCredentialCoordinator,
+	BorrowedCredentialPlan,
+	OAuthCredentialSlot,
+} from "./credentials.ts";
 import { decodeExternalKeyringPayload, type ExternalKeyring } from "./external-keyring.ts";
 
 /** Supported expiry representations in external CLI credential documents. */
@@ -27,7 +32,7 @@ function object(value: unknown, label: string): Record<string, unknown> {
 }
 
 function pathParts(path: string, sourceEntry?: string): string[] {
-	return path.split(".").map((part) => (part === "*" ? sourceEntry ?? "" : part));
+	return path.split(".").map((part) => (part === "*" ? (sourceEntry ?? "") : part));
 }
 
 function getPath(document: Record<string, unknown>, path: string, sourceEntry?: string): unknown {
@@ -49,7 +54,11 @@ function expiry(value: unknown, format: ExternalExpiryFormat): number | undefine
 	return format === "epoch_seconds" ? value * 1_000 : value;
 }
 
-function sourceEntry(document: Record<string, unknown>, config: ExternalCredentialSourceConfig, account: AccountRecord): string | undefined {
+function sourceEntry(
+	document: Record<string, unknown>,
+	config: ExternalCredentialSourceConfig,
+	account: AccountRecord,
+): string | undefined {
 	const stored = account.metadata?.source_entry;
 	if (stored) return stored;
 	const wildcard = Object.values(config.fields).some((path) => path.split(".").includes("*"));
@@ -77,13 +86,20 @@ export class ConfiguredBorrowedCredentialCoordinator implements BorrowedCredenti
 	}
 
 	private config(account: AccountRecord): ExternalCredentialSourceConfig {
-		const id = account.metadata?.importer;
+		// Every importer records the source under `importedFrom` -- that is the field
+		// `markImportedAccount` and `df account borrow` both write, and the field the account record
+		// carries. This read `importer`, which nothing has ever set, so a borrowed account could never
+		// find its source. It only went unnoticed because no account was ever borrowed.
+		const id = account.metadata?.importedFrom ?? account.metadata?.importer;
 		const config = id ? this.sources.get(id) : undefined;
 		if (!config) throw new Error(`Borrowed account ${account.id} has no configured source importer`);
 		return config;
 	}
 
-	private async document(account: AccountRecord, config: ExternalCredentialSourceConfig): Promise<Record<string, unknown>> {
+	private async document(
+		account: AccountRecord,
+		config: ExternalCredentialSourceConfig,
+	): Promise<Record<string, unknown>> {
 		if (account.metadata?.source_kind === "keyring" || config.keyring) {
 			if (!this.keyring) throw new Error("External keyring source is not available");
 			const service = account.metadata?.source_service ?? config.keyring?.service;
@@ -96,7 +112,10 @@ export class ConfiguredBorrowedCredentialCoordinator implements BorrowedCredenti
 		const relative = account.metadata?.source_path ?? config.path;
 		if (!relative) throw new Error("Borrowed credential file path is not configured");
 		try {
-			return object(JSON.parse(await readFile(join(this.sourceHome, relative), "utf8")) as unknown, "Borrowed credential source");
+			return object(
+				JSON.parse(await readFile(join(this.sourceHome, relative), "utf8")) as unknown,
+				"Borrowed credential source",
+			);
 		} catch (error) {
 			if (error instanceof SyntaxError) throw new Error("Borrowed credential source contains invalid JSON");
 			throw error;
@@ -113,7 +132,8 @@ export class ConfiguredBorrowedCredentialCoordinator implements BorrowedCredenti
 		if (typeof access !== "string" || !access || typeof refresh !== "string" || !refresh) {
 			throw new Error("Borrowed credential source is missing its OAuth token fields");
 		}
-		if (!expires || !Number.isFinite(expires)) throw new Error("Borrowed credential source has no valid access token expiry");
+		if (!expires || !Number.isFinite(expires))
+			throw new Error("Borrowed credential source has no valid access token expiry");
 		const rawAccountId = config.fields.accountId ? getPath(document, config.fields.accountId, entry) : undefined;
 		const credential: OAuthCredentialSlot = {
 			type: "oauth",

@@ -16,9 +16,7 @@ export type CanonicalStatus = (typeof CANONICAL_STATUSES)[number];
 /** Supported workflow graph node categories. */
 export type NodeKind = "agent" | "gate" | "automation" | "check-reference";
 /** GitHub author associations accepted by authorization contracts. */
-export const AUTHOR_ASSOCIATIONS = ["OWNER", "MEMBER", "COLLABORATOR", "AUTHOR"] as const;
-/** GitHub author association accepted by authorization contracts. */
-export type AuthorAssociation = (typeof AUTHOR_ASSOCIATIONS)[number];
+export type AuthorAssociation = "OWNER" | "MEMBER" | "COLLABORATOR" | "AUTHOR";
 
 /** Fields shared by all workflow graph nodes. */
 export interface BaseNode {
@@ -80,7 +78,13 @@ export interface CheckReferenceNode extends BaseNode {
 /** Any supported workflow graph node. */
 export type GraphNode = AgentNode | GateNode | AutomationNode | CheckReferenceNode;
 /** Named loop semantics supported by graph edges. */
-export type LoopKind = "self_review" | "ci_repair" | "gate_revision" | "deviation_rework" | "planning_revision" | "review_fix";
+export type LoopKind =
+	| "self_review"
+	| "ci_repair"
+	| "gate_revision"
+	| "deviation_rework"
+	| "planning_revision"
+	| "review_fix";
 /** Events/outcomes that may activate a workflow edge. */
 export type EdgeOn =
 	| { event: string; filter: { ignore_bots: true; label?: string }; when?: string }
@@ -114,7 +118,7 @@ export interface Actor {
 }
 
 /** Normalized external event consumed by the graph runtime. */
-export type GraphEvent = (
+export type GraphEvent =
 	| { type: "issues.opened" | "issues.labeled" | "comment"; actor: Actor; body?: string; label?: string }
 	| { type: "review"; state: string; actor: Actor }
 	| {
@@ -125,11 +129,7 @@ export type GraphEvent = (
 	  }
 	| { type: "checks.completed"; conclusion: "required_green" | "failed" }
 	| { type: "schedule"; schedule: string; now?: string }
-	| { type: "children.completed"; node: string; outcome: "all_done" | "any_failed" }
-) & {
-	/** Stable identity of the external ingress event. Internal node events inherit the ingress identity. */
-	event_id?: string;
-};
+	| { type: "children.completed"; node: string; outcome: "all_done" | "any_failed" };
 
 /** Persisted resumable workflow-run state. */
 export interface RunState {
@@ -144,14 +144,6 @@ export interface RunState {
 	checkpoints?: { run_id: string; node: string; eligible: boolean }[];
 	children?: { run_id: string; node: string; eligible: boolean }[];
 	reviews?: Partial<Record<ReviewSubject, ReviewRuntimeState>>;
-	/** Last durable internal event for crash-safe continuation of the current ingress. */
-	resume_event?: GraphEvent;
-	/** External ingress event identities that completed without an unhandled effect failure. */
-	processed_events?: string[];
-	/** External ingress event currently being processed; cleared when that ingress is durable. */
-	active_event_id?: string;
-	/** Durable gate/comment/hint effect awaiting successful external application. */
-	pending_action?: Exclude<PlanAction, { type: "run" } | { type: "none" }>;
 }
 
 /** Deterministic action emitted by graph planning. */

@@ -21,10 +21,41 @@ on:
         type: boolean
         default: true
 
+  # The App sweep calls this rather than reimplementing the installation, so there is one code path
+  # and a consumer is installed the same way whoever asked for it.
+  #
+  # `apply-settings` carries its own `default` rather than relying on the caller's, and that is
+  # load-bearing: an input with no default evaluates to the empty string under `workflow_call`, so
+  # `if: inputs.apply-settings` would silently become false and every swept repository would install
+  # its callers and silently skip its labels, board and settings. `workflow_dispatch` defaults a
+  # boolean the same way, so stating it once per trigger is the only way both agree.
+  workflow_call:
+    inputs:
+      repository:
+        description: "Repository to install into, as owner/name."
+        required: true
+        type: string
+      ref:
+        description: "Pipeline commit to pin. Empty means this workflow's own commit."
+        required: false
+        type: string
+        default: ""
+      apply-settings:
+        description: "Also reconcile labels, board and repository settings."
+        required: false
+        type: boolean
+        default: true
+    secrets:
+      DARKFACTORY_APP_PRIVATE_KEY: {required: false}
+      GH_PROJECT_TOKEN: {required: false}
+
 permissions:
   contents: read
 
 concurrency:
+  # Keyed on the repository being installed rather than on `github.workflow`, which is what keeps a
+  # matrix fan-out from cancelling itself: under `workflow_call` every matrix job reports the caller's
+  # workflow name, so a `github.workflow` group would have all of them share one slot and run serially.
   group: install-${{ inputs.repository }}
   cancel-in-progress: false
 
@@ -32,10 +63,24 @@ jobs:
   install:
     name: install
     runs-on: ubuntu-latest
+    # Bounded, because the sweep calls this job in a matrix and the sweep's concurrency group does not
+    # cancel itself. GitHub's default is six hours, so a hung install - a checkout waiting on a prompt, a
+    # `gh` call against a rate-limited API - held its slot for six hours, and because the sweep is
+    # `cancel-in-progress: false` every later sweep queued behind it rather than replacing it. One
+    # repository's hang would have stopped every repository from being installed, hourly, indefinitely.
+    #
+    # Fifteen minutes is generous for what this does: two checkouts, `bun install --frozen-lockfile`, a
+    # generation pass and a pull request. The sweep's own deciding job is bounded at ten, and a matrix
+    # entry that runs longer than that is stuck rather than slow.
+    timeout-minutes: 15
     env:
       # The secrets context cannot be read from a step-level `if`, so the test is hoisted to the
       # job, where it can.
       HAS_APP_KEY: ${{ secrets.DARKFACTORY_APP_PRIVATE_KEY != '' }}
+      # Named once because two steps need it: the one that creates the branch and the one that
+      # commits to it. A reinstall pushes to the branch the last run created, so the name is not
+      # incidental and neither step may spell its own.
+      INSTALL_BRANCH: install/darkfactory-pipeline
     steps:
       - name: Name the target repository
         # `repositories:` takes bare names, and the input is `owner/name`.
@@ -83,11 +128,6 @@ jobs:
       - name: Install DarkFactory runtime
         run: bun install --frozen-lockfile --cwd .darkfactory-pipeline
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
-
       - name: Describe the target
         id: target
         env:
@@ -100,19 +140,21 @@ jobs:
       - name: Generate the installation
         id: generate
         env:
-          PYTHONPATH: ${{ github.workspace }}/.darkfactory-pipeline/.github/scripts
           TARGET_ROOT: ${{ github.workspace }}/target
           TARGET_REPOSITORY: ${{ inputs.repository }}
           TARGET_BRANCH: ${{ steps.target.outputs.branch }}
           TARGET_DESCRIPTION: ${{ steps.target.outputs.description }}
           PIPELINE_REPO: ${{ github.repository }}
           PIPELINE_REF: ${{ inputs.ref || github.sha }}
-        run: python3 .darkfactory-pipeline/.github/scripts/install.py
+        run: |
+          cd .darkfactory-pipeline
+          bun packages/harness/src/install/main.ts
 
       - name: Apply the declared licence
         # A df subcommand rather than a pipeline script. The licence text is fetched from GitHub's
         # licence API rather than bundled, because a bundled copy is a fork of a legal document that
         # drifts from the canonical wording.
+        id: licence
         env:
           TARGET_ROOT: ${{ github.workspace }}/target
           GH_TOKEN: ${{ steps.app-token.outputs.token || secrets.GH_PROJECT_TOKEN || secrets.GITHUB_TOKEN }}
@@ -161,17 +203,57 @@ jobs:
           esac
           echo "number=$EXISTING" >> "$GITHUB_OUTPUT"
 
+      - name: Stage what the installation wrote
+        if: steps.generate.outputs.written == 'true'
+        working-directory: target
+        env:
+          # The paths come from the generator rather than from a list written here. The list was
+          # `git add .github repo.df`, and the manifest this pipeline writes is `repo.dfconfig`, so
+          # `git add` failed on a pathspec git has never heard of; a step runs under `bash -e`, so it
+          # aborted with no commit, no push and no pull request. Nothing asserted what was staged,
+          # which is why that survived sixteen days.
+          WRITTEN_PATHS: ${{ steps.generate.outputs.paths }}
+          # The licence is written by its own step, from the manifest's declaration rather than by
+          # the generator, so it is not in `WRITTEN_PATHS` and has to be asked for separately.
+          LICENSE_SPDX: ${{ steps.licence.outputs.spdx }}
+        run: |
+          BRANCH="$INSTALL_BRANCH"
+          git checkout -b "$BRANCH"
+
+          paths=()
+          while IFS= read -r path; do
+            [ -n "$path" ] || continue
+            paths+=("$path")
+          done <<< "$WRITTEN_PATHS"
+
+          # `applyLicence` writes LICENSE from the declared SPDX identifier and *deletes* it when the
+          # declaration is `NONE`, so both a licence arriving and a licence leaving are outcomes of
+          # this step and both have to be committed. The deletion is staged by naming the path
+          # regardless of whether the file is there, which is why the check is "git knows the path"
+          # rather than "the file exists".
+          if [ -n "$LICENSE_SPDX" ] || git ls-files --error-unmatch LICENSE >/dev/null 2>&1; then
+            paths+=(LICENSE)
+          fi
+
+          # `git add -A` so a removal is staged as well as a write: the caller-only workflows and the
+          # manifest are additions, and LICENSE is sometimes a deletion. An unmatched pathspec is
+          # fatal to `git add`, so this must never be handed one - and an empty array would make it
+          # stage the whole worktree, which is why an empty list is refused rather than passed on.
+          if [ "${#paths[@]}" -eq 0 ]; then
+            echo "The generator reported no paths and no licence changed; nothing to stage." >&2
+            exit 1
+          fi
+          git add -A -- "${paths[@]}"
+
       - name: Open a pull request on the target
         if: steps.generate.outputs.written == 'true'
         working-directory: target
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token || secrets.GH_PROJECT_TOKEN || secrets.GITHUB_TOKEN }}
         run: |
-          BRANCH="install/darkfactory-pipeline"
+          BRANCH="$INSTALL_BRANCH"
           git config user.name "darkfactory-pipeline[bot]"
           git config user.email "darkfactory-pipeline[bot]@users.noreply.github.com"
-          git checkout -b "$BRANCH"
-          git add .github repo.dfconfig
           git commit -m "feat(ci): install the DarkFactory pipeline
 
           The workflows are callers rather than copies: every job body comes from
@@ -179,7 +261,16 @@ jobs:
 
           The manifest is a starting point shaped by what this repository
           contains. Its areas describe domains and are meant to be edited."
-          git push -u origin "$BRANCH" --force
+          # `--force-with-lease`, not `--force`, and what the lease buys is narrower than it looks. A
+          # reinstall force-pushes to the same branch every time, so `--force` overwrites anything that
+          # landed on it. The lease compares against `refs/remotes/origin/$BRANCH` as the checkout left
+          # it, so it refuses when the branch moved *during* this run - the window a person editing the
+          # branch mid-install falls into. It does not protect a commit made before the run: this
+          # checkout is full-depth, so its remote-tracking ref already includes that commit, the lease
+          # is satisfied and the commit is overwritten anyway. Verified against a local bare remote with
+          # actions/checkout's own fetch refspec. Narrower than `--force` is still right; `--force` has no
+          # window at all.
+          git push -u origin "$BRANCH" --force-with-lease
           BODY="Generated by the pipeline's install workflow. Review the areas in the \`repo\` block in \`repo.dfconfig\` before merging - they drive labels, commit scopes and agent routing.
 
           Closes #${{ steps.install-issue.outputs.number }}"
@@ -201,7 +292,6 @@ jobs:
         if: steps.generate.outputs.written == 'true'
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token || secrets.GH_PROJECT_TOKEN || secrets.GITHUB_TOKEN }}
-          PYTHONPATH: ${{ github.workspace }}/.darkfactory-pipeline/.github/scripts
           TARGET_REPOSITORY: ${{ inputs.repository }}
           PIPELINE_REPO: ${{ github.repository }}
           TARGET_ROOT: ${{ github.workspace }}/target
@@ -213,39 +303,50 @@ jobs:
             echo "Configuration issue already open at #$EXISTING."
             exit 0
           fi
-          python3 - > "$RUNNER_TEMP/config-issue.md" <<'PY'
-          import os
-          import install
-
-          print(
-              install.configuration_issue(
-                  os.environ["TARGET_REPOSITORY"],
-                  os.environ["PIPELINE_REPO"],
-                  needs_submodules=os.path.isfile(
-                      os.path.join(os.environ["TARGET_ROOT"], ".gitmodules")
-                  ),
-              )
-          )
-          PY
+          cd .darkfactory-pipeline
+          TARGET_ROOT="$TARGET_ROOT" TARGET_REPOSITORY="$TARGET_REPOSITORY" \
+            PIPELINE_REPO="$PIPELINE_REPO" \
+            bun -e '
+            import { existsSync } from "node:fs";
+            import { configurationIssue } from "./packages/harness/src/install/configuration-issue.ts";
+            console.log(configurationIssue(
+              process.env.TARGET_REPOSITORY,
+              process.env.PIPELINE_REPO,
+              existsSync(process.env.TARGET_ROOT + "/.gitmodules"),
+            ));
+            ' > "$RUNNER_TEMP/config-issue.md"
           gh issue create --repo "${{ inputs.repository }}" \
             --title "Configure the DarkFactory pipeline" \
             --body-file "$RUNNER_TEMP/config-issue.md"
 
       - name: Reconcile labels, board and settings
+        # `continue-on-error`, and not for the usual reason. This is the *last* step: the callers,
+        # manifest and licence are written, the installation pull request is open and bound, and the
+        # configuration issue is filed before this runs. Nothing here can invalidate any of that, so
+        # failing the job only turns a completed installation into a red run.
+        #
+        # It did exactly that: the first sweep fan-out installed the probe correctly - "wrote
+        # repo.dfconfig", "repinned .github/workflows/ci.yml", pull request opened and bound - and then
+        # went red on "3 operation(s) failed", all three being GraphQL quota exhaustion during the board
+        # reconcile. A caller reading that concludes the install failed and re-runs it.
+        #
+        # A rate limit is transient and retried by the next sweep; a permission problem is reported in
+        # the log and through the configuration issue, which stays open until a person closes it. So
+        # the failure is visible without being mistaken for a broken installation.
+        continue-on-error: true
         if: inputs.apply-settings
-        working-directory: target
         env:
-          # Both tokens, because this step needs both. `repo_settings` picks per call: Projects v2,
+          # Both tokens, because this step needs both. `repo-settings` picks per call: Projects v2,
           # `/pages` and secret listing need permissions the App does not hold, and everything else
           # is the App's work and should not spend a person's quota - rate limits are per user and
           # shared across every token they hold.
           GH_TOKEN: ${{ steps.app-token.outputs.token || secrets.GH_PROJECT_TOKEN || secrets.GITHUB_TOKEN }}
           GH_PROJECT_TOKEN: ${{ secrets.GH_PROJECT_TOKEN }}
-          # Which repository is being configured. `repo_settings.py` reads this and otherwise falls
-          # back to the directory it lives in - the pipeline checkout - so without it every install
-          # reconciled DarkFactory against itself and reported success.
+          # Which repository is being configured. Without it the command falls back to its own
+          # directory - the pipeline checkout - so every install reconciled DarkFactory against
+          # itself and reported success. This step runs from the pipeline checkout, because that is
+          # where the code is; the consumer is named by this variable rather than by the cwd.
           DARKFACTORY_REPO_ROOT: ${{ github.workspace }}/target
-          PYTHONPATH: ${{ github.workspace }}/.darkfactory-pipeline/.github/scripts
         run: |
-          python3 "${{ github.workspace }}/.darkfactory-pipeline/.github/scripts/repo_settings.py" \
-            --apply --skip-protection
+          cd .darkfactory-pipeline
+          bun packages/github/src/ci/repo-settings.ts --apply --skip-protection

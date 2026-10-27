@@ -11,7 +11,7 @@ const STATE_KEY = "df-auth-state";
 const SESSION_KEY = "df-auth-session";
 
 /** Validated one-time PKCE callback material sent to the confidential broker. */
-export interface AuthCallbackCompletion {
+interface AuthCallbackCompletion {
 	code: string;
 	codeVerifier: string;
 }
@@ -127,11 +127,18 @@ export async function restoreSessionWithRefresh(
 	if (session.expiresAt > now) return session;
 	try {
 		const refreshed = parseBrowserSession(await refresh(session.id));
-		if (refreshed.expiresAt <= now) throw new Error("Refreshed session is already expired");
+		// Logout or a different login can happen while an expired session refreshes.
+		// Never resurrect the old identity or erase the new one after the awaited call.
+		if (localStorage.getItem(SESSION_KEY) !== raw) return restoreSession(now);
+		if (refreshed.id !== session.id || refreshed.expiresAt <= now)
+			throw new Error("Refreshed session identity or expiry is invalid");
 		persistSession(refreshed);
 		return refreshed;
 	} catch {
-		localStorage.removeItem(SESSION_KEY);
-		return null;
+		if (localStorage.getItem(SESSION_KEY) === raw) {
+			localStorage.removeItem(SESSION_KEY);
+			return null;
+		}
+		return restoreSession(now);
 	}
 }

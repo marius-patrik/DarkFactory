@@ -1,7 +1,7 @@
 import type { AccountRecord, CredentialSlot, FileCredentialStore } from "./credentials.ts";
 
 /** Metadata-only description of a credential value found in text. */
-export interface CredentialLeakFinding {
+interface CredentialLeakFinding {
 	/** Account whose credential matched. */
 	accountId: string;
 	/** Credential slot that matched. */
@@ -76,7 +76,8 @@ export class CredentialRedactor {
 			});
 		}
 		return findings.sort(
-			(a, b) => a.accountId.localeCompare(b.accountId) || a.slot.localeCompare(b.slot) || a.field.localeCompare(b.field),
+			(a, b) =>
+				a.accountId.localeCompare(b.accountId) || a.slot.localeCompare(b.slot) || a.field.localeCompare(b.field),
 		);
 	}
 
