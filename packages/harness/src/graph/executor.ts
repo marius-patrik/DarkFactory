@@ -385,6 +385,8 @@ async function runGraphUnlocked(
 		if (currentNode?.id === "merge-gate" && currentNode.kind === "gate" && action.type === "run" && isApprovalEvent(current)) {
 			if (!reviewApprovalFresh(state.reviews.planning))
 				throw new Error("Final merge authorization requires fresh approved Planning");
+			if (current.type === "review" && (!("ref" in current) || current.ref !== state.outputs.commit_sha))
+				throw new Error("GitHub review approval refers to a stale PR head");
 			if (!("actor" in current) || !current.actor.login) throw new Error("Final approval has no attributable actor");
 			state.outputs.merge_authorization = {
 				fingerprint: mergeProposalFingerprint(state.outputs),
