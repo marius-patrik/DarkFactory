@@ -8,6 +8,12 @@ import { GitHubRepository } from "../../../packages/github/src/repository.ts";
 import { json, scripted } from "../harness/github/helpers.ts";
 
 describe("df ci CLI commands", () => {
+	it("advertises the native configuration command exposed by the CLI", async () => {
+		const lines: string[] = [];
+		const exit = await runCiCli(["help"], { log: (line) => lines.push(line) });
+		expect(exit).toBe(0);
+		expect(lines.join("\\n")).toContain("df ci native-config [--repo <path>] [--write]");
+	});
 	it("executes install and offline doctor without ci.json", async () => {
 		const temp = await mkdtemp(join(tmpdir(), "df-ci-cli-"));
 		try {

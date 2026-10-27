@@ -389,6 +389,7 @@ export async function runCiCli(args: string[], context: CiCliContext = {}): Prom
 		}
 		default:
 			log(`df ci commands:
+  df ci native-config [--repo <path>] [--write]
   df ci matrix  [--repo <path>] [--capabilities-root <path>]
   df ci quality [--repo <path>] [--capabilities-root <path>] [--workers 1..32] [--json]
   df ci install [--repo <path>] [--dry-run] [--force]
