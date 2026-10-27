@@ -34,6 +34,8 @@ export async function repairObservedMergeConflicts(options: {
 	conflictedFiles: readonly string[];
 	resolveConflict: ConflictResolver;
 	identity: CommitIdentity;
+	/** Durable external-effect identity added to observed Git commit message. */
+	effectId: string;
 }): Promise<ConflictRepairEvidence> {
 	const worktree = resolve(options.worktree);
 	const mergeHead = runGit(worktree, ["rev-parse", "MERGE_HEAD"]).trim();
@@ -82,7 +84,8 @@ export async function repairObservedMergeConflicts(options: {
 		GIT_COMMITTER_NAME: options.identity.name,
 		GIT_COMMITTER_EMAIL: options.identity.email,
 	};
-	runGit(worktree, ["commit", "--no-edit"], { env });
+	if (!/^[a-f0-9]{64}$/iu.test(options.effectId)) throw new Error("Conflict repair requires effect identity");
+	runGit(worktree, ["commit", "-m", `fix(conflict): resolve ${options.baseBranch}\n\nDarkFactory-Effect: ${options.effectId}`], { env });
 	const commitSha = runGit(worktree, ["rev-parse", "HEAD"]).trim();
 	const parents = runGit(worktree, ["rev-list", "--parents", "-n", "1", commitSha]).split(" ");
 	if (!/^[a-f0-9]{40}$/iu.test(commitSha) || parents.length !== 3 ||
