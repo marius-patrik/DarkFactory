@@ -111,6 +111,10 @@ export function createProductionGraphHandlers(options: ProductionGraphHandlerOpt
 
 			// A code-writing stage must never execute without a durable journal.
 			requireJournal(ctx);
+			const approvedScope = allowedScope(ctx.outputs);
+			if (approvedScope.length === 0) {
+				return { outcome: "failure", outputs: { error: "Code mutation lacks an explicit approved Planning scope" } };
+			}
 			const base = await repository.observeBase();
 			const branch = typeof ctx.outputs.branch === "string"
 				? ctx.outputs.branch
@@ -123,7 +127,7 @@ export function createProductionGraphHandlers(options: ProductionGraphHandlerOpt
 
 			const code = await captureCodeResult({
 				worktree: worktree.value.worktree,
-				allowedPatterns: allowedScope(ctx.outputs),
+				allowedPatterns: approvedScope,
 				requiredTests: asStrings(ctx.outputs.required_tests),
 				workspace,
 			});
