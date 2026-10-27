@@ -70,7 +70,8 @@ describe("canonical graph real git composition", () => {
 		await writeFile(join(worktree, "file.txt"), "verified production change\n");
 		const commitId = productionEffectId("run", "implement", 1, "commit");
 		const committed = await recorded(journal, commitId, "commit",
-			effects.commit({ worktree, message: "feat: actual integration" }));
+			effects.commit({ worktree, message: "feat: actual integration",
+				expectedWorkspace: await effects.observeWorkspace(worktree) }));
 		expect(committed.value.sha).toMatch(/^[a-f0-9]{40}$/);
 		expect(git(worktree, "log", "-1", "--format=%B")).toContain(`DarkFactory-Effect: ${commitId}`);
 		expect(await effects.remoteHead(branch)).toBeNull();
