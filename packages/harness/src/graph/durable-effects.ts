@@ -226,7 +226,15 @@ export async function runObservedProductionEffect<T>(
 	return journal.exclusive(id, async () => {
 		const previous = await journal.read<T>(id);
 		if (previous && previous.kind !== kind) throw new Error(`Effect ${id} belongs to ${previous.kind}, not ${kind}`);
-		const observed = await operations.observe();
+		let observed: ObservedEffect<T> | undefined;
+		try {
+			observed = await operations.observe();
+		} catch (error) {
+			// Once an effect has durable intent, inability to read external
+			// truth cannot be converted into a normal node failure/retry.
+			if (previous) throw new IndeterminateEffectError(id);
+			throw error;
+		}
 		if (previous?.status === "completed") {
 			if (!observed || observed.evidence !== previous.evidence || !previous.evidence.trim() ||
 				!isDeepStrictEqual(observed.value, previous.value))
@@ -237,13 +245,26 @@ export async function runObservedProductionEffect<T>(
 		if (!previous) {
 			await journal.write({ id, kind, status: "pending", startedAt: new Date().toISOString() });
 		}
-		const result = observed ?? (await operations.execute());
-		if (!result.evidence?.trim()) throw new Error(`Effect ${id} lacks independently observed evidence`);
+		let result = observed;
+		if (!result) {
+			try {
+				result = await operations.execute();
+			} catch {
+				throw new IndeterminateEffectError(id);
+			}
+		}
+		if (!result.evidence?.trim()) throw new IndeterminateEffectError(id);
 		const record: EffectRecord<T> & { status: "completed" } = {
 			id, kind, status: "completed", value: result.value,
 			evidence: result.evidence, observedAt: new Date().toISOString(),
 		};
-		await journal.write(record);
+		try {
+			await journal.write(record);
+		} catch {
+			// The remote may have committed while the local acknowledgement
+			// failed; the next actor must reconcile rather than retry.
+			throw new IndeterminateEffectError(id);
+		}
 		return record;
 	});
 }
