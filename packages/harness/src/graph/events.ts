@@ -112,7 +112,7 @@ function translateCheckSuite(p: Record<string, unknown>): TranslatedEvent {
 		const conclusion: "required_green" | "failed" = checkSuite.conclusion === "success" ? "required_green" : "failed";
 		return {
 			kind: "event",
-			event: { type: "checks.completed", conclusion },
+			event: { type: "checks.completed", conclusion, ref: String(checkSuite.head_sha ?? "") } as GraphEvent,
 			subject: { number: toNumber(pr.number), is_pr: true, ref: String(checkSuite.head_sha ?? "") },
 		};
 	}
