@@ -135,23 +135,24 @@ export async function dispatch(
 			GITHUB_TOKEN: process.env.GITHUB_TOKEN,
 			GITHUB_REPOSITORY: process.env.GITHUB_REPOSITORY,
 		};
-
-		if (env.GH_TOKEN || env.GITHUB_TOKEN) {
-			if (env.GITHUB_REPOSITORY) {
-				const checkStateSource: CheckStateSource =
-					options?.checkStateSource ?? githubCheckSource((env.GH_TOKEN || env.GITHUB_TOKEN)!, env.GITHUB_REPOSITORY);
-
-				gateResult = await evaluateChecksGate(workflowGraph, checkStateSource, translated.subject.ref ?? "");
-
-				if (gateResult.conclusion === "pending") {
-					console.log(JSON.stringify({ type: "none", reason: "required checks pending" }));
-					return;
-				}
-
-				// Update the conclusion based on gate result
-				(translated.event as { type: "checks.completed"; conclusion: string }).conclusion =
-					gateResult.conclusion === "required_green" ? "required_green" : "failed";
+		const token = env.GH_TOKEN || env.GITHUB_TOKEN;
+		const source = options?.checkStateSource ??
+			(token && env.GITHUB_REPOSITORY ? githubCheckSource(token, env.GITHUB_REPOSITORY) : undefined);
+		if (!source && options?.runtime) {
+			throw new Error("Production graph checks ingress requires authoritative GitHub check-state readback");
+		}
+		if (source) {
+			const sha = translated.subject.ref ?? "";
+			if (!/^[0-9a-f]{40}$/iu.test(sha)) {
+				throw new Error("Production checks ingress lacks an immutable commit SHA");
 			}
+			gateResult = await evaluateChecksGate(workflowGraph, source, sha);
+			if (gateResult.conclusion === "pending") {
+				console.log(JSON.stringify({ type: "none", reason: "required checks pending" }));
+				return;
+			}
+			(translated.event as { type: "checks.completed"; conclusion: string }).conclusion =
+				gateResult.conclusion === "required_green" ? "required_green" : "failed";
 		}
 	}
 
