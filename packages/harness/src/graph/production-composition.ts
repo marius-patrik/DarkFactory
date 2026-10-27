@@ -137,6 +137,18 @@ export function createRepositoryProductionEffects(options: {
 					const prior = remote(repo, branch);
 					if (prior !== expectedOldSha)
 						throw new Error(`Remote ref moved: expected ${expectedOldSha ?? "absent"}, got ${prior ?? "absent"}`);
+					if (prior) {
+						// A lease alone authorizes a destructive non-fast-forward overwrite.
+						// Fetch and prove ancestry to forbid unapproved forced history replacement.
+						runGit(worktree, ["fetch", "origin", `refs/heads/${branch}`]);
+						if (runGit(worktree, ["rev-parse", "FETCH_HEAD"]) !== prior)
+							throw new Error("Observed feature branch changed during ancestry validation");
+						try {
+							runGit(worktree, ["merge-base", "--is-ancestor", prior, newSha]);
+						} catch {
+							throw new Error("Refusing unapproved non-fast-forward feature-branch push");
+						}
+					}
 					// Git's explicit exact-expected ref lease refuses concurrent
 					// remote updates. No unconditional remote overwrite is used.
 					runGit(worktree, [
