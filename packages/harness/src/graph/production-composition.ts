@@ -124,7 +124,12 @@ export function createRepositoryProductionEffects(options: {
 			checkedBranch(repo, branch);
 			if (!SHA.test(newSha) || (expectedOldSha !== null && !SHA.test(expectedOldSha)))
 				throw new Error("Push requires exact old and new commit SHAs");
+			const denyDefaultBranch = async () => {
+				if (branch === await resolveDefaultBranch(repo))
+					throw new Error("Production graph refuses to push directly to the repository default branch");
+			};
 			const observe = async () => {
+				await denyDefaultBranch();
 				const observed = remote(repo, branch);
 				return observed === newSha
 					? { value: { sha: observed }, evidence: `remote-ref:${branch}:${observed}` }
@@ -133,6 +138,7 @@ export function createRepositoryProductionEffects(options: {
 			return {
 				observe,
 				execute: async () => {
+					await denyDefaultBranch();
 					if (head(worktree) !== newSha) throw new Error("Local HEAD changed before lease-safe push");
 					const prior = remote(repo, branch);
 					if (prior !== expectedOldSha)
