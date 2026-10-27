@@ -47,6 +47,7 @@ function StatusBadge({ children }: { children: ReactNode }) {
 }
 function ExternalLink({ item }: { item: OperatorItem }) {
 	const link = safeGitHubLink(item.url);
+	if (/^#\/docs\/[A-Za-z0-9_%.-]+$/u.test(item.url)) return <a href={item.url}>{item.title}</a>;
 	return link
 		? <a href={link} target="_blank" rel="noopener noreferrer">{item.title}<span className="sr-only"> (opens GitHub)</span></a>
 		: <span>{item.title}</span>;
