@@ -63,9 +63,7 @@ export function parsePrApprovalArgs(argv: readonly string[]): void {
  * variable. A large incoming comment can exceed OS exec limits before Bun starts at all.
  * The workflow passes only bounded metadata in env; the body is read in-process.
  */
-export async function resolveApprovalEventEnvironment(
-	original: PrApprovalEnvironment,
-): Promise<PrApprovalEnvironment> {
+export async function resolveApprovalEventEnvironment(original: PrApprovalEnvironment): Promise<PrApprovalEnvironment> {
 	if (
 		original.GITHUB_EVENT_NAME !== "issue_comment" ||
 		original.IS_PR !== "true" ||
