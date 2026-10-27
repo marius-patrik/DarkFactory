@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import { readFile } from "node:fs/promises";
+import { readFile, readdir } from "node:fs/promises";
 import { join } from "node:path";
 import { GitHubClient } from "../../../github/src/client.ts";
 import { GitHubRepository } from "../../../github/src/repository.ts";
@@ -85,6 +85,41 @@ function extractSubject(translated: TranslatedEvent & { kind: "event" }): string
 	return `${translated.subject.number}`;
 }
 
+/**
+ * GitHub sends review/check events against PR numbers. Their canonical graph
+ * run is nevertheless owned by the originating Request. Never initialize a
+ * second independent run keyed to the PR number.
+ *
+ * A missing or ambiguous binding fails closed; an unrelated run's state is
+ * never used to authorize a PR merge.
+ */
+export async function resolveRequestRunForPullRequest(runsDir: string, prNumber: number): Promise<string | undefined> {
+	if (!Number.isSafeInteger(prNumber) || prNumber <= 0) throw new Error("Invalid PR identity");
+	let entries: import("node:fs").Dirent[];
+	try {
+		entries = await readdir(runsDir, { withFileTypes: true });
+	} catch (error) {
+		if ((error as NodeJS.ErrnoException).code === "ENOENT") return undefined;
+		throw error;
+	}
+	const matches: string[] = [];
+	for (const entry of entries) {
+		if (!entry.isDirectory() || !/^\\d+$/u.test(entry.name)) continue;
+		let source: string;
+		try {
+			source = await readFile(join(runsDir, entry.name, "state.df"), "utf8");
+		} catch (error) {
+			if ((error as NodeJS.ErrnoException).code === "ENOENT") continue;
+			throw error;
+		}
+		const state = JSON.parse(source) as { outputs?: { pr_number?: unknown } };
+		if (state.outputs?.pr_number === prNumber) matches.push(entry.name);
+	}
+	if (matches.length > 1)
+		throw new Error(`PR #${prNumber} is bound to multiple Request runs: ${matches.join(", ")}`);
+	return matches[0];
+}
+
 function githubCheckSource(token: string, repository: string): CheckStateSource {
 	const [owner, repo] = repository.split("/");
 	if (!owner || !repo) throw new Error("Invalid GITHUB_REPOSITORY format");
@@ -165,8 +200,18 @@ export async function dispatch(
 	// Load or create RunState
 	const runsDir = opts.runsPath ?? ".darkfactory/runs";
 	if (options?.runtime) {
-		const runDir = join(runsDir, subject);
-		const runtime = await options.runtime({ subject, runDir, graph: workflowGraph });
+		const boundSubject = translated.subject.is_pr
+			? await resolveRequestRunForPullRequest(runsDir, translated.subject.number)
+			: subject;
+		if (!boundSubject) {
+			console.log(JSON.stringify({
+				type: "skip", subject, event: translated.event.type,
+				reason: "no unique originating Request run for PR",
+			}));
+			return;
+		}
+		const runDir = join(runsDir, boundSubject);
+		const runtime = await options.runtime({ subject: boundSubject, runDir, graph: workflowGraph });
 		if (translated.event.type === "checks.completed") {
 			const ref = translated.subject.ref;
 			if (!ref || !/^[a-f0-9]{40}$/iu.test(ref))
@@ -175,7 +220,7 @@ export async function dispatch(
 				throw new Error("Production graph execution requires authoritative external check readback");
 			const observed = await runtime.verifyChecks(ref);
 			if (observed === "pending") {
-				console.log(JSON.stringify({ type: "none", subject, reason: "required external checks pending" }));
+				console.log(JSON.stringify({ type: "none", subject: boundSubject, reason: "required external checks pending" }));
 				return;
 			}
 			translated.event.conclusion = observed;
@@ -189,7 +234,7 @@ export async function dispatch(
 			...(runtime.onAction ? { onAction: runtime.onAction } : {}),
 			...(runtime.reconcileAction ? { reconcileAction: runtime.reconcileAction } : {}),
 		});
-		console.log(JSON.stringify({ type: "executed", subject, event: translated.event.type,
+		console.log(JSON.stringify({ type: "executed", subject: boundSubject, event: translated.event.type,
 			run_id: state.run_id, current_node: state.current_node, quota_blocked: !!state.quota_blocked }));
 		return;
 	}
