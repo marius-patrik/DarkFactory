@@ -3,6 +3,7 @@ import { appendFile, mkdir, readFile } from "node:fs/promises";
 import { join } from "node:path";
 import type { ReviewRuntimeState, ReviewSubject } from "../../../protocol/src/review.ts";
 import { FileProductionEffectJournal, productionEffectId, replaceDurableJson, runObservedProductionEffect, withGraphFileLock, type ObservedEffect } from "./durable-effects.ts";
+import { mergeProposalFingerprint } from "./approval-evidence.ts";
 import { plan } from "./planner.ts";
 import { planningReviewAdapter } from "./planning.ts";
 import {
@@ -325,9 +326,27 @@ async function runGraphUnlocked(
 			if (!review) throw new Error(`Missing ${currentNode.approves_review} review state for approval gate`);
 			state.reviews[currentNode.approves_review] = approveReview(review, options.now?.() ?? new Date());
 		}
+		if (currentNode?.id === "merge-gate" && currentNode.kind === "gate" && action.type === "run" && isApprovalEvent(current)) {
+			if (!("actor" in current) || !current.actor.login) throw new Error("Final approval has no attributable actor");
+			state.outputs.merge_authorization = {
+				fingerprint: mergeProposalFingerprint(state.outputs),
+				prNumber: state.outputs.pr_number,
+				headSha: state.outputs.commit_sha,
+				actor: current.actor.login,
+				approvedAt: (options.now?.() ?? new Date()).toISOString(),
+			};
+		}
 		await record({ type: "action", action });
 		if (action.type === "none") return finishIngress();
 		if (action.type !== "run") {
+			if (action.type === "gate" && action.node === "merge-gate") {
+				const checked = "ref" in current ? current.ref : undefined;
+				if (typeof checked !== "string" || checked !== state.outputs.commit_sha ||
+					current.type !== "checks.completed" || current.conclusion !== "required_green") {
+					throw new Error("Cannot enter final merge gate without passing external checks for exact implementation SHA");
+				}
+				state.outputs.external_checks_head_sha = checked;
+			}
 			state.current_node = action.node;
 			if (action.type === "hint" && !state.hints.includes(action.node)) state.hints.push(action.node);
 			if (action.type === "gate" || action.type === "comment")
