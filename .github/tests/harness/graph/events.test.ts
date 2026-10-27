@@ -126,7 +126,7 @@ describe("translateGitHubEvent", () => {
 		};
 		expect(translateGitHubEvent("check_suite", payload)).toEqual({
 			kind: "event",
-			event: { type: "checks.completed", conclusion: "required_green" },
+			event: { type: "checks.completed", conclusion: "required_green", ref: "abc" },
 			subject: { number: 3, is_pr: true, ref: "abc" },
 		});
 	});
@@ -138,7 +138,7 @@ describe("translateGitHubEvent", () => {
 		};
 		expect(translateGitHubEvent("check_suite", payload)).toEqual({
 			kind: "event",
-			event: { type: "checks.completed", conclusion: "failed" },
+			event: { type: "checks.completed", conclusion: "failed", ref: "abc" },
 			subject: { number: 3, is_pr: true, ref: "abc" },
 		});
 	});
