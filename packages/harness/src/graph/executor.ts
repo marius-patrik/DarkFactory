@@ -34,7 +34,7 @@ export interface NodeContext {
 	/** Stable identity shared by retries of a durable graph run. */
 	runId: string;
 	/** A mutation boundary that journals intent before the external effect. */
-	effect?<T>(kind: string, operations: { observe(): Promise<ObservedEffect<T> | undefined>; execute(): Promise<ObservedEffect<T>> }, suffix?: string): Promise<ObservedEffect<T>>;
+	effect?<T>(kind: string, operations: { observe(effectId: string): Promise<ObservedEffect<T> | undefined>; execute(effectId: string): Promise<ObservedEffect<T>> }, suffix?: string): Promise<ObservedEffect<T>>;
 	/** The run's outputs so far; for a fan-out child it also holds the item under `foreach.as`. */
 	outputs: Record<string, unknown>;
 	/** The fan-out item, for a child of a `foreach` node. */
@@ -133,7 +133,7 @@ function effectFor(
 	if (!journal) return undefined;
 	return async (kind, operations, suffix = "") => {
 		const id = productionEffectId(runId, nodeId, iteration, kind, suffix);
-		const record = await runObservedProductionEffect(journal, id, kind, operations);
+		const record = await runObservedProductionEffect(journal, id, kind, { observe: () => operations.observe(id), execute: () => operations.execute(id) });
 		return { value: record.value, evidence: record.evidence };
 	};
 }
