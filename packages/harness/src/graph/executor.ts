@@ -416,9 +416,12 @@ async function runGraphUnlocked(
 		if (action.revert) {
 			throw new Error(`Graph requested ${action.revert}; deterministic rollback evidence is not installed`);
 		}
-		if (node.kind === "agent" && node.requires_review_approval) {
-			const review = state.reviews[node.requires_review_approval];
-			if (!reviewApprovalFresh(review))
+		if (node.kind === "agent") {
+			const planningGateExists = graph.nodes.some((candidate) => candidate.kind === "gate" && candidate.approves_review === "planning");
+			const writesCode = node.mode === "write" || node.id === "implement" || node.id === "review-fix";
+			if (planningGateExists && writesCode && !reviewApprovalFresh(state.reviews.planning))
+				throw new Error(`Node ${node.id} cannot mutate code without fresh approved Planning`);
+			if (node.requires_review_approval && !reviewApprovalFresh(state.reviews[node.requires_review_approval]))
 				throw new Error(`Node ${node.id} requires a fresh approved ${node.requires_review_approval} review`);
 		}
 		const iteration = (state.iterations[node.id] ?? 0) + 1;
