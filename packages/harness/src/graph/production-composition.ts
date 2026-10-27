@@ -232,6 +232,7 @@ export function createGitHubProductionEffects(
 				})).filter((pr) => pr.body?.includes(marker));
 				if (matches.length > 1) throw new Error("Duplicate PRs with the same deterministic effect marker");
 				const pr = matches[0];
+				if (pr && pr.state !== "open") throw new Error("Non-open PR cannot be reused for a delivery effect");
 				return pr ? { value: { number: pr.number }, evidence: `github-pr:${pr.number}:${id}` } : undefined;
 			};
 			return {
