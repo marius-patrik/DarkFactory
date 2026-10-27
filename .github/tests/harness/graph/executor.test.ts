@@ -390,6 +390,28 @@ describe("generic durable review lifecycle", () => {
 		expect(stale.reviews?.planning?.approvedFingerprint).toBeUndefined();
 	});
 
+	test("changing only the Planning artifact invalidates the reviewed content and blocks approval", async () => {
+		const dir = runDir();
+		const { handlers, calls } = scripted({
+			planning: () => ({
+				outcome: "success",
+				outputs: { planning_context: { request: 391, version: 1 }, plan_artifact: { scope: ["src/**"] } },
+			}),
+			"planning-review": () => ({ outcome: "success", outputs: { planning_findings: [] } }),
+		});
+		await runGraph(planningGraph(), dir, handlers, opened, { reviewAdapters: { planning: reviewAdapter } });
+		const path = join(dir, "state.df");
+		const state = JSON.parse(readFileSync(path, "utf8")) as RunState;
+		state.outputs.plan_artifact = { scope: ["**/*", ".github/**"] };
+		writeFileSync(path, JSON.stringify(state));
+		const after = await runGraph(planningGraph(), dir, handlers,
+			{ type: "comment", body: "/df approve", actor: owner },
+			{ reviewAdapters: { planning: reviewAdapter } });
+		expect(after.current_node).toBe("planning-gate");
+		expect(after.reviews?.planning?.clean).toBe(false);
+		expect(calls.some((call) => call.node === "implement")).toBe(false);
+	});
+
 	test("implementation review uses the same review/fix engine", async () => {
 		const graph = graphOf(
 			[
