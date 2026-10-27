@@ -29,11 +29,12 @@ describe("testsTouched hook", () => {
 		expect(result.status).toBe("pass");
 	});
 
-	test("root tests/ change counts as a test change", async () => {
+	test("retired root tests/ cannot satisfy the canonical test-location gate", async () => {
 		const result = await testsTouched.run(
 			createContext(["packages/harness/src/install/main.ts", "tests/test_action_resolution.ts"]),
 		);
-		expect(result.status).toBe("pass");
+		expect(result.status).toBe("fail");
+		expect(result.message).toContain("packages/harness/src/install/main.ts");
 	});
 
 	test("a real repository path is recognised as source", async () => {
