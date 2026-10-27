@@ -1,4 +1,5 @@
-import { mkdir } from "node:fs/promises";
+import { lstat, mkdir, readFile, readlink } from "node:fs/promises";
+import { createHash } from "node:crypto";
 import { join, resolve } from "node:path";
 import type { GitHubRepository } from "../../../github/src/repository.ts";
 import { slugify } from "../../../keychain/src/import/slugify.ts";
@@ -42,6 +43,35 @@ function checkedBranch(repository: string, branch: string): void {
 	runGit(repository, ["check-ref-format", "--branch", branch]);
 }
 
+/** Content-address every observed workspace path, including untracked and deletions. */
+async function workspaceManifest(worktree: string): Promise<string> {
+	const paths = [...new Set(await changedFiles(worktree))].sort();
+	const hash = createHash("sha256");
+	for (const relativePath of paths) {
+		if (relativePath.startsWith("/") || relativePath.includes("\\0") ||
+			relativePath.split("/").includes(".."))
+			throw new Error("Unsafe path in workspace mutation evidence");
+		hash.update(JSON.stringify(["path", relativePath]));
+		try {
+			const file = resolve(worktree, relativePath);
+			const info = await lstat(file);
+			if (info.isFile()) {
+				hash.update(JSON.stringify(["file", info.mode & 0o111]));
+				hash.update(await readFile(file));
+			} else if (info.isSymbolicLink()) {
+				hash.update(JSON.stringify(["symlink", await readlink(file)]));
+			} else {
+				throw new Error(`Unsupported changed workspace entry: ${relativePath}`);
+			}
+		} catch (error) {
+			if ((error as NodeJS.ErrnoException).code === "ENOENT")
+				hash.update(JSON.stringify(["deleted"]));
+			else throw error;
+		}
+	}
+	return hash.digest("hex");
+}
+
 function workspaceFingerprint(repository: string, worktree: string, branch: string): string | undefined {
 	try {
 		if (runGit(worktree, ["rev-parse", "--is-inside-work-tree"]) !== "true") return undefined;
@@ -78,6 +108,7 @@ export function createRepositoryProductionEffects(options: {
 			runGit(repo, ["fetch", "origin", defaultBranch]);
 			return { defaultBranch, sha: headRef(repo, `refs/remotes/origin/${defaultBranch}`) };
 		},
+		observeWorkspace: workspaceManifest,
 		remoteHead: (branch) => {
 			checkedBranch(repo, branch);
 			return Promise.resolve(remote(repo, branch));
@@ -106,7 +137,7 @@ export function createRepositoryProductionEffects(options: {
 				execute,
 			};
 		},
-		commit({ worktree, message }) {
+		commit({ worktree, message, expectedWorkspace }) {
 			return {
 				observe: async (effectId) => {
 					const sha = head(worktree);
@@ -117,6 +148,8 @@ export function createRepositoryProductionEffects(options: {
 				},
 				execute: async (effectId) => {
 					if (!EFFECT.test(effectId)) throw new Error("Invalid commit effect id");
+					if (await workspaceManifest(worktree) !== expectedWorkspace)
+						throw new Error("Workspace changed after deterministic verification");
 					const sha = await commitChunk({ worktree, message: `${message}\n\nDarkFactory-Effect: ${effectId}`, identity });
 					if (!sha || !SHA.test(sha)) throw new Error("Commit did not yield immutable evidence");
 					return { value: { sha }, evidence: `commit:${sha}` };
