@@ -103,7 +103,6 @@ describe("the approval entry's exit code", () => {
 	});
 });
 
-
 describe("large GitHub approval events are read without process-environment expansion", () => {
 	it("reads an unbounded PR comment from runner event JSON after the process starts", async () => {
 		const directory = await mkdtemp(join(tmpdir(), "df-pr-approval-"));
@@ -138,7 +137,7 @@ describe("large GitHub approval events are read without process-environment expa
 		const directory = await mkdtemp(join(tmpdir(), "df-pr-approval-"));
 		try {
 			const eventPath = join(directory, "event.json");
-			for (const payload of ["{broken", "{}", '{"comment":{"body":null}}']) {
+			for (const payload of ["{broken", "{}", JSON.stringify({ comment: { body: null } })]) {
 				await writeFile(eventPath, payload);
 				await expect(
 					resolveApprovalEventEnvironment({

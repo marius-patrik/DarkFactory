@@ -85,7 +85,12 @@ export async function resolveApprovalEventEnvironment(
 		throw new Error("Approval event has no comment payload");
 	}
 	const comment = payload.comment;
-	if (comment === null || typeof comment !== "object" || !("body" in comment) || typeof comment.body !== "string") {
+	if (
+		comment === null ||
+		typeof comment !== "object" ||
+		!("body" in comment) ||
+		typeof comment.body !== "string"
+	) {
 		throw new Error("Approval event comment body must be a string");
 	}
 	return { ...original, COMMENT_BODY: comment.body };
