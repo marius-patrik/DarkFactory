@@ -100,6 +100,15 @@ export function createProductionRuntimeFactory(options: ProductionRuntimeFactory
 				},
 			});
 		};
-		return { handlers, effects, onAction: performAction, reconcileAction };
+		return {
+			handlers, effects, onAction: performAction, reconcileAction,
+			verifyChecks: async (headSha: string) => {
+				const required = graph.checks.filter((item) => item.required).map((item) => item.name);
+				if (required.length === 0) throw new Error("Graph has no explicit required external checks");
+				const observed = await options.repository.requiredCheckStatus(headSha, required);
+				return observed.state === "success" && !observed.missing.length && !observed.failing.length
+					? "required_green" as const : observed.state === "failure" ? "failed" as const : "pending" as const;
+			},
+		};
 	};
 }
