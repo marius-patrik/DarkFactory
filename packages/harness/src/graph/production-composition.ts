@@ -41,10 +41,13 @@ function checkedBranch(repository: string, branch: string): void {
 	runGit(repository, ["check-ref-format", "--branch", branch]);
 }
 
-function workspaceFingerprint(worktree: string, branch: string): string | undefined {
+function workspaceFingerprint(repository: string, worktree: string, branch: string): string | undefined {
 	try {
 		if (runGit(worktree, ["rev-parse", "--is-inside-work-tree"]) !== "true") return undefined;
 		if (runGit(worktree, ["branch", "--show-current"]) !== branch) return undefined;
+		const expectedGitDir = resolve(repository, runGit(repository, ["rev-parse", "--git-common-dir"]));
+		const observedGitDir = resolve(worktree, runGit(worktree, ["rev-parse", "--git-common-dir"]));
+		if (observedGitDir !== expectedGitDir) return undefined;
 		return `worktree:${resolve(worktree)}:${branch}`;
 	} catch {
 		return undefined;
@@ -85,7 +88,7 @@ export function createRepositoryProductionEffects(options: {
 			const execute = async () => {
 				await mkdir(workRoot, { recursive: true });
 				const result = createWorktree({ repo, branch, base, workRoot });
-				const evidence = workspaceFingerprint(result.worktreePath, branch);
+				const evidence = workspaceFingerprint(repo, result.worktreePath, branch);
 				if (!evidence) throw new Error("Worktree creation did not prove branch ownership");
 				return { value: { worktree: result.worktreePath }, evidence };
 			};
@@ -94,7 +97,7 @@ export function createRepositoryProductionEffects(options: {
 					// Worktree basename is owned by createWorktree's slugify.
 					// When it differs from the provisional path, never infer
 					// ownership: the executor will fail closed after ambiguity.
-					const evidence = workspaceFingerprint(dir, branch);
+					const evidence = workspaceFingerprint(repo, dir, branch);
 					return evidence ? { value: { worktree: dir }, evidence } : undefined;
 				},
 				execute,
