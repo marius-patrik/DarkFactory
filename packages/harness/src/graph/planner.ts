@@ -114,8 +114,11 @@ export function plan(graph: WorkflowGraph, event: GraphEvent, state: RunState): 
 		return edge ? actionFor(graph, edge, state) : none("no matching children edge");
 	}
 	if (event.type === "comment") {
-		if (state.quota_blocked && RESUME.test(event.body ?? ""))
+		if (state.quota_blocked && RESUME.test(event.body ?? "")) {
+			if (!["OWNER", "MEMBER", "COLLABORATOR"].includes(event.actor.association) || event.actor.is_bot)
+				return none("actor is not authorized to resume quota");
 			return { type: "run", nodes: [current.id], resume_run_id: state.run_id };
+		}
 		if (current.kind !== "gate") return none("comment is not actionable here");
 		if (!authorized(current, event, state)) return none("actor is not authorized");
 		const command = (event.body ?? "").match(COMMAND)?.[1];
