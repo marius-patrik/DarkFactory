@@ -127,7 +127,13 @@ export async function withGraphFileLock<T>(
 			}
 			if (cleanup) {
 				try {
-					const owner = await readOptionalJson<{ pid?: number; token?: string }>(path);
+					let owner: { pid?: number; token?: string } | undefined;
+					try {
+						owner = await readOptionalJson(path);
+					} catch (error) {
+						// A competitor may still be writing the just-created lock.
+						if (!(error instanceof SyntaxError)) throw error;
+					}
 					const age = Date.now() - (await stat(path)).mtimeMs;
 					if (owner && Number.isSafeInteger(owner.pid) && owner.pid! > 0 && !pidAlive(owner.pid!)) {
 						await unlink(path);
