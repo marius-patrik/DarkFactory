@@ -142,7 +142,7 @@ export async function executeQualityPlan(
 		if (process.platform === "win32") {
 			// cmd.exe does not treat single quotes as argument delimiters. Refuse
 			// values that its expansion/quoting rules could reinterpret.
-			if (/[%!"\\r\\n]/u.test(value)) throw new Error("Unsafe Windows Python quality argument");
+			if (/[%!"\r\n]/u.test(value)) throw new Error("Unsafe Windows Python quality argument");
 			return `"${value}"`;
 		}
 		return "'" + value.replaceAll("'", "'\\''") + "'";

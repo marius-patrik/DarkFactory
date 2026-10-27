@@ -134,7 +134,7 @@ describe("single-runner quality scheduler", () => {
 		expect(smoke[0]?.command).toContain("sys.version_info[:2] == (3, 10)");
 		expect(smoke[1]?.command).toContain("sys.version_info[:2] == (3, 13)");
 		for (const check of smoke) {
-			expect(check.command).toStartWith(process.platform === "win32" ? 'python -c "' : "python -c '");
+			expect(check.command.startsWith(process.platform === "win32" ? 'python -c "' : "python -c '")).toBe(true);
 		}
 		const installs = calls.filter((call) => call.command === "python -m pip install -e .");
 		expect(installs).toHaveLength(2);
