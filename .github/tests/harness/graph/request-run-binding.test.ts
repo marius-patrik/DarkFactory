@@ -43,6 +43,9 @@ describe("PR ingress belongs to its originating Request graph", () => {
 	test("a real PR review event resumes exactly the bound Request run", async () => {
 		const root = await runs();
 		await saveRun(root, 17, 204);
+		await writeFile(join(root, "17", "state.df"), JSON.stringify({
+			run_id: "request-17", current_node: "approval", outputs: { pr_number: 204 }, hints: [],
+		}));
 		const graph = {
 			version: 1 as const, checks: [],
 			nodes: [
