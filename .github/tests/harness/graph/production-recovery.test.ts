@@ -147,6 +147,55 @@ describe("canonical production graph recovery", () => {
 		expect(state.processed_event_ids).toContain("webhook-18");
 	});
 
+	test("quota checkpoint blocks mutation and authorized resume re-enters the same graph run", async () => {
+		const f = await fixture();
+		const g: WorkflowGraph = {
+			version: 1, checks: [],
+			nodes: [{
+				id: "planning", kind: "agent", trigger: { event: "issues.opened" },
+				quota_policy: { on_exhaustion: "checkpoint_and_block", resume: "sweep_or_command" },
+			}],
+			edges: [],
+		};
+		let attempts = 0;
+		const handlers: NodeHandlers = {
+			automation: f.handlers.automation,
+			agent: async () => {
+				attempts++;
+				return attempts === 1
+					? { outcome: "quota_exhausted", outputs: {
+						quota_candidate: { provider: "p", account: "a", model: "m" },
+					} }
+					: { outcome: "success", outputs: { resumed: true } };
+			},
+		};
+		const blocked = await runGraph(g, f.runDir, handlers, opened, {
+			eventId: "quota-event", onAction: async () => {},
+		});
+		expect(blocked.quota_blocked).toBe(true);
+		expect(blocked.checkpoints).toEqual([{
+			run_id: blocked.run_id, node: "planning", eligible: false,
+		}]);
+		const resumed = await runGraph(g, f.runDir, handlers,
+			{ type: "comment", body: "/df resume", actor: owner }, {
+				eventId: "resume-event", onAction: async () => {},
+			});
+		expect(resumed.run_id).toBe(blocked.run_id);
+		expect(resumed.quota_blocked).toBeUndefined();
+		expect(resumed.outputs.resumed).toBe(true);
+		expect(attempts).toBe(2);
+	});
+
+	test("pre-aborted signal prevents executing an externally mutating node", async () => {
+		const f = await fixture();
+		const abort = new AbortController();
+		abort.abort();
+		await expect(runGraph(f.graph, f.runDir, f.handlers, opened,
+			{ effects: f.effects, eventId: "cancel-event", signal: abort.signal }))
+			.rejects.toThrow("cancelled");
+		expect(f.writes()).toBe(0);
+	});
+
 	test("merge gate rejects an external check result for a different head", async () => {
 		const f = await fixture();
 		const g: WorkflowGraph = {
