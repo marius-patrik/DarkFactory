@@ -148,7 +148,7 @@ export function createGitHubOperatorSource(slug: string, options: PublicSourceOp
 		}
 		return response.json() as Promise<unknown>;
 	}
-	async function docs(signal?: AbortSignal): Promise<OperatorCollection> {
+	async function docsGraph(signal?: AbortSignal): Promise<Record<string, unknown>> {
 		if (!options.docsContentUrl) throw new Error("Compiled documentation asset not configured");
 		const target = new URL(options.docsContentUrl, typeof location === "undefined" ? "https://example.invalid" : location.href);
 		// Public documentation can be loaded only from this static deployment origin.
@@ -157,10 +157,29 @@ export function createGitHubOperatorSource(slug: string, options: PublicSourceOp
 		if (!result.ok) throw new OperatorHttpError(result.status);
 		const graph = record(await result.json());
 		if (graph.version !== 1 || !Array.isArray(graph.pages)) throw new Error("Unsupported documentation graph");
+		return graph;
+	}
+	async function docs(signal?: AbortSignal): Promise<OperatorCollection> {
+		const graph = await docsGraph(signal);
 		return page(graph.pages, 200, (value) => {
 			const x = record(value), id = str(x.id);
-			return { id, title: str(x.title), url: `#docs/${encodeURIComponent(id)}`, subtitle: str(x.kind), body: str(x.markdown) };
+			return { id, title: str(x.title), url: `#/docs/${encodeURIComponent(id)}`, subtitle: str(x.kind), body: str(x.markdown) };
 		});
+	}
+	async function capabilities(signal?: AbortSignal): Promise<OperatorCollection> {
+		const graph = await docsGraph(signal);
+		const inventory = array(graph.capabilities);
+		const listing = page(inventory, 200, (value) => {
+			const c = record(value);
+			const name = str(c.id);
+			return {
+				id: name, title: name, url: "", subtitle: str(c.version),
+				body: str(c.description),
+				labels: array(c.domains).map(str).filter(Boolean),
+			};
+		});
+		listing.note = "Compiled capability declarations, not proof of an installed or executing plugin. Reconcile with the release receipt.";
+		return listing;
 	}
 	async function readRaw(resource: OperatorResource, signal?: AbortSignal): Promise<OperatorResourceData> {
 		switch(resource) {
@@ -193,7 +212,28 @@ export function createGitHubOperatorSource(slug: string, options: PublicSourceOp
 				return collection;
 			}
 			case "pulls": return page(await get(`${base}/pulls?state=all&sort=updated&direction=desc&per_page=${limit}`, signal), limit, pull);
-			case "checks": case "runs": {
+			case "checks": {
+				const metadata = record(await get(base, signal));
+				const branch = str(metadata.default_branch);
+				if (!branch) throw new Error("Repository default branch is unknown");
+				const branchData = record(await get(`${base}/branches/${encodeURIComponent(branch)}`, signal));
+				const sha = str(record(branchData.commit).sha);
+				if (!/^[a-f0-9]{40}$/iu.test(sha)) throw new Error("Default branch head SHA is unavailable");
+				const x = record(await get(`${base}/commits/${sha}/check-runs?per_page=${limit}`, signal));
+				const collection = page(x.check_runs, limit, (value) => {
+					const check = record(value);
+					return {
+						id: num(check.id), title: str(check.name), url: str(check.html_url),
+						state: str(check.conclusion) || str(check.status),
+						updatedAt: str(check.completed_at) || str(check.started_at),
+						subtitle: `head ${sha.slice(0, 12)} · ${str(record(check.app).name)}`,
+						sha,
+					};
+				});
+				collection.note = `Default branch ${branch} at ${sha}; outcomes must be evaluated against required checks independently.`;
+				return collection;
+			}
+			case "runs": {
 				const x = record(await get(`${base}/actions/runs?per_page=${limit}`, signal));
 				return page(x.workflow_runs, limit, run);
 			}
@@ -210,18 +250,18 @@ export function createGitHubOperatorSource(slug: string, options: PublicSourceOp
 			case "docs": return docs(signal);
 			case "graph": throw new Error("Durable graph run state requires the DF-02 runtime read contract.");
 			case "projects": throw new Error("Projects v2 needs authorized GraphQL through the confidential broker.");
-			case "capabilities": throw new Error("Capability inventory needs an authoritative installed receipt or compiled docs graph.");
+			case "capabilities": return capabilities(signal);
 			case "quota": throw new Error("Quota is private runtime state; a redacted authenticated snapshot is required.");
 		}
 	}
 	return {
 		async read(resource, signal) {
-			if (["graph", "projects", "capabilities", "quota"].includes(resource)) {
+			if (["graph", "projects", "quota"].includes(resource) || (resource === "capabilities" && !options.docsContentUrl)) {
 				return { status: "blocked", detail: resource === "projects" ?
 					"Projects v2 requires the authenticated GraphQL broker (not available in public REST)." :
 					resource === "graph" ? "Durable DarkFactory graph state is not exposed by an authenticated read contract." :
 					resource === "quota" ? "Redacted quota snapshot requires a connected runtime." :
-					"Verified installed-capability receipt or generated graph required." };
+					"Compiled capability graph is not configured for this deployment." };
 			}
 			try {
 				const data = await readRaw(resource, signal);
