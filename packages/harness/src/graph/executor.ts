@@ -413,6 +413,9 @@ async function runGraphUnlocked(
 		if (!node) throw new Error(`Planner chose unknown node ${nodeId}`);
 		if (++steps > maxSteps)
 			throw new Error(`Run ${state.run_id} exceeded ${maxSteps} node runs; check the graph for an undeclared loop`);
+		if (action.revert) {
+			throw new Error(`Graph requested ${action.revert}; deterministic rollback evidence is not installed`);
+		}
 		if (node.kind === "agent" && node.requires_review_approval) {
 			const review = state.reviews[node.requires_review_approval];
 			if (!reviewApprovalFresh(review))
