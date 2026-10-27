@@ -25,6 +25,9 @@ export function mergeProposalFingerprint(outputs: Record<string, unknown>): stri
 		commit: sha,
 		pr,
 		alignment: outputs.aligned,
+		closingIssues: outputs.closing_issues ?? [],
+		verifiedActions: outputs.verification ?? null,
+		externalChecksHead: outputs.external_checks_head_sha ?? null,
 	});
 }
 
