@@ -15,7 +15,9 @@ export interface ProductionRepositoryEffects {
 	/** Observe a trusted configured base, including its immutable SHA. */
 	observeBase(): Promise<{ defaultBranch: string; sha: string }>;
 	ensureWorktree(input: { branch: string; base: string; runId: string }): ExternalMutation<{ worktree: string }>;
-	commit(input: { worktree: string; message: string }): ExternalMutation<{ sha: string }>;
+	/** SHA-256 manifest of every changed path, mode and bytes before publishing. */
+	observeWorkspace(worktree: string): Promise<string>;
+	commit(input: { worktree: string; message: string; expectedWorkspace: string }): ExternalMutation<{ sha: string }>;
 	/** Implementations must use an expected-old-SHA lease and verify the new remote ref. */
 	push(input: {
 		worktree: string;
@@ -125,12 +127,16 @@ export function createProductionGraphHandlers(options: ProductionGraphHandlerOpt
 			const modelResult = await model.agent(node, ctx, worktree.value.worktree);
 			if (modelResult.outcome !== "success") return modelResult;
 
+			const initialWorkspace = await repository.observeWorkspace(worktree.value.worktree);
 			const code = await captureCodeResult({
 				worktree: worktree.value.worktree,
 				allowedPatterns: approvedScope,
 				requiredTests: asStrings(ctx.outputs.required_tests),
 				workspace,
 			});
+			const verifiedWorkspace = await repository.observeWorkspace(worktree.value.worktree);
+			if (initialWorkspace !== verifiedWorkspace)
+				return { outcome: "failure", outputs: { error: "Workspace changed during deterministic verification", branch } };
 			if (code.outcome !== "success") return {
 				outcome: "failure",
 				outputs: { error: code.error, branch, changed_files: code.changedFiles, verification: code.verification },
@@ -151,6 +157,7 @@ export function createProductionGraphHandlers(options: ProductionGraphHandlerOpt
 				const commit = await observed(ctx, "git.commit", repository.commit({
 					worktree: worktree.value.worktree,
 					message: `${node.id}: apply iteration ${ctx.iteration}`,
+					expectedWorkspace: verifiedWorkspace,
 				}));
 				commitSha = commit.value.sha;
 				if (!/^[0-9a-f]{40}$/iu.test(commitSha))
