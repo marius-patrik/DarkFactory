@@ -260,6 +260,25 @@ export function createGitHubProductionEffects(
 				},
 			};
 		},
+		createComment({ issueNumber, body }) {
+			const observe = async (id: string) => {
+				const marker = effectMarker(id);
+				const matches = (await repository.listComments(issueNumber)).filter((comment) => comment.body?.includes(marker));
+				if (matches.length > 1) throw new Error("Duplicate GitHub comments share an effect identity");
+				const comment = matches[0];
+				return comment ? { value: { commentId: comment.id }, evidence: `github-comment:${comment.id}:${id}` } : undefined;
+			};
+			return {
+				observe,
+				execute: async (id) => {
+					const created = await repository.createComment(issueNumber, `${body}\n\n${effectMarker(id)}`);
+					const recorded = await observe(id);
+					if (!recorded || recorded.value.commentId !== created.id)
+						throw new Error("Published comment was not observed by deterministic marker");
+					return recorded;
+				},
+			};
+		},
 		closeIssue({ number }) {
 			const observe = async () => {
 				const issue = await repository.getIssue(number);
