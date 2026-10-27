@@ -48,7 +48,7 @@ async function workspaceManifest(worktree: string): Promise<string> {
 	const paths = [...new Set(await changedFiles(worktree))].sort();
 	const hash = createHash("sha256");
 	for (const relativePath of paths) {
-		if (relativePath.startsWith("/") || relativePath.includes("\\0") ||
+		if (relativePath.startsWith("/") || relativePath.includes("\0") ||
 			relativePath.split("/").includes(".."))
 			throw new Error("Unsafe path in workspace mutation evidence");
 		hash.update(JSON.stringify(["path", relativePath]));
