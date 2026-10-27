@@ -1,6 +1,6 @@
 import { lstat, mkdir, readFile, readlink, realpath } from "node:fs/promises";
 import { createHash } from "node:crypto";
-import { isAbsolute, join, relative, resolve } from "node:path";
+import { dirname, isAbsolute, join, relative, resolve } from "node:path";
 import type { GitHubRepository } from "../../../github/src/repository.ts";
 import { slugify } from "../../../keychain/src/import/slugify.ts";
 import { changedFiles } from "../workspace/changedFiles.ts";
@@ -55,8 +55,8 @@ async function workspaceManifest(worktree: string): Promise<string> {
 		try {
 			const file = resolve(worktree, relativePath);
 			const info = await lstat(file);
-			const rel = relative(worktree, await realpath(file));
-			if (!rel || rel.startsWith("..") || isAbsolute(rel))
+			const rel = relative(await realpath(worktree), await realpath(dirname(file)));
+			if (rel.startsWith("..") || isAbsolute(rel))
 				throw new Error(`Changed path escapes isolated worktree: ${relativePath}`);
 			if (info.isFile()) {
 				hash.update(JSON.stringify(["file", info.mode & 0o111]));
