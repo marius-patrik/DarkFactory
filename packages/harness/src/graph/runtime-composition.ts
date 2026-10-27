@@ -2,6 +2,7 @@ import { createHash } from "node:crypto";
 import { contextFingerprint } from "./review-loop.ts";
 import { join } from "node:path";
 import type { GitHubRepository } from "../../../github/src/repository.ts";
+import type { ConflictResolver } from "../workspace/conflict-repair.ts";
 import type { DispatchRuntime, DispatchRuntimeInput } from "./dispatch.ts";
 import {
 	FileProductionEffectJournal,
@@ -31,6 +32,7 @@ export interface ProductionRuntimeFactoryOptions {
 	loadPlanningContext: ProductionGraphHandlerOptions["loadPlanningContext"];
 	automation?: ProductionGraphHandlerOptions["automation"];
 	workRoot?: string;
+	resolveConflict?: ConflictResolver;
 }
 
 /** Stable comment identity also differentiates repeated reminders by ingress delivery. */
@@ -58,6 +60,7 @@ export function createProductionRuntimeFactory(options: ProductionRuntimeFactory
 	const repository = createRepositoryProductionEffects({
 		repoDir: options.repoDir,
 		...(options.workRoot ? { workRoot: options.workRoot } : {}),
+		...(options.resolveConflict ? { resolveConflict: options.resolveConflict } : {}),
 	});
 	return async ({ subject, runDir, graph }: DispatchRuntimeInput): Promise<DispatchRuntime> => {
 		const github = createGitHubProductionEffects(options.repository, {
