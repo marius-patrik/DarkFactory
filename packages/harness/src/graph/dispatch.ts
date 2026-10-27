@@ -31,6 +31,7 @@ export interface DispatchRuntime {
 	effects?: RunGraphOptions["effects"];
 	/** Observe every declared required external check for the event commit SHA. */
 	verifyChecks?(sha: string): Promise<"required_green" | "failed" | "pending">;
+	verifyPlanningContext?: RunGraphOptions["verifyPlanningContext"];
 }
 
 export interface DispatchRuntimeInput {
@@ -184,6 +185,7 @@ export async function dispatch(
 		const state = await runGraph(workflowGraph, runDir, runtime.handlers, translated.event, {
 			eventId,
 			...(runtime.effects ? { effects: runtime.effects } : {}),
+			...(runtime.verifyPlanningContext ? { verifyPlanningContext: runtime.verifyPlanningContext } : {}),
 			...(runtime.onAction ? { onAction: runtime.onAction } : {}),
 			...(runtime.reconcileAction ? { reconcileAction: runtime.reconcileAction } : {}),
 		});
