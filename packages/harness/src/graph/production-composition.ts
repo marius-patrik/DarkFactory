@@ -1,6 +1,7 @@
 import { mkdir } from "node:fs/promises";
 import { join, resolve } from "node:path";
 import type { GitHubRepository } from "../../../github/src/repository.ts";
+import { slugify } from "../../../keychain/src/import/slugify.ts";
 import { changedFiles } from "../workspace/changedFiles.ts";
 import { commitChunk, type CommitIdentity } from "../workspace/commitChunk.ts";
 import { createWorktree } from "../workspace/createWorktree.ts";
@@ -10,7 +11,6 @@ import { runDetectedVerification } from "../workspace/runVerify.ts";
 import { scopeCheck } from "../workspace/scopeCheck.ts";
 import { updateBranch } from "../workspace/updateBranch.ts";
 import type {
-	ExternalMutation,
 	ProductionGitHubEffects,
 	ProductionRepositoryEffects,
 } from "./production-handlers.ts";
@@ -81,7 +81,7 @@ export function createRepositoryProductionEffects(options: {
 			checkedBranch(repo, base);
 			// createWorktree is the sole deterministic owner of its path and
 			// validates reused worktree branch identity.
-			const dir = resolve(join(workRoot, branch.replaceAll("/", "-").replaceAll(/[^a-zA-Z0-9._-]/gu, "-")));
+			const dir = resolve(join(workRoot, slugify(branch)));
 			const execute = async () => {
 				await mkdir(workRoot, { recursive: true });
 				const result = createWorktree({ repo, branch, base, workRoot });
@@ -187,7 +187,11 @@ function effectMarker(id: string): string {
 }
 
 /** GitHub effects are exclusively executed through @darkfactory/github. */
-export function createGitHubProductionEffects(repository: GitHubRepository): ProductionGitHubEffects {
+export function createGitHubProductionEffects(
+	repository: GitHubRepository,
+	options: { requiredChecks: readonly string[] },
+): ProductionGitHubEffects {
+	if (options.requiredChecks.length === 0) throw new Error("Production GitHub effects require explicit mandatory check names");
 	const restPath = `/repos/${encodeURIComponent(repository.owner)}/${encodeURIComponent(repository.repo)}`;
 	const getPR = (number: number) => repository.client.rest<{
 		number: number;
@@ -227,7 +231,7 @@ export function createGitHubProductionEffects(repository: GitHubRepository): Pro
 		},
 		async requiredChecksGreen(headSha) {
 			if (!SHA.test(headSha)) throw new Error("Checks require immutable commit SHA");
-			const checked = await repository.requiredCheckStatus(headSha, ["quality", "verify-bound-issue"]);
+			const checked = await repository.requiredCheckStatus(headSha, [...options.requiredChecks]);
 			return checked.state === "success" && checked.missing.length === 0 && checked.failing.length === 0;
 		},
 		mergePullRequest(input) {
