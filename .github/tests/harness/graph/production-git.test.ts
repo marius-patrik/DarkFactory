@@ -10,6 +10,7 @@ import {
 	FileProductionEffectJournal, productionEffectId, runObservedProductionEffect,
 } from "../../../../packages/harness/src/graph/durable-effects.ts";
 import type { ExternalMutation } from "../../../../packages/harness/src/graph/production-handlers.ts";
+import { repairObservedMergeConflicts } from "../../../../packages/harness/src/workspace/conflict-repair.ts";
 
 const roots: string[] = [];
 afterEach(async () => {
@@ -95,6 +96,41 @@ describe("canonical graph real git composition", () => {
 			branch: "main", worktree: f.repo, expectedOldSha: original, newSha: original,
 		}).execute("a".repeat(64))).rejects.toThrow("default branch");
 		expect(git(f.repo, "rev-parse", "HEAD")).toBe(original);
+	});
+
+	test("an actual conflicting merge cannot publish unverified model resolution", async () => {
+		const f = await localRepository();
+		const branch = "agent/conflicting-update";
+		const effects = createRepositoryProductionEffects({
+			repoDir: f.repo, workRoot: join(f.root, "worktrees"),
+		});
+		const tree = await effects.ensureWorktree({ branch, base: "main", runId: "conflict-test" })
+			.execute("1".repeat(64));
+		const worktree = tree.value.worktree;
+		await writeFile(join(worktree, "file.txt"), "feature side\n");
+		git(worktree, "add", "file.txt");
+		git(worktree, "-c", "user.name=Feature", "-c", "user.email=feature@example.test",
+			"commit", "-m", "feature");
+		git(worktree, "push", "origin", `HEAD:refs/heads/${branch}`);
+		const originalRemote = git(f.repo, "ls-remote", "--heads", "origin", `refs/heads/${branch}`).split(/\s+/u)[0];
+		await writeFile(join(f.repo, "file.txt"), "base side\n");
+		git(f.repo, "add", "file.txt");
+		git(f.repo, "commit", "-m", "incompatible base");
+		git(f.repo, "push", "origin", "main");
+		const conflicted = await effects.updateBranch!({ branch, base: "main", runId: "conflict-test" })
+			.execute("2".repeat(64));
+		expect(conflicted.value.status).toBe("conflict");
+		if (conflicted.value.status !== "conflict") throw new Error("Expected real Git conflict");
+		expect(conflicted.value.conflictedFiles).toContain("file.txt");
+		await expect(repairObservedMergeConflicts({
+			worktree, baseBranch: "main", conflictedFiles: ["file.txt"],
+			resolveConflict: async () => "resolved without proof\n",
+			identity: { name: "Reviewer", email: "reviewer@example.test" },
+			effectId: "3".repeat(64),
+		})).rejects.toThrow("deterministic verification");
+		expect(git(f.repo, "ls-remote", "--heads", "origin",
+			`refs/heads/${branch}`).split(/\s+/u)[0]).toBe(originalRemote);
+		expect(git(worktree, "rev-parse", "-q", "--verify", "MERGE_HEAD")).toMatch(/^[a-f0-9]{40}$/);
 	});
 
 	test("lease validation rejects competing remote branch update without overwriting its commit", async () => {
