@@ -139,6 +139,12 @@ export async function executeQualityPlan(
 	const unavailableVersions = new Map<string, string>();
 	const pythonTemp = versions.length > 0 ? await mkdtemp(join(tmpdir(), "df-python-quality-")) : null;
 	function quoted(value: string): string {
+		if (process.platform === "win32") {
+			// cmd.exe does not treat single quotes as argument delimiters. Refuse
+			// values that its expansion/quoting rules could reinterpret.
+			if (/[%!"\\r\\n]/u.test(value)) throw new Error("Unsafe Windows Python quality argument");
+			return `"${value}"`;
+		}
 		return "'" + value.replaceAll("'", "'\\''") + "'";
 	}
 	try {
@@ -158,7 +164,7 @@ export async function executeQualityPlan(
 				`uv python install ${version}`,
 				`uv venv --seed --python ${version} ${quoted(home)}`,
 				`uv pip install --python ${quoted(executable)} pytest black ruff mypy flake8 isort`,
-				`python -c ${quoted(`import sys; assert sys.version_info[:2] == tuple(map(int, "${version}".split(".")[:2]))`)}`,
+				`python -c ${quoted(`import sys; assert sys.version_info[:2] == (${version.split(".").slice(0, 2).join(", ")})`)}`,
 			];
 			for (const command of commands) {
 				const result = await tryExecute(command, root, environment);

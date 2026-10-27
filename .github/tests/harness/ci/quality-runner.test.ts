@@ -129,6 +129,13 @@ describe("single-runner quality scheduler", () => {
 			expect(calls.some((call) => call.command.includes(`uv venv --seed --python ${version}`))).toBe(true);
 			expect(calls.some((call) => call.command.includes("uv pip install --python"))).toBe(true);
 		}
+		const smoke = calls.filter((call) => call.command.startsWith("python -c "));
+		expect(smoke).toHaveLength(2);
+		expect(smoke[0]?.command).toContain("sys.version_info[:2] == (3, 10)");
+		expect(smoke[1]?.command).toContain("sys.version_info[:2] == (3, 13)");
+		for (const check of smoke) {
+			expect(check.command).toStartWith(process.platform === "win32" ? 'python -c "' : "python -c '");
+		}
 		const installs = calls.filter((call) => call.command === "python -m pip install -e .");
 		expect(installs).toHaveLength(2);
 		expect(installs[0]?.environment?.VIRTUAL_ENV).not.toBe(installs[1]?.environment?.VIRTUAL_ENV);
