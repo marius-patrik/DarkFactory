@@ -99,7 +99,7 @@ describe("canonical production graph recovery", () => {
 		});
 		expect(resumed.outputs.external_evidence).toBe(result.outputs.external_evidence);
 		expect(f.writes()).toBe(1);
-		expect(resumed.processed_event_ids).toContain("delivery-b");
+		expect((resumed as typeof resumed & { processed_event_ids?: string[] }).processed_event_ids).toContain("delivery-b");
 	});
 
 	test("an interrupted node without committed evidence fails closed", async () => {
