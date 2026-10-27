@@ -2,7 +2,7 @@ import { existsSync } from "node:fs";
 import { mkdir, open, readFile } from "node:fs/promises";
 import { join } from "node:path";
 import type { ReviewRuntimeState, ReviewSubject } from "../../../protocol/src/review.ts";
-import { FileProductionEffectJournal, productionEffectId, replaceDurableJson, runObservedProductionEffect, withGraphFileLock, type ObservedEffect } from "./durable-effects.ts";
+import { FileProductionEffectJournal, IndeterminateEffectError, StaleEffectError, productionEffectId, replaceDurableJson, runObservedProductionEffect, withGraphFileLock, type ObservedEffect } from "./durable-effects.ts";
 import { mergeProposalFingerprint } from "./approval-evidence.ts";
 import { plan } from "./planner.ts";
 import { planningReviewAdapter } from "./planning.ts";
@@ -149,7 +149,9 @@ async function invoke(handlers: NodeHandlers, node: GraphNode, ctx: NodeContext)
 		if (node.kind === "automation") return await handlers.automation(node, ctx);
 		return { outcome: "failure", outputs: { error: `node ${node.id} of kind ${node.kind} cannot be run` } };
 	} catch (error) {
-		// A crashing handler is a failed node, routed by the graph like any other failure.
+		// Ambiguous/stale mutations must NOT be consumed by the graph's
+		// ordinary repair edges, which would risk replay under a new effect ID.
+		if (error instanceof IndeterminateEffectError || error instanceof StaleEffectError) throw error;
 		return { outcome: "failure", outputs: { error: error instanceof Error ? error.message : String(error) } };
 	}
 }
