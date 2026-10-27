@@ -108,8 +108,9 @@ jobs:
           # detected by event name instead; `PR_NUMBER` resolves from either payload.
           IS_PR: ${{ github.event.issue.pull_request != null || github.event_name == 'pull_request_review' }}
           PR_NUMBER: ${{ github.event.issue.number || github.event.pull_request.number }}
-          COMMENT_BODY: ${{ github.event.comment.body }}
-          REVIEW_BODY: ${{ github.event.review.body }}
+          # Large comment/review bodies must never be expanded into process environment:
+          # a real approval event exceeded Linux's exec argument/environment limit.
+          # pr-approval-main.ts reads the authenticated event from GITHUB_EVENT_PATH.
           REVIEW_STATE: ${{ github.event.review.state }}
           REVIEW_HEAD_SHA: ${{ github.event.review.commit_id }}
           PR_MERGED: ${{ github.event.pull_request.merged }}

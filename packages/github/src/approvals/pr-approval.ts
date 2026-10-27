@@ -73,6 +73,7 @@ export interface PrApprovalEnvironment {
 	GITHUB_ACTOR?: string;
 	GITHUB_REPOSITORY?: string;
 	GITHUB_EVENT_NAME?: string;
+	GITHUB_EVENT_PATH?: string;
 	PR_MERGED?: string;
 	PR_BASE_BRANCH?: string;
 	DEFAULT_BRANCH?: string;

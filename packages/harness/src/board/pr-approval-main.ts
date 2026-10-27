@@ -1,3 +1,4 @@
+import { readFile } from "node:fs/promises";
 import {
 	handlePrApproval,
 	type PrApprovalEnvironment,
@@ -57,13 +58,46 @@ export function parsePrApprovalArgs(argv: readonly string[]): void {
 	}
 }
 
+/**
+ * Recover the PR comment from GitHub's runner-managed event file, not from a giant environment
+ * variable. A large incoming comment can exceed OS exec limits before Bun starts at all.
+ * The workflow passes only bounded metadata in env; the body is read in-process.
+ */
+export async function resolveApprovalEventEnvironment(
+	original: PrApprovalEnvironment,
+): Promise<PrApprovalEnvironment> {
+	if (
+		original.GITHUB_EVENT_NAME !== "issue_comment" ||
+		original.IS_PR !== "true" ||
+		original.COMMENT_BODY !== undefined
+	) {
+		return original;
+	}
+	const path = original.GITHUB_EVENT_PATH;
+	if (!path) throw new Error("Missing GITHUB_EVENT_PATH for PR comment approval event");
+	let payload: unknown;
+	try {
+		payload = JSON.parse(await readFile(path, "utf8"));
+	} catch (cause) {
+		throw new Error("Unable to read GitHub approval event JSON", { cause });
+	}
+	if (payload === null || typeof payload !== "object" || !("comment" in payload)) {
+		throw new Error("Approval event has no comment payload");
+	}
+	const comment = payload.comment;
+	if (comment === null || typeof comment !== "object" || !("body" in comment) || typeof comment.body !== "string") {
+		throw new Error("Approval event comment body must be a string");
+	}
+	return { ...original, COMMENT_BODY: comment.body };
+}
+
 /** Run the approval handler once and report the exit code the workflow should see. */
 export async function main(
 	argv: readonly string[] = process.argv.slice(2),
 	deps: PrApprovalMainDeps = {},
 ): Promise<number> {
 	parsePrApprovalArgs(argv);
-	const env = deps.env ?? process.env;
+	const env = await resolveApprovalEventEnvironment(deps.env ?? process.env);
 	// Built only when a test has not supplied one, so no test reaches for a token or a board.
 	const board = deps.client ? null : new BoardAutomation({ env });
 	const outcome = await (deps.handle ?? handlePrApproval)({
