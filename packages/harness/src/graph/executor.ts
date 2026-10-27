@@ -34,6 +34,8 @@ export interface NodeContext {
 	runDir: string;
 	/** Stable identity shared by retries of a durable graph run. */
 	runId: string;
+	/** Cooperative cancellation checked before and between durable graph stages. */
+	signal?: AbortSignal;
 	/** A mutation boundary that journals intent before the external effect. */
 	effect?<T>(kind: string, operations: { observe(effectId: string): Promise<ObservedEffect<T> | undefined>; execute(effectId: string): Promise<ObservedEffect<T>> }, suffix?: string): Promise<ObservedEffect<T>>;
 	/** The run's outputs so far; for a fan-out child it also holds the item under `foreach.as`. */
@@ -75,6 +77,8 @@ export interface RunGraphOptions {
 	effects?: FileProductionEffectJournal;
 	/** Stable ingress delivery identity; duplicate deliveries are suppressed. */
 	eventId?: string;
+	/** Cooperative cancellation; cannot retroactively undo externally observed effects. */
+	signal?: AbortSignal;
 	/** Required to safely reconcile an interrupted external gate/comment action. */
 	reconcileAction?(action: Exclude<PlanAction, { type: "run" } | { type: "none" }>, state: RunState): Promise<void>;
 }
@@ -321,6 +325,7 @@ async function runGraphUnlocked(
 		return state;
 	};
 	for (;;) {
+		if (options.signal?.aborted) throw new Error("Graph run cancelled before next transition");
 		refreshReviewContexts(graph, state);
 		const currentNode = graph.nodes.find((node) => node.id === state.current_node);
 		const action = plan(graph, current, state);
@@ -407,6 +412,7 @@ async function runGraphUnlocked(
 				outputs: state.outputs,
 				iteration,
 				...(options.effects ? { effect: effectFor(options.effects, state.run_id, node.id, iteration) } : {}),
+				...(options.signal ? { signal: options.signal } : {}),
 				...(existingReview ? { review: existingReview } : {}),
 				...(action.feedback ? { feedback: action.feedback } : {}),
 				...(action.alerts ? { alerts: action.alerts } : {}),
@@ -445,6 +451,15 @@ async function runGraphUnlocked(
 				}
 			}
 			state.outputs = { ...state.outputs, ...result.outputs };
+			if (result.outcome === "quota_exhausted" && node.kind === "agent" && node.quota_policy) {
+				state.checkpoints ??= [];
+				const existing = state.checkpoints.find((checkpoint) => checkpoint.run_id === state.run_id && checkpoint.node === node.id);
+				if (existing) existing.eligible = false;
+				else state.checkpoints.push({ run_id: state.run_id, node: node.id, eligible: false });
+			}
+			if (node.kind === "automation" && node.side_effects?.clear_checkpoints && result.outcome === "success") {
+				state.checkpoints = [];
+			}
 			refreshReviewContexts(graph, state);
 			current = { type: "node.completed", node: node.id, outcome: result.outcome, outputs: result.outputs };
 		}
