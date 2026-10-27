@@ -48,7 +48,7 @@ describe("PR ingress belongs to its originating Request graph", () => {
 			nodes: [
 				{ id: "approval", kind: "gate" as const,
 					author_associations: ["OWNER"], allow_review_state: ["APPROVED"],
-					command: "^\\\\s*(?:/df\\\\s+|/)(?:approve|reject|revise)\\\\s*$" },
+					command: "^\\s*(?:/df\\s+|/)(?:approve|reject|revise)\\s*$" },
 				{ id: "apply", kind: "automation" as const, script: "apply" },
 			],
 			edges: [{ from: "approval", to: "apply", on: { gate_outcome: "approved" as const } }],
