@@ -1,4 +1,5 @@
 import { createHash } from "node:crypto";
+import { contextFingerprint } from "./review-loop.ts";
 import { join } from "node:path";
 import type { GitHubRepository } from "../../../github/src/repository.ts";
 import type { DispatchRuntime, DispatchRuntimeInput } from "./dispatch.ts";
@@ -102,6 +103,16 @@ export function createProductionRuntimeFactory(options: ProductionRuntimeFactory
 		};
 		return {
 			handlers, effects, onAction: performAction, reconcileAction,
+			verifyPlanningContext: async (state: RunState) => {
+				const captured = state.outputs.planning_context;
+				if (!captured || typeof captured !== "object") return false;
+				const current = await options.loadPlanningContext({
+					runDir, runId: state.run_id, outputs: state.outputs,
+					iteration: state.iterations?.["request-intake"] ?? 1,
+				});
+				const base = await repository.observeBase();
+				return contextFingerprint(captured) === contextFingerprint({ ...current, base });
+			},
 			verifyChecks: async (headSha: string) => {
 				const required = graph.checks.filter((item) => item.required).map((item) => item.name);
 				if (required.length === 0) throw new Error("Graph has no explicit required external checks");
