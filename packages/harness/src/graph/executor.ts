@@ -1,5 +1,5 @@
 import { existsSync } from "node:fs";
-import { mkdir, open, readFile } from "node:fs/promises";
+import { appendFile, mkdir, open, readFile } from "node:fs/promises";
 import { join } from "node:path";
 import type { ReviewRuntimeState, ReviewSubject } from "../../../protocol/src/review.ts";
 import { FileProductionEffectJournal, IndeterminateEffectError, StaleEffectError, productionEffectId, replaceDurableJson, runObservedProductionEffect, withGraphFileLock, type ObservedEffect } from "./durable-effects.ts";
