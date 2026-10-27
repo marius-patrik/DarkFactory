@@ -79,6 +79,8 @@ export interface RunGraphOptions {
 	eventId?: string;
 	/** Cooperative cancellation; cannot retroactively undo externally observed effects. */
 	signal?: AbortSignal;
+	/** Re-observes immutable Request, dependencies and base before authorization or mutation. */
+	verifyPlanningContext?(state: RunState): Promise<boolean>;
 	/** Required to safely reconcile an interrupted external gate/comment action. */
 	reconcileAction?(action: Exclude<PlanAction, { type: "run" } | { type: "none" }>, state: RunState): Promise<void>;
 }
@@ -348,6 +350,16 @@ async function runGraphUnlocked(
 		refreshReviewContexts(graph, state);
 		const currentNode = graph.nodes.find((node) => node.id === state.current_node);
 		const action = plan(graph, current, state);
+		if (options.verifyPlanningContext && (
+			isApprovalEvent(current) ||
+			(action.type === "run" && graph.nodes.some((candidate) => action.nodes.includes(candidate.id) && (
+				(candidate.kind === "agent" && (candidate.mode === "write" || candidate.id === "implement" || candidate.id === "review-fix")) ||
+				(candidate.kind === "automation" && candidate.script === "pr-merge")
+			)))
+		)) {
+			if (!(await options.verifyPlanningContext(state)))
+				throw new Error("Authoritative Request, dependencies or base changed; Planning approval is stale");
+		}
 		if (
 			currentNode?.kind === "gate" &&
 			currentNode.approves_review &&
