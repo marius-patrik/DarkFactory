@@ -410,6 +410,32 @@ describe("generic durable review lifecycle", () => {
 		expect(stale.reviews?.planning?.approvedFingerprint).toBeUndefined();
 	});
 
+	test("authoritative Request or base change denies approval before implementation", async () => {
+		const dir = runDir();
+		const { handlers, calls } = scripted({
+			planning: () => ({ outcome: "success", outputs: {
+				planning_context: { request: { body: "original", version: "v1" }, base: "a" },
+				plan_artifact: { scope: ["src/**"] },
+			} }),
+			"planning-review": () => ({ outcome: "success", outputs: { planning_findings: [] } }),
+		});
+		await runGraph(planningGraph(), dir, handlers, opened, {
+			reviewAdapters: { planning: reviewAdapter },
+			verifyPlanningContext: async () => true,
+		});
+		let rechecked = 0;
+		await expect(runGraph(planningGraph(), dir, handlers,
+			{ type: "comment", body: "/df approve", actor: owner },
+			{
+				verifyPlanningContext: async () => { rechecked++; return false; },
+				reviewAdapters: { planning: reviewAdapter },
+			})).rejects.toThrow("Planning approval is stale");
+		expect(rechecked).toBe(1);
+		expect(calls.every((call) => call.node !== "implement")).toBe(true);
+		const state = JSON.parse(readFileSync(join(dir, "state.df"), "utf8")) as RunState;
+		expect(state.current_node).toBe("planning-gate");
+	});
+
 	test("changing only the Planning artifact invalidates the reviewed content and blocks approval", async () => {
 		const dir = runDir();
 		const { handlers, calls } = scripted({
