@@ -173,6 +173,8 @@ export function createProductionGraphHandlers(options: ProductionGraphHandlerOpt
 				}
 			}
 			if (!prNumber || !commitSha) throw new Error("No observed commit and PR identity for implementation");
+			if (!github || (await github.currentPullRequestHead(prNumber)) !== commitSha)
+				throw new Error("Implementation PR HEAD disagrees with observed pushed commit");
 			const implementation = {
 				branch, commitSha, prNumber, changedFiles: code.changedFiles,
 				verification: code.verification, baseSha: base.sha,
