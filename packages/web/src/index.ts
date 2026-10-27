@@ -16,3 +16,9 @@ export {
 	quotaDashboardProviders,
 } from "./quota";
 export { DarkFactoryShell, Route, type RouteConfig, RouteLink, Router, useRouter } from "./web-shell";
+
+export type { OperatorResource, OperatorResourceData, OperatorItem, OperatorReadSource, ResourceState } from "./operator-data.ts";
+export { createGitHubOperatorSource, classifyReadFailure, repositoryIdentity } from "./operator-data.ts";
+export type { OperatorBroker, BrowserLoginConfig, AuthState } from "./operator-auth.ts";
+export { createHttpOperatorBroker, postVerifiedIssueComment } from "./operator-auth.ts";
+export { SURFACES, OperatorView } from "./operator-views.tsx";

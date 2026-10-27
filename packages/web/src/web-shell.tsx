@@ -1,153 +1,243 @@
-import type { FC, ReactNode } from "react";
-import { type BaseLocationHook, Link, Switch, useLocation, Route as WouterRoute, Router as WouterRouter } from "wouter";
-import { type QuotaDashboardState, QuotaDashboardView } from "./quota";
+import { useCallback, useEffect, useMemo, useState, useSyncExternalStore, type FC, type ReactNode } from "react";
+import {
+	type BaseLocationHook, Link, Switch, useLocation,
+	Route as WouterRoute, Router as WouterRouter,
+} from "wouter";
+import {
+	beginOperatorLogin, finishOperatorLogin, logoutOperator, operatorSession, resolveAuthority,
+	type AuthState, type BrowserLoginConfig,
+} from "./operator-auth.ts";
+import { createGitHubOperatorSource, type OperatorReadSource } from "./operator-data.ts";
+import { OperatorView, SURFACES } from "./operator-views.tsx";
+import { type QuotaDashboardState } from "./quota.tsx";
+import { operatorStyles } from "./web-style.ts";
 
 interface RouterProps {
 	basename?: string;
-	/**
-	 * Location source, forwarded to wouter. Wouter defaults to the browser location, which does not
-	 * exist outside a browser, so an embedder serving this shell from a server or a frame has to
-	 * supply its own — as does a test asserting that `/` and `/status` render different views.
-	 * Forwarding wouter's own hook is not a test seam; it is the capability a component library owes
-	 * the code that embeds it.
-	 */
+	/** Embedders/tests can provide their own wouter location source. Web defaults to Pages-safe hash routing. */
 	hook?: BaseLocationHook;
 	children: ReactNode;
 }
-
-export const Router: FC<RouterProps> = ({ basename, hook, children }) => {
-	return (
-		<WouterRouter base={basename} hook={hook}>
-			{children}
-		</WouterRouter>
-	);
-};
-
+function hashPath(): string {
+	if (typeof window === "undefined") return "/";
+	const raw = window.location.hash.replace(/^#/u, "");
+	return raw.startsWith("/") ? raw : "/";
+}
+function subscribeHash(onChange: () => void): () => void {
+	if (typeof window === "undefined") return () => undefined;
+	window.addEventListener("hashchange", onChange);
+	window.addEventListener("popstate", onChange);
+	return () => {
+		window.removeEventListener("hashchange", onChange);
+		window.removeEventListener("popstate", onChange);
+	};
+}
+/** GitHub Pages requires fragment routes; direct navigation never depends on server fallback. */
+export function usePagesHashLocation(): [string, (path: string) => void] {
+	const path = useSyncExternalStore(subscribeHash, hashPath, () => "/");
+	const navigate = useCallback((to: string) => {
+		if (typeof window !== "undefined") window.location.hash = `#${to.startsWith("/") ? to : "/"}${to.startsWith("/") ? "" : to}`;
+	}, []);
+	return [path, navigate];
+}
+export const Router: FC<RouterProps> = ({ basename, hook, children }) => (
+	<WouterRouter base={basename} hook={hook ?? usePagesHashLocation}>{children}</WouterRouter>
+);
 export const useRouter = () => {
 	const [location, setLocation] = useLocation();
-	return {
-		path: location,
-		navigate: (to: string) => setLocation(to),
-	};
+	return { path: location, navigate: (to: string) => setLocation(to) };
 };
 interface RouteProps {
 	path?: string;
 	component?: FC<{ params: Record<string, string | undefined> }>;
 	children?: ReactNode;
 }
-
-export const Route: FC<RouteProps> = ({ path, component: Component, children }) => {
-	return (
-		<WouterRoute path={path}>{(params) => (Component ? <Component params={params} /> : <>{children}</>)}</WouterRoute>
-	);
-};
-
-const HomeView: FC = () => (
-	<div>
-		<h2>Dashboard</h2>
-		<p>DarkFactory operator UI and runtime shell.</p>
-	</div>
+export const Route: FC<RouteProps> = ({ path, component: Component, children }) => (
+	<WouterRoute path={path}>{(params) => Component ? <Component params={params} /> : <>{children}</>}</WouterRoute>
 );
-
-const StatusView: FC = () => (
-	<div>
-		<h2>System Status</h2>
-		<p>Capability tiers, routing policy, and quota health.</p>
-	</div>
-);
-
-const DocsView: FC = () => (
-	<div>
-		<h2>Documentation</h2>
-		<p>Architecture, ADRs, and pipeline operations guide.</p>
-	</div>
-);
-
-const NotFoundView: FC = () => (
-	<div>
-		<h2>404 Not Found</h2>
-		<p>The requested page does not exist.</p>
-	</div>
-);
-
 export interface RouteConfig {
 	path: string;
 	component: FC<{ params: Record<string, string | undefined> }>;
 	label: string;
 }
-
-function defaultRoutes(quota: QuotaDashboardState): RouteConfig[] {
-	const QuotaView: RouteConfig["component"] = () => <QuotaDashboardView state={quota} />;
-	return [
-		{ path: "/", component: HomeView, label: "Dashboard" },
-		{ path: "/status", component: StatusView, label: "System Status" },
-		{ path: "/quota", component: QuotaView, label: "Quota" },
-		{ path: "/docs", component: DocsView, label: "Documentation" },
-	];
-}
-
-const RouteAnnouncer: FC = () => {
-	const [location] = useLocation();
-	return (
-		<div className="sr-only" aria-live="polite">
-			{"Navigated to " + location}
-		</div>
-	);
-};
-interface DarkFactoryShellProps {
+export interface DarkFactoryShellProps {
 	basename?: string;
 	routes?: RouteConfig[];
-	/** Browser-safe quota data state. Defaults to disconnected for public/static builds. */
-	quota?: QuotaDashboardState;
-	/** Location source for the embedded router. See {@link RouterProps.hook}. */
 	hook?: BaseLocationHook;
+	repository?: string;
+	source?: OperatorReadSource;
+	docsContentUrl?: string;
+	auth?: BrowserLoginConfig;
+	quota?: QuotaDashboardState;
 }
-
-export const DarkFactoryShell: FC<DarkFactoryShellProps> = ({
-	basename,
-	routes,
-	quota = { status: "disconnected" },
-	hook,
-}) => {
-	const activeRoutes = routes ?? defaultRoutes(quota);
-	return (
-		<Router basename={basename} hook={hook}>
-			<RouteAnnouncer />
-			<div className="darkfactory-shell">
-				<header>
-					<h1>DarkFactory Web</h1>
-					<nav>
-						{activeRoutes.map((route) => (
-							<RouteLink key={route.path} to={route.path}>
-								{route.label}
-							</RouteLink>
-						))}
-					</nav>
-				</header>
-				<main>
-					<Switch>
-						{activeRoutes.map((route) => (
-							<Route key={route.path} path={route.path} component={route.component} />
-						))}
-						<Route>
-							<NotFoundView />
-						</Route>
-					</Switch>
-				</main>
-			</div>
-		</Router>
-	);
+const RouteAnnouncer: FC = () => {
+	const [location] = useLocation();
+	useEffect(() => {
+		if (typeof document === "undefined") return;
+		const title = document.getElementById("df-section-title");
+		if (title instanceof HTMLElement) title.focus({ preventScroll: true });
+	}, [location]);
+	return <div className="sr-only" aria-live="polite" aria-atomic="true">Navigated to {location}</div>;
 };
-
-interface RouteLinkProps {
-	to: string;
-	children: ReactNode;
+function NotFoundView() {
+	return <section className="df-section"><h2>Page not found</h2>
+		<p>This operator route does not exist.</p><RouteLink to="/">Return to overview</RouteLink></section>;
 }
-
+function AuthPanel({ config, repository, onState }: {
+	config?: BrowserLoginConfig; repository?: string; onState: (auth: AuthState) => void;
+}) {
+	const [state, setState] = useState<AuthState>({ status: config ? "loading" : "unavailable" });
+	const [actionError, setActionError] = useState("");
+	useEffect(() => {
+		let current = true;
+		if (!config) {
+			const next: AuthState = { status: "unavailable" };
+			setState(next); onState(next); return;
+		}
+		async function hydrate() {
+			try {
+				const query = new URLSearchParams(window.location.search);
+				let session;
+				if (query.has("code") || query.has("state") || query.has("error")) {
+					const url = new URL(window.location.href);
+					url.searchParams.delete("code"); url.searchParams.delete("state");
+					url.searchParams.delete("error"); url.searchParams.delete("error_description");
+					window.history.replaceState({}, "", url.href);
+					if (query.has("error")) throw new Error("GitHub authorization was denied.");
+					session = await finishOperatorLogin(config!, query);
+				} else {
+					session = await operatorSession(config!);
+				}
+				if (!current) return;
+				if (!session) {
+					const next: AuthState = { status: "signed-out" };
+					setState(next); onState(next); return;
+				}
+				if (!repository) throw new Error("Repository identity is required to resolve access.");
+				const authority = await resolveAuthority(config!.broker, session, repository);
+				if (!current) return;
+				const next: AuthState = { status: "signed-in", session, authority, config };
+				setState(next); onState(next);
+			} catch (error) {
+				if (!current) return;
+				const next: AuthState = { status: "error", error: error instanceof Error ? error.message : "Authentication unavailable." };
+				setState(next); onState(next);
+			}
+		}
+		void hydrate();
+		return () => { current = false; };
+	}, [config, repository, onState]);
+	async function login() {
+		if (!config) return;
+		setActionError("");
+		try { window.location.assign(await beginOperatorLogin(config)); }
+		catch (error) { setActionError(error instanceof Error ? error.message : "Unable to initiate authorization."); }
+	}
+	async function logout() {
+		if (!config || !state.session) return;
+		const prior = state.session;
+		const next: AuthState = { status: "signed-out" };
+		setState(next); onState(next);
+		try { await logoutOperator(config, prior); }
+		catch { setActionError("Signed out locally; server revocation could not be confirmed. Verify broker availability."); }
+	}
+	if (state.status === "unavailable") return <span className="df-auth-status" title="Confidential user-authentication broker is not connected">Public · read-only</span>;
+	if (state.status === "loading") return <span role="status">Checking session…</span>;
+	if (state.status === "signed-in") return <div className="df-auth">
+		<span>{state.authority?.userId ?? state.session?.userId} · {state.authority?.canMutate ? "authorized writes" : "read-only"}</span>
+		<button type="button" onClick={() => void logout()}>Sign out</button>
+		{actionError ? <span role="alert">{actionError}</span> : null}
+	</div>;
+	return <div className="df-auth">
+		{state.status === "error" ? <span role="alert">{state.error}</span> : null}
+		<button type="button" onClick={() => void login()}>Sign in with GitHub</button>
+		{actionError ? <span role="alert">{actionError}</span> : null}
+	</div>;
+}
+function SurfaceRoutes({ source, repository, auth, quota, routes }: {
+	source?: OperatorReadSource; repository?: string; auth?: AuthState; quota: QuotaDashboardState; routes?: RouteConfig[];
+}) {
+	const defaults = SURFACES.map((entry) => ({
+		path: entry.path, label: entry.label,
+		component: () => <OperatorView
+			resource={entry.resource} title={entry.label}
+			description={surfaceDescription(entry.resource)}
+			source={source} repository={repository} auth={auth} quota={quota}
+		/>,
+	}));
+	const activeRoutes = routes ?? defaults;
+	return <>
+		<aside className="df-side" aria-label="Primary navigation">
+			<div className="df-side-brand"><span className="df-brand-icon" aria-hidden="true">DF</span>
+				<span>DarkFactory<small>Operator console</small></span></div>
+			<nav aria-label="Operator">
+				{routes ? activeRoutes.map((route) =>
+					<RouteLink key={route.path} to={route.path}>{route.label}</RouteLink>) :
+					[...new Set(SURFACES.map((surface) => surface.group))].map((group) =>
+						<div className="df-nav-group" key={group}>
+							<p className="df-nav-group-label">{group}</p>
+							{SURFACES.filter((surface) => surface.group === group).map((surface) =>
+								<RouteLink key={surface.path} to={surface.path}>{surface.label}</RouteLink>)}
+						</div>)}
+			</nav>
+		</aside>
+		<main className="df-main" id="df-main" tabIndex={-1}>
+			<Switch>
+				{!routes ? <Route path="/docs/:id" component={({ params }) => <OperatorView
+					resource="docs" title="Documentation" description="Compiled repository documentation."
+					source={source} repository={repository} docsPage={params.id}
+				/>} /> : null}
+				{activeRoutes.map((route) => <Route key={route.path} path={route.path} component={route.component} />)}
+				<Route component={() => <NotFoundView />} />
+			</Switch>
+		</main>
+	</>;
+}
+function surfaceDescription(resource: string): string {
+	switch (resource) {
+		case "repository": return "Authoritative repository identity, branch and visible GitHub metadata.";
+		case "requests": return "Recently updated issues labeled Request; open a record to inspect its full planning context.";
+		case "planning": return "Planning discovery from issue labels; final artifacts and fingerprints require governed runtime.";
+		case "approvals": return "Human review and approval queue. No approval is inferred from a label.";
+		case "epics": return "Candidate parent issues and references; explicit dependency edges require authoritative graph binding.";
+		case "pulls": return "Pull request branches, relationships, review status and delivery activity.";
+		case "checks": return "Observed GitHub workflow conclusions; required checks need protected-branch policy resolution.";
+		case "runs": return "Latest GitHub Actions runs, their conclusion and source branches.";
+		case "recovery": return "GitHub issues tagged as blocked or requiring recovery; local checkpoints are not synthesized.";
+		case "projects": return "GitHub Projects v2 reads and updates require human/App authorized GraphQL.";
+		case "quota": return "Redacted live provider, account and model availability.";
+		case "capabilities": return "Official and installed capability metadata from verified repository evidence.";
+		case "configuration": return "Live read-only canonical repository configuration file.";
+		case "releases": return "Observed GitHub Releases and immutable asset metadata.";
+		case "audit": return "GitHub issue events; not a substitute for the governed execution journal.";
+		default: return "Repository-authored documentation from the canonical content compiler.";
+	}
+}
+export const DarkFactoryShell: FC<DarkFactoryShellProps> = ({
+	basename, routes, hook, repository, source, docsContentUrl, auth, quota = { status: "disconnected" },
+}) => {
+	const liveSource = useMemo(() => source ?? (repository
+		? createGitHubOperatorSource(repository, { ...(docsContentUrl ? { docsContentUrl } : {}) })
+		: undefined), [source, repository, docsContentUrl]);
+	const [authState, setAuthState] = useState<AuthState>({ status: auth ? "loading" : "unavailable" });
+	return <Router basename={basename} hook={hook}>
+		<style>{operatorStyles}</style>
+		<a className="df-skip" href="#df-main" onClick={(event) => {
+			event.preventDefault(); document.getElementById("df-main")?.focus();
+		}}>Skip to main content</a>
+		<RouteAnnouncer />
+		<div className="darkfactory-shell">
+			<SurfaceRoutes routes={routes} source={liveSource} repository={repository} auth={authState} quota={quota} />
+			<header className="df-top">
+				<div className="df-breadcrumb">{repository ? <span>{repository}</span> : <span>Repository not configured</span>}</div>
+				<AuthPanel config={auth} repository={repository} onState={setAuthState} />
+			</header>
+		</div>
+	</Router>;
+};
+interface RouteLinkProps { to: string; children: ReactNode }
 export const RouteLink: FC<RouteLinkProps> = ({ to, children }) => {
-	return (
-		<Link href={to} className="route-link">
-			{children}
-		</Link>
-	);
+	const [location] = useLocation();
+	return <Link href={to} className={location === to ? "route-link is-active" : "route-link"}
+		aria-current={location === to ? "page" : undefined}>{children}</Link>;
 };
