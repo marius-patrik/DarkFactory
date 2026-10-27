@@ -1,5 +1,5 @@
 import { existsSync } from "node:fs";
-import { appendFile, mkdir, readFile } from "node:fs/promises";
+import { mkdir, open, readFile } from "node:fs/promises";
 import { join } from "node:path";
 import type { ReviewRuntimeState, ReviewSubject } from "../../../protocol/src/review.ts";
 import { FileProductionEffectJournal, productionEffectId, replaceDurableJson, runObservedProductionEffect, withGraphFileLock, type ObservedEffect } from "./durable-effects.ts";
@@ -251,7 +251,15 @@ async function runGraphUnlocked(
 	await mkdir(runDir, { recursive: true });
 	const statePath = join(runDir, "state.df");
 	const eventsPath = join(runDir, "events.df");
-	const record = (entry: unknown) => appendFile(eventsPath, `${JSON.stringify(entry)}\n`);
+	const record = async (entry: unknown) => {
+		const file = await open(eventsPath, "a", 0o600);
+		try {
+			await file.writeFile(`${JSON.stringify(entry)}\n`, "utf8");
+			await file.sync();
+		} finally {
+			await file.close();
+		}
+	};
 	const state: RunState & {
 		processed_event_ids?: string[];
 		active_event_id?: string;
@@ -375,12 +383,13 @@ async function runGraphUnlocked(
 		state.current_node = node.id;
 		delete state.blocked_since;
 		delete state.quota_blocked;
-		await save();
 		if (node.kind === "check-reference" || node.kind === "gate") {
-			delete state.pending_node;
 			// A check or gate is an external wait, not a successful mutation.
 			return finishIngress();
 		}
+		// One durable transaction boundary: incrementing iteration without also
+		// persisting the pending effect could cause an unsafe new effect ID on
+		// recovery after a crash in between two state writes.
 		state.pending_node = { node: node.id, iteration };
 		await save();
 		if (node.foreach) {
