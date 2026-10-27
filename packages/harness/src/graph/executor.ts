@@ -7,6 +7,7 @@ import { plan } from "./planner.ts";
 import { planningReviewAdapter } from "./planning.ts";
 import {
 	approveReview,
+	contextFingerprint,
 	evaluateReview,
 	prepareReviewState,
 	type ReviewSubjectAdapter,
@@ -94,11 +95,11 @@ function startNode(graph: WorkflowGraph, event: GraphEvent): string {
 	return (byEvent ?? bySchedule ?? graph.nodes[0])?.id ?? "";
 }
 
-function reviewContextKey(graph: WorkflowGraph, subject: ReviewSubject): string | undefined {
+function reviewContextKey(graph: WorkflowGraph, subject: ReviewSubject): { context: string; artifact: string } | undefined {
 	for (const node of graph.nodes) {
 		if (node.kind !== "agent") continue;
 		const review = node.review;
-		if (review?.subject === subject) return review.context;
+		if (review?.subject === subject) return { context: review.context, artifact: review.artifact };
 	}
 	return undefined;
 }
@@ -107,8 +108,13 @@ function refreshReviewContexts(graph: WorkflowGraph, state: RunState): void {
 	state.reviews ??= {};
 	for (const subject of ["planning", "implementation"] as const) {
 		const key = reviewContextKey(graph, subject);
-		if (!key || state.outputs[key] === undefined) continue;
-		state.reviews[subject] = prepareReviewState(subject, state.outputs[key], state.reviews[subject]);
+		if (!key || state.outputs[key.context] === undefined) continue;
+		const prepared = prepareReviewState(subject, state.outputs[key.context], state.reviews[subject]);
+		const observed = state.outputs[`${subject}_reviewed_fingerprint`];
+		const current = contextFingerprint([state.outputs[key.context], state.outputs[key.artifact]]);
+		state.reviews[subject] = prepared.clean && observed !== current
+			? { ...prepared, clean: false, approvedFingerprint: undefined, approvedAt: undefined }
+			: prepared;
 	}
 }
 
@@ -341,7 +347,6 @@ async function runGraphUnlocked(
 		const iteration = (state.iterations[node.id] ?? 0) + 1;
 		state.iterations[node.id] = iteration;
 		state.current_node = node.id;
-		state.pending_node = { node: node.id, iteration };
 		delete state.blocked_since;
 		delete state.quota_blocked;
 		await save();
@@ -355,6 +360,8 @@ async function runGraphUnlocked(
 			if (!reviewApprovalFresh(review))
 				throw new Error(`Node ${node.id} requires a fresh approved ${node.requires_review_approval} review`);
 		}
+		state.pending_node = { node: node.id, iteration };
+		await save();
 		if (node.foreach) {
 			current = await runForeach(node, action, state, runDir, handlers, iteration, options.effects);
 		} else {
@@ -390,9 +397,13 @@ async function runGraphUnlocked(
 						now: options.now?.(),
 					});
 					state.reviews[reviewConfig.subject] = review;
+					state.outputs[`${reviewConfig.subject}_reviewed_fingerprint`] = contextFingerprint([
+						state.outputs[reviewConfig.context], state.outputs[reviewConfig.artifact],
+					]);
 					result.outputs[reviewConfig.findings] = review.findings.length > 0 ? review.findings : null;
 					result.outputs[reviewConfig.clean] = review.clean;
 				} else {
+					delete state.outputs[`${reviewConfig.subject}_reviewed_fingerprint`];
 					state.reviews[reviewConfig.subject] = recordReviewFix(
 						existingReview ??
 							(() => {
