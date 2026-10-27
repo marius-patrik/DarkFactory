@@ -19,6 +19,7 @@ export interface OperatorBroker {
 	revoke(sessionId: string): Promise<void>;
 	authority(sessionId: string, repository: string): Promise<BrokerAuthority>;
 	/** Server must check current user, issue version, App scope, gate rules and idempotency. */
+	read?(sessionId: string, repository: string, path: string, signal?: AbortSignal): Promise<unknown>;
 	comment(input: {
 		sessionId: string; repository: string; issue: number; body: string;
 		expectedUpdatedAt: string; idempotencyKey: string;
@@ -57,6 +58,7 @@ export function createHttpOperatorBroker(baseUrl: string, fetcher: typeof fetch 
 		refresh: (sessionId) => request("POST", "v1/auth/refresh", { sessionId }),
 		revoke: (sessionId) => request("POST", "v1/auth/logout", { sessionId }),
 		authority: (sessionId, repository) => request("POST", "v1/operator/authority", { sessionId, repository }),
+		read: (sessionId, repository, path) => request("POST", "v1/operator/read", { sessionId, repository, path }),
 		comment: (input) => request("POST", "v1/operator/comment", input),
 	};
 }
