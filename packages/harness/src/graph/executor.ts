@@ -1,7 +1,8 @@
 import { existsSync } from "node:fs";
-import { appendFile, mkdir, readFile, rename, writeFile } from "node:fs/promises";
+import { appendFile, mkdir, readFile } from "node:fs/promises";
 import { join } from "node:path";
 import type { ReviewRuntimeState, ReviewSubject } from "../../../protocol/src/review.ts";
+import { FileProductionEffectJournal, productionEffectId, replaceDurableJson, runObservedProductionEffect, withGraphFileLock, type ObservedEffect } from "./durable-effects.ts";
 import { plan } from "./planner.ts";
 import { planningReviewAdapter } from "./planning.ts";
 import {
@@ -29,6 +30,10 @@ export interface NodeResult {
 export interface NodeContext {
 	/** Directory owned by this run (or this fan-out child) for scratch files. */
 	runDir: string;
+	/** Stable identity shared by retries of a durable graph run. */
+	runId: string;
+	/** A mutation boundary that journals intent before the external effect. */
+	effect?<T>(kind: string, operations: { observe(): Promise<ObservedEffect<T> | undefined>; execute(): Promise<ObservedEffect<T>> }, suffix?: string): Promise<ObservedEffect<T>>;
 	/** The run's outputs so far; for a fan-out child it also holds the item under `foreach.as`. */
 	outputs: Record<string, unknown>;
 	/** The fan-out item, for a child of a `foreach` node. */
@@ -52,7 +57,7 @@ export interface NodeHandlers {
 }
 
 /** Options for {@link runGraph}. */
-interface RunGraphOptions {
+export interface RunGraphOptions {
 	/**
 	 * Receives gate, hint and comment actions (post the comment, move the board card). The run then stops and waits
 	 * for the next external event; a gate is never passed without one.
@@ -64,12 +69,16 @@ interface RunGraphOptions {
 	maxSteps?: number;
 	/** Subject-specific deterministic validation layered onto model findings. */
 	reviewAdapters?: Partial<Record<ReviewSubject, ReviewSubjectAdapter>>;
+	/** Explicit, durable effect substrate injected into graph node handlers. */
+	effects?: FileProductionEffectJournal;
+	/** Stable ingress delivery identity; duplicate deliveries are suppressed. */
+	eventId?: string;
+	/** Required to safely reconcile an interrupted external gate/comment action. */
+	reconcileAction?(action: Exclude<PlanAction, { type: "run" } | { type: "none" }>, state: RunState): Promise<void>;
 }
 
 async function writeJson(path: string, value: unknown): Promise<void> {
-	const temp = `${path}.${process.pid}.${Math.random().toString(36).slice(2)}.tmp.df`;
-	await writeFile(temp, `${JSON.stringify(value)}\n`, "utf8");
-	await rename(temp, path);
+	await replaceDurableJson(path, value);
 }
 
 async function readJson<T>(path: string): Promise<T | undefined> {
@@ -109,6 +118,20 @@ function isApprovalEvent(event: GraphEvent): boolean {
 	return /^\s*(?:\/df\s+|\/)approve\s*$/u.test(event.body ?? "");
 }
 
+function effectFor(
+	journal: FileProductionEffectJournal | undefined,
+	runId: string,
+	nodeId: string,
+	iteration: number,
+): NodeContext["effect"] {
+	if (!journal) return undefined;
+	return async (kind, operations, suffix = "") => {
+		const id = productionEffectId(runId, nodeId, iteration, kind, suffix);
+		const record = await runObservedProductionEffect(journal, id, kind, operations);
+		return { value: record.value, evidence: record.evidence };
+	};
+}
+
 async function invoke(handlers: NodeHandlers, node: GraphNode, ctx: NodeContext): Promise<NodeResult> {
 	try {
 		if (node.kind === "agent") return await handlers.agent(node, ctx);
@@ -132,6 +155,7 @@ async function runForeach(
 	runDir: string,
 	handlers: NodeHandlers,
 	iteration: number,
+	journal?: FileProductionEffectJournal,
 ): Promise<Extract<GraphEvent, { type: "children.completed" }>> {
 	const spec = node.foreach!;
 	const items = state.outputs[spec.items];
@@ -157,9 +181,11 @@ async function runForeach(
 			const item = items[index];
 			const result = await invoke(handlers, node, {
 				runDir: childDir,
+				runId: `${state.run_id}/${node.id}/${index}`,
 				outputs: { ...state.outputs, [as]: item },
 				item,
 				iteration,
+				...(journal ? { effect: effectFor(journal, `${state.run_id}/${node.id}/${index}`, node.id, iteration) } : {}),
 				...(action.feedback ? { feedback: action.feedback } : {}),
 				...(action.alerts ? { alerts: action.alerts } : {}),
 			});
@@ -208,7 +234,7 @@ async function runForeach(
  * @returns The persisted run state after the call.
  * @throws Error when the run exceeds `maxSteps` node runs in one call.
  */
-export async function runGraph(
+async function runGraphUnlocked(
 	graph: WorkflowGraph,
 	runDir: string,
 	handlers: NodeHandlers,
@@ -219,7 +245,13 @@ export async function runGraph(
 	const statePath = join(runDir, "state.df");
 	const eventsPath = join(runDir, "events.df");
 	const record = (entry: unknown) => appendFile(eventsPath, `${JSON.stringify(entry)}\n`);
-	const state: RunState = (await readJson<RunState>(statePath)) ?? {
+	const state: RunState & {
+		processed_event_ids?: string[];
+		active_event_id?: string;
+		recovery_event?: GraphEvent;
+		pending_node?: { node: string; iteration: number };
+		pending_action?: Exclude<PlanAction, { type: "run" } | { type: "none" }>;
+	} = (await readJson<RunState>(statePath)) ?? {
 		run_id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
 		current_node: startNode(graph, event),
 		outputs: {},
@@ -230,13 +262,49 @@ export async function runGraph(
 	state.hints ??= [];
 	state.iterations ??= {};
 	state.reviews ??= {};
+	state.processed_event_ids ??= [];
+	const ingressId = options.eventId ?? ("event_id" in event && typeof event.event_id === "string" ? event.event_id : undefined);
+	if (ingressId && state.processed_event_ids.includes(ingressId)) return state;
+	if (state.active_event_id && ingressId !== state.active_event_id) {
+		throw new Error(`Run ${state.run_id} must reconcile active event ${state.active_event_id} before processing another delivery`);
+	}
 	const save = () => writeJson(statePath, state);
+	if (state.pending_node) {
+		const { node, iteration } = state.pending_node;
+		const checkpointPath = join(runDir, "checkpoints", node, `${iteration}.df`);
+		const checkpoint = await readJson<{ node: string; iteration: number; state: RunState; event: GraphEvent }>(checkpointPath);
+		if (!checkpoint || checkpoint.node !== node || checkpoint.iteration !== iteration) {
+			throw new Error(`Interrupted node ${node}#${iteration} has no committed result; reconcile effects before retry`);
+		}
+		Object.assign(state, checkpoint.state);
+		delete state.pending_node;
+		state.recovery_event = checkpoint.event;
+		await save();
+	}
+	if (state.pending_action) {
+		if (!options.reconcileAction) throw new Error("Interrupted external graph action requires explicit reconciliation");
+		await options.reconcileAction(state.pending_action, state);
+		delete state.pending_action;
+		delete state.recovery_event;
+		delete state.active_event_id;
+		if (ingressId && !state.processed_event_ids.includes(ingressId)) state.processed_event_ids.push(ingressId);
+		await save();
+		return state;
+	}
+	if (ingressId) state.active_event_id = ingressId;
 	await save();
 	await record({ type: "event", event });
 
 	const maxSteps = options.maxSteps ?? 1000;
 	let steps = 0;
-	let current: GraphEvent = event;
+	let current: GraphEvent = state.recovery_event ?? event;
+	const finishIngress = async () => {
+		delete state.recovery_event;
+		delete state.active_event_id;
+		if (ingressId && !state.processed_event_ids!.includes(ingressId)) state.processed_event_ids!.push(ingressId);
+		await save();
+		return state;
+	};
 	for (;;) {
 		refreshReviewContexts(graph, state);
 		const currentNode = graph.nodes.find((node) => node.id === state.current_node);
@@ -252,19 +320,18 @@ export async function runGraph(
 			state.reviews[currentNode.approves_review] = approveReview(review, options.now?.() ?? new Date());
 		}
 		await record({ type: "action", action });
-		if (action.type === "none") {
-			await save();
-			return state;
-		}
+		if (action.type === "none") return finishIngress();
 		if (action.type !== "run") {
 			state.current_node = action.node;
 			if (action.type === "hint" && !state.hints.includes(action.node)) state.hints.push(action.node);
 			if (action.type === "gate" || action.type === "comment")
 				state.blocked_since ??= (options.now?.() ?? new Date()).toISOString();
 			if (action.type === "comment" && /quota/iu.test(action.message)) state.quota_blocked = true;
+			state.pending_action = action;
 			await save();
 			await options.onAction?.(action, state);
-			return state;
+			delete state.pending_action;
+			return finishIngress();
 		}
 		const nodeId = action.nodes[0];
 		const node = graph.nodes.find((candidate) => candidate.id === nodeId);
@@ -274,12 +341,14 @@ export async function runGraph(
 		const iteration = (state.iterations[node.id] ?? 0) + 1;
 		state.iterations[node.id] = iteration;
 		state.current_node = node.id;
+		state.pending_node = { node: node.id, iteration };
 		delete state.blocked_since;
 		delete state.quota_blocked;
 		await save();
 		if (node.kind === "check-reference" || node.kind === "gate") {
-			// Nothing to execute: the run waits for the checks (or gate) event.
-			return state;
+			delete state.pending_node;
+			// A check or gate is an external wait, not a successful mutation.
+			return finishIngress();
 		}
 		if (node.kind === "agent" && node.requires_review_approval) {
 			const review = state.reviews[node.requires_review_approval];
@@ -287,7 +356,7 @@ export async function runGraph(
 				throw new Error(`Node ${node.id} requires a fresh approved ${node.requires_review_approval} review`);
 		}
 		if (node.foreach) {
-			current = await runForeach(node, action, state, runDir, handlers, iteration);
+			current = await runForeach(node, action, state, runDir, handlers, iteration, options.effects);
 		} else {
 			const reviewConfig = node.kind === "agent" ? node.review : undefined;
 			const existingReview = reviewConfig ? state.reviews[reviewConfig.subject] : undefined;
@@ -297,8 +366,10 @@ export async function runGraph(
 				throw new Error(`Review fix node ${node.id} has no findings or owner feedback to fix`);
 			const result = await invoke(handlers, node, {
 				runDir,
+				runId: state.run_id,
 				outputs: state.outputs,
 				iteration,
+				...(options.effects ? { effect: effectFor(options.effects, state.run_id, node.id, iteration) } : {}),
 				...(existingReview ? { review: existingReview } : {}),
 				...(action.feedback ? { feedback: action.feedback } : {}),
 				...(action.alerts ? { alerts: action.alerts } : {}),
@@ -336,7 +407,27 @@ export async function runGraph(
 			refreshReviewContexts(graph, state);
 			current = { type: "node.completed", node: node.id, outcome: result.outcome, outputs: result.outputs };
 		}
+		// Persist the completed transition before clearing the in-flight node.
+		// Recovery can adopt this snapshot without rerunning an ambiguous effect.
+		const completedState = { ...state, pending_node: undefined, recovery_event: current };
+		await writeJson(join(runDir, "checkpoints", node.id, `${iteration}.df`), {
+			node: node.id, iteration, state: completedState, event: current,
+		});
+		delete state.pending_node;
+		state.recovery_event = current;
 		await save();
 		await record({ type: "event", event: current });
 	}
+}
+
+/** The canonical graph executor, serialized per run on a local filesystem. */
+export async function runGraph(
+	graph: WorkflowGraph,
+	runDir: string,
+	handlers: NodeHandlers,
+	event: GraphEvent,
+	options: RunGraphOptions = {},
+): Promise<RunState> {
+	await mkdir(runDir, { recursive: true });
+	return withGraphFileLock(join(runDir, "locks"), "run", () => runGraphUnlocked(graph, runDir, handlers, event, options));
 }
