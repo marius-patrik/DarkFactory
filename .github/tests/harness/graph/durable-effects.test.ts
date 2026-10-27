@@ -94,7 +94,7 @@ describe("observed production effects", () => {
 				await f.mutate(id);
 				throw new Error("process crashed after HTTP success");
 			},
-		})).rejects.toThrow("process crashed");
+		})).rejects.toBeInstanceOf(IndeterminateEffectError);
 		expect(await f.journal.read(id)).toMatchObject({ status: "pending" });
 		const restarted = new FileProductionEffectJournal(f.journal.directory);
 		const committed = await runObservedProductionEffect(restarted, id, "github.comment", {
@@ -135,7 +135,7 @@ describe("observed production effects", () => {
 		await expect(runObservedProductionEffect(f.journal, id, "mutation", {
 			observe: async () => undefined,
 			execute: async () => ({ value: 1, evidence: "" }),
-		})).rejects.toThrow("lacks independently observed evidence");
+		})).rejects.toBeInstanceOf(IndeterminateEffectError);
 		expect(await f.journal.read(id)).toMatchObject({ status: "pending" });
 	});
 });
