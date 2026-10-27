@@ -35,7 +35,8 @@ async function localRepository() {
 	git(repo, "config", "user.name", "Test Engineer");
 	git(repo, "config", "user.email", "engineer@example.test");
 	await writeFile(join(repo, "file.txt"), "original\n");
-	git(repo, "add", "file.txt");
+	await writeFile(join(repo, "repo.dfconfig"), JSON.stringify({ repo: { identity: { default_branch: "main" } } }));
+	git(repo, "add", "file.txt", "repo.dfconfig");
 	git(repo, "commit", "-m", "seed");
 	git(repo, "push", "-u", "origin", "main");
 	return { root, repo, remote };
