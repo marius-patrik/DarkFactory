@@ -3,6 +3,7 @@ import { join, resolve } from "node:path";
 import type { GitHubRepository } from "../../../github/src/repository.ts";
 import { slugify } from "../../../keychain/src/import/slugify.ts";
 import { changedFiles } from "../workspace/changedFiles.ts";
+import { repairObservedMergeConflicts, type ConflictResolver } from "../workspace/conflict-repair.ts";
 import { commitChunk, type CommitIdentity } from "../workspace/commitChunk.ts";
 import { createWorktree } from "../workspace/createWorktree.ts";
 import { runGit } from "../workspace/git.ts";
@@ -63,6 +64,8 @@ export function createRepositoryProductionEffects(options: {
 	repoDir: string;
 	workRoot?: string;
 	identity?: CommitIdentity;
+	/** Optional governed resolver for active Git merge conflicts. */
+	resolveConflict?: ConflictResolver;
 }): ProductionRepositoryEffects {
 	const repo = resolve(options.repoDir);
 	const workRoot = resolve(options.workRoot ?? join(repo, ".darkfactory", "worktrees"));
@@ -176,11 +179,24 @@ export function createRepositoryProductionEffects(options: {
 					// Never call git update twice when a process died mid-merge.
 					return undefined;
 				},
-				execute: async () => {
+				execute: async (effectId) => {
 					await mkdir(workRoot, { recursive: true });
 					const { worktreePath } = createWorktree({ repo, branch, base, workRoot });
 					const result = await updateBranch({ worktree: worktreePath, base, identity });
 					const sha = head(worktreePath);
+					if (result.status === "conflict" && options.resolveConflict) {
+						const repaired = await repairObservedMergeConflicts({
+							worktree: worktreePath, baseBranch: base,
+							conflictedFiles: result.conflictedFiles,
+							resolveConflict: options.resolveConflict,
+							identity, effectId,
+						});
+						return {
+							value: { status: "clean" as const, worktree: worktreePath,
+								headSha: repaired.commitSha },
+							evidence: `verified-conflict-repair:${branch}:${repaired.commitSha}:${effectId}`,
+						};
+					}
 					if (result.status === "conflict") {
 						return {
 							value: { status: "conflict" as const, worktree: worktreePath, headSha: sha,
