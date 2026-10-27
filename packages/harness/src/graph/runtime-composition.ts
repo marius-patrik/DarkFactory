@@ -10,6 +10,7 @@ import {
 	createGitHubProductionEffects,
 	createRepositoryProductionEffects,
 	productionWorkspaceOperations,
+	type GitHubMergeBoundary,
 } from "./production-composition.ts";
 import {
 	createProductionGraphHandlers,
@@ -23,6 +24,8 @@ type ExternalAction = Exclude<PlanAction, { type: "run" } | { type: "none" }>;
 export interface ProductionRuntimeFactoryOptions {
 	repoDir: string;
 	repository: GitHubRepository;
+	/** Conditional PR merger provided by packages/github; graph never issues REST directly. */
+	mergeBoundary: GitHubMergeBoundary;
 	model: ProductionGraphHandlerOptions["model"];
 	loadPlanningContext: ProductionGraphHandlerOptions["loadPlanningContext"];
 	automation?: ProductionGraphHandlerOptions["automation"];
@@ -58,6 +61,7 @@ export function createProductionRuntimeFactory(options: ProductionRuntimeFactory
 	return async ({ subject, runDir, graph }: DispatchRuntimeInput): Promise<DispatchRuntime> => {
 		const github = createGitHubProductionEffects(options.repository, {
 			requiredChecks: graph.checks.filter((check) => check.required).map((check) => check.name),
+			mergeBoundary: options.mergeBoundary,
 		});
 		const effects = new FileProductionEffectJournal(join(runDir, "effects"));
 		const handlers = createProductionGraphHandlers({
