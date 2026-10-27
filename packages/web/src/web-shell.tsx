@@ -216,10 +216,17 @@ function surfaceDescription(resource: string): string {
 export const DarkFactoryShell: FC<DarkFactoryShellProps> = ({
 	basename, routes, hook, repository, source, docsContentUrl, auth, quota = { status: "disconnected" },
 }) => {
-	const liveSource = useMemo(() => source ?? (repository
-		? createGitHubOperatorSource(repository, { ...(docsContentUrl ? { docsContentUrl } : {}) })
-		: undefined), [source, repository, docsContentUrl]);
 	const [authState, setAuthState] = useState<AuthState>({ status: auth ? "loading" : "unavailable" });
+	const liveSource = useMemo(() => {
+		if (source || !repository) return source;
+		const authenticated = authState.status === "signed-in" && authState.session &&
+			authState.authority?.canRead && auth?.broker.read;
+		return createGitHubOperatorSource(repository, {
+			...(docsContentUrl ? { docsContentUrl } : {}),
+			...(authenticated ? { readThroughBroker: (path: string, signal?: AbortSignal) =>
+				auth.broker.read!(authState.session!.id, repository, path, signal) } : {}),
+		});
+	}, [source, repository, docsContentUrl, auth, authState]);
 	return <Router basename={basename} hook={hook}>
 		<style>{operatorStyles}</style>
 		<a className="df-skip" href="#df-main" onClick={(event) => {
@@ -227,11 +234,11 @@ export const DarkFactoryShell: FC<DarkFactoryShellProps> = ({
 		}}>Skip to main content</a>
 		<RouteAnnouncer />
 		<div className="darkfactory-shell">
-			<SurfaceRoutes routes={routes} source={liveSource} repository={repository} auth={authState} quota={quota} />
 			<header className="df-top">
 				<div className="df-breadcrumb">{repository ? <span>{repository}</span> : <span>Repository not configured</span>}</div>
 				<AuthPanel config={auth} repository={repository} onState={setAuthState} />
 			</header>
+			<SurfaceRoutes routes={routes} source={liveSource} repository={repository} auth={authState} quota={quota} />
 		</div>
 	</Router>;
 };
