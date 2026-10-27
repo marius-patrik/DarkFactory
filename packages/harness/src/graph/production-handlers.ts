@@ -54,6 +54,8 @@ export interface ProductionGitHubEffects {
 		expectedHeadSha: string;
 	}): ExternalMutation<{ number: number; mergeSha: string }>;
 	closeIssue(input: { number: number }): ExternalMutation<{ number: number }>;
+	/** Persisted marker prevents repeat gate, reminder, or comment publication. */
+	createComment(input: { issueNumber: number; body: string }): ExternalMutation<{ commentId: number }>;
 }
 
 export interface ProductionGraphHandlerOptions {
