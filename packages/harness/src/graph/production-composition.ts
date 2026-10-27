@@ -173,12 +173,33 @@ export function createRepositoryProductionEffects(options: {
 		updateBranch({ branch, base }) {
 			checkedBranch(repo, branch);
 			checkedBranch(repo, base);
-			return {
-				observe: async () => {
-					// A conflicted merge has ambiguous externally mutable state.
-					// Never call git update twice when a process died mid-merge.
+			const observe = async () => {
+				const worktreePath = resolve(join(workRoot, slugify(branch)));
+				if (!workspaceFingerprint(repo, worktreePath, branch)) return undefined;
+				const sha = head(worktreePath);
+				const unresolved = runGit(worktreePath, ["diff", "--name-only", "--diff-filter=U"])
+					.split(/\r?\n/u).filter(Boolean).sort();
+				if (unresolved.length) {
+					return {
+						value: { status: "conflict" as const, worktree: worktreePath, headSha: sha,
+							conflictedFiles: unresolved },
+						evidence: `git-conflict:${branch}:${sha}:${unresolved.join(",")}`,
+					};
+				}
+				if (runGit(worktreePath, ["status", "--porcelain"]).trim()) return undefined;
+				runGit(repo, ["fetch", "origin", base]);
+				try {
+					runGit(worktreePath, ["merge-base", "--is-ancestor", `origin/${base}`, "HEAD"]);
+				} catch {
 					return undefined;
-				},
+				}
+				return {
+					value: { status: "clean" as const, worktree: worktreePath, headSha: sha },
+					evidence: `git-update:${branch}:${sha}`,
+				};
+			};
+			return {
+				observe,
 				execute: async (effectId) => {
 					await mkdir(workRoot, { recursive: true });
 					const { worktreePath } = createWorktree({ repo, branch, base, workRoot });
@@ -194,7 +215,7 @@ export function createRepositoryProductionEffects(options: {
 						return {
 							value: { status: "clean" as const, worktree: worktreePath,
 								headSha: repaired.commitSha },
-							evidence: `verified-conflict-repair:${branch}:${repaired.commitSha}:${effectId}`,
+							evidence: `git-update:${branch}:${repaired.commitSha}`,
 						};
 					}
 					if (result.status === "conflict") {
