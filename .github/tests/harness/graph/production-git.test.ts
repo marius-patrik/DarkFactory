@@ -84,6 +84,19 @@ describe("canonical graph real git composition", () => {
 		expect(git(worktree, "status", "--porcelain")).toBe("");
 	});
 
+	test("never publishes a runtime commit directly to the configured default branch", async () => {
+		const f = await localRepository();
+		const effects = createRepositoryProductionEffects({ repoDir: f.repo });
+		const original = git(f.repo, "rev-parse", "HEAD");
+		await expect(effects.push({
+			branch: "main", worktree: f.repo, expectedOldSha: original, newSha: original,
+		}).observe("a".repeat(64))).rejects.toThrow("default branch");
+		await expect(effects.push({
+			branch: "main", worktree: f.repo, expectedOldSha: original, newSha: original,
+		}).execute("a".repeat(64))).rejects.toThrow("default branch");
+		expect(git(f.repo, "rev-parse", "HEAD")).toBe(original);
+	});
+
 	test("lease validation rejects competing remote branch update without overwriting its commit", async () => {
 		const f = await localRepository();
 		const effects = createRepositoryProductionEffects({ repoDir: f.repo, workRoot: join(f.root, "worktrees") });
