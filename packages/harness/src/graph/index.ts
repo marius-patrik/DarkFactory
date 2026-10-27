@@ -8,6 +8,7 @@ export * from "./loader.ts";
 export * from "./planner.ts";
 export * from "./production-handlers.ts";
 export * from "./production-composition.ts";
+export * from "./runtime-composition.ts";
 export * from "./planning.ts";
 export * from "./review-loop.ts";
 export * from "./types.ts";
