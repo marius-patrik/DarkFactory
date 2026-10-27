@@ -96,7 +96,7 @@ function event(value: unknown): OperatorItem {
 	const x = record(value);
 	return {
 		id: num(x.id), title: str(x.event) || "Repository issue event",
-		url: str(x.url).replace("https://api.github.com/repos/", "https://github.com/").replace("/issues/events/", "/issues/"),
+		url: str(record(x.issue).html_url),
 		subtitle: str(record(x.actor).login), updatedAt: str(x.created_at),
 	};
 }
