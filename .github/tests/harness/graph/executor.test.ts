@@ -240,6 +240,26 @@ describe("runGraph fan-out", () => {
 		).toEqual(["a", "b", "c", "d", "e"]);
 	});
 
+	test("reordering or changing a fan-out item never reuses a successful result from the old index", async () => {
+		const dir = runDir();
+		const graph = fanGraph(2, false);
+		let batch = 0;
+		const { handlers, calls } = scripted({
+			split: () => ({ outcome: "success", outputs: {
+				chunks: ++batch === 1 ? ["alpha", "beta"] : ["beta", "alpha"],
+				plan_artifact: { revision: batch },
+			} }),
+			chunk: (ctx) => ({ outcome: "success", outputs: { item: ctx.item } }),
+		});
+		const first = await runGraph(graph, dir, handlers, opened, { eventId: "initial" });
+		expect((first.outputs.chunk_results as Array<{ outputs: { item: string } }>).map((r) => r.outputs.item))
+			.toEqual(["alpha", "beta"]);
+		const second = await runGraph(graph, dir, handlers, opened, { eventId: "revision" });
+		expect((second.outputs.chunk_results as Array<{ outputs: { item: string } }>).map((r) => r.outputs.item))
+			.toEqual(["beta", "alpha"]);
+		expect(calls.filter((call) => call.node === "chunk")).toHaveLength(4);
+	});
+
 	test("a retried fan-out re-runs only the children that did not succeed", async () => {
 		const attempts = new Map<string, number>();
 		const { handlers, calls } = scripted({
