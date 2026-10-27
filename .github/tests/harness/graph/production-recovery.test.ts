@@ -4,6 +4,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import {
 	FileProductionEffectJournal,
+	IndeterminateEffectError,
 } from "../../../../packages/harness/src/graph/durable-effects.ts";
 import {
 	type NodeHandlers, runGraph,
@@ -114,6 +115,31 @@ describe("canonical production graph recovery", () => {
 			effects: f.effects, eventId: "delivery-c",
 		})).rejects.toThrow("no committed result");
 		expect(f.writes()).toBe(0);
+	});
+
+	test("an indeterminate mutation cannot follow ordinary node failure/retry edges", async () => {
+		const f = await fixture();
+		let repaired = false;
+		const graph: WorkflowGraph = {
+			version: 1, checks: [],
+			nodes: [
+				{ id: "mutate", kind: "automation", script: "mutate", trigger: { event: "issues.opened" } },
+				{ id: "repair", kind: "automation", script: "repair" },
+			],
+			edges: [{ from: "mutate", to: "repair", on: { node_outcome: "failure" } }],
+		};
+		const handlers: NodeHandlers = {
+			agent: async () => ({ outcome: "failure", outputs: {} }),
+			automation: async (node) => {
+				if (node.id === "repair") { repaired = true; return { outcome: "success", outputs: {} }; }
+				throw new IndeterminateEffectError("a".repeat(64));
+			},
+		};
+		await expect(runGraph(graph, f.runDir, handlers, opened, { eventId: "ambiguous", effects: f.effects }))
+			.rejects.toBeInstanceOf(IndeterminateEffectError);
+		expect(repaired).toBe(false);
+		const saved = JSON.parse(await readFile(join(f.runDir, "state.df"), "utf8"));
+		expect(saved.pending_node).toMatchObject({ node: "mutate", iteration: 1 });
 	});
 
 	test("dispatch executes via the same graph rather than merely printing a plan", async () => {
