@@ -239,6 +239,11 @@ describe("canonical production graph recovery", () => {
 		const logs: string[] = [];
 		const previousLog = console.log;
 		console.log = (v) => { logs.push(String(v)); };
+		const runsRoot = join(f.root, "checks");
+		await mkdir(join(runsRoot, "13"), { recursive: true });
+		await writeFile(join(runsRoot, "13", "state.df"), JSON.stringify({
+			run_id: "request-13", current_node: "verify", outputs: { pr_number: 27 }, hints: [],
+		}));
 		let verificationCalls = 0;
 		try {
 			await dispatch([
@@ -261,7 +266,7 @@ describe("canonical production graph recovery", () => {
 		}
 		expect(verificationCalls).toBe(1);
 		expect(JSON.parse(logs[0]!).type).toBe("none");
-		await expect(readFile(join(f.root, "checks", "27", "state.df"), "utf8")).rejects.toMatchObject({ code: "ENOENT" });
+		expect(JSON.parse(await readFile(join(runsRoot, "13", "state.df"), "utf8")).current_node).toBe("verify");
 	});
 
 	test("merge gate rejects an external check result for a different head", async () => {
