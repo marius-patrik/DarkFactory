@@ -29,6 +29,8 @@ export interface DispatchRuntime {
 	onAction?: RunGraphOptions["onAction"];
 	reconcileAction?: RunGraphOptions["reconcileAction"];
 	effects?: RunGraphOptions["effects"];
+	/** Observe every declared required external check for the event commit SHA. */
+	verifyChecks?(sha: string): Promise<"required_green" | "failed" | "pending">;
 }
 
 export interface DispatchRuntimeInput {
@@ -129,7 +131,7 @@ export async function dispatch(
 	// For checks.completed events, evaluate the checks gate if tokens are present
 	let gateResult: ChecksGateResult | undefined;
 
-	if (translated.event.type === "checks.completed") {
+	if (translated.event.type === "checks.completed" && !options?.runtime) {
 		const env: GitHubTokenEnv & GitHubRepoEnv = {
 			GH_TOKEN: process.env.GH_TOKEN,
 			GITHUB_TOKEN: process.env.GITHUB_TOKEN,
@@ -164,6 +166,19 @@ export async function dispatch(
 	if (options?.runtime) {
 		const runDir = join(runsDir, subject);
 		const runtime = await options.runtime({ subject, runDir, graph: workflowGraph });
+		if (translated.event.type === "checks.completed") {
+			const ref = translated.subject.ref;
+			if (!ref || !/^[a-f0-9]{40}$/iu.test(ref))
+				throw new Error("Production checks event lacks exact immutable head SHA");
+			if (!runtime.verifyChecks)
+				throw new Error("Production graph execution requires authoritative external check readback");
+			const observed = await runtime.verifyChecks(ref);
+			if (observed === "pending") {
+				console.log(JSON.stringify({ type: "none", subject, reason: "required external checks pending" }));
+				return;
+			}
+			translated.event.conclusion = observed;
+		}
 		const eventId = options.deliveryId ?? createHash("sha256")
 			.update(JSON.stringify([opts.eventName, eventPayload])).digest("hex");
 		const state = await runGraph(workflowGraph, runDir, runtime.handlers, translated.event, {
