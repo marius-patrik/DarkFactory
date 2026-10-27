@@ -222,6 +222,48 @@ describe("canonical production graph recovery", () => {
 		expect(f.writes()).toBe(0);
 	});
 
+	test("production dispatch cannot trust a green webhook when authoritative checks remain pending", async () => {
+		const f = await fixture();
+		const graphFile = join(f.root, "checks-graph.json");
+		const eventFile = join(f.root, "check-suite.json");
+		const graph: WorkflowGraph = {
+			version: 1, checks: [{ name: "quality", required: true }],
+			nodes: [{ id: "verify", kind: "agent", trigger: { event: "checks.completed" } }],
+			edges: [],
+		};
+		await writeFile(graphFile, JSON.stringify(graph));
+		await writeFile(eventFile, JSON.stringify({
+			action: "completed",
+			check_suite: { conclusion: "success", head_sha: sha, pull_requests: [{ number: 27 }] },
+		}));
+		const logs: string[] = [];
+		const previousLog = console.log;
+		console.log = (v) => { logs.push(String(v)); };
+		let verificationCalls = 0;
+		try {
+			await dispatch([
+				"--event-name", "check_suite", "--event", eventFile,
+				"--graph", graphFile, "--runs", join(f.root, "checks"),
+			], {
+				deliveryId: "untrusted-green",
+				runtime: async () => ({
+					handlers: f.handlers,
+					effects: f.effects,
+					verifyChecks: async (ref) => {
+						expect(ref).toBe(sha);
+						verificationCalls++;
+						return "pending" as const;
+					},
+				}),
+			});
+		} finally {
+			console.log = previousLog;
+		}
+		expect(verificationCalls).toBe(1);
+		expect(JSON.parse(logs[0]!).type).toBe("none");
+		await expect(readFile(join(f.root, "checks", "27", "state.df"), "utf8")).rejects.toMatchObject({ code: "ENOENT" });
+	});
+
 	test("merge gate rejects an external check result for a different head", async () => {
 		const f = await fixture();
 		const g: WorkflowGraph = {
