@@ -8,6 +8,22 @@ export interface MergeAuthorization {
 	approvedAt: string;
 }
 
+/** Amendment authorization always binds the specific Planning and diff proposal. */
+export function amendmentProposalFingerprint(outputs: Record<string, unknown>): string {
+	if (!outputs.planning_context || !outputs.plan_artifact ||
+		!outputs.implementation_context || !outputs.implementation_artifact)
+		throw new Error("Amendment gate requires exact Planning and implementation artifacts");
+	return contextFingerprint({
+		planningContext: outputs.planning_context,
+		plan: outputs.plan_artifact,
+		implementationContext: outputs.implementation_context,
+		implementation: outputs.implementation_artifact,
+		commit: outputs.commit_sha,
+		branch: outputs.branch,
+		pr: outputs.pr_number,
+	});
+}
+
 /** Exact local proposal bound by the final human merge authorization. */
 export function mergeProposalFingerprint(outputs: Record<string, unknown>): string {
 	const pr = outputs.pr_number;
