@@ -104,7 +104,7 @@ export async function resolveRequestRunForPullRequest(runsDir: string, prNumber:
 	}
 	const matches: string[] = [];
 	for (const entry of entries) {
-		if (!entry.isDirectory() || !/^\\d+$/u.test(entry.name)) continue;
+		if (!entry.isDirectory() || !/^\d+$/u.test(entry.name)) continue;
 		let source: string;
 		try {
 			source = await readFile(join(runsDir, entry.name, "state.df"), "utf8");
