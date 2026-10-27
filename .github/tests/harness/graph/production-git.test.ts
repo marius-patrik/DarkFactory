@@ -86,6 +86,24 @@ describe("canonical graph real git composition", () => {
 		expect(git(worktree, "status", "--porcelain")).toBe("");
 	});
 
+	test("mutating a source file after verification invalidates deterministic commit authorization", async () => {
+		const f = await localRepository();
+		const effects = createRepositoryProductionEffects({
+			repoDir: f.repo, workRoot: join(f.root, "worktrees"),
+		});
+		const tree = await effects.ensureWorktree({ branch: "agent/verified-only", base: "main", runId: "one" })
+			.execute("4".repeat(64));
+		await writeFile(join(tree.value.worktree, "file.txt"), "verified bytes\n");
+		const approvedFingerprint = await effects.observeWorkspace(tree.value.worktree);
+		await writeFile(join(tree.value.worktree, "file.txt"), "different bytes after verification\n");
+		await expect(effects.commit({
+			worktree: tree.value.worktree, message: "verified commit",
+			expectedWorkspace: approvedFingerprint,
+		}).execute("5".repeat(64))).rejects.toThrow("Workspace changed after deterministic verification");
+		expect(git(tree.value.worktree, "log", "-1", "--format=%s")).toBe("seed");
+		expect(await effects.remoteHead("agent/verified-only")).toBeNull();
+	});
+
 	test("never publishes a runtime commit directly to the configured default branch", async () => {
 		const f = await localRepository();
 		const effects = createRepositoryProductionEffects({ repoDir: f.repo });
