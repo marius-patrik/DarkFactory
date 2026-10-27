@@ -189,20 +189,22 @@ function effectMarker(id: string): string {
 	return `<!-- darkfactory-effect:${id} -->`;
 }
 
-/** GitHub effects are exclusively executed through @darkfactory/github. */
+/**
+ * Missing read/conditional-write GitHub primitives must be provided by the
+ * GitHub package owner. The graph must never issue raw REST requests itself.
+ */
+export interface GitHubMergeBoundary {
+	read(number: number): Promise<{ number: number; headSha: string; merged: boolean; mergeSha?: string }>;
+	mergeIfHead(number: number, expectedHeadSha: string): Promise<{ merged: boolean; mergeSha?: string }>;
+}
+
+/** GitHub transaction policy stays in the graph; REST/GraphQL stays in @darkfactory/github. */
 export function createGitHubProductionEffects(
 	repository: GitHubRepository,
-	options: { requiredChecks: readonly string[] },
+	options: { requiredChecks: readonly string[]; mergeBoundary: GitHubMergeBoundary },
 ): ProductionGitHubEffects {
 	if (options.requiredChecks.length === 0) throw new Error("Production GitHub effects require explicit mandatory check names");
-	const restPath = `/repos/${encodeURIComponent(repository.owner)}/${encodeURIComponent(repository.repo)}`;
-	const getPR = (number: number) => repository.client.rest<{
-		number: number;
-		body?: string | null;
-		merged?: boolean;
-		merge_commit_sha?: string | null;
-		head?: { sha?: string };
-	}>( "GET", `${restPath}/pulls/${number}`);
+	const getPR = options.mergeBoundary.read;
 	return {
 		ensurePullRequest(input) {
 			const find = async (id: string) => {
@@ -228,7 +230,7 @@ export function createGitHubProductionEffects(
 			};
 		},
 		async currentPullRequestHead(number) {
-			const sha = (await getPR(number)).head?.sha;
+			const sha = await repository.getPullRequestHeadSha(number);
 			if (!sha || !SHA.test(sha)) throw new Error("GitHub PR head is missing immutable SHA");
 			return sha;
 		},
@@ -240,24 +242,21 @@ export function createGitHubProductionEffects(
 		mergePullRequest(input) {
 			const observe = async () => {
 				const pr = await getPR(input.number);
-				if (!pr.merged || !pr.merge_commit_sha) return undefined;
-				if (pr.head?.sha !== input.expectedHeadSha) throw new Error("Merged PR head differs from approved commit");
-				if (!SHA.test(pr.merge_commit_sha)) throw new Error("Merged PR has invalid merge SHA");
-				return { value: { number: input.number, mergeSha: pr.merge_commit_sha },
-					evidence: `github-merge:${input.number}:${pr.merge_commit_sha}` };
+				if (!pr.merged || !pr.mergeSha) return undefined;
+				if (pr.headSha !== input.expectedHeadSha) throw new Error("Merged PR head differs from approved commit");
+				if (!SHA.test(pr.mergeSha)) throw new Error("Merged PR has invalid merge SHA");
+				return { value: { number: input.number, mergeSha: pr.mergeSha },
+					evidence: `github-merge:${input.number}:${pr.mergeSha}` };
 			};
 			return {
 				observe: async () => observe(),
 				execute: async () => {
-					if ((await getPR(input.number)).head?.sha !== input.expectedHeadSha)
+					if ((await getPR(input.number)).headSha !== input.expectedHeadSha)
 						throw new Error("PR head changed before conditional merge");
-					const merged = await repository.client.rest<{ merged?: boolean; sha?: string }>(
-						"PUT", `${restPath}/pulls/${input.number}/merge`,
-						{ sha: input.expectedHeadSha, merge_method: "merge" },
-					);
-					if (!merged.merged || !merged.sha) throw new Error("Conditional GitHub merge not confirmed");
+					const merged = await options.mergeBoundary.mergeIfHead(input.number, input.expectedHeadSha);
+					if (!merged.merged || !merged.mergeSha) throw new Error("Conditional GitHub merge not confirmed");
 					const confirmed = await observe();
-					if (!confirmed || confirmed.value.mergeSha !== merged.sha)
+					if (!confirmed || confirmed.value.mergeSha !== merged.mergeSha)
 						throw new Error("Merged PR remote observation did not confirm exact merge SHA");
 					return confirmed;
 				},
