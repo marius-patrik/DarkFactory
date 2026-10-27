@@ -157,7 +157,9 @@ async function invoke(handlers: NodeHandlers, node: GraphNode, ctx: NodeContext)
 /**
  * Runs a `foreach` node: one child per item of `state.outputs[foreach.items]`, at most `max_parallel` (default 1) at a
  * time. Each child keeps its result in `children/<node>/<index>/result.df`, so a resumed fan-out re-runs only the
- * children that did not succeed.
+ * children that did not succeed. Each child result and effect identity is bound
+ * to its immutable Planning context and item; a re-plan cannot reuse a
+ * successful result from an unrelated item at the same array index.
  */
 async function runForeach(
 	node: GraphNode,
@@ -181,26 +183,35 @@ async function runForeach(
 	const worker = async () => {
 		while (next < items.length) {
 			const index = next++;
-			const childDir = join(runDir, "children", node.id, String(index));
+			const item = items[index];
+			const fingerprint = contextFingerprint({
+				item,
+				planningContext: state.outputs.planning_context,
+				plan: state.outputs.plan_artifact,
+				branch: state.outputs.branch,
+				requiredTests: state.outputs.required_tests,
+			});
+			const childRunId = `${state.run_id}/${node.id}/${index}/${fingerprint}`;
+			const childDir = join(runDir, "children", node.id, String(index), fingerprint);
 			await mkdir(childDir, { recursive: true });
 			const resultPath = join(childDir, "result.df");
-			const previous = await readJson<NodeResult>(resultPath);
+			const previous = await readJson<NodeResult & { input_fingerprint?: string }>(resultPath);
 			if (previous?.outcome === "success") {
+				if (previous.input_fingerprint !== fingerprint) throw new Error("Unbound fan-out result cannot be reused");
 				results[index] = { ...previous, index };
 				continue;
 			}
-			const item = items[index];
 			const result = await invoke(handlers, node, {
 				runDir: childDir,
-				runId: `${state.run_id}/${node.id}/${index}`,
+				runId: childRunId,
 				outputs: { ...state.outputs, [as]: item },
 				item,
 				iteration,
-				...(journal ? { effect: effectFor(journal, `${state.run_id}/${node.id}/${index}`, node.id, iteration) } : {}),
+				...(journal ? { effect: effectFor(journal, childRunId, node.id, 1) } : {}),
 				...(action.feedback ? { feedback: action.feedback } : {}),
 				...(action.alerts ? { alerts: action.alerts } : {}),
 			});
-			await writeJson(resultPath, result);
+			await writeJson(resultPath, { ...result, input_fingerprint: fingerprint });
 			await appendFile(
 				join(childDir, "events.df"),
 				`${JSON.stringify({ type: "node.completed", node: node.id, outcome: result.outcome, outputs: result.outputs })}\n`,
@@ -212,7 +223,13 @@ async function runForeach(
 		Array.from({ length: Math.min(Math.max(1, spec.max_parallel ?? 1), Math.max(1, items.length)) }, worker),
 	);
 	state.children = results.map((result) => ({
-		run_id: `${state.run_id}/${node.id}/${result.index}`,
+		run_id: `${state.run_id}/${node.id}/${result.index}/${contextFingerprint({
+			item: items[result.index],
+			planningContext: state.outputs.planning_context,
+			plan: state.outputs.plan_artifact,
+			branch: state.outputs.branch,
+			requiredTests: state.outputs.required_tests,
+		})}`,
 		node: node.id,
 		eligible: result.outcome === "quota_exhausted",
 	}));
