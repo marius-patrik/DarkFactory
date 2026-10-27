@@ -1,4 +1,4 @@
-import { lstat, readFile, writeFile } from "node:fs/promises";
+import { lstat, readFile, writeFile, realpath } from "node:fs/promises";
 import { isAbsolute, relative, resolve } from "node:path";
 import { runGit } from "./git.ts";
 import { type CommitIdentity } from "./commitChunk.ts";
@@ -53,6 +53,9 @@ export async function repairObservedMergeConflicts(options: {
 		const rel = relative(worktree, path);
 		if (!rel || rel.startsWith("..") || isAbsolute(rel))
 			throw new Error(`Conflict path escapes isolated worktree: ${file}`);
+		const real = relative(worktree, await realpath(path));
+		if (!real || real.startsWith("..") || isAbsolute(real))
+			throw new Error(`Conflict resolution would escape isolated worktree: ${file}`);
 		const kind = await lstat(path);
 		if (!kind.isFile() || kind.isSymbolicLink())
 			throw new Error(`Conflict resolution supports regular files only: ${file}`);
