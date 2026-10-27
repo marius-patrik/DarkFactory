@@ -3,7 +3,7 @@ import { mkdir, open, readFile } from "node:fs/promises";
 import { join } from "node:path";
 import type { ReviewRuntimeState, ReviewSubject } from "../../../protocol/src/review.ts";
 import { FileProductionEffectJournal, IndeterminateEffectError, StaleEffectError, productionEffectId, replaceDurableJson, runObservedProductionEffect, withGraphFileLock, type ObservedEffect } from "./durable-effects.ts";
-import { mergeProposalFingerprint } from "./approval-evidence.ts";
+import { amendmentProposalFingerprint, mergeProposalFingerprint } from "./approval-evidence.ts";
 import { plan } from "./planner.ts";
 import { planningReviewAdapter } from "./planning.ts";
 import {
@@ -358,6 +358,18 @@ async function runGraphUnlocked(
 			if (!review) throw new Error(`Missing ${currentNode.approves_review} review state for approval gate`);
 			state.reviews[currentNode.approves_review] = approveReview(review, options.now?.() ?? new Date());
 		}
+		if (currentNode?.id === "deviation-gate" && currentNode.kind === "gate" && action.type === "run" && isApprovalEvent(current)) {
+			const fingerprint = amendmentProposalFingerprint(state.outputs);
+			if (state.outputs.awaiting_amendment_fingerprint !== fingerprint) {
+				throw new Error("Stale amendment authorization: implementation changed since gate opened");
+			}
+			if (!("actor" in current) || !current.actor.login)
+				throw new Error("Amendment approval has no accountable actor");
+			state.outputs.amendment_authorization = {
+				fingerprint, actor: current.actor.login,
+				approvedAt: (options.now?.() ?? new Date()).toISOString(),
+			};
+		}
 		if (currentNode?.id === "merge-gate" && currentNode.kind === "gate" && action.type === "run" && isApprovalEvent(current)) {
 			if (!reviewApprovalFresh(state.reviews.planning))
 				throw new Error("Final merge authorization requires fresh approved Planning");
@@ -373,6 +385,10 @@ async function runGraphUnlocked(
 		await record({ type: "action", action });
 		if (action.type === "none") return finishIngress();
 		if (action.type !== "run") {
+			if (action.type === "gate" && action.node === "deviation-gate") {
+				state.outputs.awaiting_amendment_fingerprint = amendmentProposalFingerprint(state.outputs);
+				delete state.outputs.amendment_authorization;
+			}
 			if (action.type === "gate" && action.node === "merge-gate") {
 				const checked = "ref" in current ? current.ref : undefined;
 				if (typeof checked !== "string" || checked !== state.outputs.commit_sha ||
