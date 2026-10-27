@@ -1,6 +1,7 @@
 import { createHash, randomUUID } from "node:crypto";
 import { open, mkdir, readFile, rename, stat, unlink } from "node:fs/promises";
 import { dirname, join } from "node:path";
+import { isDeepStrictEqual } from "node:util";
 
 /**
  * Local-file durability boundary for graph effects. This serializes cooperating
@@ -227,7 +228,8 @@ export async function runObservedProductionEffect<T>(
 		if (previous && previous.kind !== kind) throw new Error(`Effect ${id} belongs to ${previous.kind}, not ${kind}`);
 		const observed = await operations.observe();
 		if (previous?.status === "completed") {
-			if (!observed || observed.evidence !== previous.evidence || !previous.evidence.trim())
+			if (!observed || observed.evidence !== previous.evidence || !previous.evidence.trim() ||
+				!isDeepStrictEqual(observed.value, previous.value))
 				throw new StaleEffectError(id);
 			return previous;
 		}
