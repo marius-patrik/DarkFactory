@@ -57,6 +57,7 @@ export function StateNotice({ state, onRetry }: {
 }): ReactNode {
 	if (state.status === "idle" || state.status === "loading") return <div role="status" aria-busy="true" className="df-notice">Loading live GitHub state…</div>;
 	if (state.status === "live") return null;
+	if (!("detail" in state)) return null;
 	return (
 		<div className="df-notice df-problem" role={state.status === "failed" ? "alert" : "status"}>
 			<strong>{state.status === "rate-limited" ? "Rate limited" : state.status === "unauthorized" ? "Unauthorized" :
