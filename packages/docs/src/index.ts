@@ -14,3 +14,4 @@ export * from "./guides.ts";
 export * from "./references.ts";
 export * from "./site.ts";
 export * from "./validation.ts";
+export * from "./search.ts";

@@ -106,16 +106,16 @@ describe("unified-site artifact integrity", () => {
 
 	test("rejects digest mismatch, SHA drift and unindexed extra files", async () => {
 		const { source, output } = await fixture();
-		expect(stageWebBundle(source, output, "/DarkFactory/", "b".repeat(40))).rejects.toThrow("source SHA");
+		await expect(stageWebBundle(source, output, "/DarkFactory/", "b".repeat(40))).rejects.toThrow("source SHA");
 		await writeFile(join(source, "assets", "app.js"), "tampered");
-		expect(stageWebBundle(source, output, "/DarkFactory/")).rejects.toThrow("digest mismatch");
+		await expect(stageWebBundle(source, output, "/DarkFactory/")).rejects.toThrow("digest mismatch");
 		await writeFile(join(source, "extra.js"), "unlisted");
-		expect(stageWebBundle(source, output, "/DarkFactory/")).rejects.toThrow("not fully enumerated");
+		await expect(stageWebBundle(source, output, "/DarkFactory/")).rejects.toThrow("not fully enumerated");
 	});
 
 	test("rejects symlink escape and credential-like static contents", async () => {
 		const { source, output } = await fixture();
 		await symlink(join(source, "index.html"), join(source, "shortcut"));
-		expect(stageWebBundle(source, output, "/DarkFactory/")).rejects.toThrow("symlink");
+		await expect(stageWebBundle(source, output, "/DarkFactory/")).rejects.toThrow("symlink");
 	});
 });

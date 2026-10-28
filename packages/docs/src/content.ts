@@ -251,6 +251,7 @@ export function documentationNavigation(pages: readonly DocsPage[]): readonly Do
 		["capability-docs", "Capability documentation", "capability"],
 	] as const) {
 		const selected = pages.filter((page) => page.kind === kind).map((page) => page.id);
+		if (id === "decisions" && pages.some((page) => page.id === "architecture-decisions")) selected.unshift("architecture-decisions");
 		if (selected.length) sections.push({ id, title, pages: selected });
 	}
 	const known = new Set(pages.map((page) => page.id));

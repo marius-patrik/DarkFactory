@@ -1,10 +1,10 @@
 import { mkdir, mkdtemp, rename, rm, writeFile } from "node:fs/promises";
-import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import {
 	assertCurrentDocumentation,
 	assertStrictDocumentation,
 	compileDocsContentGraphWithDetectedApi,
+	docsSearchIndex,
 	finalizeUnifiedSite,
 	normalizedBasePath,
 	stageWebBundle,
@@ -46,9 +46,11 @@ const stage = await mkdtemp(join(dirname(outputDir), ".darkfactory-site-"));
 try {
 	if (docsOnly) {
 		await renderDocsSite(graph, stage);
+		await writeFile(join(stage, "search.json"), JSON.stringify(docsSearchIndex(graph), null, 2) + "\n");
 	} else {
 		const web = await stageWebBundle(resolve(webDist!), stage, basePath, process.env.GITHUB_SHA);
 		await renderDocsSite(graph, join(stage, "docs"));
+		await writeFile(join(stage, "docs", "search.json"), JSON.stringify(docsSearchIndex(graph), null, 2) + "\n");
 		await finalizeUnifiedSite(stage, web, graph.pages.length);
 	}
 	await rm(outputDir, { recursive: true, force: true });
