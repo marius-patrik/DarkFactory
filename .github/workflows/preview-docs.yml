@@ -25,17 +25,18 @@ jobs:
         run: bun scripts/build-docs.ts --check
       - name: Documentation and artifact security tests
         run: bun test ./.github/tests/docs/quality-contract.test.ts
-      - name: Capture deterministic formatting candidates for independent correction
-        run: |
-          bunx biome format --write packages/docs/src/content.ts packages/docs/src/guides.ts packages/docs/src/references.ts packages/docs/src/validation.ts packages/docs/src/site.ts packages/docs/src/search.ts packages/docs/src/index.ts scripts/build-docs.ts .github/tests/docs/quality-contract.test.ts
-          bun -e 'for (const p of process.argv.slice(1)) { const value = Buffer.from(await Bun.file(p).text()).toString("base64"); console.log("DF_FORMAT_FILE:" + p + ":" + value); }' packages/docs/src/content.ts packages/docs/src/guides.ts packages/docs/src/references.ts packages/docs/src/validation.ts packages/docs/src/site.ts packages/docs/src/search.ts packages/docs/src/index.ts scripts/build-docs.ts .github/tests/docs/quality-contract.test.ts
-          git diff --exit-code -- packages/docs/src/content.ts packages/docs/src/guides.ts packages/docs/src/references.ts packages/docs/src/validation.ts packages/docs/src/site.ts packages/docs/src/search.ts packages/docs/src/index.ts scripts/build-docs.ts .github/tests/docs/quality-contract.test.ts
-      - name: Lint
-        run: bun run lint
-      - name: Formatting
-        run: bun run format:check
-      - name: Typecheck
-        run: bun run typecheck
+      - name: Verify owned documentation code with Biome
+        run: >
+          bunx biome ci
+          packages/docs/src/content.ts
+          packages/docs/src/guides.ts
+          packages/docs/src/references.ts
+          packages/docs/src/validation.ts
+          packages/docs/src/site.ts
+          packages/docs/src/search.ts
+          packages/docs/src/index.ts
+          scripts/build-docs.ts
+          .github/tests/docs/quality-contract.test.ts
       - name: Build nonpublishable docs-only preview
         run: bun scripts/build-docs.ts --docs-only --out "$RUNNER_TEMP/darkfactory-docs-preview"
       - name: Check preview route and graph output
@@ -50,3 +51,9 @@ jobs:
           name: docs-only-preview-not-for-publication
           path: ${{ runner.temp }}/darkfactory-docs-preview
           include-hidden-files: true
+      - name: Lint
+        run: bun run lint
+      - name: Formatting
+        run: bun run format:check
+      - name: Typecheck
+        run: bun run typecheck
