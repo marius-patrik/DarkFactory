@@ -20,7 +20,7 @@ describe("browser-safe GitHub reads", () => {
 				default_branch: "main", private: false, html_url: "https://github.com/alice/product",
 				open_issues_count: 7, updated_at: "2026-10-27T00:00:00Z",
 			}), { status: 200, headers: { "Content-Type": "application/json" } });
-		}) as typeof fetch;
+		}) as unknown as typeof fetch;
 		const source = createGitHubOperatorSource("alice/product", { fetch: fetcher });
 		const state = await source.read("repository");
 		expect(state.status).toBe("live");
