@@ -299,7 +299,7 @@ export function compileDocsContentGraph(
 	for (const source of ruleSources(repoRoot)) pages.push(markdownPage(repoRoot, source, "rule"));
 	pages.push(...adrPages(repoRoot));
 	// Preserve one full ADR landing for source-relative links from the manual.
-	pages.push(markdownPage(repoRoot, adrDocumentSource(), "note", "architecture-decisions"));
+	pages.push(markdownPage(repoRoot, adrDocumentSource(), "product", "architecture-decisions"));
 	const workflowRoot = join(repoRoot, ".github", "workflows");
 	const workflows = existsSync(workflowRoot)
 		? readdirSync(workflowRoot, { withFileTypes: true })
