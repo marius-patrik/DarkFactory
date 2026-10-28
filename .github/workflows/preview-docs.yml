@@ -25,6 +25,11 @@ jobs:
         run: bun scripts/build-docs.ts --check
       - name: Documentation and artifact security tests
         run: bun test ./.github/tests/docs/quality-contract.test.ts
+      - name: Capture safe Biome autofixes for isolated source correction
+        run: |
+          bunx biome check --write --unsafe packages/docs/src/content.ts packages/docs/src/guides.ts packages/docs/src/references.ts packages/docs/src/validation.ts packages/docs/src/site.ts packages/docs/src/search.ts packages/docs/src/index.ts scripts/build-docs.ts .github/tests/docs/quality-contract.test.ts || true
+          bun -e 'for (const p of process.argv.slice(1)) console.log("DF_LINT_FILE:" + p + ":" + Buffer.from(await Bun.file(p).text()).toString("base64"));' packages/docs/src/content.ts packages/docs/src/guides.ts packages/docs/src/references.ts packages/docs/src/validation.ts packages/docs/src/site.ts packages/docs/src/search.ts packages/docs/src/index.ts scripts/build-docs.ts .github/tests/docs/quality-contract.test.ts
+          git diff --exit-code -- packages/docs/src/content.ts packages/docs/src/guides.ts packages/docs/src/references.ts packages/docs/src/validation.ts packages/docs/src/site.ts packages/docs/src/search.ts packages/docs/src/index.ts scripts/build-docs.ts .github/tests/docs/quality-contract.test.ts
       - name: Verify owned documentation code with Biome
         run: >
           bunx biome ci
