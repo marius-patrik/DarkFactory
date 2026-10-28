@@ -1,47 +1,112 @@
-name: Deploy Documentation
+name: Publish Verified DarkFactory Web and Documentation
 
+# No ordinary main push or unapproved candidate may overwrite the live Pages site.
 on:
-  push:
-    branches: [main]
   workflow_dispatch:
+    inputs:
+      web_build_run_id:
+        description: "Actions run id containing the DF-03 immutable web candidate artifact"
+        type: string
+        required: true
+      candidate_sha:
+        description: "Exact Git commit SHA from approved source/candidate"
+        type: string
+        required: true
+      promote:
+        description: "Explicitly publish the site (only allowed when dispatched on v1.0.0 tag)"
+        type: boolean
+        default: false
+        required: true
 
 permissions:
   contents: read
-  pages: write
-  id-token: write
+  actions: read
 
 concurrency:
-  group: pages
+  group: darkfactory-pages-publication
   cancel-in-progress: false
 
 jobs:
+  candidate:
+    name: verify-unified-site-candidate
+    runs-on: ubuntu-latest
+    steps:
+      - name: Verify exact commit binding
+        env:
+          CANDIDATE_SHA: ${{ inputs.candidate_sha }}
+        run: |
+          test "$GITHUB_SHA" = "$CANDIDATE_SHA"
+          if [[ "${{ inputs.promote }}" == "true" && "$GITHUB_REF" != "refs/tags/v1.0.0" ]]; then
+            echo "::error::Production promotion must dispatch the approved v1.0.0 tag"
+            exit 1
+          fi
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: oven-sh/setup-bun@v2
+      - name: Install exact workspace
+        run: bun install --frozen-lockfile
+      - name: Download DF-03 frontend handoff
+        uses: actions/download-artifact@v4
+        with:
+          name: darkfactory-web-candidate
+          run-id: ${{ inputs.web_build_run_id }}
+          github-token: ${{ github.token }}
+          path: web-dist
+      - name: Compile and validate docs
+        run: bun scripts/build-docs.ts --check
+      - name: Resolve Pages project/custom base path
+        env:
+          CONFIGURED_BASE: ${{ vars.DF_PAGES_BASE_PATH }}
+        run: |
+          if [[ -n "$CONFIGURED_BASE" ]]; then
+            echo "DF_PAGES_BASE_PATH=$CONFIGURED_BASE" >> "$GITHUB_ENV"
+          else
+            echo "DF_PAGES_BASE_PATH=/${GITHUB_REPOSITORY##*/}/" >> "$GITHUB_ENV"
+          fi
+      - name: Package verified immutable Web and Docs
+        run: bun scripts/build-docs.ts --web-dist web-dist --out site
+      - name: Inspect required staged files
+        run: |
+          test -s site/index.html
+          test -s site/docs/index.html
+          test -s site/docs/content.json
+          test -s site/site-manifest.json
+          test -f site/.nojekyll
+          test -s site/guide-getting-started-installation/index.html && exit 2 || true
+          test -s site/docs/guide-getting-started-installation/index.html
+          bun -e 'const x=await Bun.file("site/site-manifest.json").json(); if(x.status!=="unpublished-candidate" || x.sourceSha!==process.env.GITHUB_SHA || !x.files.some((f)=>f.path==="docs/index.html"))process.exit(1)'
+      - name: Preserve candidate for source and independent release review
+        uses: actions/upload-artifact@v4
+        with:
+          name: darkfactory-unified-site-candidate
+          path: site
+          include-hidden-files: true
+
   deploy:
-    name: deploy-docs
+    name: human-authorized-live-pages-deployment
+    if: ${{ inputs.promote && github.ref == 'refs/tags/v1.0.0' }}
+    needs: candidate
     runs-on: ubuntu-latest
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
+    permissions:
+      contents: read
+      actions: read
+      pages: write
+      id-token: write
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Configure Pages
-        uses: actions/configure-pages@v5
-
-      - name: Set up Bun
-        uses: oven-sh/setup-bun@v2
-
-      - name: Install DarkFactory workspace
-        run: bun install --frozen-lockfile
-
-      - name: Build documentation
-        run: bun scripts/build-docs.ts --repo-root "$GITHUB_WORKSPACE"
-
-      - name: Upload Pages artifact
+      - name: Obtain precisely verified candidate from this run
+        uses: actions/download-artifact@v4
+        with:
+          name: darkfactory-unified-site-candidate
+          path: site
+      - uses: actions/configure-pages@v5
+      - name: Upload immutable Pages candidate
         uses: actions/upload-pages-artifact@v3
         with:
           path: site
-
-      - name: Deploy to GitHub Pages
+      - name: Publish after environment approval
         id: deployment
         uses: actions/deploy-pages@v4
