@@ -30,9 +30,10 @@ const configuredBasePath =
 const basePath = normalizedBasePath(configuredBasePath);
 
 if (verification) {
-	if (check || process.argv.includes("--docs-only") || option("--web-dist")) throw new Error("Artifact readback mode is exclusive");
+	if (check || process.argv.includes("--docs-only") || option("--web-dist"))
+		throw new Error("Artifact readback mode is exclusive");
 	await verifyUnifiedSite(resolve(verification), { sourceSha: process.env.GITHUB_SHA, basePath });
-	console.log("Verified extracted site artifact: " + verification);
+	console.log(`Verified extracted site artifact: ${verification}`);
 	process.exit(0);
 }
 

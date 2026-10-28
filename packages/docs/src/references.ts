@@ -1,4 +1,4 @@
-import { existsSync, readFileSync, readdirSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { join, relative, resolve } from "node:path";
 import * as ts from "typescript";
 import { resolveDocsConfigPath } from "./config.ts";
@@ -42,22 +42,33 @@ export function declaredPackageApiIndex(repoRoot: string): readonly string[] {
 		const indexPath = join(pkgRoot, "src", "index.ts");
 		if (!existsSync(metaPath) || !existsSync(indexPath)) continue;
 		const meta = JSON.parse(readFileSync(metaPath, "utf8")) as { name?: unknown };
-		if (typeof meta.name !== "string" || !meta.name) throw new Error("Invalid package name in " + metaPath);
+		if (typeof meta.name !== "string" || !meta.name) throw new Error(`Invalid package name in ${metaPath}`);
 		const source = ts.createSourceFile(indexPath, readFileSync(indexPath, "utf8"), ts.ScriptTarget.Latest, true);
 		for (const statement of source.statements) {
 			let names: string[] = [];
 			if (ts.isExportDeclaration(statement)) {
 				if (!statement.exportClause) names = ["*"];
-				else if (ts.isNamedExports(statement.exportClause)) names = statement.exportClause.elements.map((item) => item.name.text);
+				else if (ts.isNamedExports(statement.exportClause))
+					names = statement.exportClause.elements.map((item) => item.name.text);
 				else if (ts.isNamespaceExport(statement.exportClause)) names = [statement.exportClause.name.text];
 			} else if (ts.isExportAssignment(statement)) {
 				names = ["default"];
-			} else if (ts.canHaveModifiers(statement) && ts.getModifiers(statement)?.some((mod) => mod.kind === ts.SyntaxKind.ExportKeyword)) {
-				if (ts.isVariableStatement(statement)) names = statement.declarationList.declarations.map((item) => item.name.getText(source));
-				else { const named = statement as ts.NamedDeclaration; if (named.name && ts.isIdentifier(named.name)) names = [named.name.text]; }
+			} else if (
+				ts.canHaveModifiers(statement) &&
+				ts.getModifiers(statement)?.some((mod) => mod.kind === ts.SyntaxKind.ExportKeyword)
+			) {
+				if (ts.isVariableStatement(statement))
+					names = statement.declarationList.declarations.map((item) => item.name.getText(source));
+				else {
+					const named = statement as ts.NamedDeclaration;
+					if (named.name && ts.isIdentifier(named.name)) names = [named.name.text];
+				}
 			}
 			const path = relative(repoRoot, indexPath).replaceAll("\\", "/");
-			for (const name of names) rows.push(["| `", meta.name, "` | `", path, "` | `", name.replaceAll("`", "").replaceAll("|", "\\|"), "` |"].join(""));
+			for (const name of names)
+				rows.push(
+					["| `", meta.name, "` | `", path, "` | `", name.replaceAll("`", "").replaceAll("|", "\\|"), "` |"].join(""),
+				);
 		}
 	}
 	if (!rows.length) throw new Error("No declared public TypeScript entrypoint exports");
@@ -98,7 +109,7 @@ export function generatedReferencePages(repoRoot: string): DocsPage[] {
 			kind: "reference",
 			title: "Declared TypeScript public entrypoints",
 			source: "packages/docs/src/references.ts",
-			markdown: "# Declared TypeScript entrypoint exports\n\nThis source-built index lists syntactically exported declarations and re-exports in first-party `src/index.ts`. It is **not** a complete semantic API or compatibility guarantee. Configured strict TypeDoc JSON provides deeper references.\n\n| Package | Source | Export |\n| --- | --- | --- |\n" + declaredPackageApiIndex(repoRoot).join("\n") + "\n",
+			markdown: `# Declared TypeScript entrypoint exports\n\nThis source-built index lists syntactically exported declarations and re-exports in first-party \`src/index.ts\`. It is **not** a complete semantic API or compatibility guarantee. Configured strict TypeDoc JSON provides deeper references.\n\n| Package | Source | Export |\n| --- | --- | --- |\n${declaredPackageApiIndex(repoRoot).join("\n")}\n`,
 		},
 	];
 }
