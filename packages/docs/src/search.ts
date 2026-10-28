@@ -22,7 +22,7 @@ export function docsSearchIndex(graph: DocsContentGraph): readonly DocsSearchEnt
 			id: page.id,
 			title: page.title,
 			kind: page.kind,
-			path: page.id === graph.home ? "./" : page.id + "/",
+			path: page.id === graph.home ? "./" : `${page.id}/`,
 			snippet: plain.slice(0, 480),
 		};
 	});

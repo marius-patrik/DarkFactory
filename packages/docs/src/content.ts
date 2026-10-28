@@ -1,8 +1,8 @@
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { basename, join, relative } from "node:path";
+import { darkFactoryDirectory } from "../../protocol/src/config-document.ts";
 import type { DocsConfig } from "./config.ts";
 import { loadDocsConfig } from "./config.ts";
-import { darkFactoryDirectory } from "../../protocol/src/config-document.ts";
 import { GUIDE_SECTIONS, guidePath } from "./guides.ts";
 import { generatedReferencePages } from "./references.ts";
 

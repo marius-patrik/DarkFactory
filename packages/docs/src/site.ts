@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import { copyFile, lstat, mkdir, readFile, readdir, writeFile } from "node:fs/promises";
+import { copyFile, lstat, mkdir, readdir, readFile, writeFile } from "node:fs/promises";
 import { join, posix, resolve, sep } from "node:path";
 
 export interface WebAsset {
@@ -20,9 +20,9 @@ export interface WebBundleManifest {
 }
 
 export function normalizedBasePath(input: string): string {
-	const path = input.endsWith("/") ? input : input + "/";
+	const path = input.endsWith("/") ? input : `${input}/`;
 	if (!/^\/(?:[A-Za-z0-9._~-]+\/)*$/u.test(path) || path.includes("../") || path.includes("//")) {
-		throw new Error("Invalid Pages base path: " + input);
+		throw new Error(`Invalid Pages base path: ${input}`);
 	}
 	return path;
 }
@@ -45,7 +45,7 @@ function sha256(bytes: Uint8Array): string {
 
 async function regularFile(path: string): Promise<Uint8Array> {
 	const stat = await lstat(path);
-	if (!stat.isFile() || stat.isSymbolicLink()) throw new Error("Site asset must be a regular file: " + path);
+	if (!stat.isFile() || stat.isSymbolicLink()) throw new Error(`Site asset must be a regular file: ${path}`);
 	return new Uint8Array(await readFile(path));
 }
 
@@ -53,11 +53,11 @@ async function filePaths(root: string, sub = ""): Promise<string[]> {
 	const entries = await readdir(join(root, sub), { withFileTypes: true });
 	const paths: string[] = [];
 	for (const entry of entries) {
-		if (entry.isSymbolicLink()) throw new Error("Site symlink forbidden: " + entry.name);
-		const path = sub ? sub + "/" + entry.name : entry.name;
+		if (entry.isSymbolicLink()) throw new Error(`Site symlink forbidden: ${entry.name}`);
+		const path = sub ? `${sub}/${entry.name}` : entry.name;
 		if (entry.isDirectory()) paths.push(...(await filePaths(root, path)));
 		else if (entry.isFile()) paths.push(path);
-		else throw new Error("Site contains non-regular entry: " + path);
+		else throw new Error(`Site contains non-regular entry: ${path}`);
 	}
 	return paths.sort();
 }
@@ -70,7 +70,7 @@ function verifyNoCredentials(path: string, bytes: Uint8Array): void {
 		/gh[pousr]_[a-zA-Z0-9]{20,}/u.test(content) ||
 		/github_pat_[a-zA-Z0-9_]{20,}/u.test(content)
 	) {
-		throw new Error("Credential-like material in site artifact: " + path);
+		throw new Error(`Credential-like material in site artifact: ${path}`);
 	}
 }
 
@@ -125,7 +125,7 @@ export async function stageWebBundle(
 	const index = new TextDecoder().decode(await regularFile(join(root, "index.html")));
 	// Base-path segments are deliberately limited to characters safe in a regex.
 	const escaped = basePath.replaceAll(".", "\\.");
-	if (!new RegExp("<base\\s+href=[\"']" + escaped + "[\"']\\s*\\/?>", "iu").test(index)) {
+	if (!new RegExp(`<base\\s+href=["']${escaped}["']\\s*\\/?>`, "iu").test(index)) {
 		throw new Error("Web entry lacks matching base href for Pages project routes");
 	}
 	if (basePath !== "/" && /<script[^>]*\bsrc=["']\/(?!\/)/iu.test(index)) {
@@ -134,7 +134,7 @@ export async function stageWebBundle(
 	await mkdir(output, { recursive: true });
 	for (const asset of assets) {
 		const bytes = await regularFile(join(root, asset.path));
-		if (sha256(bytes) !== asset.sha256) throw new Error("Frontend asset digest mismatch: " + asset.path);
+		if (sha256(bytes) !== asset.sha256) throw new Error(`Frontend asset digest mismatch: ${asset.path}`);
 		verifyNoCredentials(asset.path, bytes);
 		await mkdir(resolve(output, posix.dirname(asset.path)), { recursive: true });
 		await copyFile(join(root, asset.path), join(output, asset.path));
@@ -158,7 +158,7 @@ export async function finalizeUnifiedSite(outputDir: string, web: WebBundleManif
 	}
 	await writeFile(
 		join(outputDir, "site-manifest.json"),
-		JSON.stringify(
+		`${JSON.stringify(
 			{
 				schemaVersion: 1,
 				status: "unpublished-candidate",
@@ -171,6 +171,6 @@ export async function finalizeUnifiedSite(outputDir: string, web: WebBundleManif
 			},
 			null,
 			2,
-		) + "\n",
+		)}\n`,
 	);
 }

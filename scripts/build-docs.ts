@@ -24,7 +24,7 @@ const webDist = option("--web-dist");
 const configuredBasePath =
 	option("--base-path") ??
 	process.env.DF_PAGES_BASE_PATH ??
-	(process.env.GITHUB_REPOSITORY ? "/" + process.env.GITHUB_REPOSITORY.split("/").at(-1) + "/" : "/");
+	(process.env.GITHUB_REPOSITORY ? `/${process.env.GITHUB_REPOSITORY.split("/").at(-1)}/` : "/");
 const basePath = normalizedBasePath(configuredBasePath);
 
 if (check && (docsOnly || webDist))
@@ -57,17 +57,17 @@ const stage = await mkdtemp(join(dirname(outputDir), ".darkfactory-site-"));
 try {
 	if (docsOnly) {
 		await renderDocsSite(graph, stage);
-		await writeFile(join(stage, "search.json"), JSON.stringify(docsSearchIndex(graph), null, 2) + "\n");
+		await writeFile(join(stage, "search.json"), `${JSON.stringify(docsSearchIndex(graph), null, 2)}\n`);
 	} else {
 		const web = await stageWebBundle(resolve(webDist!), stage, basePath, process.env.GITHUB_SHA);
 		await renderDocsSite(graph, join(stage, "docs"));
-		await writeFile(join(stage, "docs", "search.json"), JSON.stringify(docsSearchIndex(graph), null, 2) + "\n");
+		await writeFile(join(stage, "docs", "search.json"), `${JSON.stringify(docsSearchIndex(graph), null, 2)}\n`);
 		await finalizeUnifiedSite(stage, web, graph.pages.length);
 	}
 	await rm(outputDir, { recursive: true, force: true });
 	await rename(stage, outputDir);
 	await mkdir(join(repoRoot, ".darkfactory", "generated"), { recursive: true });
-	await writeFile(join(repoRoot, ".darkfactory", "generated", "docs.json"), JSON.stringify(graph, null, 2) + "\n");
+	await writeFile(join(repoRoot, ".darkfactory", "generated", "docs.json"), `${JSON.stringify(graph, null, 2)}\n`);
 	console.log(
 		(docsOnly ? "Built nonpublishable documentation preview" : "Packaged unpublished Web + Docs candidate") +
 			" with " +
