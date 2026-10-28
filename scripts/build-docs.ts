@@ -1,4 +1,4 @@
-import { mkdir, mkdtemp, rename, rm, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, rename, rm, writeFile } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
 import {
 	assertCurrentDocumentation,
@@ -8,6 +8,7 @@ import {
 	finalizeUnifiedSite,
 	normalizedBasePath,
 	stageWebBundle,
+	verifyUnifiedSite,
 } from "../packages/docs/src/index.ts";
 import { renderDocsSite } from "../packages/web/src/docs.ts";
 
@@ -19,6 +20,7 @@ function option(name: string): string | undefined {
 const repoRoot = resolve(option("--repo-root") ?? process.cwd());
 const outputDir = resolve(option("--out") ?? join(repoRoot, "site"));
 const check = process.argv.includes("--check");
+const verification = option("--verify-artifact");
 const docsOnly = process.argv.includes("--docs-only");
 const webDist = option("--web-dist");
 const configuredBasePath =
@@ -26,6 +28,13 @@ const configuredBasePath =
 	process.env.DF_PAGES_BASE_PATH ??
 	(process.env.GITHUB_REPOSITORY ? `/${process.env.GITHUB_REPOSITORY.split("/").at(-1)}/` : "/");
 const basePath = normalizedBasePath(configuredBasePath);
+
+if (verification) {
+	if (check || process.argv.includes("--docs-only") || option("--web-dist")) throw new Error("Artifact readback mode is exclusive");
+	await verifyUnifiedSite(resolve(verification), { sourceSha: process.env.GITHUB_SHA, basePath });
+	console.log("Verified extracted site artifact: " + verification);
+	process.exit(0);
+}
 
 if (check && (docsOnly || webDist))
 	throw new Error("--check validates documentation; do not combine it with packaging flags");
@@ -63,7 +72,10 @@ try {
 		const web = await stageWebBundle(resolve(webDist), stage, basePath, process.env.GITHUB_SHA);
 		await renderDocsSite(graph, join(stage, "docs"));
 		await writeFile(join(stage, "docs", "search.json"), `${JSON.stringify(docsSearchIndex(graph), null, 2)}\n`);
-		await finalizeUnifiedSite(stage, web, graph.pages.length);
+		const packageJson = JSON.parse(await readFile(join(repoRoot, "package.json"), "utf8")) as { version?: unknown };
+		if (typeof packageJson.version !== "string") throw new Error("Product version missing from package.json");
+		await finalizeUnifiedSite(stage, web, graph.pages.length, packageJson.version);
+		await verifyUnifiedSite(stage, { sourceSha: web.sourceSha, basePath });
 	}
 	await rm(outputDir, { recursive: true, force: true });
 	await rename(stage, outputDir);

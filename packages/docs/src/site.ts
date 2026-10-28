@@ -21,15 +21,20 @@ export interface WebBundleManifest {
 
 export function normalizedBasePath(input: string): string {
 	const path = input.endsWith("/") ? input : `${input}/`;
-	if (!/^\/(?:[A-Za-z0-9._~-]+\/)*$/u.test(path) || path.includes("../") || path.includes("//")) {
+	if (!/^\/(?:[A-Za-z0-9._~-]+\/)*$/u.test(path) || path.includes("//") || path.split("/").some((part) => part === "." || part === "..")) {
 		throw new Error(`Invalid Pages base path: ${input}`);
 	}
 	return path;
 }
 
+function unsafePathCharacter(path: string): boolean {
+	return [...path].some((character) => character === "\\" || character.charCodeAt(0) < 32 || character.charCodeAt(0) === 127);
+}
+
 function safeAssetPath(path: string): boolean {
 	return (
 		!!path &&
+		!unsafePathCharacter(path) &&
 		path === posix.normalize(path) &&
 		!path.startsWith("/") &&
 		!path.split("/").some((part) => part === ".." || part === "." || part.startsWith(".")) &&
@@ -119,7 +124,7 @@ export async function stageWebBundle(
 		}
 		names.add(asset.path);
 	}
-	if (!names.has("index.html")) throw new Error("Missing Web index entry");
+	if (!names.has("index.html") || !assets.some((asset) => /\.m?js$/iu.test(asset.path))) throw new Error("Missing executable Web entry assets");
 	const existing = (await filePaths(root)).filter((path) => path !== "darkfactory-web-manifest.json");
 	if (existing.join("\n") !== [...names].sort().join("\n")) throw new Error("Frontend assets are not fully enumerated");
 	const index = new TextDecoder().decode(await regularFile(join(root, "index.html")));
@@ -128,7 +133,7 @@ export async function stageWebBundle(
 	if (!new RegExp(`<base\\s+href=["']${escaped}["']\\s*\\/?>`, "iu").test(index)) {
 		throw new Error("Web entry lacks matching base href for Pages project routes");
 	}
-	if (basePath !== "/" && /<script[^>]*\bsrc=["']\/(?!\/)/iu.test(index)) {
+	if (basePath !== "/" && /<(?:script|link|img|source)[^>]*\b(?:src|href)=["']\/(?!\/)/iu.test(index)) {
 		throw new Error("Root-absolute Web script breaks project-path deployment");
 	}
 	await mkdir(output, { recursive: true });
@@ -143,12 +148,13 @@ export async function stageWebBundle(
 }
 
 /** Write the complete versioned candidate manifest after Docs rendering. */
-export async function finalizeUnifiedSite(outputDir: string, web: WebBundleManifest, docsCount: number): Promise<void> {
+export async function finalizeUnifiedSite(outputDir: string, web: WebBundleManifest, docsCount: number, productVersion: string): Promise<void> {
+	if (!/^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$/u.test(productVersion)) throw new Error("Invalid SemVer candidate version");
 	const index = await regularFile(join(outputDir, "index.html"));
 	if (web.routeMode === "history") await writeFile(join(outputDir, "404.html"), index);
 	await writeFile(join(outputDir, ".nojekyll"), "");
 	const paths = (await filePaths(outputDir)).filter((path) => path !== "site-manifest.json");
-	if (!paths.includes("docs/index.html") || !paths.includes("docs/content.json"))
+	if (!paths.includes("docs/index.html") || !paths.includes("docs/content.json") || !paths.includes("docs/search.json"))
 		throw new Error("Required Docs output missing");
 	const files: WebAsset[] = [];
 	for (const path of paths) {
@@ -162,6 +168,7 @@ export async function finalizeUnifiedSite(outputDir: string, web: WebBundleManif
 			{
 				schemaVersion: 1,
 				status: "unpublished-candidate",
+				productVersion,
 				sourceSha: web.sourceSha,
 				basePath: web.basePath,
 				routeMode: web.routeMode,
@@ -173,4 +180,47 @@ export async function finalizeUnifiedSite(outputDir: string, web: WebBundleManif
 			2,
 		)}\n`,
 	);
+}
+
+/** Verify every file after clean extraction; validates manifest integrity without a source checkout. */
+export async function verifyUnifiedSite(
+	outputDir: string,
+	expected: { sourceSha?: string; basePath?: string } = {},
+): Promise<void> {
+	const root = resolve(outputDir);
+	const raw = JSON.parse(await readFile(join(root, "site-manifest.json"), "utf8")) as Record<string, unknown>;
+	if (raw.schemaVersion !== 1 || raw.status !== "unpublished-candidate" ||
+		typeof raw.sourceSha !== "string" || !/^[a-f0-9]{40}$/iu.test(raw.sourceSha) ||
+		typeof raw.productVersion !== "string" || !/^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$/u.test(raw.productVersion) ||
+		typeof raw.basePath !== "string" || raw.basePath !== normalizedBasePath(raw.basePath) ||
+		(raw.routeMode !== "history" && raw.routeMode !== "hash") || !Array.isArray(raw.files) ||
+		typeof raw.docsCount !== "number" || raw.docsCount < 17 ||
+		typeof raw.webManifestSha256 !== "string" || !/^[0-9a-f]{64}$/u.test(raw.webManifestSha256)) {
+		throw new Error("Malformed or incompatible unified-site manifest");
+	}
+	if (expected.sourceSha && expected.sourceSha !== raw.sourceSha) throw new Error("Unified-site source SHA mismatch");
+	if (expected.basePath && normalizedBasePath(expected.basePath) !== raw.basePath) throw new Error("Unified-site base path mismatch");
+	const declared = raw.files as WebAsset[];
+	const names = new Set<string>();
+	for (const asset of declared) {
+		if (typeof asset?.path !== "string" || !asset.path || unsafePathCharacter(asset.path) ||
+			asset.path.startsWith("/") || asset.path !== posix.normalize(asset.path) ||
+			asset.path.split("/").some((component) => component === "." || component === "..") ||
+			names.has(asset.path) || typeof asset.sha256 !== "string" || !/^[0-9a-f]{64}$/u.test(asset.sha256)) {
+			throw new Error("Unsafe or duplicate site manifest asset");
+		}
+		names.add(asset.path);
+	}
+	for (const path of ["index.html", "docs/index.html", "docs/content.json", "docs/search.json", ".nojekyll"]) {
+		if (!names.has(path)) throw new Error("Missing required site asset: " + path);
+	}
+	if (raw.routeMode === "history" && !names.has("404.html")) throw new Error("Missing history-routing fallback");
+	const existing = await filePaths(root);
+	const expectedPaths = [...names, "site-manifest.json"].sort();
+	if (existing.join("\n") !== expectedPaths.join("\n")) throw new Error("Extracted site has unindexed files");
+	for (const asset of declared) {
+		const bytes = await regularFile(join(root, asset.path));
+		if (sha256(bytes) !== asset.sha256) throw new Error("Extracted site digest mismatch: " + asset.path);
+		verifyNoCredentials(asset.path, bytes);
+	}
 }

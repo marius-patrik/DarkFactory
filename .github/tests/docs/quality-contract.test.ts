@@ -12,6 +12,7 @@ import {
 	finalizeUnifiedSite,
 	normalizedBasePath,
 	stageWebBundle,
+	verifyUnifiedSite,
 } from "../../../packages/docs/src/index.ts";
 
 const repoRoot = resolve(import.meta.dir, "../../..");
@@ -104,6 +105,7 @@ describe("unified-site artifact integrity", () => {
 		expect(normalizedBasePath("/DarkFactory")).toBe("/DarkFactory/");
 		expect(() => normalizedBasePath("//bad")).toThrow();
 		expect(() => normalizedBasePath("/../")).toThrow();
+		expect(() => normalizedBasePath("/./")).toThrow();
 		expect(() => normalizedBasePath("DarkFactory")).toThrow();
 	});
 
@@ -113,10 +115,15 @@ describe("unified-site artifact integrity", () => {
 		await mkdir(join(output, "docs"));
 		await writeFile(join(output, "docs", "index.html"), "<h1>Docs</h1>");
 		await writeFile(join(output, "docs", "content.json"), "{}");
-		await finalizeUnifiedSite(output, web, 17);
+		await writeFile(join(output, "docs", "search.json"), "[]");
+		await finalizeUnifiedSite(output, web, 17, "1.0.0");
+		await verifyUnifiedSite(output, { sourceSha: "a".repeat(40), basePath: "/DarkFactory/" });
 		const manifest = JSON.parse(await readFile(join(output, "site-manifest.json"), "utf8"));
 		expect(manifest.files.some((item: { path: string }) => item.path === "docs/index.html")).toBe(true);
 		expect(manifest.status).toBe("unpublished-candidate");
+		expect(manifest.productVersion).toBe("1.0.0");
+		await writeFile(join(output, "docs", "index.html"), "tampered");
+		await expect(verifyUnifiedSite(output)).rejects.toThrow("digest mismatch");
 		expect(await readFile(join(output, "404.html"), "utf8")).toBe(index);
 	});
 
