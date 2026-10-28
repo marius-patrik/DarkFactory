@@ -25,12 +25,12 @@ jobs:
         run: bun scripts/build-docs.ts --check
       - name: Documentation and artifact security tests
         run: bun test ./.github/tests/docs/quality-contract.test.ts
+      - name: Lint
+        run: bun run lint
+      - name: Formatting
+        run: bun run format:check
       - name: Typecheck
         run: bun run typecheck
-      - name: Lint and formatting
-        run: |
-          bun run lint
-          bun run format:check
       - name: Build nonpublishable docs-only preview
         run: bun scripts/build-docs.ts --docs-only --out "$RUNNER_TEMP/darkfactory-docs-preview"
       - name: Check preview route and graph output
