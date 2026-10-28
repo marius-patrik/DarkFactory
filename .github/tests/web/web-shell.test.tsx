@@ -12,7 +12,7 @@ test("operator routes display distinct real resource headings, not placeholder c
 	const graph = renderAt("/graph");
 	expect(overview).toContain("Authoritative repository identity");
 	expect(requests).toContain("Recently updated issues labeled Request");
-	expect(graph).toContain("Persisted governed execution");
+	expect(graph).toContain("Durable DarkFactory graph state");
 	expect(requests).not.toContain("DarkFactory operator UI and runtime shell.");
 	expect(graph).not.toBe(requests);
 });
