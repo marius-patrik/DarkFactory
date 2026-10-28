@@ -1,9 +1,15 @@
+export * from "./approval-evidence.ts";
+export * from "./durable-effects.ts";
 export * from "./checks-gate.ts";
 export { dispatch } from "./dispatch.ts";
 export * from "./events.ts";
 export * from "./executor.ts";
 export * from "./loader.ts";
 export * from "./planner.ts";
+export * from "./production-handlers.ts";
+export * from "./production-composition.ts";
+export * from "./production-model.ts";
+export * from "./runtime-composition.ts";
 export * from "./planning.ts";
 export * from "./review-loop.ts";
 export * from "./types.ts";

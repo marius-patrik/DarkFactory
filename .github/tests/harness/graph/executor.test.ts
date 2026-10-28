@@ -240,6 +240,26 @@ describe("runGraph fan-out", () => {
 		).toEqual(["a", "b", "c", "d", "e"]);
 	});
 
+	test("reordering or changing a fan-out item never reuses a successful result from the old index", async () => {
+		const dir = runDir();
+		const graph = fanGraph(2, false);
+		let batch = 0;
+		const { handlers, calls } = scripted({
+			split: () => ({ outcome: "success", outputs: {
+				chunks: ++batch === 1 ? ["alpha", "beta"] : ["beta", "alpha"],
+				plan_artifact: { revision: batch },
+			} }),
+			chunk: (ctx) => ({ outcome: "success", outputs: { item: ctx.item } }),
+		});
+		const first = await runGraph(graph, dir, handlers, opened, { eventId: "initial" });
+		expect((first.outputs.chunk_results as Array<{ outputs: { item: string } }>).map((r) => r.outputs.item))
+			.toEqual(["alpha", "beta"]);
+		const second = await runGraph(graph, dir, handlers, opened, { eventId: "revision" });
+		expect((second.outputs.chunk_results as Array<{ outputs: { item: string } }>).map((r) => r.outputs.item))
+			.toEqual(["beta", "alpha"]);
+		expect(calls.filter((call) => call.node === "chunk")).toHaveLength(4);
+	});
+
 	test("a retried fan-out re-runs only the children that did not succeed", async () => {
 		const attempts = new Map<string, number>();
 		const { handlers, calls } = scripted({
@@ -388,6 +408,54 @@ describe("generic durable review lifecycle", () => {
 		expect(stale.current_node).toBe("planning-gate");
 		expect(stale.reviews?.planning?.clean).toBe(false);
 		expect(stale.reviews?.planning?.approvedFingerprint).toBeUndefined();
+	});
+
+	test("authoritative Request or base change denies approval before implementation", async () => {
+		const dir = runDir();
+		const { handlers, calls } = scripted({
+			planning: () => ({ outcome: "success", outputs: {
+				planning_context: { request: { body: "original", version: "v1" }, base: "a" },
+				plan_artifact: { scope: ["src/**"] },
+			} }),
+			"planning-review": () => ({ outcome: "success", outputs: { planning_findings: [] } }),
+		});
+		await runGraph(planningGraph(), dir, handlers, opened, {
+			reviewAdapters: { planning: reviewAdapter },
+			verifyPlanningContext: async () => true,
+		});
+		let rechecked = 0;
+		await expect(runGraph(planningGraph(), dir, handlers,
+			{ type: "comment", body: "/df approve", actor: owner },
+			{
+				verifyPlanningContext: async () => { rechecked++; return false; },
+				reviewAdapters: { planning: reviewAdapter },
+			})).rejects.toThrow("Planning approval is stale");
+		expect(rechecked).toBe(1);
+		expect(calls.every((call) => call.node !== "implement")).toBe(true);
+		const state = JSON.parse(readFileSync(join(dir, "state.df"), "utf8")) as RunState;
+		expect(state.current_node).toBe("planning-gate");
+	});
+
+	test("changing only the Planning artifact invalidates the reviewed content and blocks approval", async () => {
+		const dir = runDir();
+		const { handlers, calls } = scripted({
+			planning: () => ({
+				outcome: "success",
+				outputs: { planning_context: { request: 391, version: 1 }, plan_artifact: { scope: ["src/**"] } },
+			}),
+			"planning-review": () => ({ outcome: "success", outputs: { planning_findings: [] } }),
+		});
+		await runGraph(planningGraph(), dir, handlers, opened, { reviewAdapters: { planning: reviewAdapter } });
+		const path = join(dir, "state.df");
+		const state = JSON.parse(readFileSync(path, "utf8")) as RunState;
+		state.outputs.plan_artifact = { scope: ["**/*", ".github/**"] };
+		writeFileSync(path, JSON.stringify(state));
+		const after = await runGraph(planningGraph(), dir, handlers,
+			{ type: "comment", body: "/df approve", actor: owner },
+			{ reviewAdapters: { planning: reviewAdapter } });
+		expect(after.current_node).toBe("planning-gate");
+		expect(after.reviews?.planning?.clean).toBe(false);
+		expect(calls.some((call) => call.node === "implement")).toBe(false);
 	});
 
 	test("implementation review uses the same review/fix engine", async () => {

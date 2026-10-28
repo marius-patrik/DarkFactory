@@ -101,7 +101,7 @@ describe("translateGitHubEvent", () => {
 		};
 		expect(translateGitHubEvent("pull_request_review", payload)).toEqual({
 			kind: "event",
-			event: { type: "review", state: "APPROVED", actor: { login: "owner", association: "OWNER", is_bot: false } },
+			event: { type: "review", state: "APPROVED", actor: { login: "owner", association: "OWNER", is_bot: false }, ref: "abc123" },
 			subject: { number: 11, is_pr: true, ref: "abc123" },
 		});
 	});
@@ -114,7 +114,7 @@ describe("translateGitHubEvent", () => {
 		};
 		expect(translateGitHubEvent("pull_request_review", payload)).toEqual({
 			kind: "event",
-			event: { type: "review", state: "COMMENTED", actor: { login: "owner", association: "OWNER", is_bot: false } },
+			event: { type: "review", state: "COMMENTED", actor: { login: "owner", association: "OWNER", is_bot: false }, ref: "deadbeef" },
 			subject: { number: 2, is_pr: true, ref: "deadbeef" },
 		});
 	});
@@ -126,7 +126,7 @@ describe("translateGitHubEvent", () => {
 		};
 		expect(translateGitHubEvent("check_suite", payload)).toEqual({
 			kind: "event",
-			event: { type: "checks.completed", conclusion: "required_green" },
+			event: { type: "checks.completed", conclusion: "required_green", ref: "abc" },
 			subject: { number: 3, is_pr: true, ref: "abc" },
 		});
 	});
@@ -138,7 +138,7 @@ describe("translateGitHubEvent", () => {
 		};
 		expect(translateGitHubEvent("check_suite", payload)).toEqual({
 			kind: "event",
-			event: { type: "checks.completed", conclusion: "failed" },
+			event: { type: "checks.completed", conclusion: "failed", ref: "abc" },
 			subject: { number: 3, is_pr: true, ref: "abc" },
 		});
 	});

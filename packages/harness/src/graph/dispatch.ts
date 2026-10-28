@@ -1,9 +1,13 @@
-import { readFile } from "node:fs/promises";
+import { createHash } from "node:crypto";
+import { readFile, readdir } from "node:fs/promises";
+import { join } from "node:path";
 import { GitHubClient } from "../../../github/src/client.ts";
 import { GitHubRepository } from "../../../github/src/repository.ts";
 import { bundledGraphPath } from "./assets.ts";
 import { type CheckStateSource, type ChecksGateResult, evaluateChecksGate } from "./checks-gate.ts";
 import { type TranslatedEvent, translateGitHubEvent } from "./events.ts";
+import { runGraph, type NodeHandlers, type RunGraphOptions } from "./executor.ts";
+import type { WorkflowGraph } from "./types.ts";
 import { plan } from "./planner.ts";
 import { loadRunState, saveRunState } from "./run-state.ts";
 import { validateGraph } from "./validator.ts";
@@ -17,6 +21,23 @@ interface DispatchOptions {
 	eventPath: string;
 	graphPath?: string;
 	runsPath?: string;
+}
+
+/** A graph runtime is composed by the caller; dispatch never invents model or credential adapters. */
+export interface DispatchRuntime {
+	handlers: NodeHandlers;
+	onAction?: RunGraphOptions["onAction"];
+	reconcileAction?: RunGraphOptions["reconcileAction"];
+	effects?: RunGraphOptions["effects"];
+	/** Observe every declared required external check for the event commit SHA. */
+	verifyChecks?(sha: string): Promise<"required_green" | "failed" | "pending">;
+	verifyPlanningContext?: RunGraphOptions["verifyPlanningContext"];
+}
+
+export interface DispatchRuntimeInput {
+	subject: string;
+	runDir: string;
+	graph: WorkflowGraph;
 }
 
 interface GitHubTokenEnv {
@@ -64,6 +85,41 @@ function extractSubject(translated: TranslatedEvent & { kind: "event" }): string
 	return `${translated.subject.number}`;
 }
 
+/**
+ * GitHub sends review/check events against PR numbers. Their canonical graph
+ * run is nevertheless owned by the originating Request. Never initialize a
+ * second independent run keyed to the PR number.
+ *
+ * A missing or ambiguous binding fails closed; an unrelated run's state is
+ * never used to authorize a PR merge.
+ */
+export async function resolveRequestRunForPullRequest(runsDir: string, prNumber: number): Promise<string | undefined> {
+	if (!Number.isSafeInteger(prNumber) || prNumber <= 0) throw new Error("Invalid PR identity");
+	let entries: import("node:fs").Dirent[];
+	try {
+		entries = await readdir(runsDir, { withFileTypes: true });
+	} catch (error) {
+		if ((error as NodeJS.ErrnoException).code === "ENOENT") return undefined;
+		throw error;
+	}
+	const matches: string[] = [];
+	for (const entry of entries) {
+		if (!entry.isDirectory() || !/^\d+$/u.test(entry.name)) continue;
+		let source: string;
+		try {
+			source = await readFile(join(runsDir, entry.name, "state.df"), "utf8");
+		} catch (error) {
+			if ((error as NodeJS.ErrnoException).code === "ENOENT") continue;
+			throw error;
+		}
+		const state = JSON.parse(source) as { outputs?: { pr_number?: unknown } };
+		if (state.outputs?.pr_number === prNumber) matches.push(entry.name);
+	}
+	if (matches.length > 1)
+		throw new Error(`PR #${prNumber} is bound to multiple Request runs: ${matches.join(", ")}`);
+	return matches[0];
+}
+
 function githubCheckSource(token: string, repository: string): CheckStateSource {
 	const [owner, repo] = repository.split("/");
 	if (!owner || !repo) throw new Error("Invalid GITHUB_REPOSITORY format");
@@ -81,6 +137,10 @@ export async function dispatch(
 	argv: string[],
 	options?: {
 		checkStateSource?: CheckStateSource;
+		/** Execute the canonical graph instead of merely emitting a planning preview. */
+		runtime?: (input: DispatchRuntimeInput) => Promise<DispatchRuntime>;
+		/** GitHub delivery ID when available; otherwise a stable event-body fingerprint is used. */
+		deliveryId?: string;
 	},
 ): Promise<void> {
 	const opts = parseArgs(argv);
@@ -107,29 +167,30 @@ export async function dispatch(
 	// For checks.completed events, evaluate the checks gate if tokens are present
 	let gateResult: ChecksGateResult | undefined;
 
-	if (translated.event.type === "checks.completed") {
+	if (translated.event.type === "checks.completed" && !options?.runtime) {
 		const env: GitHubTokenEnv & GitHubRepoEnv = {
 			GH_TOKEN: process.env.GH_TOKEN,
 			GITHUB_TOKEN: process.env.GITHUB_TOKEN,
 			GITHUB_REPOSITORY: process.env.GITHUB_REPOSITORY,
 		};
-
-		if (env.GH_TOKEN || env.GITHUB_TOKEN) {
-			if (env.GITHUB_REPOSITORY) {
-				const checkStateSource: CheckStateSource =
-					options?.checkStateSource ?? githubCheckSource((env.GH_TOKEN || env.GITHUB_TOKEN)!, env.GITHUB_REPOSITORY);
-
-				gateResult = await evaluateChecksGate(workflowGraph, checkStateSource, translated.subject.ref ?? "");
-
-				if (gateResult.conclusion === "pending") {
-					console.log(JSON.stringify({ type: "none", reason: "required checks pending" }));
-					return;
-				}
-
-				// Update the conclusion based on gate result
-				(translated.event as { type: "checks.completed"; conclusion: string }).conclusion =
-					gateResult.conclusion === "required_green" ? "required_green" : "failed";
+		const token = env.GH_TOKEN || env.GITHUB_TOKEN;
+		const source = options?.checkStateSource ??
+			(token && env.GITHUB_REPOSITORY ? githubCheckSource(token, env.GITHUB_REPOSITORY) : undefined);
+		if (!source && options?.runtime) {
+			throw new Error("Production graph checks ingress requires authoritative GitHub check-state readback");
+		}
+		if (source) {
+			const sha = translated.subject.ref ?? "";
+			if (!/^[0-9a-f]{40}$/iu.test(sha)) {
+				throw new Error("Production checks ingress lacks an immutable commit SHA");
 			}
+			gateResult = await evaluateChecksGate(workflowGraph, source, sha);
+			if (gateResult.conclusion === "pending") {
+				console.log(JSON.stringify({ type: "none", reason: "required checks pending" }));
+				return;
+			}
+			(translated.event as { type: "checks.completed"; conclusion: string }).conclusion =
+				gateResult.conclusion === "required_green" ? "required_green" : "failed";
 		}
 	}
 
@@ -138,6 +199,45 @@ export async function dispatch(
 
 	// Load or create RunState
 	const runsDir = opts.runsPath ?? ".darkfactory/runs";
+	if (options?.runtime) {
+		const boundSubject = translated.subject.is_pr
+			? await resolveRequestRunForPullRequest(runsDir, translated.subject.number)
+			: subject;
+		if (!boundSubject) {
+			console.log(JSON.stringify({
+				type: "skip", subject, event: translated.event.type,
+				reason: "no unique originating Request run for PR",
+			}));
+			return;
+		}
+		const runDir = join(runsDir, boundSubject);
+		const runtime = await options.runtime({ subject: boundSubject, runDir, graph: workflowGraph });
+		if (translated.event.type === "checks.completed") {
+			const ref = translated.subject.ref;
+			if (!ref || !/^[a-f0-9]{40}$/iu.test(ref))
+				throw new Error("Production checks event lacks exact immutable head SHA");
+			if (!runtime.verifyChecks)
+				throw new Error("Production graph execution requires authoritative external check readback");
+			const observed = await runtime.verifyChecks(ref);
+			if (observed === "pending") {
+				console.log(JSON.stringify({ type: "none", subject: boundSubject, reason: "required external checks pending" }));
+				return;
+			}
+			translated.event.conclusion = observed;
+		}
+		const eventId = options.deliveryId ?? createHash("sha256")
+			.update(JSON.stringify([opts.eventName, eventPayload])).digest("hex");
+		const state = await runGraph(workflowGraph, runDir, runtime.handlers, translated.event, {
+			eventId,
+			...(runtime.effects ? { effects: runtime.effects } : {}),
+			...(runtime.verifyPlanningContext ? { verifyPlanningContext: runtime.verifyPlanningContext } : {}),
+			...(runtime.onAction ? { onAction: runtime.onAction } : {}),
+			...(runtime.reconcileAction ? { reconcileAction: runtime.reconcileAction } : {}),
+		});
+		console.log(JSON.stringify({ type: "executed", subject: boundSubject, event: translated.event.type,
+			run_id: state.run_id, current_node: state.current_node, quota_blocked: !!state.quota_blocked }));
+		return;
+	}
 	const runState = await loadRunState(runsDir, subject, workflowGraph);
 
 	// Plan the action
@@ -160,6 +260,7 @@ export async function dispatch(
 		current_node: runState.current_node,
 		action: action.type,
 		commands: action.type === "run" && action.nodes ? action.nodes.map((id) => `bun df run --node ${id}`) : [],
+		execution: "not_run",
 	};
 
 	// If this is a checks.completed event with a non‑pending gate result, emit the checks JSON
