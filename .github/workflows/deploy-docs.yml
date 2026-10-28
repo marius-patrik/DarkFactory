@@ -13,7 +13,7 @@ on:
         type: string
         required: true
       promote:
-        description: "Explicitly publish the site (only allowed when dispatched on v1.0.0 tag)"
+        description: "Explicitly publish the site (only an approved SemVer release tag)"
         type: boolean
         default: false
         required: true
@@ -36,8 +36,8 @@ jobs:
           CANDIDATE_SHA: ${{ inputs.candidate_sha }}
         run: |
           test "$GITHUB_SHA" = "$CANDIDATE_SHA"
-          if [[ "${{ inputs.promote }}" == "true" && "$GITHUB_REF" != "refs/tags/v1.0.0" ]]; then
-            echo "::error::Production promotion must dispatch the approved v1.0.0 tag"
+          if [[ "${{ inputs.promote }}" == "true" && ! "$GITHUB_REF" =~ ^refs/tags/v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "::error::Production promotion requires an approved SemVer release tag"
             exit 1
           fi
       - uses: actions/checkout@v4
@@ -46,6 +46,23 @@ jobs:
       - uses: oven-sh/setup-bun@v2
       - name: Install exact workspace
         run: bun install --frozen-lockfile
+      - name: Validate trusted DF-03 producing workflow run
+        env:
+          GH_TOKEN: ${{ github.token }}
+          WEB_BUILD_RUN_ID: ${{ inputs.web_build_run_id }}
+        run: |
+          if [[ ! "$WEB_BUILD_RUN_ID" =~ ^[0-9]+$ ]]; then
+            echo "::error::DF-03 artifact run id must be numeric"
+            exit 1
+          fi
+          gh api "/repos/$GITHUB_REPOSITORY/actions/runs/$WEB_BUILD_RUN_ID" |
+            jq -e --arg sha "$GITHUB_SHA" --arg repo "$GITHUB_REPOSITORY" '
+              .head_sha == $sha and
+              .head_repository.full_name == $repo and
+              .conclusion == "success" and
+              (.event == "push" or .event == "workflow_dispatch") and
+              .run_attempt >= 1
+            '
       - name: Download DF-03 frontend handoff
         uses: actions/download-artifact@v4
         with:
@@ -71,11 +88,19 @@ jobs:
           test -s site/index.html
           test -s site/docs/index.html
           test -s site/docs/content.json
+          test -s site/docs/search.json
+          test -s site/docs/reference-cli/index.html
           test -s site/site-manifest.json
           test -f site/.nojekyll
-          test -s site/guide-getting-started-installation/index.html && exit 2 || true
+          if test -e site/guide-getting-started-installation/index.html; then echo "::error::Docs leaked into application root"; exit 1; fi
           test -s site/docs/guide-getting-started-installation/index.html
           bun -e 'const x=await Bun.file("site/site-manifest.json").json(); if(x.status!=="unpublished-candidate" || x.sourceSha!==process.env.GITHUB_SHA || !x.files.some((f)=>f.path==="docs/index.html"))process.exit(1)'
+      - name: Inspect a clean extraction, manifest and SHA-256 checksums
+        run: |
+          tar -czf "$RUNNER_TEMP/unified-site.tgz" -C site .
+          mkdir "$RUNNER_TEMP/unified-site-extracted"
+          tar -xzf "$RUNNER_TEMP/unified-site.tgz" -C "$RUNNER_TEMP/unified-site-extracted"
+          bun scripts/build-docs.ts --verify-artifact "$RUNNER_TEMP/unified-site-extracted"
       - name: Preserve candidate for source and independent release review
         uses: actions/upload-artifact@v4
         with:
@@ -85,7 +110,7 @@ jobs:
 
   deploy:
     name: human-authorized-live-pages-deployment
-    if: ${{ inputs.promote && github.ref == 'refs/tags/v1.0.0' }}
+    if: ${{ inputs.promote && startsWith(github.ref, 'refs/tags/v') }}
     needs: candidate
     runs-on: ubuntu-latest
     environment:
