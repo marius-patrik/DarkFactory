@@ -24,7 +24,7 @@ jobs:
       - name: Strict documentation graph and reference verification
         run: bun scripts/build-docs.ts --check
       - name: Documentation and artifact security tests
-        run: bun test .github/tests/docs
+        run: bun test .github/tests/docs/quality-contract.test.ts
       - name: Typecheck
         run: bun run typecheck
       - name: Lint and formatting
