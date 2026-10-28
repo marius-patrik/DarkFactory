@@ -10,3 +10,7 @@ export * from "./content.ts";
 export * from "./current.ts";
 export * from "./impact.ts";
 export * from "./readme.ts";
+export * from "./guides.ts";
+export * from "./references.ts";
+export * from "./site.ts";
+export * from "./validation.ts";
