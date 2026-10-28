@@ -97,7 +97,7 @@ function AuthPanel({ config, repository, onState }: {
 		async function hydrate() {
 			try {
 				const query = new URLSearchParams(window.location.search);
-				let session;
+				let session: Awaited<ReturnType<typeof operatorSession>>;
 				if (query.has("code") || query.has("state") || query.has("error")) {
 					const url = new URL(window.location.href);
 					url.searchParams.delete("code"); url.searchParams.delete("state");
