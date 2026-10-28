@@ -14,11 +14,15 @@ The operator application is the root route at the selected Pages base path. Gene
 
 ## Output
 
-`site/index.html` is the Web entry; `site/docs/index.html` is the docs landing; `site/docs/content.json` is the documentation graph; `site/.nojekyll` disables Jekyll processing; `site/404.html` is the GitHub Pages SPA fallback; `site/site-manifest.json` lists file digests and candidate provenance.
+`site/index.html` is the Web entry; `site/docs/index.html` is the docs landing; `site/docs/content.json` is the documentation graph; `site/.nojekyll` disables Jekyll processing; `site/404.html` is the GitHub Pages SPA fallback; `site/site-manifest.json` lists source SHA, candidate SemVer, Pages base path, generated docs count and per-file SHA-256 digests. The optional `404.html` history fallback returns an HTTP 404 response even if the SPA subsequently renders successfully.
 
 ## Routing limitation
 
 GitHub Pages serves `404.html` for unknown history routes with HTTP **404**, not HTTP 200. An app can recover after load, but true 200 deep-link semantics require hash routing, a static route prerender or another host. The route strategy must be confirmed with DF-03 and checked in a live browser.
+
+## Clean extraction verification
+
+After packaging, create an archive containing the site directory, extract it into an empty folder and run `bun scripts/build-docs.ts --verify-artifact /path/to/extracted --base-path /DarkFactory/`. This command verifies manifest schema and source/version, exact file inventory, mandatory documentation routes, SHA-256 of each file and credential signatures without needing application source. In CI the `GITHUB_SHA` must match the manifest. Do not regard a successful staged-folder build as equivalent to clean-extraction verification.
 
 ## Publication
 
