@@ -10,7 +10,7 @@
 4. Generate supported host forms from the single canonical definition. Do not hand-maintain distinct behavior for native Pi, MCP, or agent skill integrations.
 5. Test manifest validation, detector selection, action support, sandbox boundaries, host adapter output and a real consumer package. A claimed action that does nothing must fail acceptance.
 
-The [generated API reference](../../../packages/docs/src/api.ts) reflects configured TypeDoc entry points when present; capability summaries are included in the content graph when discoverable.
+The configured TypeDoc API route (when extraction is enabled) reflects configured TypeDoc entry points when present; capability summaries are included in the content graph when discoverable.
 
 ## Security
 
