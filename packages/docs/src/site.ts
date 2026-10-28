@@ -28,11 +28,15 @@ export function normalizedBasePath(input: string): string {
 }
 
 function safeAssetPath(path: string): boolean {
-	return !!path && path === posix.normalize(path) && !path.startsWith("/") &&
+	return (
+		!!path &&
+		path === posix.normalize(path) &&
+		!path.startsWith("/") &&
 		!path.split("/").some((part) => part === ".." || part === "." || part.startsWith(".")) &&
 		!/(^|\/)(?:docs|site-manifest\.json|404\.html|darkfactory-web-manifest\.json)(?:\/|$)/iu.test(path) &&
 		!/\.(?:map|pem|key|p12|pfx)$/iu.test(path) &&
-		!/(?:^|\/)(?:\.env[^/]*|credentials?[^/]*|secrets?[^/]*|private-key[^/]*)$/iu.test(path);
+		!/(?:^|\/)(?:\.env[^/]*|credentials?[^/]*|secrets?[^/]*|private-key[^/]*)$/iu.test(path)
+	);
 }
 
 function sha256(bytes: Uint8Array): string {
@@ -51,7 +55,7 @@ async function filePaths(root: string, sub = ""): Promise<string[]> {
 	for (const entry of entries) {
 		if (entry.isSymbolicLink()) throw new Error("Site symlink forbidden: " + entry.name);
 		const path = sub ? sub + "/" + entry.name : entry.name;
-		if (entry.isDirectory()) paths.push(...await filePaths(root, path));
+		if (entry.isDirectory()) paths.push(...(await filePaths(root, path)));
 		else if (entry.isFile()) paths.push(path);
 		else throw new Error("Site contains non-regular entry: " + path);
 	}
@@ -61,33 +65,56 @@ async function filePaths(root: string, sub = ""): Promise<string[]> {
 function verifyNoCredentials(path: string, bytes: Uint8Array): void {
 	if (!/\.(?:html|js|mjs|json|css|svg|txt|xml)$/iu.test(path)) return;
 	const content = new TextDecoder().decode(bytes);
-	if (/-----BEGIN (?:RSA |EC |OPENSSH |DSA )?PRIVATE KEY-----/iu.test(content) ||
+	if (
+		/-----BEGIN (?:RSA |EC |OPENSSH |DSA )?PRIVATE KEY-----/iu.test(content) ||
 		/gh[pousr]_[a-zA-Z0-9]{20,}/u.test(content) ||
-		/github_pat_[a-zA-Z0-9_]{20,}/u.test(content)) {
+		/github_pat_[a-zA-Z0-9_]{20,}/u.test(content)
+	) {
 		throw new Error("Credential-like material in site artifact: " + path);
 	}
 }
 
 /** Stage only a complete, explicitly declared frontend with exact digest coverage. */
-export async function stageWebBundle(sourceDir: string, outputDir: string, basePath: string, expectedSourceSha?: string): Promise<WebBundleManifest> {
+export async function stageWebBundle(
+	sourceDir: string,
+	outputDir: string,
+	basePath: string,
+	expectedSourceSha?: string,
+): Promise<WebBundleManifest> {
 	const root = resolve(sourceDir);
 	const output = resolve(outputDir);
 	if (root === output || root.startsWith(output + sep) || output.startsWith(root + sep)) {
 		throw new Error("Frontend source and output directories overlap");
 	}
-	const raw = JSON.parse(await readFile(join(root, "darkfactory-web-manifest.json"), "utf8")) as Partial<WebBundleManifest>;
-	if (raw.schemaVersion !== 1 || raw.kind !== "darkfactory-operator" || raw.status !== "candidate" ||
-		raw.entry !== "index.html" || (raw.routeMode !== "history" && raw.routeMode !== "hash") ||
-		raw.basePath !== normalizedBasePath(basePath) || typeof raw.sourceSha !== "string" ||
-		!/^[a-f0-9]{40}$/iu.test(raw.sourceSha) || !Array.isArray(raw.assets) || raw.assets.length < 2) {
+	const raw = JSON.parse(
+		await readFile(join(root, "darkfactory-web-manifest.json"), "utf8"),
+	) as Partial<WebBundleManifest>;
+	if (
+		raw.schemaVersion !== 1 ||
+		raw.kind !== "darkfactory-operator" ||
+		raw.status !== "candidate" ||
+		raw.entry !== "index.html" ||
+		(raw.routeMode !== "history" && raw.routeMode !== "hash") ||
+		raw.basePath !== normalizedBasePath(basePath) ||
+		typeof raw.sourceSha !== "string" ||
+		!/^[a-f0-9]{40}$/iu.test(raw.sourceSha) ||
+		!Array.isArray(raw.assets) ||
+		raw.assets.length < 2
+	) {
 		throw new Error("DF-03 Web handoff manifest missing or incomplete");
 	}
-	if (expectedSourceSha && raw.sourceSha !== expectedSourceSha) throw new Error("Web source SHA does not match release checkout");
+	if (expectedSourceSha && raw.sourceSha !== expectedSourceSha)
+		throw new Error("Web source SHA does not match release checkout");
 	const assets = raw.assets as WebAsset[];
 	const names = new Set<string>();
 	for (const asset of assets) {
-		if (typeof asset?.path !== "string" || !safeAssetPath(asset.path) || names.has(asset.path) ||
-			typeof asset.sha256 !== "string" || !/^[0-9a-f]{64}$/u.test(asset.sha256)) {
+		if (
+			typeof asset?.path !== "string" ||
+			!safeAssetPath(asset.path) ||
+			names.has(asset.path) ||
+			typeof asset.sha256 !== "string" ||
+			!/^[0-9a-f]{64}$/u.test(asset.sha256)
+		) {
 			throw new Error("Unsafe or duplicate frontend manifest asset");
 		}
 		names.add(asset.path);
@@ -121,21 +148,29 @@ export async function finalizeUnifiedSite(outputDir: string, web: WebBundleManif
 	if (web.routeMode === "history") await writeFile(join(outputDir, "404.html"), index);
 	await writeFile(join(outputDir, ".nojekyll"), "");
 	const paths = (await filePaths(outputDir)).filter((path) => path !== "site-manifest.json");
-	if (!paths.includes("docs/index.html") || !paths.includes("docs/content.json")) throw new Error("Required Docs output missing");
+	if (!paths.includes("docs/index.html") || !paths.includes("docs/content.json"))
+		throw new Error("Required Docs output missing");
 	const files: WebAsset[] = [];
 	for (const path of paths) {
 		const bytes = await regularFile(join(outputDir, path));
 		verifyNoCredentials(path, bytes);
 		files.push({ path, sha256: sha256(bytes) });
 	}
-	await writeFile(join(outputDir, "site-manifest.json"), JSON.stringify({
-		schemaVersion: 1,
-		status: "unpublished-candidate",
-		sourceSha: web.sourceSha,
-		basePath: web.basePath,
-		routeMode: web.routeMode,
-		docsCount,
-		webManifestSha256: sha256(new TextEncoder().encode(JSON.stringify(web))),
-		files,
-	}, null, 2) + "\n");
+	await writeFile(
+		join(outputDir, "site-manifest.json"),
+		JSON.stringify(
+			{
+				schemaVersion: 1,
+				status: "unpublished-candidate",
+				sourceSha: web.sourceSha,
+				basePath: web.basePath,
+				routeMode: web.routeMode,
+				docsCount,
+				webManifestSha256: sha256(new TextEncoder().encode(JSON.stringify(web))),
+				files,
+			},
+			null,
+			2,
+		) + "\n",
+	);
 }

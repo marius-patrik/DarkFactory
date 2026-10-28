@@ -21,14 +21,19 @@ const outputDir = resolve(option("--out") ?? join(repoRoot, "site"));
 const check = process.argv.includes("--check");
 const docsOnly = process.argv.includes("--docs-only");
 const webDist = option("--web-dist");
-const configuredBasePath = option("--base-path") ?? process.env.DF_PAGES_BASE_PATH ??
+const configuredBasePath =
+	option("--base-path") ??
+	process.env.DF_PAGES_BASE_PATH ??
 	(process.env.GITHUB_REPOSITORY ? "/" + process.env.GITHUB_REPOSITORY.split("/").at(-1) + "/" : "/");
 const basePath = normalizedBasePath(configuredBasePath);
 
-if (check && (docsOnly || webDist)) throw new Error("--check validates documentation; do not combine it with packaging flags");
+if (check && (docsOnly || webDist))
+	throw new Error("--check validates documentation; do not combine it with packaging flags");
 if (docsOnly && webDist) throw new Error("--docs-only is an isolated preview mode, not a unified-site bundle");
 if (!check && !docsOnly && !webDist) {
-	throw new Error("Unified Pages build requires a DF-03 --web-dist with verified darkfactory-web-manifest.json; use --docs-only for nonpublishable previews");
+	throw new Error(
+		"Unified Pages build requires a DF-03 --web-dist with verified darkfactory-web-manifest.json; use --docs-only for nonpublishable previews",
+	);
 }
 
 const graph = await compileDocsContentGraphWithDetectedApi(repoRoot, {
@@ -37,7 +42,13 @@ const graph = await compileDocsContentGraphWithDetectedApi(repoRoot, {
 assertCurrentDocumentation(repoRoot, graph);
 assertStrictDocumentation(graph);
 if (check) {
-	console.log("Strict documentation validated: " + graph.pages.length + " pages, " + (graph.navigation?.length ?? 0) + " navigation groups");
+	console.log(
+		"Strict documentation validated: " +
+			graph.pages.length +
+			" pages, " +
+			(graph.navigation?.length ?? 0) +
+			" navigation groups",
+	);
 	process.exit(0);
 }
 
@@ -57,8 +68,13 @@ try {
 	await rename(stage, outputDir);
 	await mkdir(join(repoRoot, ".darkfactory", "generated"), { recursive: true });
 	await writeFile(join(repoRoot, ".darkfactory", "generated", "docs.json"), JSON.stringify(graph, null, 2) + "\n");
-	console.log((docsOnly ? "Built nonpublishable documentation preview" : "Packaged unpublished Web + Docs candidate") +
-		" with " + graph.pages.length + " pages into " + outputDir);
+	console.log(
+		(docsOnly ? "Built nonpublishable documentation preview" : "Packaged unpublished Web + Docs candidate") +
+			" with " +
+			graph.pages.length +
+			" pages into " +
+			outputDir,
+	);
 } finally {
 	await rm(stage, { recursive: true, force: true });
 }

@@ -7,7 +7,17 @@ import { GUIDE_SECTIONS, guidePath } from "./guides.ts";
 import { generatedReferencePages } from "./references.ts";
 
 /** Semantic kind assigned to a documentation page. */
-type DocsPageKind = "home" | "product" | "plan" | "rules" | "rule" | "note" | "adr" | "capability" | "guide" | "reference";
+type DocsPageKind =
+	| "home"
+	| "product"
+	| "plan"
+	| "rules"
+	| "rule"
+	| "note"
+	| "adr"
+	| "capability"
+	| "guide"
+	| "reference";
 
 /** One canonical Markdown page in the DarkFactory content graph. */
 export interface DocsPage {
@@ -242,7 +252,11 @@ function workflowSummary(repoRoot: string, source: string): DocsWorkflowSummary 
 export function documentationNavigation(pages: readonly DocsPage[]): readonly DocsNavigationGroup[] {
 	const sections: DocsNavigationGroup[] = [{ id: "home", title: "Product contract", pages: ["home"] }];
 	for (const section of GUIDE_SECTIONS) {
-		sections.push({ id: section.id, title: section.title, pages: section.pages.map((guide) => `guide-${section.id}-${guide.slug}`) });
+		sections.push({
+			id: section.id,
+			title: section.title,
+			pages: section.pages.map((guide) => `guide-${section.id}-${guide.slug}`),
+		});
 	}
 	for (const [id, title, kind] of [
 		["references", "Generated references", "reference"],
@@ -251,11 +265,13 @@ export function documentationNavigation(pages: readonly DocsPage[]): readonly Do
 		["capability-docs", "Capability documentation", "capability"],
 	] as const) {
 		const selected = pages.filter((page) => page.kind === kind).map((page) => page.id);
-		if (id === "decisions" && pages.some((page) => page.id === "architecture-decisions")) selected.unshift("architecture-decisions");
+		if (id === "decisions" && pages.some((page) => page.id === "architecture-decisions"))
+			selected.unshift("architecture-decisions");
 		if (selected.length) sections.push({ id, title, pages: selected });
 	}
 	const known = new Set(pages.map((page) => page.id));
-	for (const group of sections) for (const id of group.pages) if (!known.has(id)) throw new Error(`Unknown navigation page: ${id}`);
+	for (const group of sections)
+		for (const id of group.pages) if (!known.has(id)) throw new Error(`Unknown navigation page: ${id}`);
 	return sections;
 }
 
@@ -313,5 +329,13 @@ export function compileDocsContentGraph(
 		if (ids.has(page.id)) throw new Error(`Duplicate documentation page id: ${page.id}`);
 		ids.add(page.id);
 	}
-	return { version: 1, site: config.site, home: "home", pages, navigation: documentationNavigation(pages), workflows, ...(api ? { api } : {}) };
+	return {
+		version: 1,
+		site: config.site,
+		home: "home",
+		pages,
+		navigation: documentationNavigation(pages),
+		workflows,
+		...(api ? { api } : {}),
+	};
 }

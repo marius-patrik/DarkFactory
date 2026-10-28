@@ -6,7 +6,12 @@ import type { DocsContentGraph, DocsPage } from "./content.ts";
 function anchors(markdown: string): ReadonlySet<string> {
 	const result = new Set<string>();
 	for (const match of markdown.matchAll(/^#{1,6}\s+(.+)$/gmu)) {
-		result.add((match[1] ?? "").toLowerCase().replace(/[^a-z0-9]+/gu, "-").replace(/^-|-$/gu, ""));
+		result.add(
+			(match[1] ?? "")
+				.toLowerCase()
+				.replace(/[^a-z0-9]+/gu, "-")
+				.replace(/^-|-$/gu, ""),
+		);
 	}
 	return result;
 }
@@ -42,16 +47,31 @@ export function documentationFindings(graph: DocsContentGraph): readonly string[
 	for (const page of graph.pages) {
 		if (!navigated.has(page.id)) findings.push("Unlisted navigation page: " + page.id);
 	}
-	const requiredSections = ["introduction", "getting-started", "operator", "cli", "configuration", "architecture",
-		"capabilities", "administration", "development", "release", "reference", "security"];
+	const requiredSections = [
+		"introduction",
+		"getting-started",
+		"operator",
+		"cli",
+		"configuration",
+		"architecture",
+		"capabilities",
+		"administration",
+		"development",
+		"release",
+		"reference",
+		"security",
+	];
 	for (const sectionId of requiredSections) {
-		if (!GUIDE_SECTIONS.some((section) => section.id === sectionId)) findings.push("Required guide section missing: " + sectionId);
+		if (!GUIDE_SECTIONS.some((section) => section.id === sectionId))
+			findings.push("Required guide section missing: " + sectionId);
 	}
-	for (const section of GUIDE_SECTIONS) for (const guide of section.pages) {
-		const id = "guide-" + section.id + "-" + guide.slug;
-		if (!byId.has(id)) findings.push("Required guide missing: " + id);
-	}
-	if (!byId.has("reference-cli") || !byId.has("reference-config")) findings.push("Missing generated command/config reference");
+	for (const section of GUIDE_SECTIONS)
+		for (const guide of section.pages) {
+			const id = "guide-" + section.id + "-" + guide.slug;
+			if (!byId.has(id)) findings.push("Required guide missing: " + id);
+		}
+	if (!byId.has("reference-cli") || !byId.has("reference-config"))
+		findings.push("Missing generated command/config reference");
 	for (const page of graph.pages) {
 		if (page.kind !== "guide" && page.kind !== "reference") continue;
 		const prose = proseOnly(page.markdown);
@@ -62,7 +82,9 @@ export function documentationFindings(graph: DocsContentGraph): readonly string[
 					// Use the canonical docs parser to verify the embedded fragment, not a shadow schema.
 					parseDocsConfig(JSON.stringify((value as Record<string, unknown>).docs));
 				}
-			} catch (error) { findings.push(page.source + ": invalid JSON/configuration example: " + String(error)); }
+			} catch (error) {
+				findings.push(page.source + ": invalid JSON/configuration example: " + String(error));
+			}
 		}
 		if (/<\s*\/?\s*(script|iframe|object|embed|form|svg|style|img)\b/iu.test(prose) || /on\w+\s*=/iu.test(prose)) {
 			findings.push(page.source + ": executable HTML is prohibited");
@@ -85,15 +107,20 @@ export function documentationFindings(graph: DocsContentGraph): readonly string[
 				continue;
 			}
 			let decoded: string;
-			try { decoded = decodeURIComponent(path || ""); }
-			catch { findings.push(page.source + ": invalid URL encoding: " + target); continue; }
+			try {
+				decoded = decodeURIComponent(path || "");
+			} catch {
+				findings.push(page.source + ": invalid URL encoding: " + target);
+				continue;
+			}
 			const source = decoded ? posix.normalize(posix.join(posix.dirname(page.source), decoded)) : page.source;
 			const linked = bySource.get(source);
 			if (!linked) {
 				findings.push(page.source + ": unresolved source: " + target);
 				continue;
 			}
-			if (anchor && !anchors(linked.markdown).has(anchor.toLowerCase())) findings.push(page.source + ": missing anchor: " + target);
+			if (anchor && !anchors(linked.markdown).has(anchor.toLowerCase()))
+				findings.push(page.source + ": missing anchor: " + target);
 		}
 	}
 	return findings;

@@ -16,7 +16,9 @@ import {
 
 const repoRoot = resolve(import.meta.dir, "../../..");
 const temps: string[] = [];
-afterEach(async () => { for (const dir of temps.splice(0)) await rm(dir, { recursive: true, force: true }); });
+afterEach(async () => {
+	for (const dir of temps.splice(0)) await rm(dir, { recursive: true, force: true });
+});
 
 function digest(text: string): string {
 	return createHash("sha256").update(text).digest("hex");
@@ -28,23 +30,29 @@ async function fixture(basePath = "/DarkFactory/"): Promise<{ source: string; ou
 	const source = join(temp, "web");
 	const output = join(temp, "site");
 	await mkdir(join(source, "assets"), { recursive: true });
-	const index = '<!doctype html><html><head><base href="' + basePath + '"></head><body><div id="app"></div><script src="assets/app.js"></script></body></html>';
+	const index =
+		'<!doctype html><html><head><base href="' +
+		basePath +
+		'"></head><body><div id="app"></div><script src="assets/app.js"></script></body></html>';
 	const js = 'console.log("operator candidate");';
 	await writeFile(join(source, "index.html"), index);
 	await writeFile(join(source, "assets", "app.js"), js);
-	await writeFile(join(source, "darkfactory-web-manifest.json"), JSON.stringify({
-		schemaVersion: 1,
-		kind: "darkfactory-operator",
-		status: "candidate",
-		entry: "index.html",
-		basePath,
-		routeMode: "history",
-		sourceSha: "a".repeat(40),
-		assets: [
-			{ path: "index.html", sha256: digest(index) },
-			{ path: "assets/app.js", sha256: digest(js) },
-		],
-	}));
+	await writeFile(
+		join(source, "darkfactory-web-manifest.json"),
+		JSON.stringify({
+			schemaVersion: 1,
+			kind: "darkfactory-operator",
+			status: "candidate",
+			entry: "index.html",
+			basePath,
+			routeMode: "history",
+			sourceSha: "a".repeat(40),
+			assets: [
+				{ path: "index.html", sha256: digest(index) },
+				{ path: "assets/app.js", sha256: digest(js) },
+			],
+		}),
+	);
 	return { source, output, index };
 }
 
@@ -69,9 +77,16 @@ describe("documentation source-backed truth", () => {
 		const page = graph.pages.find((page) => page.kind === "guide")!;
 		const damaged = {
 			...graph,
-			pages: graph.pages.map((entry) => entry.id === page.id ? {
-				...entry, markdown: entry.markdown + "\n[missing](missing.md) [broken](#missing-anchor) [unsafe](javascript:alert)\n<script>alert(1)</script>\n",
-			} : entry),
+			pages: graph.pages.map((entry) =>
+				entry.id === page.id
+					? {
+							...entry,
+							markdown:
+								entry.markdown +
+								"\n[missing](missing.md) [broken](#missing-anchor) [unsafe](javascript:alert)\n<script>alert(1)</script>\n",
+						}
+					: entry,
+			),
 			navigation: graph.navigation?.filter((group) => group.id !== "getting-started"),
 		};
 		const findings = documentationFindings(damaged).join("\n");
@@ -99,7 +114,7 @@ describe("unified-site artifact integrity", () => {
 		await writeFile(join(output, "docs", "content.json"), "{}");
 		await finalizeUnifiedSite(output, web, 17);
 		const manifest = JSON.parse(await readFile(join(output, "site-manifest.json"), "utf8"));
-		expect(manifest.files.some((item: {path: string}) => item.path === "docs/index.html")).toBe(true);
+		expect(manifest.files.some((item: { path: string }) => item.path === "docs/index.html")).toBe(true);
 		expect(manifest.status).toBe("unpublished-candidate");
 		expect(await readFile(join(output, "404.html"), "utf8")).toBe(index);
 	});
