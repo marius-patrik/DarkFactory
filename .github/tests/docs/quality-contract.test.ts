@@ -74,7 +74,8 @@ describe("documentation source-backed truth", () => {
 
 	test("broken links, anchors, injection and missing navigation fail", () => {
 		const graph = compileDocsContentGraph(repoRoot);
-		const page = graph.pages.find((page) => page.kind === "guide")!;
+		const page = graph.pages.find((page) => page.kind === "guide");
+		if (!page) throw new Error("No guide found");
 		const damaged = {
 			...graph,
 			pages: graph.pages.map((entry) =>

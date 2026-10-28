@@ -92,7 +92,11 @@ export function documentationFindings(graph: DocsContentGraph): readonly string[
 		for (const match of prose.matchAll(/!?\[[^\]]*\]\(([^)\s]+)(?:\s+"[^"]*")?\)/gu)) {
 			const target = match[1] ?? "";
 			if (!target) continue;
-			if (/[\u0000-\u001f\u007f]/u.test(target)) {
+			const containsControl = [...target].some((character) => {
+				const code = character.charCodeAt(0);
+				return code < 32 || code === 127;
+			});
+			if (containsControl) {
 				findings.push(`${page.source}: control character in link`);
 				continue;
 			}

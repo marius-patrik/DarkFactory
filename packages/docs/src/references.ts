@@ -7,7 +7,11 @@ import type { DocsPage } from "./content.ts";
 export function cliUsageFromSource(source: string): readonly string[] {
 	const block = /function usage\(\): string \{\s*return \[([\s\S]*?)\]\.join\("\\n"\);/u.exec(source)?.[1];
 	if (!block) throw new Error("CLI usage() declaration could not be extracted.");
-	const lines = [...block.matchAll(/^\s*("(?:[^"\\]|\\.)*")\s*,?\s*$/gmu)].map((m) => JSON.parse(m[1]!) as string);
+	const lines = [...block.matchAll(/^\s*("(?:[^"\\]|\\.)*")\s*,?\s*$/gmu)].map((m) => {
+		const literal = m[1];
+		if (!literal) throw new Error("Missing CLI help string literal");
+		return JSON.parse(literal) as string;
+	});
 	if (lines.length < 15 || !lines.some((s) => s.includes("df --version")) || !lines.some((s) => s.includes("df graph")))
 		throw new Error("CLI usage extraction is incomplete.");
 	return lines;

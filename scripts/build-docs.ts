@@ -59,7 +59,8 @@ try {
 		await renderDocsSite(graph, stage);
 		await writeFile(join(stage, "search.json"), `${JSON.stringify(docsSearchIndex(graph), null, 2)}\n`);
 	} else {
-		const web = await stageWebBundle(resolve(webDist!), stage, basePath, process.env.GITHUB_SHA);
+		if (!webDist) throw new Error("Missing DF-03 Web bundle");
+		const web = await stageWebBundle(resolve(webDist), stage, basePath, process.env.GITHUB_SHA);
 		await renderDocsSite(graph, join(stage, "docs"));
 		await writeFile(join(stage, "docs", "search.json"), `${JSON.stringify(docsSearchIndex(graph), null, 2)}\n`);
 		await finalizeUnifiedSite(stage, web, graph.pages.length);
