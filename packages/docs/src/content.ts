@@ -253,9 +253,7 @@ export function documentationNavigation(pages: readonly DocsPage[]): readonly Do
 	const sections: DocsNavigationGroup[] = [{ id: "home", title: "Product contract", pages: ["home"] }];
 	const available = new Set(pages.map((page) => page.id));
 	for (const section of GUIDE_SECTIONS) {
-		const ids = section.pages
-			.map((guide) => `guide-${section.id}-${guide.slug}`)
-			.filter((id) => available.has(id));
+		const ids = section.pages.map((guide) => `guide-${section.id}-${guide.slug}`).filter((id) => available.has(id));
 		if (ids.length) sections.push({ id: section.id, title: section.title, pages: ids });
 	}
 	for (const [id, title, kind] of [
