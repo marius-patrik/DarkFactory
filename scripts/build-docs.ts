@@ -70,8 +70,12 @@ if (!check) {
 	const physicalOutput = resolve(actualParent, basename(outputDir));
 	const physicalRepo = await realpath(repoRoot);
 	const physicalRel = relative(physicalRepo, physicalOutput);
-	if (physicalRel === "" || (!physicalRel.startsWith("..") && !isAbsolute(physicalRel) &&
-		!/^site(?:\/|-|$)/u.test(physicalRel.replaceAll("\\", "/"))))
+	if (
+		physicalRel === "" ||
+		(!physicalRel.startsWith("..") &&
+			!isAbsolute(physicalRel) &&
+			!/^site(?:\/|-|$)/u.test(physicalRel.replaceAll("\\", "/")))
+	)
 		throw new Error("Site output resolved into protected repository source");
 	try {
 		if ((await lstat(outputDir)).isSymbolicLink())
