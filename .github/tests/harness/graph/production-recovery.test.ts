@@ -6,13 +6,8 @@ import {
 	FileProductionEffectJournal,
 	IndeterminateEffectError,
 } from "../../../../packages/harness/src/graph/durable-effects.ts";
-import {
-	type NodeHandlers, runGraph,
-} from "../../../../packages/harness/src/graph/executor.ts";
-import {
-	type WorkflowGraph,
-	type GraphEvent,
-} from "../../../../packages/harness/src/graph/types.ts";
+import { type NodeHandlers, runGraph } from "../../../../packages/harness/src/graph/executor.ts";
+import { type WorkflowGraph, type GraphEvent } from "../../../../packages/harness/src/graph/types.ts";
 import { dispatch } from "../../../../packages/harness/src/graph/dispatch.ts";
 import { assertMergeAuthorization } from "../../../../packages/harness/src/graph/approval-evidence.ts";
 
@@ -47,8 +42,15 @@ async function fixture() {
 			const entry = await ctx.effect("external.apply", {
 				observe: async (effectId) => {
 					let rows: Array<{ id: string; value: string }> = [];
-					try { rows = (await readFile(external, "utf8")).trim().split("\n").filter(Boolean).map((x) => JSON.parse(x)); }
-					catch (error) { if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error; }
+					try {
+						rows = (await readFile(external, "utf8"))
+							.trim()
+							.split("\n")
+							.filter(Boolean)
+							.map((x) => JSON.parse(x));
+					} catch (error) {
+						if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error;
+					}
 					const found = rows.find((x) => x.id === effectId);
 					return found ? { value: found.value, evidence: found.id } : undefined;
 				},
@@ -82,7 +84,8 @@ describe("canonical production graph recovery", () => {
 	test("adopts a durable completion checkpoint instead of re-running an interrupted node", async () => {
 		const f = await fixture();
 		const result = await runGraph(f.graph, f.runDir, f.handlers, opened, {
-			effects: f.effects, eventId: "delivery-b",
+			effects: f.effects,
+			eventId: "delivery-b",
 		});
 		expect(f.writes()).toBe(1);
 		const checkpoint = JSON.parse(await readFile(join(f.runDir, "checkpoints", "apply", "1.df"), "utf8"));
@@ -96,24 +99,37 @@ describe("canonical production graph recovery", () => {
 		};
 		await writeFile(join(f.runDir, "state.df"), JSON.stringify(interrupted));
 		const resumed = await runGraph(f.graph, f.runDir, f.handlers, opened, {
-			effects: new FileProductionEffectJournal(f.effects.directory), eventId: "delivery-b",
+			effects: new FileProductionEffectJournal(f.effects.directory),
+			eventId: "delivery-b",
 		});
 		expect(resumed.outputs.external_evidence).toBe(result.outputs.external_evidence);
 		expect(f.writes()).toBe(1);
-		expect((resumed as typeof resumed & { processed_event_ids?: string[] }).processed_event_ids).toContain("delivery-b");
+		expect((resumed as typeof resumed & { processed_event_ids?: string[] }).processed_event_ids).toContain(
+			"delivery-b",
+		);
 	});
 
 	test("an interrupted node without committed evidence fails closed", async () => {
 		const f = await fixture();
 		await mkdir(f.runDir, { recursive: true });
-		await writeFile(join(f.runDir, "state.df"), JSON.stringify({
-			run_id: "pending", current_node: "apply", outputs: {}, hints: [],
-			iterations: { apply: 1 }, pending_node: { node: "apply", iteration: 1 },
-			active_event_id: "delivery-c",
-		}));
-		await expect(runGraph(f.graph, f.runDir, f.handlers, opened, {
-			effects: f.effects, eventId: "delivery-c",
-		})).rejects.toThrow("no committed result");
+		await writeFile(
+			join(f.runDir, "state.df"),
+			JSON.stringify({
+				run_id: "pending",
+				current_node: "apply",
+				outputs: {},
+				hints: [],
+				iterations: { apply: 1 },
+				pending_node: { node: "apply", iteration: 1 },
+				active_event_id: "delivery-c",
+			}),
+		);
+		await expect(
+			runGraph(f.graph, f.runDir, f.handlers, opened, {
+				effects: f.effects,
+				eventId: "delivery-c",
+			}),
+		).rejects.toThrow("no committed result");
 		expect(f.writes()).toBe(0);
 	});
 
@@ -131,12 +147,16 @@ describe("canonical production graph recovery", () => {
 		const handlers: NodeHandlers = {
 			agent: async () => ({ outcome: "failure", outputs: {} }),
 			automation: async (node) => {
-				if (node.id === "repair") { repaired = true; return { outcome: "success", outputs: {} }; }
+				if (node.id === "repair") {
+					repaired = true;
+					return { outcome: "success", outputs: {} };
+				}
 				throw new IndeterminateEffectError("a".repeat(64));
 			},
 		};
-		await expect(runGraph(graph, f.runDir, handlers, opened, { eventId: "ambiguous", effects: f.effects }))
-			.rejects.toBeInstanceOf(IndeterminateEffectError);
+		await expect(
+			runGraph(graph, f.runDir, handlers, opened, { eventId: "ambiguous", effects: f.effects }),
+		).rejects.toBeInstanceOf(IndeterminateEffectError);
 		expect(repaired).toBe(false);
 		const saved = JSON.parse(await readFile(join(f.runDir, "state.df"), "utf8"));
 		expect(saved.pending_node).toMatchObject({ node: "mutate", iteration: 1 });
@@ -147,16 +167,28 @@ describe("canonical production graph recovery", () => {
 		const graphFile = join(f.root, "graph.json");
 		const eventFile = join(f.root, "issue.json");
 		await writeFile(graphFile, JSON.stringify(f.graph));
-		await writeFile(eventFile, JSON.stringify({
-			action: "opened", issue: { number: 18, author_association: "OWNER" },
-			sender: { login: "owner", type: "User" },
-		}));
+		await writeFile(
+			eventFile,
+			JSON.stringify({
+				action: "opened",
+				issue: { number: 18, author_association: "OWNER" },
+				sender: { login: "owner", type: "User" },
+			}),
+		);
 		const logs: string[] = [];
 		const original = console.log;
 		console.log = (v) => { logs.push(String(v)); };
 		try {
-			const args = ["--event-name", "issues", "--event", eventFile, "--graph", graphFile,
-				"--runs", join(f.root, "dispatch")];
+			const args = [
+				"--event-name",
+				"issues",
+				"--event",
+				eventFile,
+				"--graph",
+				graphFile,
+				"--runs",
+				join(f.root, "dispatch"),
+			];
 			const runtime = async ({ runDir }: { runDir: string }) => ({
 				handlers: f.handlers,
 				effects: new FileProductionEffectJournal(join(runDir, "effects")),

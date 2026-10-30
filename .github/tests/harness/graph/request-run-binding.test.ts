@@ -18,10 +18,15 @@ async function runs() {
 async function saveRun(root: string, request: number, prNumber: number | null) {
 	const dir = join(root, String(request));
 	await mkdir(dir, { recursive: true });
-	await writeFile(join(dir, "state.df"), JSON.stringify({
-		run_id: `request-${request}`, current_node: "merge-gate",
-		outputs: prNumber ? { pr_number: prNumber } : {}, hints: [],
-	}));
+	await writeFile(
+		join(dir, "state.df"),
+		JSON.stringify({
+			run_id: `request-${request}`,
+			current_node: "merge-gate",
+			outputs: prNumber ? { pr_number: prNumber } : {},
+			hints: [],
+		}),
+	);
 }
 
 describe("PR ingress belongs to its originating Request graph", () => {
@@ -43,11 +48,18 @@ describe("PR ingress belongs to its originating Request graph", () => {
 	test("a real PR review event resumes exactly the bound Request run", async () => {
 		const root = await runs();
 		await saveRun(root, 17, 204);
-		await writeFile(join(root, "17", "state.df"), JSON.stringify({
-			run_id: "request-17", current_node: "approval", outputs: { pr_number: 204 }, hints: [],
-		}));
+		await writeFile(
+			join(root, "17", "state.df"),
+			JSON.stringify({
+				run_id: "request-17",
+				current_node: "approval",
+				outputs: { pr_number: 204 },
+				hints: [],
+			}),
+		);
 		const graph = {
-			version: 1 as const, checks: [],
+			version: 1 as const,
+			checks: [],
 			nodes: [
 				{ id: "approval", kind: "gate" as const, trigger: { event: "review" },
 					author_associations: ["OWNER"], allow_review_state: ["APPROVED"],
@@ -69,23 +81,27 @@ describe("PR ingress belongs to its originating Request graph", () => {
 		let invoked = 0;
 		const logs: string[] = [];
 		const original = console.log;
-		console.log = (line) => { logs.push(String(line)); };
+		console.log = (line) => {
+			logs.push(String(line));
+		};
 		try {
-			await dispatch([
-				"--event-name", "pull_request_review",
-				"--event", eventFile, "--graph", graphFile, "--runs", root,
-			], {
-				deliveryId: "review-delivery-204",
-				runtime: async () => ({
-					handlers: {
-						agent: async () => { throw new Error("unexpected agent"); },
-						automation: async () => {
-							invoked++;
-							return { outcome: "success", outputs: { authorized: true } };
+			await dispatch(
+				["--event-name", "pull_request_review", "--event", eventFile, "--graph", graphFile, "--runs", root],
+				{
+					deliveryId: "review-delivery-204",
+					runtime: async () => ({
+						handlers: {
+							agent: async () => {
+								throw new Error("unexpected agent");
+							},
+							automation: async () => {
+								invoked++;
+								return { outcome: "success", outputs: { authorized: true } };
+							},
 						},
-					},
-				}),
-			});
+					}),
+				},
+			);
 		} finally {
 			console.log = original;
 		}
