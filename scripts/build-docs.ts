@@ -19,7 +19,8 @@ function option(name: string): string | undefined {
 
 const repoRoot = resolve(option("--repo-root") ?? process.cwd());
 const outputDir = resolve(option("--out") ?? join(repoRoot, "site"));
-const check = process.argv.includes("--check");
+// The canonical `bun run docs` command validates docs without silently publishing a docs-only site.
+const check = process.argv.includes("--check") || process.argv.slice(2).length === 0;
 const verification = option("--verify-artifact");
 const docsOnly = process.argv.includes("--docs-only");
 const webDist = option("--web-dist");
