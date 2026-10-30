@@ -105,7 +105,7 @@ describe("dispatch", () => {
 				action: "completed",
 				check_suite: {
 					conclusion: "success",
-					head_sha: "abc123",
+					head_sha: "a".repeat(40),
 					pull_requests: [{ number: 42 }],
 				},
 				sender: { login: "alice", type: "User" },

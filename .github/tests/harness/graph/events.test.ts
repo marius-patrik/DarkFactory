@@ -125,7 +125,7 @@ describe("translateGitHubEvent", () => {
 				actor: { login: "owner", association: "OWNER", is_bot: false },
 				ref: "b".repeat(40),
 			},
-			subject: { number: 2, is_pr: true, ref: "deadbeef" },
+			subject: { number: 2, is_pr: true, ref: "b".repeat(40) },
 		});
 	});
 
@@ -137,19 +137,19 @@ describe("translateGitHubEvent", () => {
 		expect(translateGitHubEvent("check_suite", payload)).toEqual({
 			kind: "event",
 			event: { type: "checks.completed", conclusion: "required_green", ref: "c".repeat(40) },
-			subject: { number: 3, is_pr: true, ref: "abc" },
+			subject: { number: 3, is_pr: true, ref: "c".repeat(40) },
 		});
 	});
 
 	test("check_suite completed failure -> failed", () => {
 		const payload = {
 			action: "completed",
-			check_suite: { conclusion: "failure", head_sha: "abc", pull_requests: [{ number: 3 }] },
+			check_suite: { conclusion: "failure", head_sha: "d".repeat(40), pull_requests: [{ number: 3 }] },
 		};
 		expect(translateGitHubEvent("check_suite", payload)).toEqual({
 			kind: "event",
-			event: { type: "checks.completed", conclusion: "failed", ref: "abc" },
-			subject: { number: 3, is_pr: true, ref: "abc" },
+			event: { type: "checks.completed", conclusion: "failed", ref: "d".repeat(40) },
+			subject: { number: 3, is_pr: true, ref: "d".repeat(40) },
 		});
 	});
 
