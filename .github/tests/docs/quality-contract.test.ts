@@ -3,7 +3,7 @@ import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
 import { mkdir, mkdtemp, readFile, rm, symlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
-import { join, resolve } from "node:path";
+import { dirname, join, resolve } from "node:path";
 import {
 	assertStrictDocumentation,
 	cliUsageFromSource,
@@ -11,6 +11,7 @@ import {
 	documentationFindings,
 	finalizeUnifiedSite,
 	normalizedBasePath,
+	requiredDocumentationRoutes,
 	stageWebBundle,
 	verifyUnifiedSite,
 } from "../../../packages/docs/src/index.ts";
@@ -129,6 +130,11 @@ describe("unified-site artifact integrity", () => {
 		await writeFile(join(output, "docs", "index.html"), "<h1>Docs</h1>");
 		await writeFile(join(output, "docs", "content.json"), "{}");
 		await writeFile(join(output, "docs", "search.json"), "[]");
+		for (const route of requiredDocumentationRoutes()) {
+			if (!route.endsWith("/index.html") || route === "docs/index.html") continue;
+			await mkdir(dirname(join(output, route)), { recursive: true });
+			await writeFile(join(output, route), "<h1>Reference or guide</h1>");
+		}
 		await finalizeUnifiedSite(output, web, 17, "1.0.0");
 		await verifyUnifiedSite(output, { sourceSha: "a".repeat(40), basePath: "/DarkFactory/" });
 		const manifest = JSON.parse(await readFile(join(output, "site-manifest.json"), "utf8"));
@@ -138,6 +144,16 @@ describe("unified-site artifact integrity", () => {
 		await writeFile(join(output, "docs", "index.html"), "tampered");
 		await expect(verifyUnifiedSite(output)).rejects.toThrow("digest mismatch");
 		expect(await readFile(join(output, "404.html"), "utf8")).toBe(index);
+	});
+
+	test("requires every authored guide route, not just the Docs landing page", async () => {
+		const { source, output } = await fixture();
+		const web = await stageWebBundle(source, output, "/DarkFactory/", "a".repeat(40));
+		await mkdir(join(output, "docs"));
+		for (const route of ["docs/index.html", "docs/content.json", "docs/search.json"]) {
+			await writeFile(join(output, route), "{}");
+		}
+		await expect(finalizeUnifiedSite(output, web, 18, "1.0.0")).rejects.toThrow("Required Docs route missing");
 	});
 
 	test("rejects digest mismatch, SHA drift and unindexed extra files", async () => {
