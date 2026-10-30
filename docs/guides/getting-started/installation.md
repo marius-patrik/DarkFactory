@@ -21,3 +21,25 @@ GitHub repo permissions, a properly configured GitHub App and broker for browser
 ## Installation acceptance
 
 Record the exact binary digest, installed version, OS/architecture, exit status and first real governed run. If any are unknown, classify the installation unverified rather than complete.
+
+## Clean developer verification
+
+**Prerequisites:** Git, Bun compatible with the repository lockfile, source checkout and permissions to read the target repository. From the repository root the documented validation sequence is:
+
+```sh
+bun install --frozen-lockfile
+bun packages/cli/src/cli.ts --help
+bun packages/cli/src/cli.ts graph validate
+bun run docs
+bun run format:check
+bun run lint
+bun run typecheck
+```
+
+Expected documentation result: `bun run docs` invokes strict validation without publishing, and prints a page/navigation count when successful. `graph validate` reports graph version/node/edge count. A missing Bun executable, frozen lockfile mismatch, type error or missing declared document must produce a nonzero exit and block acceptance. These are the exact commands to **execute**, not a claim that they passed on this branch.
+
+For a read-only preview, run `bun scripts/build-docs.ts --docs-only --out site-docs-preview` from the repo root and inspect its `index.html`. This output has no verified unified-site manifest and must not be uploaded to Pages. A missing Web manifest is intentionally fatal to a normal package build.
+
+## Release installation and update acceptance
+
+The source CLI declares `df install --check`, `df install --dry-run`, `df update --check`, and `df update --dry-run` with optional `--prefix DIR`, but the production installer binary is **not accepted**. Do not instruct a new operator to fetch an unverified binary as a substitute. #2709 must publish a specific OS/architecture-compatible digest and demonstrate actual clean install, repeat install, update, state preservation, `df --version`, rollback/repair and failed-check denial. If no signed-off release receipt exists, the correct result is “unavailable”, not a fallback to a development checkout.
