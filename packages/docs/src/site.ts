@@ -60,6 +60,7 @@ export function requiredDocumentationRoutes(): readonly string[] {
 		"docs/reference-cli/index.html",
 		"docs/reference-config/index.html",
 		"docs/reference-typescript-exports/index.html",
+		"docs/reference-runtime-contracts/index.html",
 		...GUIDE_SECTIONS.flatMap((section) =>
 			section.pages.map((page) => `docs/guide-${section.id}-${page.slug}/index.html`),
 		),
