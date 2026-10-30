@@ -17,8 +17,11 @@ function anchors(markdown: string): ReadonlySet<string> {
 }
 
 function proseOnly(markdown: string): string {
-  return markdown.replace(/^```[\s\S]*?^```\s*$/gmu, "").replace(/`[^`\n]+`/gu, "");
+	return markdown
+		.replace(/^```[\s\S]*?^```\s*$/gmu, "")
+		.replace(/`[^`\n]+`/gu, "");
 }
+
 /** Validate authored guides, source-backed references, navigation, links and anchors. */
 export function documentationFindings(graph: DocsContentGraph): readonly string[] {
 	const findings: string[] = [];
@@ -91,7 +94,10 @@ export function documentationFindings(graph: DocsContentGraph): readonly string[
 				findings.push(`${page.source}: invalid JSON/configuration example: ${String(error)}`);
 			}
 		}
-		if (/<\s*\/?\s*(a|base|link|meta|script|iframe|object|embed|form|svg|style|img|video|audio|math)\b/iu.test(prose) || /on\w+\s*=/iu.test(prose)) {
+		if (
+			/<\s*\/?\s*(a|base|link|meta|script|iframe|object|embed|form|svg|style|img|video|audio|math)\b/iu.test(prose) ||
+			/on\w+\s*=/iu.test(prose)
+		) {
 			findings.push(`${page.source}: executable HTML is prohibited`);
 		}
 		if (page.kind === "guide") {
