@@ -1,25 +1,18 @@
-# DF-03 â†’ DF-04: Unified operator + documentation site
+# DF-07 â†’ DF-04: unified Web / Docs contract
 
-**Status:** Build contract available; end-to-end deployed acceptance outstanding.
+The operator Web and the static documentation are **one packaged Pages site**. Frontend entry is the root `index.html`; documentation is independently rendered by the existing headless docs compiler at `docs/` (including `docs/content.json` and `docs/search.json`). Do not deploy a second Docs home at root.
 
-## Immutable frontend
-
-Build from the DarkFactory repository root:
+Build from the *exact checkout*:
 
 ```sh
-bun packages/web/scripts/build.ts packages/web/dist
+DF_WEB_BASE_PATH=/DarkFactory/ DF_WEB_REPOSITORY=marius-patrik/DarkFactory bun packages/web/scripts/build.ts packages/web/dist
+bun scripts/build-docs.ts --web-dist packages/web/dist --base-path /DarkFactory/ --out site
 ```
 
-Outputs: `packages/web/dist/index.html`, `app.js`, `web-manifest.json` and `darkfactory-web.example.json`. `web-manifest.json` lists the SHA-256 and byte size of each generated file. The builder deliberately does not emit a live configuration file. Build once, then copy these identical bytes into all eligible consumer sites; verify manifest hashes before packaging.
+The Web build emits **one** `darkfactory-web-manifest.json`, matching `packages/docs/src/site.ts::WebBundleManifest` exactly: `schemaVersion:1`, `kind:"darkfactory-operator"`, `status:"candidate"`, `entry:"index.html"`, normalized `basePath`, `routeMode:"hash"`, Git HEAD `sourceSha`, and sorted `assets:[{path,sha256}]` covering *every* generated regular file except the manifest. The `index.html` <base> equals the declared path. DF-04 verifies SHA-256 and includes these bytes, adding `docs/**` and final `site-manifest.json`. There is no `web-manifest.json`.
 
-`index.html` is the public app entrypoint and MUST replace the docs-only root entry. The workflow owner must not invoke `renderDocsSite` as the deployed root renderer. The root page embeds a public `meta[name="darkfactory-base-path"]` describing the deployment prefix (`/DarkFactory/` on producer project Pages, `/` on a root site). The current frontend reads the public configuration relative to `app.js`, so the same distribution can work at arbitrary Pages prefixes.
+The Web build supplies **public** `darkfactory-web.json`, containing `version:1`, `repository` and `docsContentUrl:"./docs/content.json"`. Optional `auth` is public metadata: `clientId`, `scope`, `redirectUri`, and HTTPS `brokerUrl`. The confidential broker (not Pages) owns tokens, GitHub App credentials, authority and mutations. When broker metadata is absent the UI remains read-only and fails closed. Environment variables are `DF_WEB_CLIENT_ID`, `DF_WEB_SCOPE`, `DF_WEB_REDIRECT_URI`, `DF_WEB_BROKER_URL`. No secret env vars are accepted by the Web builder.
 
-## Deployment-specific public files
+Operator navigation uses `#/<route>` so Pages hard refresh always serves the root; docs pages use physical `docs/<page>/index.html` and normal links (not SPA rewrites). Root-hosted sites use `DF_WEB_BASE_PATH=/`. Each site gets its own *public config and manifest*, while the compiled `app.js` is the same application bundle. Cross-repository byte-identical full bundles require moving the per-site runtime config into DF-04 packaging, an ownership change requiring an approved DF-04 patch.
 
-DF-04 produces a **public** `darkfactory-web.json` next to `app.js`:
-
-```json
-{"version":1,"repository":"marius-patrik/DarkFactory","docsContentUrl":"./content.json"}
-```
-
-Optional `auth`: `{ "clientId", "scope", "redirectUri", "brokerUrl" }`. These values are public metadata and the HTTPS confidential broker URL. No GitHub App private key, GitHub O¶»§q«^
+**Verification requirements:** Run the exact Bun and docs build/test commands, confirm the final GitHub tree has no truncated files, inspect all manifest hashes and verify root/docs/static/hash routes under `/DarkFactory/` and `/`. Do not claim authenticated mutation acceptance until a real authorized broker and GitHub readback are available.

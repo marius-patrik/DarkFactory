@@ -1,39 +1,24 @@
 import { createRoot } from "react-dom/client";
 import { DarkFactoryShell } from "./web-shell.tsx";
-import { createHttpOperatorBroker, type BrowserLoginConfig } from "./operator-auth.ts";
+import { validateWebConfig } from "./site-contract.ts";
 
-interface PublicWebConfig {
-	version: 1;
-	repository: string;
-	docsContentUrl?: string;
-	auth?: { clientId: string; scope: string; redirectUri: string; brokerUrl: string };
-}
-function isConfig(value: unknown): value is PublicWebConfig {
-	if (!value || typeof value !== "object") return false;
-	const input = value as Record<string, unknown>;
-	if (
-		input.version !== 1 ||
-		typeof input.repository !== "string" ||
-		!/^[\w-]+\/[\w.-]+$/u.test(input.repository) ||
-		input.repository.includes("..")
-	)
-		return false;
-	if (input.docsContentUrl !== undefined && typeof input.docsContentUrl !== "string") return false;
-	if (input.auth !== undefined) {
-		if (!input.auth || typeof input.auth !== "object") return false;
-		const auth = input.auth as Record<string, unknown>;
-		for (const key of ["clientId", "scope", "redirectUri", "brokerUrl"])
-			if (typeof auth[key] !== "string" || !auth[key]) return false;
-	}
-	return true;
-}
-async function main() {
+async function main(): Promise<void> {
 	const mount = document.getElementById("darkfactory-app");
-	if (!mount) throw new Error("Missing DarkFactory application mount");
+	if (!mount) throw new Error("Missing DarkFactory app mount");
 	const root = createRoot(mount);
-	function fatal(message: string) {
-		root.render(
-			<main role="alert" style={{ padding: "2rem", fontFamily: "system-ui" }}>
-				<h1>DarkFactory Web is not configured</h1>
-				<p>{message}</p>
-			<¶»§q«^
+	try {
+		// Relative to <base>, never to the current documentation URL or hash route.
+		const response = await fetch(new URL("./darkfactory-web.json", document.baseURI), {
+			cache: "no-store", credentials: "omit",
+		});
+		if (!response.ok) throw new Error(`Public configuration HTTP ${response.status}`);
+		const config = validateWebConfig(await response.json() as unknown);
+		root.render(<DarkFactoryShell repository={config.repository} config={config} />);
+	} catch {
+		root.render(<main role="alert" style={{ padding: "2rem", fontFamily: "system-ui" }}>
+			<h1>DarkFactory Web is unavailable</h1>
+			<p>Public configuration is missing or invalid. Operator actions are disabled.</p>
+		</main>);
+	}
+}
+void main();
