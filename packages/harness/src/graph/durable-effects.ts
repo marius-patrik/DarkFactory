@@ -273,8 +273,7 @@ export async function runObservedProductionEffect<T>(
 		} catch {
 			throw new IndeterminateEffectError(id);
 		}
-		if (!confirmed || confirmed.evidence !== result.evidence ||
-			!isDeepStrictEqual(confirmed.value, result.value))
+		if (!confirmed || confirmed.evidence !== result.evidence || !isDeepStrictEqual(confirmed.value, result.value))
 			throw new IndeterminateEffectError(id);
 		const record: EffectRecord<T> & { status: "completed" } = {
 			id,

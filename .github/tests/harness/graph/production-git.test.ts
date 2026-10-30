@@ -103,7 +103,8 @@ describe("canonical graph real git composition", () => {
 	test("mutating a source file after verification invalidates deterministic commit authorization", async () => {
 		const f = await localRepository();
 		const effects = createRepositoryProductionEffects({
-			repoDir: f.repo, workRoot: join(f.root, "worktrees"),
+			repoDir: f.repo,
+			workRoot: join(f.root, "worktrees"),
 		});
 		const tree = await effects
 			.ensureWorktree({ branch: "agent/verified-only", base: "main", runId: "one" })
@@ -155,7 +156,8 @@ describe("canonical graph real git composition", () => {
 		const f = await localRepository();
 		const branch = "agent/conflicting-update";
 		const effects = createRepositoryProductionEffects({
-			repoDir: f.repo, workRoot: join(f.root, "worktrees"),
+			repoDir: f.repo,
+			workRoot: join(f.root, "worktrees"),
 		});
 		const tree = await effects.ensureWorktree({ branch, base: "main", runId: "conflict-test" }).execute("1".repeat(64));
 		const worktree = tree.value.worktree;
@@ -184,8 +186,7 @@ describe("canonical graph real git composition", () => {
 				effectId: "3".repeat(64),
 			}),
 		).rejects.toThrow("deterministic verification");
-		expect(git(f.repo, "ls-remote", "--heads", "origin",
-			`refs/heads/${branch}`).split(/\s+/u)[0]).toBe(originalRemote);
+		expect(git(f.repo, "ls-remote", "--heads", "origin", `refs/heads/${branch}`).split(/\s+/u)[0]).toBe(originalRemote);
 		expect(git(worktree, "rev-parse", "-q", "--verify", "MERGE_HEAD")).toMatch(/^[a-f0-9]{40}$/);
 	});
 
@@ -193,7 +194,8 @@ describe("canonical graph real git composition", () => {
 		const f = await localRepository();
 		const effects = createRepositoryProductionEffects({ repoDir: f.repo, workRoot: join(f.root, "worktrees") });
 		const branch = "agent/stale-lease";
-		const worktree = (await effects.ensureWorktree({ branch, base: "main", runId: "one" }).execute("a".repeat(64))).value.worktree;
+		const worktree = (await effects.ensureWorktree({ branch, base: "main", runId: "one" }).execute("a".repeat(64)))
+			.value.worktree;
 		await writeFile(join(worktree, "file.txt"), "our change\n");
 		git(worktree, "add", "file.txt");
 		git(worktree, "-c", "user.name=Us", "-c", "user.email=us@example.test", "commit", "-m", "ours");
@@ -210,9 +212,16 @@ describe("canonical graph real git composition", () => {
 		git(competitor, "push", "origin", `HEAD:refs/heads/${branch}`);
 		const other = await effects.remoteHead(branch);
 		expect(other).not.toBe(ours);
-		await expect(effects.push({
-			worktree, branch, expectedOldSha: null, newSha: ours,
-		}).execute("b".repeat(64))).rejects.toThrow("Remote ref moved");
+		await expect(
+			effects
+				.push({
+					worktree,
+					branch,
+					expectedOldSha: null,
+					newSha: ours,
+				})
+				.execute("b".repeat(64)),
+		).rejects.toThrow("Remote ref moved");
 		expect(await effects.remoteHead(branch)).toBe(other);
 	});
 });

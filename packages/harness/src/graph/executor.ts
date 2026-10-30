@@ -315,12 +315,12 @@ async function runGraphUnlocked(
 		active_event_id?: string;
 		recovery_event?: GraphEvent;
 		pending_node?: {
-		node: string;
-		iteration: number;
-		/** The committed action and input event protect against replanning on recovery. */
-		action?: Extract<PlanAction, { type: "run" }>;
-		input_event?: GraphEvent;
-	};
+			node: string;
+			iteration: number;
+			/** The committed action and input event protect against replanning on recovery. */
+			action?: Extract<PlanAction, { type: "run" }>;
+			input_event?: GraphEvent;
+		};
 		pending_action?: Exclude<PlanAction, { type: "run" } | { type: "none" }>;
 	} = (await readJson<RunState>(statePath)) ?? {
 		run_id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
@@ -365,7 +365,9 @@ async function runGraphUnlocked(
 				!ingressId ||
 				state.active_event_id !== ingressId
 			) {
-				throw new Error(`Interrupted node ${node}#${iteration} has no committed result; reconcile effects before retry`);
+				throw new Error(
+					`Interrupted node ${node}#${iteration} has no committed result; reconcile effects before retry`,
+				);
 			}
 			replayPending = state.pending_node;
 		} else {
@@ -567,7 +569,8 @@ async function runGraphUnlocked(
 					});
 					state.reviews[reviewConfig.subject] = review;
 					state.outputs[`${reviewConfig.subject}_reviewed_fingerprint`] = contextFingerprint([
-						state.outputs[reviewConfig.context], state.outputs[reviewConfig.artifact],
+						state.outputs[reviewConfig.context],
+						state.outputs[reviewConfig.artifact],
 					]);
 					result.outputs[reviewConfig.findings] = review.findings.length > 0 ? review.findings : null;
 					result.outputs[reviewConfig.clean] = review.clean;
@@ -586,7 +589,9 @@ async function runGraphUnlocked(
 			state.outputs = { ...state.outputs, ...result.outputs };
 			if (result.outcome === "quota_exhausted" && node.kind === "agent" && node.quota_policy) {
 				state.checkpoints ??= [];
-				const existing = state.checkpoints.find((checkpoint) => checkpoint.run_id === state.run_id && checkpoint.node === node.id);
+				const existing = state.checkpoints.find(
+					(checkpoint) => checkpoint.run_id === state.run_id && checkpoint.node === node.id,
+				);
 				if (existing) existing.eligible = false;
 				else state.checkpoints.push({ run_id: state.run_id, node: node.id, eligible: false });
 			}
@@ -600,7 +605,10 @@ async function runGraphUnlocked(
 		// Recovery can adopt this snapshot without rerunning an ambiguous effect.
 		const completedState = { ...state, pending_node: undefined, recovery_event: current };
 		await writeJson(join(runDir, "checkpoints", node.id, `${iteration}.df`), {
-			node: node.id, iteration, state: completedState, event: current,
+			node: node.id,
+			iteration,
+			state: completedState,
+			event: current,
 		});
 		delete state.pending_node;
 		replayPending = undefined;
@@ -619,5 +627,7 @@ export async function runGraph(
 	options: RunGraphOptions = {},
 ): Promise<RunState> {
 	await mkdir(runDir, { recursive: true });
-	return withGraphFileLock(join(runDir, "locks"), "run", () => runGraphUnlocked(graph, runDir, handlers, event, options));
+	return withGraphFileLock(join(runDir, "locks"), "run", () =>
+		runGraphUnlocked(graph, runDir, handlers, event, options),
+	);
 }

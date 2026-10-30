@@ -39,9 +39,12 @@ describe("dispatch", () => {
 		delete process.env.GITHUB_REPOSITORY;
 	});
 
-	async function runDispatch(args: string[], checkStateSource?: {
-		checkStates(ref: string): Promise<Map<string, "success" | "pending" | "failure">>;
-	}) {
+	async function runDispatch(
+		args: string[],
+		checkStateSource?: {
+			checkStates(ref: string): Promise<Map<string, "success" | "pending" | "failure">>;
+		},
+	) {
 		const { dispatch } = await import("../../../../packages/harness/src/graph/dispatch.ts");
 		await dispatch(args, checkStateSource ? { checkStateSource } : undefined);
 	}
@@ -121,21 +124,24 @@ describe("dispatch", () => {
 		};
 
 		try {
-			await runDispatch([
-				"--event-name",
-				"check_suite",
-				"--event",
-				eventPath,
-				"--graph",
-				join(tmpDir!, ".darkfactory", "workflow.json"),
-				"--runs",
-				join(tmpDir!, runsDir),
-			], {
-				checkStates: async (ref) => {
-					expect(ref).toBe("a".repeat(40));
-					return new Map([["lint", "success" as const]]);
+			await runDispatch(
+				[
+					"--event-name",
+					"check_suite",
+					"--event",
+					eventPath,
+					"--graph",
+					join(tmpDir!, ".darkfactory", "workflow.json"),
+					"--runs",
+					join(tmpDir!, runsDir),
+				],
+				{
+					checkStates: async (ref) => {
+						expect(ref).toBe("a".repeat(40));
+						return new Map([["lint", "success" as const]]);
+					},
 				},
-			});
+			);
 		} finally {
 			console.log = origLog;
 		}
