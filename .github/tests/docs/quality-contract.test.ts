@@ -71,7 +71,8 @@ describe("documentation source-backed truth", () => {
 		const graph = compileDocsContentGraph(repoRoot);
 		expect(graph.navigation?.length).toBeGreaterThanOrEqual(10);
 		expect(() => assertStrictDocumentation(graph)).not.toThrow();
-		expect(graph.pages.filter((page) => page.kind === "guide").length).toBeGreaterThanOrEqual(15);
+		expect(graph.pages.filter((page) => page.kind === "guide").length).toBeGreaterThanOrEqual(18);
+		expect(graph.pages.some((page) => page.id === "guide-reference-coverage")).toBe(true);
 	});
 
 	test("broken links, anchors, injection and missing navigation fail", () => {
