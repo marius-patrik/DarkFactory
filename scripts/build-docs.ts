@@ -1,5 +1,5 @@
 import { mkdir, mkdtemp, readFile, rename, rm, writeFile } from "node:fs/promises";
-import { dirname, join, resolve } from "node:path";
+import { dirname, isAbsolute, join, relative, resolve } from "node:path";
 import {
 	assertCurrentDocumentation,
 	assertStrictDocumentation,
@@ -45,6 +45,21 @@ if (!check && !docsOnly && !webDist) {
 	throw new Error(
 		"Unified Pages build requires a DF-03 --web-dist with verified darkfactory-web-manifest.json; use --docs-only for nonpublishable previews",
 	);
+}
+
+// A user-provided --out must never recursively replace the repository, its
+// ancestors, or an arbitrary source/configuration directory inside the repo.
+if (!check) {
+	const repoFromOutput = relative(outputDir, repoRoot);
+	if (repoFromOutput === "" || (!repoFromOutput.startsWith("..") && !isAbsolute(repoFromOutput)))
+		throw new Error("Site output cannot replace the repository or an ancestor directory");
+	const outputFromRepo = relative(repoRoot, outputDir);
+	if (
+		!outputFromRepo.startsWith("..") &&
+		!isAbsolute(outputFromRepo) &&
+		!/^site(?:\/|-|$)/u.test(outputFromRepo.replaceAll("\\", "/"))
+	)
+		throw new Error("Site output inside the repository must use a dedicated site or site-* directory");
 }
 
 const graph = await compileDocsContentGraphWithDetectedApi(repoRoot, {

@@ -102,6 +102,18 @@ describe("documentation source-backed truth", () => {
 });
 
 describe("unified-site artifact integrity", () => {
+	test("refuses destructive output paths before touching the repository", () => {
+		for (const destination of [repoRoot, join(repoRoot, "packages"), resolve(repoRoot, "..")]) {
+			const result = Bun.spawnSync(["bun", "scripts/build-docs.ts", "--docs-only", "--out", destination], {
+				cwd: repoRoot,
+				stdout: "pipe",
+				stderr: "pipe",
+			});
+			expect(result.exitCode).not.toBe(0);
+			expect(new TextDecoder().decode(result.stderr)).toContain("Site output");
+		}
+	});
+
 	test("rejects bad project paths", () => {
 		expect(normalizedBasePath("/DarkFactory")).toBe("/DarkFactory/");
 		expect(() => normalizedBasePath("//bad")).toThrow();
