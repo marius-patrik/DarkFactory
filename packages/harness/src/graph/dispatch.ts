@@ -177,7 +177,7 @@ export async function dispatch(
 		const source =
 			options?.checkStateSource ??
 			(token && env.GITHUB_REPOSITORY ? githubCheckSource(token, env.GITHUB_REPOSITORY) : undefined);
-		
+		if (!source) throw new Error("Checks ingress requires authoritative check-state readback");
 		if (source) {
 			const sha = translated.subject.ref ?? "";
 			if (!/^[0-9a-f]{40}$/iu.test(sha)) {
