@@ -173,10 +173,15 @@ describe("pure DarkFactory planner", () => {
 	test.each(cases)("%s", (_name, event, run, expected) => expect(plan(graph, event, run)).toEqual(expected));
 
 	test("untrusted external commenters cannot restart a quota-blocked model run", () => {
-		const event = { type: "comment" as const, body: "/df resume",
-			actor: { login: "stranger", association: "NONE" as const, is_bot: false } };
-		expect(plan(graph, event, state("implement", { quota_blocked: true })))
-			.toEqual({ type: "none", reason: "actor is not authorized to resume quota" });
+		const event = {
+			type: "comment" as const,
+			body: "/df resume",
+			actor: { login: "stranger", association: "NONE" as const, is_bot: false },
+		};
+		expect(plan(graph, event, state("implement", { quota_blocked: true }))).toEqual({
+			type: "none",
+			reason: "actor is not authorized to resume quota",
+		});
 	});
 
 	test("bots never cross ingress", () =>

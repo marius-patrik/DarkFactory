@@ -32,7 +32,9 @@ function approved() {
 describe("exact-state final merge approval", () => {
 	test("accepts checked and attributed authorization for the immutable proposal", () => {
 		expect(assertMergeAuthorization(approved())).toMatchObject({
-			prNumber: 901, headSha: SHA, actor: "maintainer",
+			prNumber: 901,
+			headSha: SHA,
+			actor: "maintainer",
 		});
 	});
 

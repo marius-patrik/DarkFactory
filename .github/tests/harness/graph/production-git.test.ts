@@ -3,11 +3,11 @@ import { execFileSync } from "node:child_process";
 import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { createRepositoryProductionEffects } from "../../../../packages/harness/src/graph/production-composition.ts";
 import {
-	createRepositoryProductionEffects,
-} from "../../../../packages/harness/src/graph/production-composition.ts";
-import {
-	FileProductionEffectJournal, productionEffectId, runObservedProductionEffect,
+	FileProductionEffectJournal,
+	productionEffectId,
+	runObservedProductionEffect,
 } from "../../../../packages/harness/src/graph/durable-effects.ts";
 import type { ExternalMutation } from "../../../../packages/harness/src/graph/production-handlers.ts";
 import { repairObservedMergeConflicts } from "../../../../packages/harness/src/workspace/conflict-repair.ts";
@@ -44,7 +44,10 @@ async function localRepository() {
 }
 
 async function recorded<T>(
-	journal: FileProductionEffectJournal, id: string, kind: string, mutation: ExternalMutation<T>,
+	journal: FileProductionEffectJournal,
+	id: string,
+	kind: string,
+	mutation: ExternalMutation<T>,
 ) {
 	return runObservedProductionEffect(journal, id, kind, {
 		observe: () => mutation.observe(id),
@@ -63,15 +66,26 @@ describe("canonical graph real git composition", () => {
 		const journal = new FileProductionEffectJournal(join(f.root, "effects"));
 		const branch = "agent/durable-effects";
 		const worktreeId = productionEffectId("run", "implement", 1, "worktree");
-		const tree = await recorded(journal, worktreeId, "worktree",
-			effects.ensureWorktree({ branch, base: "main", runId: "run" }));
+		const tree = await recorded(
+			journal,
+			worktreeId,
+			"worktree",
+			effects.ensureWorktree({ branch, base: "main", runId: "run" }),
+		);
 		const worktree = tree.value.worktree;
 		expect(git(worktree, "branch", "--show-current")).toBe(branch);
 		await writeFile(join(worktree, "file.txt"), "verified production change\n");
 		const commitId = productionEffectId("run", "implement", 1, "commit");
-		const committed = await recorded(journal, commitId, "commit",
-			effects.commit({ worktree, message: "feat: actual integration",
-				expectedWorkspace: await effects.observeWorkspace(worktree) }));
+		const committed = await recorded(
+			journal,
+			commitId,
+			"commit",
+			effects.commit({
+				worktree,
+				message: "feat: actual integration",
+				expectedWorkspace: await effects.observeWorkspace(worktree),
+			}),
+		);
 		expect(committed.value.sha).toMatch(/^[a-f0-9]{40}$/);
 		expect(git(worktree, "log", "-1", "--format=%B")).toContain(`DarkFactory-Effect: ${commitId}`);
 		expect(await effects.remoteHead(branch)).toBeNull();
@@ -91,15 +105,21 @@ describe("canonical graph real git composition", () => {
 		const effects = createRepositoryProductionEffects({
 			repoDir: f.repo, workRoot: join(f.root, "worktrees"),
 		});
-		const tree = await effects.ensureWorktree({ branch: "agent/verified-only", base: "main", runId: "one" })
+		const tree = await effects
+			.ensureWorktree({ branch: "agent/verified-only", base: "main", runId: "one" })
 			.execute("4".repeat(64));
 		await writeFile(join(tree.value.worktree, "file.txt"), "verified bytes\n");
 		const approvedFingerprint = await effects.observeWorkspace(tree.value.worktree);
 		await writeFile(join(tree.value.worktree, "file.txt"), "different bytes after verification\n");
-		await expect(effects.commit({
-			worktree: tree.value.worktree, message: "verified commit",
-			expectedWorkspace: approvedFingerprint,
-		}).execute("5".repeat(64))).rejects.toThrow("Workspace changed after deterministic verification");
+		await expect(
+			effects
+				.commit({
+					worktree: tree.value.worktree,
+					message: "verified commit",
+					expectedWorkspace: approvedFingerprint,
+				})
+				.execute("5".repeat(64)),
+		).rejects.toThrow("Workspace changed after deterministic verification");
 		expect(git(tree.value.worktree, "log", "-1", "--format=%s")).toBe("seed");
 		expect(await effects.remoteHead("agent/verified-only")).toBeNull();
 	});
@@ -108,12 +128,26 @@ describe("canonical graph real git composition", () => {
 		const f = await localRepository();
 		const effects = createRepositoryProductionEffects({ repoDir: f.repo });
 		const original = git(f.repo, "rev-parse", "HEAD");
-		await expect(effects.push({
-			branch: "main", worktree: f.repo, expectedOldSha: original, newSha: original,
-		}).observe("a".repeat(64))).rejects.toThrow("default branch");
-		await expect(effects.push({
-			branch: "main", worktree: f.repo, expectedOldSha: original, newSha: original,
-		}).execute("a".repeat(64))).rejects.toThrow("default branch");
+		await expect(
+			effects
+				.push({
+					branch: "main",
+					worktree: f.repo,
+					expectedOldSha: original,
+					newSha: original,
+				})
+				.observe("a".repeat(64)),
+		).rejects.toThrow("default branch");
+		await expect(
+			effects
+				.push({
+					branch: "main",
+					worktree: f.repo,
+					expectedOldSha: original,
+					newSha: original,
+				})
+				.execute("a".repeat(64)),
+		).rejects.toThrow("default branch");
 		expect(git(f.repo, "rev-parse", "HEAD")).toBe(original);
 	});
 
@@ -123,32 +157,29 @@ describe("canonical graph real git composition", () => {
 		const effects = createRepositoryProductionEffects({
 			repoDir: f.repo, workRoot: join(f.root, "worktrees"),
 		});
-		const tree = await effects.ensureWorktree({ branch, base: "main", runId: "conflict-test" })
-			.execute("1".repeat(64));
+		const tree = await effects.ensureWorktree({ branch, base: "main", runId: "conflict-test" }).execute("1".repeat(64));
 		const worktree = tree.value.worktree;
 		await writeFile(join(worktree, "file.txt"), "feature side\n");
 		git(worktree, "add", "file.txt");
-		git(worktree, "-c", "user.name=Feature", "-c", "user.email=feature@example.test",
-			"commit", "-m", "feature");
+		git(worktree, "-c", "user.name=Feature", "-c", "user.email=feature@example.test", "commit", "-m", "feature");
 		git(worktree, "push", "origin", `HEAD:refs/heads/${branch}`);
 		const originalRemote = git(f.repo, "ls-remote", "--heads", "origin", `refs/heads/${branch}`).split(/\s+/u)[0];
 		await writeFile(join(f.repo, "file.txt"), "base side\n");
 		git(f.repo, "add", "file.txt");
 		git(f.repo, "commit", "-m", "incompatible base");
 		git(f.repo, "push", "origin", "main");
-		const conflicted = await effects.updateBranch!({ branch, base: "main", runId: "conflict-test" })
-			.execute("2".repeat(64));
+		const conflicted = await effects.updateBranch!({ branch, base: "main", runId: "conflict-test" }).execute(
+			"2".repeat(64),
+		);
 		expect(conflicted.value.status).toBe("conflict");
 		if (conflicted.value.status !== "conflict") throw new Error("Expected real Git conflict");
 		expect(conflicted.value.conflictedFiles).toContain("file.txt");
-		await expect(repairObservedMergeConflicts({
-			worktree, baseBranch: "main", conflictedFiles: ["file.txt"],
-			resolveConflict: async () => "resolved without proof\n",
-			identity: { name: "Reviewer", email: "reviewer@example.test" },
-			effectId: "3".repeat(64),
-		})).rejects.toThrow("deterministic verification");
-		expect(git(f.repo, "ls-remote", "--heads", "origin",
-			`refs/heads/${branch}`).split(/\s+/u)[0]).toBe(originalRemote);
+		await expect(
+			repairObservedMergeConflicts({
+				worktree,
+				baseBranch: "main",
+				conflictedFiles: ["file.txt"],
+				resolveConflict: async () => "resolved without proof\n",
 		expect(git(worktree, "rev-parse", "-q", "--verify", "MERGE_HEAD")).toMatch(/^[a-f0-9]{40}$/);
 	});
 

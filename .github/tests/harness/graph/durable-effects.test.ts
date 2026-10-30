@@ -22,8 +22,15 @@ async function fixture() {
 	const remote = join(root, "external-effects.jsonl");
 	const observe = async (id: string) => {
 		let lines: Array<{ id: string; evidence: string; value: number }> = [];
-		try { lines = (await readFile(remote, "utf8")).trim().split("\n").filter(Boolean).map((line) => JSON.parse(line)); }
-		catch (error) { if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error; }
+		try {
+			lines = (await readFile(remote, "utf8"))
+				.trim()
+				.split("\n")
+				.filter(Boolean)
+				.map((line) => JSON.parse(line));
+		} catch (error) {
+			if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error;
+		}
 		const matches = lines.filter((line) => line.id === id);
 		if (matches.length > 1) throw new Error("duplicate external mutation");
 		return matches[0] ? { evidence: matches[0].evidence, value: matches[0].value } : undefined;
@@ -52,7 +59,10 @@ describe("observed production effects", () => {
 		let writes = 0;
 		const ops = {
 			observe: () => f.observe(id),
-			execute: async () => { writes++; return f.mutate(id); },
+			execute: async () => {
+				writes++;
+				return f.mutate(id);
+			},
 		};
 		const first = await runObservedProductionEffect(f.journal, id, "github.merge", ops);
 		expect(first).toMatchObject({ status: "completed", value: 17, evidence: `remote-commit:${id}` });
@@ -87,19 +97,24 @@ describe("observed production effects", () => {
 		const f = await fixture();
 		const id = productionEffectId("request-7", "comment", 1, "github.comment");
 		let entered = 0;
-		await expect(runObservedProductionEffect(f.journal, id, "github.comment", {
-			observe: () => f.observe(id),
-			execute: async () => {
-				entered++;
-				await f.mutate(id);
-				throw new Error("process crashed after HTTP success");
-			},
-		})).rejects.toBeInstanceOf(IndeterminateEffectError);
+		await expect(
+			runObservedProductionEffect(f.journal, id, "github.comment", {
+				observe: () => f.observe(id),
+				execute: async () => {
+					entered++;
+					await f.mutate(id);
+					throw new Error("process crashed after HTTP success");
+				},
+			}),
+		).rejects.toBeInstanceOf(IndeterminateEffectError);
 		expect(await f.journal.read(id)).toMatchObject({ status: "pending" });
 		const restarted = new FileProductionEffectJournal(f.journal.directory);
 		const committed = await runObservedProductionEffect(restarted, id, "github.comment", {
 			observe: () => f.observe(id),
-			execute: async () => { entered++; return f.mutate(id); },
+			execute: async () => {
+				entered++;
+				return f.mutate(id);
+			},
 		});
 		expect(committed.status).toBe("completed");
 		expect(entered).toBe(1);
@@ -110,10 +125,15 @@ describe("observed production effects", () => {
 		const id = productionEffectId("request-8", "pr", 1, "github.pr");
 		await f.journal.write({ id, kind: "github.pr", status: "pending", startedAt: new Date().toISOString() });
 		let executed = false;
-		await expect(runObservedProductionEffect(f.journal, id, "github.pr", {
-			observe: () => f.observe(id),
-			execute: async () => { executed = true; return f.mutate(id); },
-		})).rejects.toBeInstanceOf(IndeterminateEffectError);
+		await expect(
+			runObservedProductionEffect(f.journal, id, "github.pr", {
+				observe: () => f.observe(id),
+				execute: async () => {
+					executed = true;
+					return f.mutate(id);
+				},
+			}),
+		).rejects.toBeInstanceOf(IndeterminateEffectError);
 		expect(executed).toBe(false);
 		expect(await f.journal.read(id)).toMatchObject({ status: "pending" });
 	});
@@ -154,10 +174,12 @@ describe("observed production effects", () => {
 		const f = await fixture();
 		await expect(f.journal.read("../escape")).rejects.toThrow("Invalid graph effect identity");
 		const id = productionEffectId("request-10", "apply", 1, "mutation");
-		await expect(runObservedProductionEffect(f.journal, id, "mutation", {
-			observe: async () => undefined,
-			execute: async () => ({ value: 1, evidence: "" }),
-		})).rejects.toBeInstanceOf(IndeterminateEffectError);
+		await expect(
+			runObservedProductionEffect(f.journal, id, "mutation", {
+				observe: async () => undefined,
+				execute: async () => ({ value: 1, evidence: "" }),
+			}),
+		).rejects.toBeInstanceOf(IndeterminateEffectError);
 		expect(await f.journal.read(id)).toMatchObject({ status: "pending" });
 	});
 });
