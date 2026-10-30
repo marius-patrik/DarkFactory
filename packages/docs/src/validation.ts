@@ -17,9 +17,8 @@ function anchors(markdown: string): ReadonlySet<string> {
 }
 
 function proseOnly(markdown: string): string {
-	return markdown.replace(/^```[\s\S]*?^```\s*$/gmu, "");
+  return markdown.replace(/^```[\s\S]*?^```\s*$/gmu, "").replace(/`[^`\n]+`/gu, "");
 }
-
 /** Validate authored guides, source-backed references, navigation, links and anchors. */
 export function documentationFindings(graph: DocsContentGraph): readonly string[] {
 	const findings: string[] = [];
@@ -73,8 +72,11 @@ export function documentationFindings(graph: DocsContentGraph): readonly string[
 			else if (page.markdown.match(/^#\s+(.+)$/mu)?.[1]?.trim() !== guide.title)
 				findings.push(`Guide heading differs from navigation title: ${id}`);
 		}
-	if (!byId.has("reference-cli") || !byId.has("reference-config"))
-		findings.push("Missing generated command/config reference");
+	if (!byId.has("reference-cli") || !byId.has("reference-config") || !byId.has("reference-typescript-exports"))
+		findings.push("Missing generated command/config/export reference");
+	const cliHelp = byId.get("reference-cli")?.markdown ?? "";
+	if (!cliHelp.includes("df --version") || !cliHelp.includes("df graph"))
+		findings.push("Generated CLI reference is missing its source usage");
 	for (const page of graph.pages) {
 		if (page.kind !== "guide" && page.kind !== "reference") continue;
 		const prose = proseOnly(page.markdown);
@@ -89,8 +91,16 @@ export function documentationFindings(graph: DocsContentGraph): readonly string[
 				findings.push(`${page.source}: invalid JSON/configuration example: ${String(error)}`);
 			}
 		}
-		if (/<\s*\/?\s*(script|iframe|object|embed|form|svg|style|img)\b/iu.test(prose) || /on\w+\s*=/iu.test(prose)) {
+		if (/<\s*\/?\s*(a|base|link|meta|script|iframe|object|embed|form|svg|style|img|video|audio|math)\b/iu.test(prose) || /on\w+\s*=/iu.test(prose)) {
 			findings.push(`${page.source}: executable HTML is prohibited`);
+		}
+		if (page.kind === "guide") {
+			// Only validate copy-pasteable lines; do not mistake prose references for commands.
+			for (const example of page.markdown.matchAll(/^\s*(?:\$\s*)?df\s+([a-z][\w-]*)/gmu)) {
+				const verb = example[1];
+				if (verb && verb !== "help" && !cliHelp.includes(`df ${verb}`))
+					findings.push(`${page.source}: unsupported CLI example: df ${verb}`);
+			}
 		}
 		for (const match of prose.matchAll(/!?\[[^\]]*\]\(([^)\s]+)(?:\s+"[^"]*")?\)/gu)) {
 			const target = match[1] ?? "";
