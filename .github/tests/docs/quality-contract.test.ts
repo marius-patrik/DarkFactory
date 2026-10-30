@@ -87,7 +87,7 @@ describe("documentation source-backed truth", () => {
 							...entry,
 							markdown:
 								entry.markdown.replace(/^# .+$/mu, "# Deliberately mismatched title") +
-								"\n[missing](missing.md) [broken](#missing-anchor) [unsafe](javascript:alert)\n<script>alert(1)</script>\n",
+								"\n[missing](missing.md) [broken](#missing-anchor) [unsafe](javascript:alert)\n<a href="javascript:alert(1)">bad</a>\n<script>alert(1)</script>\n```sh\ndf imaginary-verb\n```\n",
 						}
 					: entry,
 			),
@@ -97,6 +97,7 @@ describe("documentation source-backed truth", () => {
 		expect(findings).toContain("unresolved source");
 		expect(findings).toContain("missing anchor");
 		expect(findings).toContain("unsafe scheme");
+		expect(findings).toContain("unsupported CLI example: df imaginary-verb");
 		expect(findings).toContain("executable HTML");
 		expect(findings).toContain("Unlisted navigation page");
 		expect(findings).toContain("Guide heading differs from navigation title");
