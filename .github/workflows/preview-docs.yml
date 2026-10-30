@@ -30,6 +30,17 @@ jobs:
         run: bun run docs
       - name: All documentation and artifact security tests
         run: bun test ./.github/tests/docs
+      - name: Compare documented CLI help with executable source entrypoint
+        shell: bash
+        run: |
+          set -euo pipefail
+          bun packages/cli/src/cli.ts --help > "$RUNNER_TEMP/df-source-help.txt"
+          grep -Fq 'df --version' "$RUNNER_TEMP/df-source-help.txt"
+          grep -Fq 'df graph validate' "$RUNNER_TEMP/df-source-help.txt"
+          bun packages/cli/src/cli.ts --version > "$RUNNER_TEMP/df-source-version.txt"
+          grep -Eq '^df (development/unmanaged|[0-9]+\\.[0-9]+\\.[0-9]+)' "$RUNNER_TEMP/df-source-version.txt"
+          bun packages/cli/src/cli.ts graph validate > "$RUNNER_TEMP/df-source-graph.txt"
+          grep -Fq 'valid workflow graph' "$RUNNER_TEMP/df-source-graph.txt"
       - name: Verify owned documentation code with Biome
         run: >
           bunx biome ci
