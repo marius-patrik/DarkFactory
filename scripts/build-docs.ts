@@ -1,5 +1,5 @@
-import { mkdir, mkdtemp, readFile, rename, rm, writeFile } from "node:fs/promises";
-import { dirname, isAbsolute, join, relative, resolve } from "node:path";
+import { lstat, mkdir, mkdtemp, readFile, realpath, rename, rm, writeFile } from "node:fs/promises";
+import { basename, dirname, isAbsolute, join, relative, resolve } from "node:path";
 import {
 	assertCurrentDocumentation,
 	assertStrictDocumentation,
@@ -60,6 +60,25 @@ if (!check) {
 		!/^site(?:\/|-|$)/u.test(outputFromRepo.replaceAll("\\", "/"))
 	)
 		throw new Error("Site output inside the repository must use a dedicated site or site-* directory");
+	// Lexical guards alone are insufficient: a parent symlink such as site-link -> packages
+	// makes a superficially safe --out point into source files.
+	const logicalParent = dirname(outputDir);
+	await mkdir(logicalParent, { recursive: true });
+	const actualParent = await realpath(logicalParent);
+	if (actualParent !== logicalParent)
+		throw new Error("Site output parent must not traverse symbolic links");
+	const physicalOutput = resolve(actualParent, basename(outputDir));
+	const physicalRepo = await realpath(repoRoot);
+	const physicalRel = relative(physicalRepo, physicalOutput);
+	if (physicalRel === "" || (!physicalRel.startsWith("..") && !isAbsolute(physicalRel) &&
+		!/^site(?:\\/|-|$)/u.test(physicalRel.replaceAll("\\\\", "/"))))
+		throw new Error("Site output resolved into protected repository source");
+	try {
+		if ((await lstat(outputDir)).isSymbolicLink())
+			throw new Error("Site output destination must not be a symbolic link");
+	} catch (error) {
+		if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error;
+	}
 }
 
 const graph = await compileDocsContentGraphWithDetectedApi(repoRoot, {
