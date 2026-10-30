@@ -150,7 +150,8 @@ export function generatedReferencePages(repoRoot: string): DocsPage[] {
 				"This index is not a serialized JSON Schema, runtime acceptance, TypeDoc semantic report or compatibility guarantee. " +
 				"Inspect the named source declarations and generated TypeDoc JSON (when configured); #2698/#2699/#2700/#2701 own live validation.\n\n" +
 				"| Source file | Export | TypeScript AST declaration kind |\n| --- | --- | --- |\n" +
-				declaredContractIndex(repoRoot).join("\n") + "\n",
+				declaredContractIndex(repoRoot).join("\n") +
+				"\n",
 		},
 		{
 			id: "reference-typescript-exports",
