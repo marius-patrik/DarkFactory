@@ -50,7 +50,7 @@ describe("dispatch checks-gate", () => {
 			action: "completed",
 			check_suite: {
 				conclusion: "success",
-				head_sha: "abc123",
+				head_sha: "a".repeat(40),
 				pull_requests: [{ number: 1 }],
 			},
 		};
@@ -98,4 +98,56 @@ describe("dispatch checks-gate", () => {
 			delete process.env.GITHUB_REPOSITORY;
 		}
 	});
+	it("rejects unverified webhook success when no authoritative check source exists", async () => {
+		const graphPath = path.join(tmpDir, "no-source-graph.json");
+		const payloadPath = path.join(tmpDir, "no-source-event.json");
+		await fs.writeFile(
+			graphPath,
+			JSON.stringify({
+				version: 1,
+				checks: [{ name: "required-check", required: true }],
+				nodes: [
+				{
+					id: "start",
+					kind: "gate",
+					trigger: { event: "checks.completed" },
+					command: "^\\s*(?:/df\\s+|/)(?:approve|reject|revise)\\s*$",
+					author_associations: ["OWNER"],
+				},
+				{ id: "next", kind: "agent" },
+			],
+			edges: [{ from: "start", to: "next", on: { checks: "required_green" } }],
+			}),
+		);
+		await fs.writeFile(
+			payloadPath,
+			JSON.stringify({
+				action: "completed",
+				check_suite: {
+					conclusion: "success",
+					head_sha: "a".repeat(40),
+					pull_requests: [{ number: 1 }],
+				},
+			}),
+		);
+		const prior = {
+			GH_TOKEN: process.env.GH_TOKEN,
+			GITHUB_TOKEN: process.env.GITHUB_TOKEN,
+			GITHUB_REPOSITORY: process.env.GITHUB_REPOSITORY,
+		};
+		delete process.env.GH_TOKEN;
+		delete process.env.GITHUB_TOKEN;
+		delete process.env.GITHUB_REPOSITORY;
+		try {
+			await expect(
+				dispatch(["--event-name", "check_suite", "--event", payloadPath, "--graph", graphPath, "--runs", tmpDir]),
+			).rejects.toThrow("authoritative check-state readback");
+		} finally {
+			for (const [key, value] of Object.entries(prior)) {
+				if (value === undefined) delete process.env[key];
+				else process.env[key] = value;
+			}
+		}
+	});
+
 });

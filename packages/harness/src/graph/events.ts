@@ -22,6 +22,10 @@ function asRecord(val: unknown): Record<string, unknown> | undefined {
 	return val && typeof val === "object" ? (val as Record<string, unknown>) : undefined;
 }
 
+function commitSha(value: unknown): string | undefined {
+	return typeof value === "string" && /^[0-9a-f]{40}$/u.test(value) ? value : undefined;
+}
+
 function toNumber(val: unknown): number {
 	const n = typeof val === "number" ? val : Number(val);
 	return Number.isNaN(n) ? 0 : n;
@@ -91,10 +95,13 @@ function translateReview(p: Record<string, unknown>): TranslatedEvent {
 	if (action === "submitted") {
 		const actor = actorFrom(review.user, review.author_association);
 		const head = asRecord(pr.head);
+		const reviewed = commitSha(review.commit_id);
+		const currentHead = commitSha(head?.sha);
+		if (!reviewed || !currentHead) return { kind: "skip", reason: "review lacks immutable commit evidence" };
 		return {
 			kind: "event",
-			event: { type: "review", state: String(review.state ?? "").toUpperCase(), actor, ref: String(head?.sha ?? "") } as GraphEvent,
-			subject: { number: toNumber(pr.number), is_pr: true, ref: String(head?.sha ?? "") },
+			event: { type: "review", state: String(review.state ?? "").toUpperCase(), actor, ref: reviewed },
+			subject: { number: toNumber(pr.number), is_pr: true, ref: currentHead },
 		};
 	}
 	return { kind: "skip", reason: `pull_request_review.${actionOrUnknown(action)} is not a graph event` };
@@ -109,11 +116,13 @@ function translateCheckSuite(p: Record<string, unknown>): TranslatedEvent {
 		if (pullRequests.length === 0) return { kind: "skip", reason: "check_suite has no pull requests" };
 		const pr = asRecord(pullRequests[0]);
 		if (!pr) return { kind: "skip", reason: "check_suite has no pull requests" };
+		const ref = commitSha(checkSuite.head_sha);
+		if (!ref) return { kind: "skip", reason: "check suite lacks immutable commit evidence" };
 		const conclusion: "required_green" | "failed" = checkSuite.conclusion === "success" ? "required_green" : "failed";
 		return {
 			kind: "event",
-			event: { type: "checks.completed", conclusion, ref: String(checkSuite.head_sha ?? "") } as GraphEvent,
-			subject: { number: toNumber(pr.number), is_pr: true, ref: String(checkSuite.head_sha ?? "") },
+			event: { type: "checks.completed", conclusion, ref },
+			subject: { number: toNumber(pr.number), is_pr: true, ref },
 		};
 	}
 	return { kind: "skip", reason: `check_suite.${actionOrUnknown(action)} is not a graph event` };

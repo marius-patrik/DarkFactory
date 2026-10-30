@@ -4,20 +4,14 @@ import { join } from "node:path";
 import type { GitHubRepository } from "../../../github/src/repository.ts";
 import type { ConflictResolver } from "../workspace/conflict-repair.ts";
 import type { DispatchRuntime, DispatchRuntimeInput } from "./dispatch.ts";
-import {
-	FileProductionEffectJournal,
-	runObservedProductionEffect,
-} from "./durable-effects.ts";
+import { FileProductionEffectJournal, runObservedProductionEffect } from "./durable-effects.ts";
 import {
 	createGitHubProductionEffects,
 	createRepositoryProductionEffects,
 	productionWorkspaceOperations,
 	type GitHubMergeBoundary,
 } from "./production-composition.ts";
-import {
-	createProductionGraphHandlers,
-	type ProductionGraphHandlerOptions,
-} from "./production-handlers.ts";
+import { createProductionGraphHandlers, type ProductionGraphHandlerOptions } from "./production-handlers.ts";
 import type { RunState, PlanAction } from "./types.ts";
 
 type ExternalAction = Exclude<PlanAction, { type: "run" } | { type: "none" }>;
@@ -40,7 +34,8 @@ function actionIdentity(state: RunState, action: ExternalAction): string {
 	const eventId = (state as RunState & { active_event_id?: string }).active_event_id;
 	if (!eventId) throw new Error("Production gate/comment action has no stable ingress identity");
 	return createHash("sha256")
-		.update(JSON.stringify([state.run_id, eventId, action.node, action.type, action])).digest("hex");
+		.update(JSON.stringify([state.run_id, eventId, action.node, action.type, action]))
+		.digest("hex");
 }
 
 function actionMessage(action: ExternalAction): string {
@@ -84,7 +79,8 @@ export function createProductionRuntimeFactory(options: ProductionRuntimeFactory
 			}
 			const id = actionIdentity(state, action);
 			const mutation = github.createComment({
-				issueNumber, body: actionMessage(action),
+				issueNumber,
+				body: actionMessage(action),
 			});
 			await runObservedProductionEffect(effects, id, "github.comment", {
 				observe: () => mutation.observe(id),
@@ -105,12 +101,18 @@ export function createProductionRuntimeFactory(options: ProductionRuntimeFactory
 			});
 		};
 		return {
-			handlers, effects, onAction: performAction, reconcileAction,
+			handlers,
+			effects,
+			onAction: performAction,
+			reconcileAction,
+			recoverableAutomations: ["request-intake", "pr-merge", "board-sync", "quota-resume"],
 			verifyPlanningContext: async (state: RunState) => {
 				const captured = state.outputs.planning_context;
 				if (!captured || typeof captured !== "object") return false;
 				const current = await options.loadPlanningContext({
-					runDir, runId: state.run_id, outputs: state.outputs,
+					runDir,
+					runId: state.run_id,
+					outputs: state.outputs,
 					iteration: state.iterations?.["request-intake"] ?? 1,
 				});
 				const base = await repository.observeBase();
@@ -121,7 +123,10 @@ export function createProductionRuntimeFactory(options: ProductionRuntimeFactory
 				if (required.length === 0) throw new Error("Graph has no explicit required external checks");
 				const observed = await options.repository.requiredCheckStatus(headSha, required);
 				return observed.state === "success" && !observed.missing.length && !observed.failing.length
-					? "required_green" as const : observed.state === "failure" ? "failed" as const : "pending" as const;
+					? ("required_green" as const)
+					: observed.state === "failure"
+						? ("failed" as const)
+						: ("pending" as const);
 			},
 		};
 	};

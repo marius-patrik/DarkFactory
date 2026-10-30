@@ -12,10 +12,7 @@ import { resolveDefaultBranch } from "../workspace/gitWorkspace.ts";
 import { runDetectedVerification } from "../workspace/runVerify.ts";
 import { scopeCheck } from "../workspace/scopeCheck.ts";
 import { updateBranch } from "../workspace/updateBranch.ts";
-import type {
-	ProductionGitHubEffects,
-	ProductionRepositoryEffects,
-} from "./production-handlers.ts";
+import type { ProductionGitHubEffects, ProductionRepositoryEffects } from "./production-handlers.ts";
 
 const BOT_IDENTITY: CommitIdentity = {
 	name: "darkfactory-pipeline[bot]",
@@ -48,8 +45,7 @@ async function workspaceManifest(worktree: string): Promise<string> {
 	const paths = [...new Set(await changedFiles(worktree))].sort();
 	const hash = createHash("sha256");
 	for (const relativePath of paths) {
-		if (relativePath.startsWith("/") || relativePath.includes("\0") ||
-			relativePath.split("/").includes(".."))
+		if (relativePath.startsWith("/") || relativePath.includes("\0") || relativePath.split("/").includes(".."))
 			throw new Error("Unsafe path in workspace mutation evidence");
 		hash.update(JSON.stringify(["path", relativePath]));
 		try {
@@ -67,8 +63,7 @@ async function workspaceManifest(worktree: string): Promise<string> {
 				throw new Error(`Unsupported changed workspace entry: ${relativePath}`);
 			}
 		} catch (error) {
-			if ((error as NodeJS.ErrnoException).code === "ENOENT")
-				hash.update(JSON.stringify(["deleted"]));
+			if ((error as NodeJS.ErrnoException).code === "ENOENT") hash.update(JSON.stringify(["deleted"]));
 			else throw error;
 		}
 	}
@@ -151,9 +146,13 @@ export function createRepositoryProductionEffects(options: {
 				},
 				execute: async (effectId) => {
 					if (!EFFECT.test(effectId)) throw new Error("Invalid commit effect id");
-					if (await workspaceManifest(worktree) !== expectedWorkspace)
+					if ((await workspaceManifest(worktree)) !== expectedWorkspace)
 						throw new Error("Workspace changed after deterministic verification");
-					const sha = await commitChunk({ worktree, message: `${message}\n\nDarkFactory-Effect: ${effectId}`, identity });
+					const sha = await commitChunk({
+						worktree,
+						message: `${message}\n\nDarkFactory-Effect: ${effectId}`,
+						identity,
+					});
 					if (!sha || !SHA.test(sha)) throw new Error("Commit did not yield immutable evidence");
 					return { value: { sha }, evidence: `commit:${sha}` };
 				},
@@ -164,7 +163,7 @@ export function createRepositoryProductionEffects(options: {
 			if (!SHA.test(newSha) || (expectedOldSha !== null && !SHA.test(expectedOldSha)))
 				throw new Error("Push requires exact old and new commit SHAs");
 			const denyDefaultBranch = async () => {
-				if (branch === await resolveDefaultBranch(repo))
+				if (branch === (await resolveDefaultBranch(repo)))
 					throw new Error("Production graph refuses to push directly to the repository default branch");
 			};
 			const observe = async () => {
@@ -197,8 +196,10 @@ export function createRepositoryProductionEffects(options: {
 					// Git's explicit exact-expected ref lease refuses concurrent
 					// remote updates. No unconditional remote overwrite is used.
 					runGit(worktree, [
-						"push", `--force-with-lease=refs/heads/${branch}:${expectedOldSha ?? ""}`,
-						"origin", `HEAD:refs/heads/${branch}`,
+						"push",
+						`--force-with-lease=refs/heads/${branch}:${expectedOldSha ?? ""}`,
+						"origin",
+						`HEAD:refs/heads/${branch}`,
 					]);
 					const confirmed = await observe();
 					if (!confirmed) throw new Error("Push returned without matching remote ref");
@@ -214,11 +215,12 @@ export function createRepositoryProductionEffects(options: {
 				if (!workspaceFingerprint(repo, worktreePath, branch)) return undefined;
 				const sha = head(worktreePath);
 				const unresolved = runGit(worktreePath, ["diff", "--name-only", "--diff-filter=U"])
-					.split(/\r?\n/u).filter(Boolean).sort();
+					.split(/\r?\n/u)
+					.filter(Boolean)
+					.sort();
 				if (unresolved.length) {
 					return {
-						value: { status: "conflict" as const, worktree: worktreePath, headSha: sha,
-							conflictedFiles: unresolved },
+						value: { status: "conflict" as const, worktree: worktreePath, headSha: sha, conflictedFiles: unresolved },
 						evidence: `git-conflict:${branch}:${sha}:${unresolved.join(",")}`,
 					};
 				}
@@ -243,26 +245,33 @@ export function createRepositoryProductionEffects(options: {
 					const sha = head(worktreePath);
 					if (result.status === "conflict" && options.resolveConflict) {
 						const repaired = await repairObservedMergeConflicts({
-							worktree: worktreePath, baseBranch: base,
+							worktree: worktreePath,
+							baseBranch: base,
 							conflictedFiles: result.conflictedFiles,
 							resolveConflict: options.resolveConflict,
-							identity, effectId,
+							identity,
+							effectId,
 						});
 						return {
-							value: { status: "clean" as const, worktree: worktreePath,
-								headSha: repaired.commitSha },
+							value: { status: "clean" as const, worktree: worktreePath, headSha: repaired.commitSha },
 							evidence: `git-update:${branch}:${repaired.commitSha}`,
 						};
 					}
 					if (result.status === "conflict") {
 						return {
-							value: { status: "conflict" as const, worktree: worktreePath, headSha: sha,
-								conflictedFiles: result.conflictedFiles },
+							value: {
+								status: "conflict" as const,
+								worktree: worktreePath,
+								headSha: sha,
+								conflictedFiles: result.conflictedFiles,
+							},
 							evidence: `git-conflict:${branch}:${sha}:${result.conflictedFiles.join(",")}`,
 						};
 					}
-					return { value: { status: "clean" as const, worktree: worktreePath, headSha: sha },
-						evidence: `git-update:${branch}:${sha}` };
+					return {
+						value: { status: "clean" as const, worktree: worktreePath, headSha: sha },
+						evidence: `git-update:${branch}:${sha}`,
+					};
 				},
 			};
 		},
@@ -294,15 +303,20 @@ export function createGitHubProductionEffects(
 	repository: GitHubRepository,
 	options: { requiredChecks: readonly string[]; mergeBoundary: GitHubMergeBoundary },
 ): ProductionGitHubEffects {
-	if (options.requiredChecks.length === 0) throw new Error("Production GitHub effects require explicit mandatory check names");
+	if (options.requiredChecks.length === 0)
+		throw new Error("Production GitHub effects require explicit mandatory check names");
 	const getPR = options.mergeBoundary.read;
 	return {
 		ensurePullRequest(input) {
 			const find = async (id: string) => {
 				const marker = effectMarker(id);
-				const matches = (await repository.listPullRequests({
-					head: input.head, base: input.base, state: "all",
-				})).filter((pr) => pr.body?.includes(marker));
+				const matches = (
+					await repository.listPullRequests({
+						head: input.head,
+						base: input.base,
+						state: "all",
+					})
+				).filter((pr) => pr.body?.includes(marker));
 				if (matches.length > 1) throw new Error("Duplicate PRs with the same deterministic effect marker");
 				const pr = matches[0];
 				if (pr && pr.state !== "open") throw new Error("Non-open PR cannot be reused for a delivery effect");
@@ -312,7 +326,8 @@ export function createGitHubProductionEffects(
 				observe: find,
 				execute: async (id) => {
 					const created = await repository.createPullRequest({
-						...input, body: `${input.body}\n\n${effectMarker(id)}`,
+						...input,
+						body: `${input.body}\n\n${effectMarker(id)}`,
 					});
 					const observed = await find(id);
 					if (!observed || observed.value.number !== created.number)
@@ -337,8 +352,10 @@ export function createGitHubProductionEffects(
 				if (!pr.merged || !pr.mergeSha) return undefined;
 				if (pr.headSha !== input.expectedHeadSha) throw new Error("Merged PR head differs from approved commit");
 				if (!SHA.test(pr.mergeSha)) throw new Error("Merged PR has invalid merge SHA");
-				return { value: { number: input.number, mergeSha: pr.mergeSha },
-					evidence: `github-merge:${input.number}:${pr.mergeSha}` };
+				return {
+					value: { number: input.number, mergeSha: pr.mergeSha },
+					evidence: `github-merge:${input.number}:${pr.mergeSha}`,
+				};
 			};
 			return {
 				observe: async () => observe(),
@@ -357,7 +374,9 @@ export function createGitHubProductionEffects(
 		createComment({ issueNumber, body }) {
 			const observe = async (id: string) => {
 				const marker = effectMarker(id);
-				const matches = (await repository.listComments(issueNumber)).filter((comment) => comment.body?.includes(marker));
+				const matches = (await repository.listComments(issueNumber)).filter((comment) =>
+					comment.body?.includes(marker),
+				);
 				if (matches.length > 1) throw new Error("Duplicate GitHub comments share an effect identity");
 				const comment = matches[0];
 				return comment ? { value: { commentId: comment.id }, evidence: `github-comment:${comment.id}:${id}` } : undefined;

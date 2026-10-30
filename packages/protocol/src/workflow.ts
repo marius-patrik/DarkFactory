@@ -120,14 +120,14 @@ export interface Actor {
 /** Normalized external event consumed by the graph runtime. */
 export type GraphEvent =
 	| { type: "issues.opened" | "issues.labeled" | "comment"; actor: Actor; body?: string; label?: string }
-	| { type: "review"; state: string; actor: Actor }
+	| { type: "review"; state: string; actor: Actor; /** Immutable reviewed commit, when delivered by GitHub. */ ref?: string }
 	| {
 			type: "node.completed";
 			node: string;
 			outcome: "success" | "failure" | "quota_exhausted";
 			outputs: Record<string, unknown>;
 	  }
-	| { type: "checks.completed"; conclusion: "required_green" | "failed" }
+	| { type: "checks.completed"; conclusion: "required_green" | "failed"; /** SHA checked by the external suite. */ ref?: string }
 	| { type: "schedule"; schedule: string; now?: string }
 	| { type: "children.completed"; node: string; outcome: "all_done" | "any_failed" };
 

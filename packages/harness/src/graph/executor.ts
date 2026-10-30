@@ -2,7 +2,16 @@ import { existsSync } from "node:fs";
 import { appendFile, mkdir, open, readFile } from "node:fs/promises";
 import { join } from "node:path";
 import type { ReviewRuntimeState, ReviewSubject } from "../../../protocol/src/review.ts";
-import { FileProductionEffectJournal, IndeterminateEffectError, StaleEffectError, productionEffectId, replaceDurableJson, runObservedProductionEffect, withGraphFileLock, type ObservedEffect } from "./durable-effects.ts";
+import {
+	FileProductionEffectJournal,
+	IndeterminateEffectError,
+	StaleEffectError,
+	productionEffectId,
+	replaceDurableJson,
+	runObservedProductionEffect,
+	withGraphFileLock,
+	type ObservedEffect,
+} from "./durable-effects.ts";
 import { amendmentProposalFingerprint, mergeProposalFingerprint } from "./approval-evidence.ts";
 import { plan } from "./planner.ts";
 import { planningReviewAdapter } from "./planning.ts";
@@ -37,7 +46,14 @@ export interface NodeContext {
 	/** Cooperative cancellation checked before and between durable graph stages. */
 	signal?: AbortSignal;
 	/** A mutation boundary that journals intent before the external effect. */
-	effect?<T>(kind: string, operations: { observe(effectId: string): Promise<ObservedEffect<T> | undefined>; execute(effectId: string): Promise<ObservedEffect<T>> }, suffix?: string): Promise<ObservedEffect<T>>;
+	effect?<T>(
+		kind: string,
+		operations: {
+			observe(effectId: string): Promise<ObservedEffect<T> | undefined>;
+			execute(effectId: string): Promise<ObservedEffect<T>>;
+		},
+		suffix?: string,
+	): Promise<ObservedEffect<T>>;
 	/** The run's outputs so far; for a fan-out child it also holds the item under `foreach.as`. */
 	outputs: Record<string, unknown>;
 	/** The fan-out item, for a child of a `foreach` node. */
@@ -83,6 +99,8 @@ export interface RunGraphOptions {
 	verifyPlanningContext?(state: RunState): Promise<boolean>;
 	/** Required to safely reconcile an interrupted external gate/comment action. */
 	reconcileAction?(action: Exclude<PlanAction, { type: "run" } | { type: "none" }>, state: RunState): Promise<void>;
+	/** Only trusted, journal-only production automations can replay a pending node. */
+	recoverableAutomations?: readonly string[];
 }
 
 async function writeJson(path: string, value: unknown): Promise<void> {
@@ -102,7 +120,10 @@ function startNode(graph: WorkflowGraph, event: GraphEvent): string {
 	return (byEvent ?? bySchedule ?? graph.nodes[0])?.id ?? "";
 }
 
-function reviewContextKey(graph: WorkflowGraph, subject: ReviewSubject): { context: string; artifact: string } | undefined {
+function reviewContextKey(
+	graph: WorkflowGraph,
+	subject: ReviewSubject,
+): { context: string; artifact: string } | undefined {
 	for (const node of graph.nodes) {
 		if (node.kind !== "agent") continue;
 		const review = node.review;
@@ -119,9 +140,10 @@ function refreshReviewContexts(graph: WorkflowGraph, state: RunState): void {
 		const prepared = prepareReviewState(subject, state.outputs[key.context], state.reviews[subject]);
 		const observed = state.outputs[`${subject}_reviewed_fingerprint`];
 		const current = contextFingerprint([state.outputs[key.context], state.outputs[key.artifact]]);
-		state.reviews[subject] = prepared.clean && observed !== current
-			? { ...prepared, clean: false, approvedFingerprint: undefined, approvedAt: undefined }
-			: prepared;
+		state.reviews[subject] =
+			prepared.clean && observed !== current
+				? { ...prepared, clean: false, approvedFingerprint: undefined, approvedAt: undefined }
+				: prepared;
 	}
 }
 
@@ -140,7 +162,10 @@ function effectFor(
 	if (!journal) return undefined;
 	return async (kind, operations, suffix = "") => {
 		const id = productionEffectId(runId, nodeId, iteration, kind, suffix);
-		const record = await runObservedProductionEffect(journal, id, kind, { observe: () => operations.observe(id), execute: () => operations.execute(id) });
+		const record = await runObservedProductionEffect(journal, id, kind, {
+			observe: () => operations.observe(id),
+			execute: () => operations.execute(id),
+		});
 		return { value: record.value, evidence: record.evidence };
 	};
 }
@@ -289,7 +314,13 @@ async function runGraphUnlocked(
 		processed_event_ids?: string[];
 		active_event_id?: string;
 		recovery_event?: GraphEvent;
-		pending_node?: { node: string; iteration: number };
+		pending_node?: {
+		node: string;
+		iteration: number;
+		/** The committed action and input event protect against replanning on recovery. */
+		action?: Extract<PlanAction, { type: "run" }>;
+		input_event?: GraphEvent;
+	};
 		pending_action?: Exclude<PlanAction, { type: "run" } | { type: "none" }>;
 	} = (await readJson<RunState>(statePath)) ?? {
 		run_id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
@@ -303,23 +334,46 @@ async function runGraphUnlocked(
 	state.iterations ??= {};
 	state.reviews ??= {};
 	state.processed_event_ids ??= [];
-	const ingressId = options.eventId ?? ("event_id" in event && typeof event.event_id === "string" ? event.event_id : undefined);
+	const ingressId =
+		options.eventId ?? ("event_id" in event && typeof event.event_id === "string" ? event.event_id : undefined);
 	if (ingressId && state.processed_event_ids.includes(ingressId)) return state;
 	if (state.active_event_id && ingressId !== state.active_event_id) {
-		throw new Error(`Run ${state.run_id} must reconcile active event ${state.active_event_id} before processing another delivery`);
+		throw new Error(
+			`Run ${state.run_id} must reconcile active event ${state.active_event_id} before processing another delivery`,
+		);
 	}
 	const save = () => writeJson(statePath, state);
+	let replayPending: typeof state.pending_node;
 	if (state.pending_node) {
 		const { node, iteration } = state.pending_node;
 		const checkpointPath = join(runDir, "checkpoints", node, `${iteration}.df`);
-		const checkpoint = await readJson<{ node: string; iteration: number; state: RunState; event: GraphEvent }>(checkpointPath);
+		const checkpoint = await readJson<{ node: string; iteration: number; state: RunState; event: GraphEvent }>(
+			checkpointPath,
+		);
 		if (!checkpoint || checkpoint.node !== node || checkpoint.iteration !== iteration) {
-			throw new Error(`Interrupted node ${node}#${iteration} has no committed result; reconcile effects before retry`);
+			const candidate = graph.nodes.find((entry) => entry.id === node);
+			if (
+				candidate?.kind !== "automation" ||
+				candidate.foreach ||
+				!options.effects ||
+				!options.recoverableAutomations?.includes(candidate.script) ||
+				!state.pending_node.action ||
+				!state.pending_node.input_event ||
+				state.pending_node.action.nodes[0] !== node ||
+				state.current_node !== node ||
+				state.iterations?.[node] !== iteration ||
+				!ingressId ||
+				state.active_event_id !== ingressId
+			) {
+				throw new Error(`Interrupted node ${node}#${iteration} has no committed result; reconcile effects before retry`);
+			}
+			replayPending = state.pending_node;
+		} else {
+			Object.assign(state, checkpoint.state);
+			delete state.pending_node;
+			state.recovery_event = checkpoint.event;
+			await save();
 		}
-		Object.assign(state, checkpoint.state);
-		delete state.pending_node;
-		state.recovery_event = checkpoint.event;
-		await save();
 	}
 	if (state.pending_action) {
 		if (!options.reconcileAction) throw new Error("Interrupted external graph action requires explicit reconciliation");
@@ -337,7 +391,7 @@ async function runGraphUnlocked(
 
 	const maxSteps = options.maxSteps ?? 1000;
 	let steps = 0;
-	let current: GraphEvent = state.recovery_event ?? event;
+	let current: GraphEvent = state.recovery_event ?? replayPending?.input_event ?? event;
 	const finishIngress = async () => {
 		delete state.recovery_event;
 		delete state.active_event_id;
@@ -349,18 +403,24 @@ async function runGraphUnlocked(
 		if (options.signal?.aborted) throw new Error("Graph run cancelled before next transition");
 		refreshReviewContexts(graph, state);
 		const currentNode = graph.nodes.find((node) => node.id === state.current_node);
-		const action = plan(graph, current, state);
-		if (options.verifyPlanningContext && (
-			isApprovalEvent(current) ||
-			(action.type === "run" && graph.nodes.some((candidate) => action.nodes.includes(candidate.id) && (
-				(candidate.kind === "agent" && (candidate.mode === "write" || candidate.id === "implement" || candidate.id === "review-fix")) ||
-				(candidate.kind === "automation" && candidate.script === "pr-merge")
-			)))
-		)) {
+		const action = replayPending?.action ?? plan(graph, current, state);
+		if (
+			options.verifyPlanningContext &&
+			(isApprovalEvent(current) ||
+				(action.type === "run" &&
+					graph.nodes.some(
+						(candidate) =>
+							action.nodes.includes(candidate.id) &&
+							((candidate.kind === "agent" &&
+								(candidate.mode === "write" || candidate.id === "implement" || candidate.id === "review-fix")) ||
+								(candidate.kind === "automation" && candidate.script === "pr-merge")),
+					)))
+		) {
 			if (!(await options.verifyPlanningContext(state)))
 				throw new Error("Authoritative Request, dependencies or base changed; Planning approval is stale");
 		}
 		if (
+			!replayPending &&
 			currentNode?.kind === "gate" &&
 			currentNode.approves_review &&
 			action.type === "run" &&
@@ -370,19 +430,31 @@ async function runGraphUnlocked(
 			if (!review) throw new Error(`Missing ${currentNode.approves_review} review state for approval gate`);
 			state.reviews[currentNode.approves_review] = approveReview(review, options.now?.() ?? new Date());
 		}
-		if (currentNode?.id === "deviation-gate" && currentNode.kind === "gate" && action.type === "run" && isApprovalEvent(current)) {
+		if (
+			!replayPending &&
+			currentNode?.id === "deviation-gate" &&
+			currentNode.kind === "gate" &&
+			action.type === "run" &&
+			isApprovalEvent(current)
+		) {
 			const fingerprint = amendmentProposalFingerprint(state.outputs);
 			if (state.outputs.awaiting_amendment_fingerprint !== fingerprint) {
 				throw new Error("Stale amendment authorization: implementation changed since gate opened");
 			}
-			if (!("actor" in current) || !current.actor.login)
-				throw new Error("Amendment approval has no accountable actor");
+			if (!("actor" in current) || !current.actor.login) throw new Error("Amendment approval has no accountable actor");
 			state.outputs.amendment_authorization = {
-				fingerprint, actor: current.actor.login,
+				fingerprint,
+				actor: current.actor.login,
 				approvedAt: (options.now?.() ?? new Date()).toISOString(),
 			};
 		}
-		if (currentNode?.id === "merge-gate" && currentNode.kind === "gate" && action.type === "run" && isApprovalEvent(current)) {
+		if (
+			!replayPending &&
+			currentNode?.id === "merge-gate" &&
+			currentNode.kind === "gate" &&
+			action.type === "run" &&
+			isApprovalEvent(current)
+		) {
 			if (!reviewApprovalFresh(state.reviews.planning))
 				throw new Error("Final merge authorization requires fresh approved Planning");
 			if (current.type === "review" && (!("ref" in current) || current.ref !== state.outputs.commit_sha))
@@ -405,8 +477,12 @@ async function runGraphUnlocked(
 			}
 			if (action.type === "gate" && action.node === "merge-gate") {
 				const checked = "ref" in current ? current.ref : undefined;
-				if (typeof checked !== "string" || checked !== state.outputs.commit_sha ||
-					current.type !== "checks.completed" || current.conclusion !== "required_green") {
+				if (
+					typeof checked !== "string" ||
+					checked !== state.outputs.commit_sha ||
+					current.type !== "checks.completed" ||
+					current.conclusion !== "required_green"
+				) {
 					throw new Error("Cannot enter final merge gate without passing external checks for exact implementation SHA");
 				}
 				state.outputs.external_checks_head_sha = checked;
@@ -431,15 +507,16 @@ async function runGraphUnlocked(
 			throw new Error(`Graph requested ${action.revert}; deterministic rollback evidence is not installed`);
 		}
 		if (node.kind === "agent") {
-			const planningGateExists = graph.nodes.some((candidate) => candidate.kind === "gate" && candidate.approves_review === "planning");
+			const planningGateExists = graph.nodes.some(
+				(candidate) => candidate.kind === "gate" && candidate.approves_review === "planning",
 			const writesCode = node.mode === "write" || node.id === "implement" || node.id === "review-fix";
 			if (planningGateExists && writesCode && !reviewApprovalFresh(state.reviews.planning))
 				throw new Error(`Node ${node.id} cannot mutate code without fresh approved Planning`);
 			if (node.requires_review_approval && !reviewApprovalFresh(state.reviews[node.requires_review_approval]))
 				throw new Error(`Node ${node.id} requires a fresh approved ${node.requires_review_approval} review`);
 		}
-		const iteration = (state.iterations[node.id] ?? 0) + 1;
-		state.iterations[node.id] = iteration;
+		const iteration = replayPending?.iteration ?? (state.iterations[node.id] ?? 0) + 1;
+		if (!replayPending) state.iterations[node.id] = iteration;
 		state.current_node = node.id;
 		delete state.blocked_since;
 		delete state.quota_blocked;
@@ -450,7 +527,7 @@ async function runGraphUnlocked(
 		// One durable transaction boundary: incrementing iteration without also
 		// persisting the pending effect could cause an unsafe new effect ID on
 		// recovery after a crash in between two state writes.
-		state.pending_node = { node: node.id, iteration };
+		if (!replayPending) state.pending_node = { node: node.id, iteration, action, input_event: current };
 		await save();
 		if (node.foreach) {
 			current = await runForeach(node, action, state, runDir, handlers, iteration, options.effects);
@@ -525,6 +602,7 @@ async function runGraphUnlocked(
 			node: node.id, iteration, state: completedState, event: current,
 		});
 		delete state.pending_node;
+		replayPending = undefined;
 		state.recovery_event = current;
 		await save();
 		await record({ type: "event", event: current });

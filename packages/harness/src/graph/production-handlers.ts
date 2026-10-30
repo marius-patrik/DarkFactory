@@ -70,7 +70,9 @@ export interface ProductionGraphHandlerOptions {
 	workspace: NonNullable<Parameters<typeof captureCodeResult>[0]["workspace"]>;
 	loadPlanningContext(context: NodeContext): Promise<Record<string, unknown>>;
 	/** Automation adapters must perform observed/readback reconciliation themselves. */
-	automation?: Partial<Record<"board-sync" | "quota-resume", (runId: string) => ExternalMutation<Record<string, unknown>>>>;
+	automation?: Partial<
+		Record<"board-sync" | "quota-resume", (runId: string) => ExternalMutation<Record<string, unknown>>>
+	>;
 }
 
 function requireJournal(ctx: NodeContext): NonNullable<NodeContext["effect"]> {
@@ -94,7 +96,12 @@ function allowedScope(outputs: Record<string, unknown>): string[] {
 	return asStrings((plan as { scope?: unknown }).scope);
 }
 
-function observed<T>(ctx: NodeContext, kind: string, mutation: ExternalMutation<T>, suffix = ""): Promise<ObservedEffect<T>> {
+function observed<T>(
+	ctx: NodeContext,
+	kind: string,
+	mutation: ExternalMutation<T>,
+	suffix = "",
+): Promise<ObservedEffect<T>> {
 	return requireJournal(ctx)(kind, mutation, suffix);
 }
 
@@ -118,12 +125,19 @@ export function createProductionGraphHandlers(options: ProductionGraphHandlerOpt
 				return { outcome: "failure", outputs: { error: "Code mutation lacks an explicit approved Planning scope" } };
 			}
 			const base = await repository.observeBase();
-			const branch = typeof ctx.outputs.branch === "string"
-				? ctx.outputs.branch
-				: `feat/${node.id}-${createHash("sha256").update(ctx.runId).digest("hex").slice(0, 12)}`;
-			const worktree = await observed(ctx, "workspace.ensure", repository.ensureWorktree({
-				branch, base: base.defaultBranch, runId: ctx.runId,
-			}));
+			const branch =
+				typeof ctx.outputs.branch === "string"
+					? ctx.outputs.branch
+					: `feat/${node.id}-${createHash("sha256").update(ctx.runId).digest("hex").slice(0, 12)}`;
+			const worktree = await observed(
+				ctx,
+				"workspace.ensure",
+				repository.ensureWorktree({
+					branch,
+					base: base.defaultBranch,
+					runId: ctx.runId,
+				}),
+			);
 			const modelResult = await model.agent(node, ctx, worktree.value.worktree);
 			if (modelResult.outcome !== "success") return modelResult;
 
@@ -136,46 +150,68 @@ export function createProductionGraphHandlers(options: ProductionGraphHandlerOpt
 			});
 			const verifiedWorkspace = await repository.observeWorkspace(worktree.value.worktree);
 			if (initialWorkspace !== verifiedWorkspace)
-				return { outcome: "failure", outputs: { error: "Workspace changed during deterministic verification", branch } };
-			if (code.outcome !== "success") return {
-				outcome: "failure",
-				outputs: { error: code.error, branch, changed_files: code.changedFiles, verification: code.verification },
-			};
+				return {
+					outcome: "failure",
+					outputs: { error: "Workspace changed during deterministic verification", branch },
+				};
+			if (code.outcome !== "success")
+				return {
+					outcome: "failure",
+					outputs: { error: code.error, branch, changed_files: code.changedFiles, verification: code.verification },
+				};
 			// Unsupported/unexecuted checks cannot be counted as verification.
 			if (code.verification.length === 0 ||
-				code.verification.some((check) => !check.action.supported || !check.action.command ||
+				code.verification.some((check) => !check.action.command ||
 					!check.result || check.result.exitCode !== 0 || check.result.timedOut)) {
 				return { outcome: "failure", outputs: { error: "Deterministic verification was not fully executed", branch, verification: code.verification } };
 			}
 			if (code.changedFiles.length === 0 && !ctx.outputs.commit_sha) {
-				return { outcome: "failure", outputs: { error: "No observed implementation mutation or prior commit", branch } };
+				return {
+					outcome: "failure",
+					outputs: { error: "No observed implementation mutation or prior commit", branch },
+				};
 			}
 
 			let commitSha = typeof ctx.outputs.commit_sha === "string" ? ctx.outputs.commit_sha : undefined;
 			let prNumber = typeof ctx.outputs.pr_number === "number" ? ctx.outputs.pr_number : undefined;
 			if (code.changedFiles.length > 0) {
-				const commit = await observed(ctx, "git.commit", repository.commit({
-					worktree: worktree.value.worktree,
-					message: `${node.id}: apply iteration ${ctx.iteration}`,
-					expectedWorkspace: verifiedWorkspace,
-				}));
+				const commit = await observed(
+					ctx,
+					"git.commit",
+					repository.commit({
+						worktree: worktree.value.worktree,
+						message: `${node.id}: apply iteration ${ctx.iteration}`,
+						expectedWorkspace: verifiedWorkspace,
+					}),
+				);
 				commitSha = commit.value.sha;
 				if (!/^[0-9a-f]{40}$/iu.test(commitSha))
 					throw new Error("Commit operation returned no verified immutable commit SHA");
 				const expectedOldSha = await repository.remoteHead(branch);
-				const push = await observed(ctx, "git.push", repository.push({
-					worktree: worktree.value.worktree, branch, expectedOldSha, newSha: commitSha,
-				}));
-				if (push.value.sha !== commitSha)
-					throw new Error("Observed remote branch does not point to committed HEAD");
+				const push = await observed(
+					ctx,
+					"git.push",
+					repository.push({
+						worktree: worktree.value.worktree,
+						branch,
+						expectedOldSha,
+						newSha: commitSha,
+					}),
+				);
+				if (push.value.sha !== commitSha) throw new Error("Observed remote branch does not point to committed HEAD");
 				if (!github) throw new Error("Implementation requires GitHub PR effects");
 				if (!prNumber) {
-					const pr = await observed(ctx, "github.pr.ensure", github.ensurePullRequest({
-						head: branch, base: base.defaultBranch,
-						title: `feat: delivery ${node.id}`,
-						body: `Observed files: ${code.changedFiles.join(", ")}`,
-						draft: true,
-					}));
+					const pr = await observed(
+						ctx,
+						"github.pr.ensure",
+						github.ensurePullRequest({
+							head: branch,
+							base: base.defaultBranch,
+							title: `feat: delivery ${node.id}`,
+							body: `Observed files: ${code.changedFiles.join(", ")}`,
+							draft: true,
+						}),
+					);
 					prNumber = pr.value.number;
 				}
 			}

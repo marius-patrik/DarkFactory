@@ -18,11 +18,13 @@ const planningDraftSchema = z.object({
 		knownOwners: z.array(z.string()),
 		discoveryRequired: z.array(z.string()),
 	}),
-	hold: z.object({
-		kind: z.enum(["dependency", "recovery"]),
-		refs: z.array(z.string()).min(1),
-		reason: z.string().min(1),
-	}).optional(),
+	hold: z
+		.object({
+			kind: z.enum(["dependency", "recovery"]),
+			refs: z.array(z.string()).min(1),
+			reason: z.string().min(1),
+		})
+		.optional(),
 });
 
 export interface ProductionModelEffects {
@@ -37,27 +39,25 @@ export interface ProductionModelEffects {
 			nodeId: string;
 		},
 	): Promise<AssistantMessage>;
-	extractJudgement<T>(input: {
-		answer: string;
-		schema: z.ZodType<T>;
-		nodeId: string;
-		ctx: NodeContext;
-	}): Promise<T>;
+	extractJudgement<T>(input: { answer: string; schema: z.ZodType<T>; nodeId: string; ctx: NodeContext }): Promise<T>;
 }
 
 export class ProductionQuotaExhaustedError extends Error {
-	constructor(message: string, readonly candidate: {
-		provider: string;
-		account: string;
-		model: string;
-	}) {
+	constructor(
+		message: string,
+		readonly candidate: {
+			provider: string;
+			account: string;
+			model: string;
+		},
+	) {
 		super(message);
 		this.name = "ProductionQuotaExhaustedError";
 	}
 }
 
 function answerText(message: AssistantMessage): string {
-	return message.content.flatMap((block) => block.type === "text" ? [block.text] : []).join("\n");
+	return message.content.flatMap((block) => (block.type === "text" ? [block.text] : [])).join("\n");
 }
 
 /** This is a model adapter, not a second execution engine. */
@@ -72,18 +72,17 @@ export function createRoutedProductionModelAdapter(
 				const planningArtifact = ctx.outputs.plan_artifact as PlanningArtifact | undefined;
 				const prompt = [
 					node.prompt ?? `Perform the graph stage ${node.id}.`,
-					...(reviewedContext ? [
-						`\nAuthoritative immutable Planning context:\n${JSON.stringify(reviewedContext)}`,
-					] : []),
-					...(planningArtifact ? [
-						`\nCurrently reviewed Planning artifact:\n${JSON.stringify(planningArtifact)}`,
-					] : []),
+					...(reviewedContext
+						? [`\nAuthoritative immutable Planning context:\n${JSON.stringify(reviewedContext)}`]
+						: []),
+					...(planningArtifact ? [`\nCurrently reviewed Planning artifact:\n${JSON.stringify(planningArtifact)}`] : []),
 					...(ctx.review ? [`\nReview history and findings:\n${JSON.stringify(ctx.review)}`] : []),
 					...(ctx.feedback ? [`\nOwner feedback:\n${ctx.feedback}`] : []),
 					...(worktree ? [`\nPerform authorized changes in this isolated worktree: ${worktree}`] : []),
 				].join("\n\n");
 				const message = await effects.runPrompt(prompt, {
-					nodeId: node.id, ...(worktree ? { workdir: worktree } : {}),
+					nodeId: node.id,
+					...(worktree ? { workdir: worktree } : {}),
 					...(node.reasoning ? { reasoning: node.reasoning } : {}),
 					...(node.chain ? { chain: node.chain } : {}),
 					...(node.timeout ? { timeout: node.timeout } : {}),
@@ -94,7 +93,10 @@ export function createRoutedProductionModelAdapter(
 					if (!reviewedContext?.request?.version || typeof reviewedContext.request.body !== "string")
 						throw new Error("Planning requires an authoritative versioned Request");
 					const draft = await effects.extractJudgement({
-						answer, schema: planningDraftSchema, ctx, nodeId: node.id,
+						answer,
+						schema: planningDraftSchema,
+						ctx,
+						nodeId: node.id,
 					});
 					const artifact: PlanningArtifact = {
 						contextFingerprint: contextFingerprint(reviewedContext),
@@ -106,29 +108,51 @@ export function createRoutedProductionModelAdapter(
 				}
 				if (node.id === "planning-review" || node.id === "self-review") {
 					const result = await effects.extractJudgement({
-						answer, schema: reviewResultSchema, ctx, nodeId: node.id,
+						answer,
+						schema: reviewResultSchema,
+						ctx,
+						nodeId: node.id,
 					});
-					return { outcome: "success", outputs: node.id === "planning-review"
-						? { planning_findings: result.findings, planning_review_clean: result.clean }
-						: { review_findings: result.findings, review_clean: result.clean,
-							deviation_detected: result.deviation_detected ?? false } };
+					return {
+						outcome: "success",
+						outputs:
+							node.id === "planning-review"
+								? { planning_findings: result.findings, planning_review_clean: result.clean }
+								: {
+										review_findings: result.findings,
+										review_clean: result.clean,
+										deviation_detected: result.deviation_detected ?? false,
+									},
+					};
 				}
 				if (node.id === "plan-alignment") {
 					const result = await effects.extractJudgement({
-						answer, schema: alignmentResultSchema, ctx, nodeId: node.id,
+						answer,
+						schema: alignmentResultSchema,
+						ctx,
+						nodeId: node.id,
 					});
-					return { outcome: "success", outputs: {
-						aligned: result.aligned, rationale: result.rationale, deviations: result.deviations ?? [],
-					} };
+					return {
+						outcome: "success",
+						outputs: {
+							aligned: result.aligned,
+							rationale: result.rationale,
+							deviations: result.deviations ?? [],
+						},
+					};
 				}
 				if (worktree) return { outcome: "success", outputs: {} };
 				return { outcome: "success", outputs: { [node.outputs?.[0] ?? "result"]: answer } };
 			} catch (error) {
 				const message = error instanceof Error ? error.message : String(error);
 				if (error instanceof ProductionQuotaExhaustedError) {
-					return { outcome: "quota_exhausted", outputs: {
-						error: message, quota_candidate: error.candidate,
-					} };
+					return {
+						outcome: "quota_exhausted",
+						outputs: {
+							error: message,
+							quota_candidate: error.candidate,
+						},
+					};
 				}
 				if (/quota|rate_limited|429/iu.test(message)) {
 					return { outcome: "quota_exhausted", outputs: { error: message } };

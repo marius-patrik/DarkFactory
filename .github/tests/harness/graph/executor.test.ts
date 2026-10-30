@@ -245,18 +245,25 @@ describe("runGraph fan-out", () => {
 		const graph = fanGraph(2, false);
 		let batch = 0;
 		const { handlers, calls } = scripted({
-			split: () => ({ outcome: "success", outputs: {
-				chunks: ++batch === 1 ? ["alpha", "beta"] : ["beta", "alpha"],
-				plan_artifact: { revision: batch },
-			} }),
+			split: () => ({
+				outcome: "success",
+				outputs: {
+					chunks: ++batch === 1 ? ["alpha", "beta"] : ["beta", "alpha"],
+					plan_artifact: { revision: batch },
+				},
+			}),
 			chunk: (ctx) => ({ outcome: "success", outputs: { item: ctx.item } }),
 		});
 		const first = await runGraph(graph, dir, handlers, opened, { eventId: "initial" });
-		expect((first.outputs.chunk_results as Array<{ outputs: { item: string } }>).map((r) => r.outputs.item))
-			.toEqual(["alpha", "beta"]);
+		expect((first.outputs.chunk_results as Array<{ outputs: { item: string } }>).map((r) => r.outputs.item)).toEqual([
+			"alpha",
+			"beta",
+		]);
 		const second = await runGraph(graph, dir, handlers, opened, { eventId: "revision" });
-		expect((second.outputs.chunk_results as Array<{ outputs: { item: string } }>).map((r) => r.outputs.item))
-			.toEqual(["beta", "alpha"]);
+		expect((second.outputs.chunk_results as Array<{ outputs: { item: string } }>).map((r) => r.outputs.item)).toEqual([
+			"beta",
+			"alpha",
+		]);
 		expect(calls.filter((call) => call.node === "chunk")).toHaveLength(4);
 	});
 
@@ -413,10 +420,13 @@ describe("generic durable review lifecycle", () => {
 	test("authoritative Request or base change denies approval before implementation", async () => {
 		const dir = runDir();
 		const { handlers, calls } = scripted({
-			planning: () => ({ outcome: "success", outputs: {
-				planning_context: { request: { body: "original", version: "v1" }, base: "a" },
-				plan_artifact: { scope: ["src/**"] },
-			} }),
+			planning: () => ({
+				outcome: "success",
+				outputs: {
+					planning_context: { request: { body: "original", version: "v1" }, base: "a" },
+					plan_artifact: { scope: ["src/**"] },
+				},
+			}),
 			"planning-review": () => ({ outcome: "success", outputs: { planning_findings: [] } }),
 		});
 		await runGraph(planningGraph(), dir, handlers, opened, {
@@ -424,12 +434,21 @@ describe("generic durable review lifecycle", () => {
 			verifyPlanningContext: async () => true,
 		});
 		let rechecked = 0;
-		await expect(runGraph(planningGraph(), dir, handlers,
-			{ type: "comment", body: "/df approve", actor: owner },
-			{
-				verifyPlanningContext: async () => { rechecked++; return false; },
-				reviewAdapters: { planning: reviewAdapter },
-			})).rejects.toThrow("Planning approval is stale");
+		await expect(
+			runGraph(
+				planningGraph(),
+				dir,
+				handlers,
+				{ type: "comment", body: "/df approve", actor: owner },
+				{
+					verifyPlanningContext: async () => {
+						rechecked++;
+						return false;
+					},
+					reviewAdapters: { planning: reviewAdapter },
+				},
+			),
+		).rejects.toThrow("Planning approval is stale");
 		expect(rechecked).toBe(1);
 		expect(calls.every((call) => call.node !== "implement")).toBe(true);
 		const state = JSON.parse(readFileSync(join(dir, "state.df"), "utf8")) as RunState;
@@ -450,9 +469,13 @@ describe("generic durable review lifecycle", () => {
 		const state = JSON.parse(readFileSync(path, "utf8")) as RunState;
 		state.outputs.plan_artifact = { scope: ["**/*", ".github/**"] };
 		writeFileSync(path, JSON.stringify(state));
-		const after = await runGraph(planningGraph(), dir, handlers,
+		const after = await runGraph(
+			planningGraph(),
+			dir,
+			handlers,
 			{ type: "comment", body: "/df approve", actor: owner },
-			{ reviewAdapters: { planning: reviewAdapter } });
+			{ reviewAdapters: { planning: reviewAdapter } },
+		);
 		expect(after.current_node).toBe("planning-gate");
 		expect(after.reviews?.planning?.clean).toBe(false);
 		expect(calls.some((call) => call.node === "implement")).toBe(false);
