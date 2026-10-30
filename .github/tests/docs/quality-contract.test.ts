@@ -87,7 +87,7 @@ describe("documentation source-backed truth", () => {
 							...entry,
 							markdown:
 								entry.markdown.replace(/^# .+$/mu, "# Deliberately mismatched title") +
-								"\n[missing](missing.md) [broken](#missing-anchor) [unsafe](javascript:alert)\n<a href=\"javascript:alert(1)\">bad</a>\n<script>alert(1)</script>\n```sh\ndf imaginary-verb\n```\n",
+								"\n[missing](missing.md) [broken](#missing-anchor) [unsafe](javascript:alert)\n<a href="javascript:alert(1)">bad</a>\n<script>alert(1)</script>\n```sh\ndf imaginary-verb\n```\n",
 						}
 					: entry,
 			),
