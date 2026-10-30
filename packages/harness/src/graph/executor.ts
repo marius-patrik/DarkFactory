@@ -420,6 +420,7 @@ async function runGraphUnlocked(
 				throw new Error("Authoritative Request, dependencies or base changed; Planning approval is stale");
 		}
 		if (
+			!replayPending &&
 			currentNode?.kind === "gate" &&
 			currentNode.approves_review &&
 			action.type === "run" &&
@@ -430,6 +431,7 @@ async function runGraphUnlocked(
 			state.reviews[currentNode.approves_review] = approveReview(review, options.now?.() ?? new Date());
 		}
 		if (
+			!replayPending &&
 			currentNode?.id === "deviation-gate" &&
 			currentNode.kind === "gate" &&
 			action.type === "run" &&
@@ -447,6 +449,7 @@ async function runGraphUnlocked(
 			};
 		}
 		if (
+			!replayPending &&
 			currentNode?.id === "merge-gate" &&
 			currentNode.kind === "gate" &&
 			action.type === "run" &&
