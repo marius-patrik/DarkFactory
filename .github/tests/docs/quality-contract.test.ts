@@ -115,6 +115,25 @@ describe("unified-site artifact integrity", () => {
 		}
 	});
 
+	test("rejects symlinked output parents and destinations without deleting their targets", async () => {
+		const temp = await mkdtemp(join(tmpdir(), "df-site-symlink-"));
+		temps.push(temp);
+		const parentLink = join(temp, "site-parent");
+		const destinationLink = join(temp, "site-destination");
+		await symlink(join(repoRoot, "packages"), parentLink, "dir");
+		await symlink(join(repoRoot, "packages"), destinationLink, "dir");
+		for (const destination of [join(parentLink, "site-output"), destinationLink]) {
+			const result = Bun.spawnSync(["bun", "scripts/build-docs.ts", "--docs-only", "--out", destination], {
+				cwd: repoRoot,
+				stdout: "pipe",
+				stderr: "pipe",
+			});
+			expect(result.exitCode).not.toBe(0);
+			expect(new TextDecoder().decode(result.stderr)).toContain("Site output");
+		}
+		expect((await readFile(join(repoRoot, "packages", "docs", "src", "site.ts"), "utf8")).length).toBeGreaterThan(0);
+	});
+
 	test("rejects bad project paths", () => {
 		expect(normalizedBasePath("/DarkFactory")).toBe("/DarkFactory/");
 		expect(() => normalizedBasePath("//bad")).toThrow();
@@ -141,6 +160,13 @@ describe("unified-site artifact integrity", () => {
 		expect(manifest.files.some((item: { path: string }) => item.path === "docs/index.html")).toBe(true);
 		expect(manifest.status).toBe("unpublished-candidate");
 		expect(manifest.productVersion).toBe("1.0.0");
+		await writeFile(join(output, ".env"), "not-a-real-secret");
+		manifest.files.push({ path: ".env", sha256: digest("not-a-real-secret") });
+		await writeFile(join(output, "site-manifest.json"), JSON.stringify(manifest));
+		await expect(verifyUnifiedSite(output)).rejects.toThrow("Unsafe or duplicate");
+		await rm(join(output, ".env"));
+		manifest.files.pop();
+		await writeFile(join(output, "site-manifest.json"), JSON.stringify(manifest));
 		await writeFile(join(output, "docs", "index.html"), "tampered");
 		await expect(verifyUnifiedSite(output)).rejects.toThrow("digest mismatch");
 		expect(await readFile(join(output, "404.html"), "utf8")).toBe(index);
