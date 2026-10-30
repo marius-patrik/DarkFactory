@@ -94,8 +94,11 @@ export function declaredContractIndex(repoRoot: string): readonly string[] {
 		if (!existsSync(absolute)) throw new Error(`Missing source contract: ${path}`);
 		const source = ts.createSourceFile(absolute, readFileSync(absolute, "utf8"), ts.ScriptTarget.Latest, true);
 		for (const statement of source.statements) {
-			if (!ts.canHaveModifiers(statement) ||
-				!ts.getModifiers(statement)?.some((modifier) => modifier.kind === ts.SyntaxKind.ExportKeyword)) continue;
+			if (
+				!ts.canHaveModifiers(statement) ||
+				!ts.getModifiers(statement)?.some((modifier) => modifier.kind === ts.SyntaxKind.ExportKeyword)
+			)
+				continue;
 			if (!("name" in statement) || !statement.name || !ts.isIdentifier(statement.name as ts.Node)) continue;
 			const declarationName = (statement.name as ts.Identifier).text;
 			if (!/^[A-Za-z_$][\w$]*$/u.test(declarationName)) continue;
