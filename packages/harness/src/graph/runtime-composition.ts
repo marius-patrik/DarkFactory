@@ -106,6 +106,7 @@ export function createProductionRuntimeFactory(options: ProductionRuntimeFactory
 		};
 		return {
 			handlers, effects, onAction: performAction, reconcileAction,
+			recoverableAutomations: ["request-intake", "pr-merge", "board-sync", "quota-resume"],
 			verifyPlanningContext: async (state: RunState) => {
 				const captured = state.outputs.planning_context;
 				if (!captured || typeof captured !== "object") return false;

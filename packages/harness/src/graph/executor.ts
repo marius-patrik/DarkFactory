@@ -83,6 +83,8 @@ export interface RunGraphOptions {
 	verifyPlanningContext?(state: RunState): Promise<boolean>;
 	/** Required to safely reconcile an interrupted external gate/comment action. */
 	reconcileAction?(action: Exclude<PlanAction, { type: "run" } | { type: "none" }>, state: RunState): Promise<void>;
+	/** Only trusted, journal-only production automations can replay a pending node. */
+	recoverableAutomations?: readonly string[];
 }
 
 async function writeJson(path: string, value: unknown): Promise<void> {
@@ -289,7 +291,13 @@ async function runGraphUnlocked(
 		processed_event_ids?: string[];
 		active_event_id?: string;
 		recovery_event?: GraphEvent;
-		pending_node?: { node: string; iteration: number };
+		pending_node?: {
+		node: string;
+		iteration: number;
+		/** The committed action and input event protect against replanning on recovery. */
+		action?: Extract<PlanAction, { type: "run" }>;
+		input_event?: GraphEvent;
+	};
 		pending_action?: Exclude<PlanAction, { type: "run" } | { type: "none" }>;
 	} = (await readJson<RunState>(statePath)) ?? {
 		run_id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
@@ -309,17 +317,35 @@ async function runGraphUnlocked(
 		throw new Error(`Run ${state.run_id} must reconcile active event ${state.active_event_id} before processing another delivery`);
 	}
 	const save = () => writeJson(statePath, state);
+	let replayPending: typeof state.pending_node;
 	if (state.pending_node) {
 		const { node, iteration } = state.pending_node;
 		const checkpointPath = join(runDir, "checkpoints", node, `${iteration}.df`);
 		const checkpoint = await readJson<{ node: string; iteration: number; state: RunState; event: GraphEvent }>(checkpointPath);
 		if (!checkpoint || checkpoint.node !== node || checkpoint.iteration !== iteration) {
-			throw new Error(`Interrupted node ${node}#${iteration} has no committed result; reconcile effects before retry`);
+			const candidate = graph.nodes.find((entry) => entry.id === node);
+			if (
+				candidate?.kind !== "automation" ||
+				candidate.foreach ||
+				!options.effects ||
+				!options.recoverableAutomations?.includes(candidate.script) ||
+				!state.pending_node.action ||
+				!state.pending_node.input_event ||
+				state.pending_node.action.nodes[0] !== node ||
+				state.current_node !== node ||
+				state.iterations?.[node] !== iteration ||
+				!ingressId ||
+				state.active_event_id !== ingressId
+			) {
+				throw new Error(`Interrupted node ${node}#${iteration} has no committed result; reconcile effects before retry`);
+			}
+			replayPending = state.pending_node;
+		} else {
+			Object.assign(state, checkpoint.state);
+			delete state.pending_node;
+			state.recovery_event = checkpoint.event;
+			await save();
 		}
-		Object.assign(state, checkpoint.state);
-		delete state.pending_node;
-		state.recovery_event = checkpoint.event;
-		await save();
 	}
 	if (state.pending_action) {
 		if (!options.reconcileAction) throw new Error("Interrupted external graph action requires explicit reconciliation");
@@ -337,7 +363,7 @@ async function runGraphUnlocked(
 
 	const maxSteps = options.maxSteps ?? 1000;
 	let steps = 0;
-	let current: GraphEvent = state.recovery_event ?? event;
+	let current: GraphEvent = state.recovery_event ?? replayPending?.input_event ?? event;
 	const finishIngress = async () => {
 		delete state.recovery_event;
 		delete state.active_event_id;
@@ -349,7 +375,7 @@ async function runGraphUnlocked(
 		if (options.signal?.aborted) throw new Error("Graph run cancelled before next transition");
 		refreshReviewContexts(graph, state);
 		const currentNode = graph.nodes.find((node) => node.id === state.current_node);
-		const action = plan(graph, current, state);
+		const action = replayPending?.action ?? plan(graph, current, state);
 		if (options.verifyPlanningContext && (
 			isApprovalEvent(current) ||
 			(action.type === "run" && graph.nodes.some((candidate) => action.nodes.includes(candidate.id) && (
@@ -438,8 +464,8 @@ async function runGraphUnlocked(
 			if (node.requires_review_approval && !reviewApprovalFresh(state.reviews[node.requires_review_approval]))
 				throw new Error(`Node ${node.id} requires a fresh approved ${node.requires_review_approval} review`);
 		}
-		const iteration = (state.iterations[node.id] ?? 0) + 1;
-		state.iterations[node.id] = iteration;
+		const iteration = replayPending?.iteration ?? (state.iterations[node.id] ?? 0) + 1;
+		if (!replayPending) state.iterations[node.id] = iteration;
 		state.current_node = node.id;
 		delete state.blocked_since;
 		delete state.quota_blocked;
@@ -450,7 +476,7 @@ async function runGraphUnlocked(
 		// One durable transaction boundary: incrementing iteration without also
 		// persisting the pending effect could cause an unsafe new effect ID on
 		// recovery after a crash in between two state writes.
-		state.pending_node = { node: node.id, iteration };
+		if (!replayPending) state.pending_node = { node: node.id, iteration, action, input_event: current };
 		await save();
 		if (node.foreach) {
 			current = await runForeach(node, action, state, runDir, handlers, iteration, options.effects);
@@ -525,6 +551,7 @@ async function runGraphUnlocked(
 			node: node.id, iteration, state: completedState, event: current,
 		});
 		delete state.pending_node;
+		replayPending = undefined;
 		state.recovery_event = current;
 		await save();
 		await record({ type: "event", event: current });
