@@ -101,7 +101,12 @@ describe("translateGitHubEvent", () => {
 		};
 		expect(translateGitHubEvent("pull_request_review", payload)).toEqual({
 			kind: "event",
-			event: { type: "review", state: "APPROVED", actor: { login: "owner", association: "OWNER", is_bot: false }, ref: "a".repeat(40) },
+			event: {
+				type: "review",
+				state: "APPROVED",
+				actor: { login: "owner", association: "OWNER", is_bot: false },
+				ref: "a".repeat(40),
+			},
 			subject: { number: 11, is_pr: true, ref: "a".repeat(40) },
 		});
 	});
@@ -114,7 +119,12 @@ describe("translateGitHubEvent", () => {
 		};
 		expect(translateGitHubEvent("pull_request_review", payload)).toEqual({
 			kind: "event",
-			event: { type: "review", state: "COMMENTED", actor: { login: "owner", association: "OWNER", is_bot: false }, ref: "b".repeat(40) },
+			event: {
+				type: "review",
+				state: "COMMENTED",
+				actor: { login: "owner", association: "OWNER", is_bot: false },
+				ref: "b".repeat(40),
+			},
 			subject: { number: 2, is_pr: true, ref: "deadbeef" },
 		});
 	});
