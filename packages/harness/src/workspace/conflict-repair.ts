@@ -5,11 +5,7 @@ import { type CommitIdentity } from "./commitChunk.ts";
 import { runDetectedVerification } from "./runVerify.ts";
 
 /** Each resolution is an explicitly observed conflicted path, never an arbitrary model-selected file. */
-export type ConflictResolver = (input: {
-	file: string;
-	content: string;
-	baseBranch: string;
-}) => Promise<string>;
+export type ConflictResolver = (input: { file: string; content: string; baseBranch: string }) => Promise<string>;
 
 /** A resolved Git merge with deterministic verification and immutable commit evidence. */
 export interface ConflictRepairEvidence {
@@ -39,11 +35,12 @@ export async function repairObservedMergeConflicts(options: {
 }): Promise<ConflictRepairEvidence> {
 	const worktree = resolve(options.worktree);
 	const mergeHead = runGit(worktree, ["rev-parse", "MERGE_HEAD"]).trim();
-	if (!/^[a-f0-9]{40}$/iu.test(mergeHead))
-		throw new Error("Conflict repair requires an active Git merge");
+	if (!/^[a-f0-9]{40}$/iu.test(mergeHead)) throw new Error("Conflict repair requires an active Git merge");
 	const before = runGit(worktree, ["rev-parse", "HEAD"]).trim();
 	const observed = runGit(worktree, ["diff", "--name-only", "--diff-filter=U", "-z"])
-		.split("\0").filter(Boolean).sort();
+		.split("\0")
+		.filter(Boolean)
+		.sort();
 	const expected = [...options.conflictedFiles].sort();
 	if (!observed.length || JSON.stringify(observed) !== JSON.stringify(expected))
 		throw new Error("Conflicted path manifest differs from the actual Git index");
@@ -61,7 +58,9 @@ export async function repairObservedMergeConflicts(options: {
 			throw new Error(`Conflict resolution supports regular files only: ${file}`);
 		const content = await readFile(path, "utf8");
 		const resolved = await options.resolveConflict({
-			file, content, baseBranch: options.baseBranch,
+			file,
+			content,
+			baseBranch: options.baseBranch,
 		});
 		if (typeof resolved !== "string" || resolved.length === 0)
 			throw new Error(`Resolver returned no content for ${file}`);
@@ -74,11 +73,20 @@ export async function repairObservedMergeConflicts(options: {
 		throw new Error("Cannot complete conflict repair: unmerged Git index entries remain");
 
 	const verification = await runDetectedVerification({
-		repoDir: worktree, changedFiles: observed,
+		repoDir: worktree,
+		changedFiles: observed,
 	});
-	if (!verification.length || verification.some((entry) =>
-		!entry.action.supported || !entry.action.command ||
-		!entry.result || entry.result.timedOut || entry.result.exitCode !== 0))
+	if (
+		!verification.length ||
+		verification.some(
+			(entry) =>
+				!entry.action.supported ||
+				!entry.action.command ||
+				!entry.result ||
+				entry.result.timedOut ||
+				entry.result.exitCode !== 0,
+		)
+	)
 		throw new Error("Conflict repair has no successful comprehensive deterministic verification");
 
 	const env = {
@@ -88,11 +96,19 @@ export async function repairObservedMergeConflicts(options: {
 		GIT_COMMITTER_EMAIL: options.identity.email,
 	};
 	if (!/^[a-f0-9]{64}$/iu.test(options.effectId)) throw new Error("Conflict repair requires effect identity");
-	runGit(worktree, ["commit", "-m", `fix(conflict): resolve ${options.baseBranch}\n\nDarkFactory-Effect: ${options.effectId}`], { env });
+	runGit(
+		worktree,
+		["commit", "-m", `fix(conflict): resolve ${options.baseBranch}\n\nDarkFactory-Effect: ${options.effectId}`],
+		{ env },
+	);
 	const commitSha = runGit(worktree, ["rev-parse", "HEAD"]).trim();
 	const parents = runGit(worktree, ["rev-list", "--parents", "-n", "1", commitSha]).split(" ");
-	if (!/^[a-f0-9]{40}$/iu.test(commitSha) || parents.length !== 3 ||
-		!parents.includes(before) || !parents.includes(mergeHead))
+	if (
+		!/^[a-f0-9]{40}$/iu.test(commitSha) ||
+		parents.length !== 3 ||
+		!parents.includes(before) ||
+		!parents.includes(mergeHead)
+	)
 		throw new Error("Conflict repair did not produce an observed two-parent merge commit");
 	if (runGit(worktree, ["status", "--porcelain"]).trim())
 		throw new Error("Conflict repair left uncommitted workspace changes");
