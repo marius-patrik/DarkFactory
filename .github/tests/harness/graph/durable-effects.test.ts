@@ -128,7 +128,29 @@ describe("observed production effects", () => {
 		await expect(runObservedProductionEffect(f.journal, id, "git.push", ops)).rejects.toBeInstanceOf(StaleEffectError);
 	});
 
-	test("invalid IDs and non-durable mutation evidence are rejected", async () => {
+	test("claimed success without independent observed readback stays pending", async () => {
+		const f = await fixture();
+		const id = productionEffectId("request-11", "merge", 1, "github.merge");
+		let attempts = 0;
+		await expect(runObservedProductionEffect(f.journal, id, "github.merge", {
+			observe: async () => undefined,
+			execute: async () => {
+				attempts++;
+				return { value: 17, evidence: "claimed-but-unobserved" };
+			},
+		})).rejects.toBeInstanceOf(IndeterminateEffectError);
+		expect(await f.journal.read(id)).toMatchObject({ status: "pending" });
+		await expect(runObservedProductionEffect(f.journal, id, "github.merge", {
+			observe: async () => undefined,
+			execute: async () => {
+				attempts++;
+				return { value: 17, evidence: "claimed-but-unobserved" };
+			},
+		})).rejects.toBeInstanceOf(IndeterminateEffectError);
+		expect(attempts).toBe(1);
+	});
+
+		test("invalid IDs and non-durable mutation evidence are rejected", async () => {
 		const f = await fixture();
 		await expect(f.journal.read("../escape")).rejects.toThrow("Invalid graph effect identity");
 		const id = productionEffectId("request-10", "apply", 1, "mutation");
