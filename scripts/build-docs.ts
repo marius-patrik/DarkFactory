@@ -65,8 +65,7 @@ if (!check) {
 	const logicalParent = dirname(outputDir);
 	await mkdir(logicalParent, { recursive: true });
 	const actualParent = await realpath(logicalParent);
-	if (actualParent !== logicalParent)
-		throw new Error("Site output parent must not traverse symbolic links");
+	if (actualParent !== logicalParent) throw new Error("Site output parent must not traverse symbolic links");
 	const physicalOutput = resolve(actualParent, basename(outputDir));
 	const physicalRepo = await realpath(repoRoot);
 	const physicalRel = relative(physicalRepo, physicalOutput);
