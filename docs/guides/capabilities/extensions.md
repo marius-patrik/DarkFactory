@@ -17,3 +17,11 @@ The configured TypeDoc API route (when extraction is enabled) reflects configure
 Capabilities declare needed secrets but do not own raw credential custody. Host adapters must not broaden permissions beyond approved capability contracts. Filesystem and network effects must be examined under runtime policy.
 
 **Status:** comprehensive executable ABI/generator acceptance is owned by #2701; supported target adapters must be verified from actual generated artifacts.
+
+## Source-backed ABI inspection and acceptance
+
+The active ABI version is declared by `CAPABILITY_ABI_VERSION` in `packages/capability/src/abi.ts`; capability definitions include runtime context, tool input JSON Schema, task-kind restrictions, credential requirements, commands, detectors, graph contributions, deterministic verification actions and hooks. Do not derive semver compatibility from the ABI version string alone.
+
+An author should locate a canonical capability manifest under `.darkfactory/plugins/`, examine its actual loader/parser support, and run the source-advertised `df plugin list`, `df plugin describe` or `df plugin validate` only with the intended release installed. Before calling the plugin active, verify the resolver selects it on a real package, its declared command runs with scoped credentials, a disallowed secret/filesystem capability is denied, its quality action actually executes and its generated host adapter preserves the same declared input/output. An empty manifest or a command-only stub is not an accepted implementation.
+
+The generated runtime/capability declarations index is a source AST inventory, **not** a full manifest schema or proven plugin ABI. #2701 owns adapter generation, isolation and external host verification; untested host variants are unsupported rather than automatically compatible.
