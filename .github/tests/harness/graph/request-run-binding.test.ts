@@ -49,7 +49,7 @@ describe("PR ingress belongs to its originating Request graph", () => {
 		const graph = {
 			version: 1 as const, checks: [],
 			nodes: [
-				{ id: "approval", kind: "gate" as const,
+				{ id: "approval", kind: "gate" as const, trigger: { event: "review" },
 					author_associations: ["OWNER"], allow_review_state: ["APPROVED"],
 					command: "^\\s*(?:/df\\s+|/)(?:approve|reject|revise)\\s*$" },
 				{ id: "apply", kind: "automation" as const, script: "apply" },
@@ -61,7 +61,7 @@ describe("PR ingress belongs to its originating Request graph", () => {
 		await writeFile(graphFile, JSON.stringify(graph));
 		await writeFile(eventFile, JSON.stringify({
 			action: "submitted",
-			review: { state: "approved", author_association: "OWNER",
+			review: { state: "approved", commit_id: "a".repeat(40), author_association: "OWNER",
 				user: { login: "human-maintainer", type: "User" } },
 			pull_request: { number: 204, head: { sha: "a".repeat(40) } },
 			sender: { login: "human-maintainer", type: "User" },

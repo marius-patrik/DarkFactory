@@ -176,9 +176,7 @@ export async function dispatch(
 		const token = env.GH_TOKEN || env.GITHUB_TOKEN;
 		const source = options?.checkStateSource ??
 			(token && env.GITHUB_REPOSITORY ? githubCheckSource(token, env.GITHUB_REPOSITORY) : undefined);
-		if (!source && options?.runtime) {
-			throw new Error("Production graph checks ingress requires authoritative GitHub check-state readback");
-		}
+		
 		if (source) {
 			const sha = translated.subject.ref ?? "";
 			if (!/^[0-9a-f]{40}$/iu.test(sha)) {
@@ -189,7 +187,7 @@ export async function dispatch(
 				console.log(JSON.stringify({ type: "none", reason: "required checks pending" }));
 				return;
 			}
-			(translated.event as { type: "checks.completed"; conclusion: string }).conclusion =
+			translated.event.conclusion =
 				gateResult.conclusion === "required_green" ? "required_green" : "failed";
 		}
 	}

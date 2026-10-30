@@ -50,7 +50,7 @@ describe("dispatch checks-gate", () => {
 			action: "completed",
 			check_suite: {
 				conclusion: "success",
-				head_sha: "abc123",
+				head_sha: "a".repeat(40),
 				pull_requests: [{ number: 1 }],
 			},
 		};

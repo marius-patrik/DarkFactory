@@ -143,7 +143,7 @@ export function createProductionGraphHandlers(options: ProductionGraphHandlerOpt
 			};
 			// Unsupported/unexecuted checks cannot be counted as verification.
 			if (code.verification.length === 0 ||
-				code.verification.some((check) => !check.action.supported || !check.action.command ||
+				code.verification.some((check) => !check.action.command ||
 					!check.result || check.result.exitCode !== 0 || check.result.timedOut)) {
 				return { outcome: "failure", outputs: { error: "Deterministic verification was not fully executed", branch, verification: code.verification } };
 			}

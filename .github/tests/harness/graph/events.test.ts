@@ -96,25 +96,25 @@ describe("translateGitHubEvent", () => {
 		const payload = {
 			action: "submitted",
 			sender: { type: "User", login: "owner" },
-			review: { user: { login: "owner" }, author_association: "OWNER", state: "APPROVED" },
-			pull_request: { number: 11, head: { sha: "abc123" } },
+			review: { user: { login: "owner" }, author_association: "OWNER", state: "APPROVED", commit_id: "a".repeat(40) },
+			pull_request: { number: 11, head: { sha: "a".repeat(40) } },
 		};
 		expect(translateGitHubEvent("pull_request_review", payload)).toEqual({
 			kind: "event",
-			event: { type: "review", state: "APPROVED", actor: { login: "owner", association: "OWNER", is_bot: false }, ref: "abc123" },
-			subject: { number: 11, is_pr: true, ref: "abc123" },
+			event: { type: "review", state: "APPROVED", actor: { login: "owner", association: "OWNER", is_bot: false }, ref: "a".repeat(40) },
+			subject: { number: 11, is_pr: true, ref: "a".repeat(40) },
 		});
 	});
 
 	test("review submitted lower-cases state to uppercase", () => {
 		const payload = {
 			action: "submitted",
-			review: { user: { login: "owner" }, author_association: "OWNER", state: "commented" },
-			pull_request: { number: 2, head: { sha: "deadbeef" } },
+			review: { user: { login: "owner" }, author_association: "OWNER", state: "commented", commit_id: "b".repeat(40) },
+			pull_request: { number: 2, head: { sha: "b".repeat(40) } },
 		};
 		expect(translateGitHubEvent("pull_request_review", payload)).toEqual({
 			kind: "event",
-			event: { type: "review", state: "COMMENTED", actor: { login: "owner", association: "OWNER", is_bot: false }, ref: "deadbeef" },
+			event: { type: "review", state: "COMMENTED", actor: { login: "owner", association: "OWNER", is_bot: false }, ref: "b".repeat(40) },
 			subject: { number: 2, is_pr: true, ref: "deadbeef" },
 		});
 	});
@@ -122,11 +122,11 @@ describe("translateGitHubEvent", () => {
 	test("check_suite completed success -> required_green", () => {
 		const payload = {
 			action: "completed",
-			check_suite: { conclusion: "success", head_sha: "abc", pull_requests: [{ number: 3 }] },
+			check_suite: { conclusion: "success", head_sha: "c".repeat(40), pull_requests: [{ number: 3 }] },
 		};
 		expect(translateGitHubEvent("check_suite", payload)).toEqual({
 			kind: "event",
-			event: { type: "checks.completed", conclusion: "required_green", ref: "abc" },
+			event: { type: "checks.completed", conclusion: "required_green", ref: "c".repeat(40) },
 			subject: { number: 3, is_pr: true, ref: "abc" },
 		});
 	});
@@ -141,6 +141,30 @@ describe("translateGitHubEvent", () => {
 			event: { type: "checks.completed", conclusion: "failed", ref: "abc" },
 			subject: { number: 3, is_pr: true, ref: "abc" },
 		});
+	});
+
+	test("review evidence binds the reviewed commit, not a later PR head", () => {
+		const translated = translateGitHubEvent("pull_request_review", {
+			action: "submitted",
+			review: { state: "approved", commit_id: "d".repeat(40), user: { login: "owner" }, author_association: "OWNER" },
+			pull_request: { number: 12, head: { sha: "e".repeat(40) } },
+		});
+		expect(translated).toMatchObject({
+			kind: "event",
+			event: { type: "review", ref: "d".repeat(40) },
+			subject: { ref: "e".repeat(40) },
+		});
+	});
+
+	test("missing and truncated SHA evidence cannot enter production review or checks", () => {
+		expect(translateGitHubEvent("pull_request_review", {
+			action: "submitted",
+			review: { state: "approved", user: { login: "owner" } },
+			pull_request: { number: 12, head: { sha: "a".repeat(40) } },
+		})).toMatchObject({ kind: "skip", reason: "review lacks immutable commit evidence" });
+		expect(translateGitHubEvent("check_suite", {
+			action: "completed", check_suite: { head_sha: "abc", pull_requests: [{ number: 3 }] },
+		})).toMatchObject({ kind: "skip", reason: "check suite lacks immutable commit evidence" });
 	});
 
 	test("check_suite with no pull requests is skipped", () => {
