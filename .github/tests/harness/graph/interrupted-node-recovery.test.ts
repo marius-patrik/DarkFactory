@@ -24,7 +24,9 @@ const graph: WorkflowGraph = {
 	nodes: [
 		{ id: "sync", kind: "automation", script: "board-sync", trigger: { event: "issues.opened" } },
 		{
-			id: "done", kind: "gate", author_associations: ["OWNER"],
+			id: "done",
+			kind: "gate",
+			author_associations: ["OWNER"],
 			command: "^\\s*(?:/df\\s+|/)(?:approve|reject|revise)\\s*$",
 		},
 	],
@@ -39,14 +41,16 @@ async function fixture() {
 	let attempts = 0;
 	let before = false;
 	const handlers: NodeHandlers = {
-		agent: async () => { throw new Error("Unexpected model replay"); },
+		agent: async () => {
+			throw new Error("Unexpected model replay");
+		},
 		automation: async (_node, ctx) => {
 			if (!ctx.effect) throw new Error("Missing journal");
 			const observed = await ctx.effect("github.comment", {
 				observe: async () => {
 					try {
 						const value = await readFile(remote, "utf8");
-						return { value, evidence: "remote:" + value };
+						return { value, evidence: `remote:${value}` };
 					} catch (error) {
 						if ((error as NodeJS.ErrnoException).code === "ENOENT") return undefined;
 						throw error;
@@ -68,9 +72,16 @@ async function fixture() {
 		recoverableAutomations: ["board-sync"],
 	});
 	return {
-		root, remote, handlers, options,
-		get attempts() { return attempts; },
-		crashBeforeMutation() { before = true; },
+		root,
+		remote,
+		handlers,
+		options,
+		get attempts() {
+			return attempts;
+		},
+		crashBeforeMutation() {
+			before = true;
+		},
 	};
 }
 
@@ -100,12 +111,18 @@ describe("same-executor interrupted automation recovery", () => {
 	test("untrusted automation and changed delivery cannot hijack unfinished intent", async () => {
 		const f = await fixture();
 		await expect(runGraph(graph, f.root, f.handlers, ingress, f.options())).rejects.toBeInstanceOf(IndeterminateEffectError);
-		await expect(runGraph(graph, f.root, f.handlers, ingress, {
-			...f.options(), recoverableAutomations: [],
-		})).rejects.toThrow("reconcile effects before retry");
-		await expect(runGraph(graph, f.root, f.handlers, ingress, {
-			...f.options(), eventId: "different",
-		})).rejects.toThrow("active event");
+		await expect(
+			runGraph(graph, f.root, f.handlers, ingress, {
+				...f.options(),
+				recoverableAutomations: [],
+			}),
+		).rejects.toThrow("reconcile effects before retry");
+		await expect(
+			runGraph(graph, f.root, f.handlers, ingress, {
+				...f.options(),
+				eventId: "different",
+			}),
+		).rejects.toThrow("active event");
 		expect(f.attempts).toBe(1);
 	});
 
@@ -128,9 +145,12 @@ describe("same-executor interrupted automation recovery", () => {
 		await expect(runGraph(graph, f.root, f.handlers, ingress, f.options())).rejects.toBeInstanceOf(IndeterminateEffectError);
 		const controller = new AbortController();
 		controller.abort();
-		await expect(runGraph(graph, f.root, f.handlers, ingress, {
-			...f.options(), signal: controller.signal,
-		})).rejects.toThrow("cancelled");
+		await expect(
+			runGraph(graph, f.root, f.handlers, ingress, {
+				...f.options(),
+				signal: controller.signal,
+			}),
+		).rejects.toThrow("cancelled");
 		const result = await runGraph(graph, f.root, f.handlers, ingress, f.options());
 		expect(result.outputs.publication).toBe("published");
 		expect(f.attempts).toBe(1);
