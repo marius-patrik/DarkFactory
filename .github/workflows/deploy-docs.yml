@@ -41,7 +41,7 @@ jobs:
           [[ "$CANDIDATE_SHA" =~ ^[a-f0-9]{40}$ ]]
           test "$GITHUB_SHA" = "$CANDIDATE_SHA"
           if [[ "$DF_PROMOTE" == "true" ]]; then
-            [[ "$GITHUB_REF" =~ ^refs/tags/v[0-9]+\\.[0-9]+\\.[0-9]+$ ]] || {
+            [[ "$GITHUB_REF" =~ ^refs/tags/v[0-9]+\.[0-9]+\.[0-9]+$ ]] || {
               echo "::error::Production promotion requires a SemVer tag"; exit 1;
             }
           fi
