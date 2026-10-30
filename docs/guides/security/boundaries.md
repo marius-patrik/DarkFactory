@@ -17,3 +17,11 @@ Every mutation must be approval-bound where required and later verified by readb
 ## Incident
 
 On suspicion of credential leakage, stop deployment, rotate affected credentials, invalidate sessions as appropriate, collect non-secret provenance and review the exact artifact. #2700/#2706 own runtime security and negative-case acceptance.
+
+## Static artifact and auth test cases
+
+A browser can read every file published under a public Pages base path. Treat **all** JavaScript, HTML, JSON, source maps and downloaded artifacts as public, even when a UI control is hidden. The packager rejects known credential signatures, symlinks, unlisted files, unsafe relative asset names and manifest checksum mismatches, but signature scanning is a **defense-in-depth heuristic**, not a proof that an arbitrary secret was absent. DF-03 must show the bundle uses public OAuth metadata and a confidential server-side broker, never App installation keys or provider tokens.
+
+Required negative tests include a tampered asset checksum, unlisted hidden file, symlinked bundle entry, mismatched Web source SHA/base path, unauthorized user action, expired OAuth session, wrong broker redirect URI, missing backend and root-vs-project Pages URL. A failed or unavailable live test is a release blocker under #2706, not a passing security claim.
+
+For a suspected leak, freeze publication and affected credentials, preserve only nonsecret artifact digests and GitHub run IDs, revoke/rotate the breached secret and repeat independent inspection before authorizing a replacement. Browser cache/CDN invalidation must be evaluated separately from deleting source files.
