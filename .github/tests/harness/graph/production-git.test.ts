@@ -180,6 +180,12 @@ describe("canonical graph real git composition", () => {
 				baseBranch: "main",
 				conflictedFiles: ["file.txt"],
 				resolveConflict: async () => "resolved without proof\n",
+				identity: { name: "Reviewer", email: "reviewer@example.test" },
+				effectId: "3".repeat(64),
+			}),
+		).rejects.toThrow("deterministic verification");
+		expect(git(f.repo, "ls-remote", "--heads", "origin",
+			`refs/heads/${branch}`).split(/\s+/u)[0]).toBe(originalRemote);
 		expect(git(worktree, "rev-parse", "-q", "--verify", "MERGE_HEAD")).toMatch(/^[a-f0-9]{40}$/);
 	});
 

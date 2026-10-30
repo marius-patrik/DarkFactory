@@ -509,6 +509,7 @@ async function runGraphUnlocked(
 		if (node.kind === "agent") {
 			const planningGateExists = graph.nodes.some(
 				(candidate) => candidate.kind === "gate" && candidate.approves_review === "planning",
+			);
 			const writesCode = node.mode === "write" || node.id === "implement" || node.id === "review-fix";
 			if (planningGateExists && writesCode && !reviewApprovalFresh(state.reviews.planning))
 				throw new Error(`Node ${node.id} cannot mutate code without fresh approved Planning`);
