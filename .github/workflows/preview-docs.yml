@@ -1,6 +1,9 @@
 name: Validate Documentation and Unified Site Contract
 
 on:
+  # Acceptance-only isolated branch; remove this trigger during canonical integration.
+  push:
+    branches: [agent/2704-docs-acceptance-hardening]
   pull_request:
     types: [opened, synchronize, reopened]
   workflow_dispatch:
@@ -23,8 +26,10 @@ jobs:
         run: bun install --frozen-lockfile
       - name: Strict documentation graph and reference verification
         run: bun scripts/build-docs.ts --check
-      - name: Documentation and artifact security tests
-        run: bun test ./.github/tests/docs/quality-contract.test.ts
+      - name: Canonical no-argument documentation validation
+        run: bun run docs
+      - name: All documentation and artifact security tests
+        run: bun test ./.github/tests/docs
       - name: Verify owned documentation code with Biome
         run: >
           bunx biome ci
@@ -45,6 +50,9 @@ jobs:
           test -s "$RUNNER_TEMP/darkfactory-docs-preview/content.json"
           test -s "$RUNNER_TEMP/darkfactory-docs-preview/guide-getting-started-installation/index.html"
           test -s "$RUNNER_TEMP/darkfactory-docs-preview/reference-cli/index.html"
+          test -s "$RUNNER_TEMP/darkfactory-docs-preview/reference-runtime-contracts/index.html"
+          test -s "$RUNNER_TEMP/darkfactory-docs-preview/guide-reference-coverage/index.html"
+          test ! -e "$RUNNER_TEMP/darkfactory-docs-preview/site-manifest.json"
       - name: Preserve documentation preview for source review
         uses: actions/upload-artifact@v4
         with:
