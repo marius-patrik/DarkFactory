@@ -72,7 +72,7 @@ export function documentationFindings(graph: DocsContentGraph): readonly string[
 			else if (page.markdown.match(/^#\s+(.+)$/mu)?.[1]?.trim() !== guide.title)
 				findings.push(`Guide heading differs from navigation title: ${id}`);
 		}
-	if (!byId.has("reference-cli") || !byId.has("reference-config") || !byId.has("reference-typescript-exports"))
+	if (!byId.has("reference-cli") || !byId.has("reference-config") || !byId.has("reference-typescript-exports") || !byId.has("reference-runtime-contracts"))
 		findings.push("Missing generated command/config/export reference");
 	const cliHelp = byId.get("reference-cli")?.markdown ?? "";
 	if (!cliHelp.includes("df --version") || !cliHelp.includes("df graph"))
