@@ -1,153 +1,34 @@
-import type { FC, ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useState, useSyncExternalStore, type FC, type ReactNode } from "react";
 import { type BaseLocationHook, Link, Switch, useLocation, Route as WouterRoute, Router as WouterRouter } from "wouter";
-import { type QuotaDashboardState, QuotaDashboardView } from "./quota";
+import {
+	beginOperatorLogin,
+	finishOperatorLogin,
+	logoutOperator,
+	operatorSession,
+	resolveAuthority,
+	type AuthState,
+	type BrowserLoginConfig,
+} from "./operator-auth.ts";
+import { createGitHubOperatorSource, type OperatorReadSource } from "./operator-data.ts";
+import { OperatorView, SURFACES } from "./operator-views.tsx";
+import { type QuotaDashboardState } from "./quota.tsx";
+import { operatorStyles } from "./web-style.ts";
+import { operatorPathFromLocation } from "./site-contract.ts";
 
 interface RouterProps {
 	basename?: string;
-	/**
-	 * Location source, forwarded to wouter. Wouter defaults to the browser location, which does not
-	 * exist outside a browser, so an embedder serving this shell from a server or a frame has to
-	 * supply its own â€” as does a test asserting that `/` and `/status` render different views.
-	 * Forwarding wouter's own hook is not a test seam; it is the capability a component library owes
-	 * the code that embeds it.
-	 */
+	/** Embedders/tests can provide their own wouter location source. Web defaults to Pages-safe hash routing. */
 	hook?: BaseLocationHook;
 	children: ReactNode;
 }
-
-export const Router: FC<RouterProps> = ({ basename, hook, children }) => {
-	return (
-		<WouterRouter base={basename} hook={hook}>
-			{children}
-		</WouterRouter>
-	);
-};
-
-export const useRouter = () => {
-	const [location, setLocation] = useLocation();
-	return {
-		path: location,
-		navigate: (to: string) => setLocation(to),
-	};
-};
-interface RouteProps {
-	path?: string;
-	component?: FC<{ params: Record<string, string | undefined> }>;
-	children?: ReactNode;
+function hashPath(): string {
+	if (typeof window === "undefined") return "/";
+	const raw = window.location.hash.replace(/^#/u, "");
+	if (raw.startsWith("/")) return raw;
+	const base = document.querySelector<HTMLMetaElement>('meta[name="darkfactory-base-path"]')?.content ?? "/";
+	return operatorPathFromLocation(window.location.pathname, base);
 }
-
-export const Route: FC<RouteProps> = ({ path, component: Component, children }) => {
-	return (
-		<WouterRoute path={path}>{(params) => (Component ? <Component params={params} /> : <>{children}</>)}</WouterRoute>
-	);
-};
-
-const HomeView: FC = () => (
-	<div>
-		<h2>Dashboard</h2>
-		<p>DarkFactory operator UI and runtime shell.</p>
-	</div>
-);
-
-const StatusView: FC = () => (
-	<div>
-		<h2>System Status</h2>
-		<p>Capability tiers, routing policy, and quota health.</p>
-	</div>
-);
-
-const DocsView: FC = () => (
-	<div>
-		<h2>Documentation</h2>
-		<p>Architecture, ADRs, and pipeline operations guide.</p>
-	</div>
-);
-
-const NotFoundView: FC = () => (
-	<div>
-		<h2>404 Not Found</h2>
-		<p>The requested page does not exist.</p>
-	</div>
-);
-
-export interface RouteConfig {
-	path: string;
-	component: FC<{ params: Record<string, string | undefined> }>;
-	label: string;
-}
-
-function defaultRoutes(quota: QuotaDashboardState): RouteConfig[] {
-	const QuotaView: RouteConfig["component"] = () => <QuotaDashboardView state={quota} />;
-	return [
-		{ path: "/", component: HomeView, label: "Dashboard" },
-		{ path: "/status", component: StatusView, label: "System Status" },
-		{ path: "/quota", component: QuotaView, label: "Quota" },
-		{ path: "/docs", component: DocsView, label: "Documentation" },
-	];
-}
-
-const RouteAnnouncer: FC = () => {
-	const [location] = useLocation();
-	return (
-		<div className="sr-only" aria-live="polite">
-			{"Navigated to " + location}
-		</div>
-	);
-};
-interface DarkFactoryShellProps {
-	basename?: string;
-	routes?: RouteConfig[];
-	/** Browser-safe quota data state. Defaults to disconnected for public/static builds. */
-	quota?: QuotaDashboardState;
-	/** Location source for the embedded router. See {@link RouterProps.hook}. */
-	hook?: BaseLocationHook;
-}
-
-export const DarkFactoryShell: FC<DarkFactoryShellProps> = ({
-	basename,
-	routes,
-	quota = { status: "disconnected" },
-	hook,
-}) => {
-	const activeRoutes = routes ?? defaultRoutes(quota);
-	return (
-		<Router basename={basename} hook={hook}>
-			<RouteAnnouncer />
-			<div className="darkfactory-shell">
-				<header>
-					<h1>DarkFactory Web</h1>
-					<nav>
-						{activeRoutes.map((route) => (
-							<RouteLink key={route.path} to={route.path}>
-								{route.label}
-							</RouteLink>
-						))}
-					</nav>
-				</header>
-				<main>
-					<Switch>
-						{activeRoutes.map((route) => (
-							<Route key={route.path} path={route.path} component={route.component} />
-						))}
-						<Route>
-							<NotFoundView />
-						</Route>
-					</Switch>
-				</main>
-			</div>
-		</Router>
-	);
-};
-
-interface RouteLinkProps {
-	to: string;
-	children: ReactNode;
-}
-
-export const RouteLink: FC<RouteLinkProps> = ({ to, children }) => {
-	return (
-		<Link href={to} className="route-link">
-			{children}
-		</Link>
-	);
-};
+function subscribeHash(onChange: () => void): () => void {
+	if (typeof window === "undefined") return () => undefined;
+	window.addEventListener("hashchange", onChange);
+	window.addEventListener("popstate", onChang¶»§q«^

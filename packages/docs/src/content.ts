@@ -1,11 +1,23 @@
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { basename, join, relative } from "node:path";
+import { darkFactoryDirectory } from "../../protocol/src/config-document.ts";
 import type { DocsConfig } from "./config.ts";
 import { loadDocsConfig } from "./config.ts";
-import { darkFactoryDirectory } from "../../protocol/src/config-document.ts";
+import { GUIDE_SECTIONS, guidePath } from "./guides.ts";
+import { generatedReferencePages } from "./references.ts";
 
 /** Semantic kind assigned to a documentation page. */
-type DocsPageKind = "home" | "product" | "plan" | "rules" | "rule" | "note" | "adr" | "capability";
+type DocsPageKind =
+	| "home"
+	| "product"
+	| "plan"
+	| "rules"
+	| "rule"
+	| "note"
+	| "adr"
+	| "capability"
+	| "guide"
+	| "reference";
 
 /** One canonical Markdown page in the DarkFactory content graph. */
 export interface DocsPage {
@@ -77,12 +89,20 @@ export interface DocsCapabilitySummary {
 	docs: readonly string[];
 }
 
+/** One derived hierarchical navigation group. */
+export interface DocsNavigationGroup {
+	id: string;
+	title: string;
+	pages: readonly string[];
+}
+
 /** Typed headless documentation content graph consumed by @darkfactory/web. */
 export interface DocsContentGraph {
 	version: 1;
 	site: DocsConfig["site"];
 	home: string;
 	pages: readonly DocsPage[];
+	navigation?: readonly DocsNavigationGroup[];
 	workflows: readonly DocsWorkflowSummary[];
 	repository?: DocsRepositorySummary;
 	capabilities?: readonly DocsCapabilitySummary[];
@@ -228,6 +248,33 @@ function workflowSummary(repoRoot: string, source: string): DocsWorkflowSummary 
 	return { source: source.replaceAll("\\", "/"), name, jobs };
 }
 
+/** Deterministic navigation from the guide registry and discovered canonical sources. */
+export function documentationNavigation(pages: readonly DocsPage[]): readonly DocsNavigationGroup[] {
+	const sections: DocsNavigationGroup[] = [{ id: "home", title: "Product contract", pages: ["home"] }];
+	for (const section of GUIDE_SECTIONS) {
+		sections.push({
+			id: section.id,
+			title: section.title,
+			pages: section.pages.map((guide) => `guide-${section.id}-${guide.slug}`),
+		});
+	}
+	for (const [id, title, kind] of [
+		["references", "Generated references", "reference"],
+		["decisions", "Accepted decisions", "adr"],
+		["rules", "Governance rules", "rule"],
+		["capability-docs", "Capability documentation", "capability"],
+	] as const) {
+		const selected = pages.filter((page) => page.kind === kind).map((page) => page.id);
+		if (id === "decisions" && pages.some((page) => page.id === "architecture-decisions"))
+			selected.unshift("architecture-decisions");
+		if (selected.length) sections.push({ id, title, pages: selected });
+	}
+	const known = new Set(pages.map((page) => page.id));
+	for (const group of sections)
+		for (const id of group.pages) if (!known.has(id)) throw new Error(`Unknown navigation page: ${id}`);
+	return sections;
+}
+
 /** Adds capability-declared Markdown documentation to an existing content graph. */
 export function includeCapabilityDocumentation(
 	repoRoot: string,
@@ -248,7 +295,7 @@ export function includeCapabilityDocumentation(
 			ids.add(id);
 		}
 	}
-	return { ...graph, pages };
+	return { ...graph, pages, navigation: documentationNavigation(pages) };
 }
 
 /** Compiles canonical repository documentation into a deterministic typed content graph. */
@@ -258,8 +305,17 @@ export function compileDocsContentGraph(
 	api?: DocsApiReference,
 ): DocsContentGraph {
 	const pages: DocsPage[] = [markdownPage(repoRoot, config.home, "home", "home")];
+	for (const section of GUIDE_SECTIONS) {
+		for (const guide of section.pages) {
+			const source = guidePath(section.id, guide.slug);
+			pages.push(markdownPage(repoRoot, source, "guide", `guide-${section.id}-${guide.slug}`));
+		}
+	}
+	pages.push(...generatedReferencePages(repoRoot));
 	for (const source of ruleSources(repoRoot)) pages.push(markdownPage(repoRoot, source, "rule"));
 	pages.push(...adrPages(repoRoot));
+	// Preserve one full ADR landing for source-relative links from the manual.
+	pages.push(markdownPage(repoRoot, adrDocumentSource(), "product", "architecture-decisions"));
 	const workflowRoot = join(repoRoot, ".github", "workflows");
 	const workflows = existsSync(workflowRoot)
 		? readdirSync(workflowRoot, { withFileTypes: true })
@@ -273,5 +329,13 @@ export function compileDocsContentGraph(
 		if (ids.has(page.id)) throw new Error(`Duplicate documentation page id: ${page.id}`);
 		ids.add(page.id);
 	}
-	return { version: 1, site: config.site, home: "home", pages, workflows, ...(api ? { api } : {}) };
+	return {
+		version: 1,
+		site: config.site,
+		home: "home",
+		pages,
+		navigation: documentationNavigation(pages),
+		workflows,
+		...(api ? { api } : {}),
+	};
 }
