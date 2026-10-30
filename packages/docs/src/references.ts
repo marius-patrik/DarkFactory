@@ -74,6 +74,38 @@ export function declaredPackageApiIndex(repoRoot: string): readonly string[] {
 	if (!rows.length) throw new Error("No declared public TypeScript entrypoint exports");
 	return rows.sort((a, b) => a.localeCompare(b));
 }
+
+/** Read the declarations that own workflow, approval and capability contracts, not guessed docs types. */
+export function declaredContractIndex(repoRoot: string): readonly string[] {
+	const sources = [
+		"packages/protocol/src/workflow.ts",
+		"packages/protocol/src/planning.ts",
+		"packages/protocol/src/review.ts",
+		"packages/protocol/src/recovery.ts",
+		"packages/capability/src/abi.ts",
+		"packages/auth/src/types.ts",
+		"packages/github/src/types.ts",
+		"packages/harness/src/graph/events.ts",
+		"packages/harness/src/graph/run-state.ts",
+	] as const;
+	const rows: string[] = [];
+	for (const path of sources) {
+		const absolute = resolve(repoRoot, path);
+		if (!existsSync(absolute)) throw new Error(`Missing source contract: ${path}`);
+		const source = ts.createSourceFile(absolute, readFileSync(absolute, "utf8"), ts.ScriptTarget.Latest, true);
+		for (const statement of source.statements) {
+			if (!ts.canHaveModifiers(statement) ||
+				!ts.getModifiers(statement)?.some((modifier) => modifier.kind === ts.SyntaxKind.ExportKeyword)) continue;
+			if (!("name" in statement) || !statement.name || !ts.isIdentifier(statement.name as ts.Node)) continue;
+			const declarationName = (statement.name as ts.Identifier).text;
+			if (!/^[A-Za-z_$][\w$]*$/u.test(declarationName)) continue;
+			const category = ts.SyntaxKind[statement.kind] ?? "Unknown";
+			rows.push(`| \`${path}\` | \`${declarationName}\` | ${category} |`);
+		}
+	}
+	if (!rows.length) throw new Error("No source contract declarations were found");
+	return rows.sort((a, b) => a.localeCompare(b));
+}
 /** Generate source-backed CLI, configuration and TS entrypoint references. */
 export function generatedReferencePages(repoRoot: string): DocsPage[] {
 	const cliPath = "packages/cli/src/cli.ts";
@@ -103,6 +135,19 @@ export function generatedReferencePages(repoRoot: string): DocsPage[] {
 				"# Configuration field reference\n\nSource-backed JSON key paths and value types, with no values or secrets. Producer fields are not consumer defaults.\n\n| Field | JSON type |\n| --- | --- |\n" +
 				rows.join("\n") +
 				"\n",
+		},
+		{
+			id: "reference-runtime-contracts",
+			kind: "reference",
+			title: "Workflow, approvals and capability declarations",
+			source: "packages/docs/src/references.ts",
+			markdown:
+				"# Workflow, approvals and capability declarations\n\n" +
+				"Source AST inventory of exported declarations for workflow graph, state, events, Planning, review, recovery, credentials and capabilities. " +
+				"This index is not a serialized JSON Schema, runtime acceptance, TypeDoc semantic report or compatibility guarantee. " +
+				"Inspect the named source declarations and generated TypeDoc JSON (when configured); #2698/#2699/#2700/#2701 own live validation.\n\n" +
+				"| Source file | Export | TypeScript AST declaration kind |\n| --- | --- | --- |\n" +
+				declaredContractIndex(repoRoot).join("\n") + "\n",
 		},
 		{
 			id: "reference-typescript-exports",
