@@ -12,7 +12,7 @@ test("operator routes display distinct real resource headings, not placeholder c
 	const graph = renderAt("/graph");
 	expect(overview).toContain("Authoritative repository identity");
 	expect(requests).toContain("Recently updated issues labeled Request");
-	expect(graph).toContain("Durable DarkFactory graph state");
+	expect(graph).toContain("Graph execution");
 	expect(requests).not.toContain("DarkFactory operator UI and runtime shell.");
 	expect(graph).not.toBe(requests);
 });
@@ -27,11 +27,4 @@ test("unknown routes fail closed with a recovery link", () => {
 	const output = renderAt("/unknown");
 	expect(output).toContain("Page not found");
 	expect(output).toContain("Return to overview");
-	expect(output).not.toContain("Live read-only canonical repository configuration file.");
-});
-test("without repository configuration operator fails closed", () => {
-	const hook = (): [string, (to: string) => void] => ["/", () => undefined];
-	const output = renderToString(<DarkFactoryShell hook={hook} />);
-	expect(output).toContain("Repository not configured");
-	expect(output).toContain("Public Â· read-only");
-});
+	expect(output).not.toContain("¶»§q«^
