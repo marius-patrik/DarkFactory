@@ -254,6 +254,18 @@ export async function runObservedProductionEffect<T>(
 			}
 		}
 		if (!result.evidence?.trim()) throw new IndeterminateEffectError(id);
+		// An adapter's execute() response is not authoritative proof of an
+		// externally committed mutation. Re-observe through the independent
+		// read boundary before committing the local journal.
+		let confirmed: ObservedEffect<T> | undefined;
+		try {
+			confirmed = await operations.observe();
+		} catch {
+			throw new IndeterminateEffectError(id);
+		}
+		if (!confirmed || confirmed.evidence !== result.evidence ||
+			!isDeepStrictEqual(confirmed.value, result.value))
+			throw new IndeterminateEffectError(id);
 		const record: EffectRecord<T> & { status: "completed" } = {
 			id, kind, status: "completed", value: result.value,
 			evidence: result.evidence, observedAt: new Date().toISOString(),
