@@ -1,6 +1,7 @@
 import { createHash } from "node:crypto";
 import { copyFile, lstat, mkdir, readdir, readFile, writeFile } from "node:fs/promises";
 import { join, posix, resolve, sep } from "node:path";
+import { GUIDE_SECTIONS } from "./guides.ts";
 
 export interface WebAsset {
 	path: string;
@@ -48,6 +49,21 @@ function safeAssetPath(path: string): boolean {
 		!/\.(?:map|pem|key|p12|pfx)$/iu.test(path) &&
 		!/(?:^|\/)(?:\.env[^/]*|credentials?[^/]*|secrets?[^/]*|private-key[^/]*)$/iu.test(path)
 	);
+}
+
+/** Require every authored guide and generated entry point in a publishable Pages artifact. */
+export function requiredDocumentationRoutes(): readonly string[] {
+	return [
+		"docs/index.html",
+		"docs/content.json",
+		"docs/search.json",
+		"docs/reference-cli/index.html",
+		"docs/reference-config/index.html",
+		"docs/reference-typescript-exports/index.html",
+		...GUIDE_SECTIONS.flatMap((section) =>
+			section.pages.map((page) => `docs/guide-${section.id}-${page.slug}/index.html`),
+		),
+	];
 }
 
 function sha256(bytes: Uint8Array): string {
@@ -166,8 +182,9 @@ export async function finalizeUnifiedSite(
 	if (web.routeMode === "history") await writeFile(join(outputDir, "404.html"), index);
 	await writeFile(join(outputDir, ".nojekyll"), "");
 	const paths = (await filePaths(outputDir)).filter((path) => path !== "site-manifest.json");
-	if (!paths.includes("docs/index.html") || !paths.includes("docs/content.json") || !paths.includes("docs/search.json"))
-		throw new Error("Required Docs output missing");
+	for (const path of requiredDocumentationRoutes()) {
+		if (!paths.includes(path)) throw new Error(`Required Docs route missing: ${path}`);
+	}
 	const files: WebAsset[] = [];
 	for (const path of paths) {
 		const bytes = await regularFile(join(outputDir, path));
@@ -231,7 +248,8 @@ export async function verifyUnifiedSite(
 			unsafePathCharacter(asset.path) ||
 			asset.path.startsWith("/") ||
 			asset.path !== posix.normalize(asset.path) ||
-			asset.path.split("/").some((component) => component === "." || component === "..") ||
+			(asset.path !== ".nojekyll" && asset.path.split("/").some((component) => component.startsWith("."))) ||
+			asset.path === "site-manifest.json" ||
 			names.has(asset.path) ||
 			typeof asset.sha256 !== "string" ||
 			!/^[0-9a-f]{64}$/u.test(asset.sha256)
@@ -240,7 +258,7 @@ export async function verifyUnifiedSite(
 		}
 		names.add(asset.path);
 	}
-	for (const path of ["index.html", "docs/index.html", "docs/content.json", "docs/search.json", ".nojekyll"]) {
+	for (const path of ["index.html", ".nojekyll", ...requiredDocumentationRoutes()]) {
 		if (!names.has(path)) throw new Error(`Missing required site asset: ${path}`);
 	}
 	if (raw.routeMode === "history" && !names.has("404.html")) throw new Error("Missing history-routing fallback");
