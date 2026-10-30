@@ -135,6 +135,10 @@ export const GUIDE_SECTIONS: readonly GuideSection[] = [
 				slug: "contracts",
 				title: "Reference index",
 			},
+			{
+				slug: "coverage",
+				title: "Documentation coverage and acceptance",
+			},
 		],
 	},
 	{
