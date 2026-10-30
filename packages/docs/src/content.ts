@@ -251,12 +251,12 @@ function workflowSummary(repoRoot: string, source: string): DocsWorkflowSummary 
 /** Deterministic navigation from the guide registry and discovered canonical sources. */
 export function documentationNavigation(pages: readonly DocsPage[]): readonly DocsNavigationGroup[] {
 	const sections: DocsNavigationGroup[] = [{ id: "home", title: "Product contract", pages: ["home"] }];
+	const available = new Set(pages.map((page) => page.id));
 	for (const section of GUIDE_SECTIONS) {
-		sections.push({
-			id: section.id,
-			title: section.title,
-			pages: section.pages.map((guide) => `guide-${section.id}-${guide.slug}`),
-		});
+		const ids = section.pages
+			.map((guide) => `guide-${section.id}-${guide.slug}`)
+			.filter((id) => available.has(id));
+		if (ids.length) sections.push({ id: section.id, title: section.title, pages: ids });
 	}
 	for (const [id, title, kind] of [
 		["references", "Generated references", "reference"],
