@@ -34,35 +34,62 @@ jobs:
       - name: Verify exact commit binding
         env:
           CANDIDATE_SHA: ${{ inputs.candidate_sha }}
+          DF_PROMOTE: ${{ inputs.promote }}
+        shell: bash
         run: |
+          set -euo pipefail
+          [[ "$CANDIDATE_SHA" =~ ^[a-f0-9]{40}$ ]]
           test "$GITHUB_SHA" = "$CANDIDATE_SHA"
-          if [[ "${{ inputs.promote }}" == "true" && ! "$GITHUB_REF" =~ ^refs/tags/v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-            echo "::error::Production promotion requires an approved SemVer release tag"
-            exit 1
+          if [[ "$DF_PROMOTE" == "true" ]]; then
+            [[ "$GITHUB_REF" =~ ^refs/tags/v[0-9]+\\.[0-9]+\\.[0-9]+$ ]] || {
+              echo "::error::Production promotion requires a SemVer tag"; exit 1;
+            }
           fi
       - uses: actions/checkout@v4
         with:
           persist-credentials: false
+          fetch-depth: 0
       - uses: oven-sh/setup-bun@v2
+      - name: Verify promoted version and main ancestry
+        if: ${{ inputs.promote }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          version="$(bun -p 'JSON.parse(await Bun.file("package.json").text()).version')"
+          test "$GITHUB_REF_NAME" = "v$version" || {
+            echo "::error::Tag and package version disagree"; exit 1;
+          }
+          git merge-base --is-ancestor "$GITHUB_SHA" refs/remotes/origin/main || {
+            echo "::error::Candidate is not contained in main"; exit 1;
+          }
       - name: Install exact workspace
         run: bun install --frozen-lockfile
       - name: Validate trusted DF-03 producing workflow run
         env:
           GH_TOKEN: ${{ github.token }}
           WEB_BUILD_RUN_ID: ${{ inputs.web_build_run_id }}
+        shell: bash
         run: |
-          if [[ ! "$WEB_BUILD_RUN_ID" =~ ^[0-9]+$ ]]; then
-            echo "::error::DF-03 artifact run id must be numeric"
-            exit 1
-          fi
+          set -euo pipefail
+          [[ "$WEB_BUILD_RUN_ID" =~ ^[0-9]+$ ]] || {
+            echo "::error::DF-03 artifact run id must be numeric"; exit 1;
+          }
+          # This deliberately fails until the audited DF-03 producer exists.
+          workflow="$(gh api "/repos/$GITHUB_REPOSITORY/actions/workflows/build-web.yml")"
+          workflow_id="$(jq -er 'select(.path == ".github/workflows/build-web.yml" and .state == "active") | .id' <<< "$workflow")"
           gh api "/repos/$GITHUB_REPOSITORY/actions/runs/$WEB_BUILD_RUN_ID" |
-            jq -e --arg sha "$GITHUB_SHA" --arg repo "$GITHUB_REPOSITORY" '
+            jq -e --arg sha "$GITHUB_SHA" --arg repo "$GITHUB_REPOSITORY" --arg branch "$GITHUB_REF_NAME" --argjson workflow_id "$workflow_id" '
+              .workflow_id == $workflow_id and
               .head_sha == $sha and
+              .head_branch == $branch and
               .head_repository.full_name == $repo and
+              .status == "completed" and
               .conclusion == "success" and
               (.event == "push" or .event == "workflow_dispatch") and
               .run_attempt >= 1
             '
+          gh api "/repos/$GITHUB_REPOSITORY/actions/runs/$WEB_BUILD_RUN_ID/artifacts?per_page=100" |
+            jq -e '[.artifacts[] | select(.name == "darkfactory-web-candidate" and (.expired | not) and .size_in_bytes > 0)] | length == 1'
       - name: Download DF-03 frontend handoff
         uses: actions/download-artifact@v4
         with:
@@ -107,6 +134,7 @@ jobs:
           name: darkfactory-unified-site-candidate
           path: site
           include-hidden-files: true
+          if-no-files-found: error
 
   deploy:
     name: human-authorized-live-pages-deployment
