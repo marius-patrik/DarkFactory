@@ -116,8 +116,7 @@ export async function resolveRequestRunForPullRequest(runsDir: string, prNumber:
 		const state = JSON.parse(source) as { outputs?: { pr_number?: unknown } };
 		if (state.outputs?.pr_number === prNumber) matches.push(entry.name);
 	}
-	if (matches.length > 1)
-		throw new Error(`PR #${prNumber} is bound to multiple Request runs: ${matches.join(", ")}`);
+	if (matches.length > 1) throw new Error(`PR #${prNumber} is bound to multiple Request runs: ${matches.join(", ")}`);
 	return matches[0];
 }
 
@@ -175,7 +174,8 @@ export async function dispatch(
 			GITHUB_REPOSITORY: process.env.GITHUB_REPOSITORY,
 		};
 		const token = env.GH_TOKEN || env.GITHUB_TOKEN;
-		const source = options?.checkStateSource ??
+		const source =
+			options?.checkStateSource ??
 			(token && env.GITHUB_REPOSITORY ? githubCheckSource(token, env.GITHUB_REPOSITORY) : undefined);
 		
 		if (source) {
@@ -203,10 +203,14 @@ export async function dispatch(
 			? await resolveRequestRunForPullRequest(runsDir, translated.subject.number)
 			: subject;
 		if (!boundSubject) {
-			console.log(JSON.stringify({
-				type: "skip", subject, event: translated.event.type,
-				reason: "no unique originating Request run for PR",
-			}));
+			console.log(
+				JSON.stringify({
+					type: "skip",
+					subject,
+					event: translated.event.type,
+					reason: "no unique originating Request run for PR",
+				}),
+			);
 			return;
 		}
 		const runDir = join(runsDir, boundSubject);
@@ -219,13 +223,18 @@ export async function dispatch(
 				throw new Error("Production graph execution requires authoritative external check readback");
 			const observed = await runtime.verifyChecks(ref);
 			if (observed === "pending") {
-				console.log(JSON.stringify({ type: "none", subject: boundSubject, reason: "required external checks pending" }));
+				console.log(
+					JSON.stringify({ type: "none", subject: boundSubject, reason: "required external checks pending" }),
+				);
 				return;
 			}
 			translated.event.conclusion = observed;
 		}
-		const eventId = options.deliveryId ?? createHash("sha256")
-			.update(JSON.stringify([opts.eventName, eventPayload])).digest("hex");
+		const eventId =
+			options.deliveryId ??
+			createHash("sha256")
+				.update(JSON.stringify([opts.eventName, eventPayload]))
+				.digest("hex");
 		const state = await runGraph(workflowGraph, runDir, runtime.handlers, translated.event, {
 			eventId,
 			...(runtime.effects ? { effects: runtime.effects } : {}),
@@ -234,8 +243,16 @@ export async function dispatch(
 			...(runtime.onAction ? { onAction: runtime.onAction } : {}),
 			...(runtime.reconcileAction ? { reconcileAction: runtime.reconcileAction } : {}),
 		});
-		console.log(JSON.stringify({ type: "executed", subject: boundSubject, event: translated.event.type,
-			run_id: state.run_id, current_node: state.current_node, quota_blocked: !!state.quota_blocked }));
+		console.log(
+			JSON.stringify({
+				type: "executed",
+				subject: boundSubject,
+				event: translated.event.type,
+				run_id: state.run_id,
+				current_node: state.current_node,
+				quota_blocked: !!state.quota_blocked,
+			}),
+		);
 		return;
 	}
 	const runState = await loadRunState(runsDir, subject, workflowGraph);

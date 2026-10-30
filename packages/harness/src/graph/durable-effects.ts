@@ -65,7 +65,11 @@ export async function replaceDurableJson(path: string, value: unknown): Promise<
 		await rename(temporary, path);
 		await syncDirectory(dir);
 	} catch (error) {
-		try { await unlink(temporary); } catch { /* rename may already have consumed it */ }
+		try {
+			await unlink(temporary);
+		} catch {
+			/* rename may already have consumed it */
+		}
 		throw error;
 	}
 }
@@ -202,7 +206,9 @@ export function productionEffectId(
 ): string {
 	if (!runId || !nodeId || !Number.isSafeInteger(iteration) || iteration < 1 || !kind)
 		throw new Error("Invalid deterministic graph effect identity");
-	return createHash("sha256").update(JSON.stringify([runId, nodeId, iteration, kind, suffix])).digest("hex");
+	return createHash("sha256")
+		.update(JSON.stringify([runId, nodeId, iteration, kind, suffix]))
+		.digest("hex");
 }
 
 /**
@@ -236,8 +242,12 @@ export async function runObservedProductionEffect<T>(
 			throw error;
 		}
 		if (previous?.status === "completed") {
-			if (!observed || observed.evidence !== previous.evidence || !previous.evidence.trim() ||
-				!isDeepStrictEqual(observed.value, previous.value))
+			if (
+				!observed ||
+				observed.evidence !== previous.evidence ||
+				!previous.evidence.trim() ||
+				!isDeepStrictEqual(observed.value, previous.value)
+			)
 				throw new StaleEffectError(id);
 			return previous;
 		}
@@ -267,8 +277,12 @@ export async function runObservedProductionEffect<T>(
 			!isDeepStrictEqual(confirmed.value, result.value))
 			throw new IndeterminateEffectError(id);
 		const record: EffectRecord<T> & { status: "completed" } = {
-			id, kind, status: "completed", value: result.value,
-			evidence: result.evidence, observedAt: new Date().toISOString(),
+			id,
+			kind,
+			status: "completed",
+			value: result.value,
+			evidence: result.evidence,
+			observedAt: new Date().toISOString(),
 		};
 		try {
 			await journal.write(record);
