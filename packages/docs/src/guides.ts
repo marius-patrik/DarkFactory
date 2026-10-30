@@ -37,11 +37,11 @@ export const GUIDE_SECTIONS: readonly GuideSection[] = [
 		pages: [
 			{
 				slug: "lifecycle",
-				title: "Requests, planning, approvals and review",
+				title: "Operating a governed Request",
 			},
 			{
 				slug: "recovery",
-				title: "Failure handling, checkpoint and resume",
+				title: "Recovery and incident handling",
 			},
 		],
 	},
@@ -51,7 +51,7 @@ export const GUIDE_SECTIONS: readonly GuideSection[] = [
 		pages: [
 			{
 				slug: "commands",
-				title: "CLI commands and interactive mode",
+				title: "CLI and TUI",
 			},
 		],
 	},
@@ -61,11 +61,11 @@ export const GUIDE_SECTIONS: readonly GuideSection[] = [
 		pages: [
 			{
 				slug: "repository",
-				title: "Combined repository configuration",
+				title: "Combined configuration",
 			},
 			{
 				slug: "credentials",
-				title: "Providers, quotas, secrets and models",
+				title: "Credentials, models and quota",
 			},
 		],
 	},
@@ -75,7 +75,7 @@ export const GUIDE_SECTIONS: readonly GuideSection[] = [
 		pages: [
 			{
 				slug: "system",
-				title: "Package ownership, workflow graph and trust boundaries",
+				title: "System architecture",
 			},
 		],
 	},
@@ -85,7 +85,7 @@ export const GUIDE_SECTIONS: readonly GuideSection[] = [
 		pages: [
 			{
 				slug: "extensions",
-				title: "Capability ABI, detection and adapters",
+				title: "Developing capabilities",
 			},
 		],
 	},
@@ -95,11 +95,11 @@ export const GUIDE_SECTIONS: readonly GuideSection[] = [
 		pages: [
 			{
 				slug: "github",
-				title: "GitHub App, Projects and protection",
+				title: "GitHub administration",
 			},
 			{
 				slug: "fleet",
-				title: "Consumer fleet and updates",
+				title: "Fleet scope and installation policy",
 			},
 		],
 	},
@@ -109,11 +109,11 @@ export const GUIDE_SECTIONS: readonly GuideSection[] = [
 		pages: [
 			{
 				slug: "contributing",
-				title: "Contributor workflow and verification",
+				title: "Contributing to DarkFactory",
 			},
 			{
 				slug: "site-build",
-				title: "Unified site: build and Pages contract",
+				title: "Unified Web + Docs site contract",
 			},
 		],
 	},
@@ -123,7 +123,7 @@ export const GUIDE_SECTIONS: readonly GuideSection[] = [
 		pages: [
 			{
 				slug: "publishing",
-				title: "SemVer, candidate, artifact and rollback",
+				title: "Candidate, publishing and rollback",
 			},
 		],
 	},
@@ -133,7 +133,7 @@ export const GUIDE_SECTIONS: readonly GuideSection[] = [
 		pages: [
 			{
 				slug: "contracts",
-				title: "Source-backed references and issue map",
+				title: "Reference index",
 			},
 		],
 	},
@@ -143,7 +143,7 @@ export const GUIDE_SECTIONS: readonly GuideSection[] = [
 		pages: [
 			{
 				slug: "boundaries",
-				title: "Authentication, authorization and static security",
+				title: "Security and authorization boundaries",
 			},
 		],
 	},

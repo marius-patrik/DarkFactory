@@ -84,7 +84,7 @@ describe("documentation source-backed truth", () => {
 					? {
 							...entry,
 							markdown:
-								entry.markdown +
+								entry.markdown.replace(/^# .+$/mu, "# Deliberately mismatched title") +
 								"\n[missing](missing.md) [broken](#missing-anchor) [unsafe](javascript:alert)\n<script>alert(1)</script>\n",
 						}
 					: entry,
@@ -97,6 +97,7 @@ describe("documentation source-backed truth", () => {
 		expect(findings).toContain("unsafe scheme");
 		expect(findings).toContain("executable HTML");
 		expect(findings).toContain("Unlisted navigation page");
+		expect(findings).toContain("Guide heading differs from navigation title");
 	});
 });
 

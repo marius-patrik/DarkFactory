@@ -68,7 +68,10 @@ export function documentationFindings(graph: DocsContentGraph): readonly string[
 	for (const section of GUIDE_SECTIONS)
 		for (const guide of section.pages) {
 			const id = `guide-${section.id}-${guide.slug}`;
-			if (!byId.has(id)) findings.push(`Required guide missing: ${id}`);
+			const page = byId.get(id);
+			if (!page) findings.push(`Required guide missing: ${id}`);
+			else if (page.markdown.match(/^#\s+(.+)$/mu)?.[1]?.trim() !== guide.title)
+				findings.push(`Guide heading differs from navigation title: ${id}`);
 		}
 	if (!byId.has("reference-cli") || !byId.has("reference-config"))
 		findings.push("Missing generated command/config reference");
