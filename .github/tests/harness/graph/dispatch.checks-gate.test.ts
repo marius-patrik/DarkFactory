@@ -111,7 +111,7 @@ describe("dispatch checks-gate", () => {
 					id: "start",
 					kind: "gate",
 					trigger: { event: "checks.completed" },
-					command: "^\\\\s*(?:/df\\\\s+|/)(?:approve|reject|revise)\\\\s*$",
+					command: "^\\s*(?:/df\\s+|/)(?:approve|reject|revise)\\s*$",
 					author_associations: ["OWNER"],
 				},
 				{ id: "next", kind: "agent" },
