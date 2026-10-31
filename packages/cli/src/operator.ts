@@ -274,9 +274,9 @@ function operatorHelp(): string {
 	].join("\n");
 }
 
-export async function runOperatorCli(args: string[]): Promise<void> {
+export async function runOperatorCli(args: string[]): Promise<number> {
 	const parsed = parseOperatorArgs(args);
-	if (parsed.command === "help") { console.log(operatorHelp()); return; }
+	if (parsed.command === "help") { console.log(operatorHelp()); return 0; }
 	if (["approve", "cancel", "retry", "restart", "recover"].includes(parsed.command)) {
 		if (!parsed.id) throw new OperatorCliError(parsed.command + " requires a request ID", 2);
 		throw new OperatorCliError("BLOCKED: " + parsed.command +
@@ -294,18 +294,19 @@ export async function runOperatorCli(args: string[]): Promise<void> {
 		else console.log("PR #" + checks.pr + "  " + checks.state.toUpperCase() +
 			"  exact-head: " + checks.headMatches + "  authorization: " + checks.mergeAuthorization +
 			"\n" + JSON.stringify(checks, null, 2));
-		return;
+		return checks.state === "green" && checks.headMatches ? 0 : 3;
 	}
 	const value = parsed.id === undefined ? await listRequests(parsed.runs) : await inspectRequest(parsed.runs, parsed.id);
-	if (parsed.json) { console.log(JSON.stringify({ type: parsed.command, value })); return; }
+	if (parsed.json) { console.log(JSON.stringify({ type: parsed.command, value })); return 0; }
 	const rows = Array.isArray(value) ? value : [value];
-	if (!rows.length) { console.log("No durable Request runs."); return; }
+	if (!rows.length) { console.log("No durable Request runs."); return 0; }
 	console.log("REQUEST\tNODE\tQUOTA\tRECOVERY\tPR\tAPPROVAL");
 	for (const run of rows) {
 		console.log([run.request, run.node, run.quotaBlocked ? "blocked" : "ready", run.recovery,
 			run.pr ? "#" + run.pr.number : "-", run.approval].join("\t"));
 	}
 	if (!Array.isArray(value)) console.log(JSON.stringify(value, null, 2));
+	return 0;
 }
 
 export type TuiView = "requests" | "graph" | "approvals" | "pr" | "providers" | "recovery";
