@@ -304,8 +304,18 @@ export function createGitHubOperatorSource(
 		if (!path) return { status: "blocked", detail: "No verified detail endpoint for this section" };
 		try {
 			const data = record(await request(path, signal));
-			if (!str(data.html_url) || (typeof data.id !== "number" && typeof data.number !== "number"))
-				return { status: "blocked", detail: "GitHub did not return a verifiable record" };
+			const recordId = typeof data.number === "number" ? data.number : data.id;
+			if (recordId !== id || !str(data.html_url))
+				return { status: "blocked", detail: "GitHub record identity did not match the requested detail" };
+			const recordUrl = new URL(str(data.html_url));
+			if (
+				recordUrl.protocol !== "https:" ||
+				recordUrl.hostname !== "github.com" ||
+				recordUrl.username ||
+				recordUrl.password ||
+				!recordUrl.pathname.toLowerCase().startsWith(`/${owner}/${name}/`.toLowerCase())
+			)
+				return { status: "blocked", detail: "GitHub detail link is outside the configured repository" };
 			const requiredLabel: Record<string, string> = {
 				requests: "request",
 				planning: "planning",
