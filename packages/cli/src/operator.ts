@@ -30,6 +30,35 @@ export interface OperatorRun {
 	recovery: "pending" | "ready";
 }
 
+/**
+ * DF-09/10/11 integration handoff. The CLI deliberately does not implement these
+ * effects from mutable local files or GitHub comments. A production adapter must
+ * read back the exact Request/PR/head and enforce graph authorization atomically.
+ * Until an adapter is supplied, every mutation remains explicitly blocked.
+ */
+export interface GovernedOperatorPort {
+	observe(request: number): Promise<OperatorRun>;
+	approve(input: {
+		request: number;
+		expectedRunId: string;
+		expectedNode: string;
+		expectedHeadSha: string;
+		actor: string;
+	}): Promise<{ result: "observed" | "blocked"; reason?: string }>;
+	cancel(input: {
+		request: number;
+		expectedRunId: string;
+		expectedNode: string;
+		actor: string;
+	}): Promise<{ result: "observed" | "blocked"; reason?: string }>;
+	retry(input: {
+		request: number;
+		expectedRunId: string;
+		expectedNode: string;
+		actor: string;
+	}): Promise<{ result: "observed" | "blocked"; reason?: string }>;
+}
+
 const REQUEST = /^[1-9][0-9]*$/u;
 const SHA = /^[a-f0-9]{40}$/iu;
 
