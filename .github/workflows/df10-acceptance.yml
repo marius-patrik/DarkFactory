@@ -1,0 +1,39 @@
+name: DF-10 GitHub Transport Acceptance
+
+on:
+  push:
+    branches:
+      - agent/2699-github-transport-df10
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: df10-acceptance-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  github-transport:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout exact source head
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+      - name: Set up Bun
+        uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+      - name: Install frozen dependencies
+        run: bun install --frozen-lockfile
+      - name: Scoped GitHub transport and governance tests
+        run: bun test .github/tests/github .github/tests/harness/github .github/tests/harness/release/pr-approval.test.ts
+      - name: Whole-repository TypeScript check
+        run: bun run typecheck
+      - name: Whole-repository format check
+        run: bun run format:check
+      - name: Whole-repository lint
+        run: bun run lint
+      - name: Whole-repository tests
+        run: bun run test
+      - name: Build
+        run: bun run build
