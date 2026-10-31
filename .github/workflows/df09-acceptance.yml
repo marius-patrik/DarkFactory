@@ -1,0 +1,52 @@
+# Isolated DF-09 executable verification. Never publishes, merges or deploys.
+name: DF-09 Runtime Acceptance
+on:
+  push:
+    branches:
+      - agent/2698-runtime-lifecycle-df09
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: df09-acceptance-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  static:
+    name: Frozen install, typecheck, format, lint
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          fetch-depth: 0
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+      - run: bun install --frozen-lockfile
+      - run: bun run typecheck
+      - run: bun run format:check
+      - run: bun run lint
+      - name: Confirm exact checkout and complete committed blobs
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          git fsck --full --no-reflogs
+          git diff --check
+          ! grep -R -F '¶»§q«^' packages/harness/src/graph .github/tests/harness/graph
+          git log -1 --format='%H %s'
+  tests:
+    name: Graph acceptance and full suite
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+      - run: bun install --frozen-lockfile
+      - run: bun test ./.github/tests/harness/graph
+      - run: bun run test
+  build:
+    name: Native build and packaged smoke
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+      - run: bun install --frozen-lockfile
+      - run: bun run build
+      - run: bun packages/harness/scripts/verify-target.ts --target linux-x64
