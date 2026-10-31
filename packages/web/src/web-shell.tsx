@@ -54,7 +54,12 @@ function subscribeHash(listener: () => void): () => void {
 }
 function currentHashPath(): string {
 	if (typeof window === "undefined") return "/";
-	const hash = decodeURI(window.location.hash.replace(/^#/u, ""));
+	let hash: string;
+	try {
+		hash = decodeURI(window.location.hash.replace(/^#/u, ""));
+	} catch {
+		return "/invalid-route";
+	}
 	if (hash.startsWith("/") && !hash.startsWith("//")) return hash.replace(/\/+$/u, "") || "/";
 	const base = document.querySelector<HTMLMetaElement>('meta[name="darkfactory-base-path"]')?.content ?? "/";
 	return operatorPathFromLocation(window.location.pathname, base);
@@ -87,7 +92,7 @@ export interface RouteConfig {
 }
 export const RouteLink: FC<{ to: string; children: ReactNode; className?: string }> = ({ to, children, className }) => {
 	const router = useRouter();
-	const active = router.path === to;
+	const active = router.path === to || (to !== "/" && router.path.startsWith(`${to}/`));
 	return (
 		<a
 			className={[className ?? "route-link", active ? "is-active" : ""].filter(Boolean).join(" ")}
@@ -123,6 +128,12 @@ const Body: FC<Omit<DarkFactoryShellProps, "hook">> = ({
 	const reader = useMemo(() => source ?? createGitHubOperatorSource(repository), [repository, source]);
 	const [pagination, setPagination] = useState({ resource: "", page: 1 });
 	const currentPage = pagination.resource === page?.resource ? pagination.page : 1;
+	const previousPage = useRef(currentPage);
+	useEffect(() => {
+		if (previousPage.current === currentPage) return;
+		previousPage.current = currentPage;
+		if (detailId === undefined) document.getElementById("df-surface-heading")?.focus();
+	}, [currentPage, detailId]);
 	const previousPath = useRef(path);
 	useEffect(() => {
 		if (previousPath.current === path) return;
