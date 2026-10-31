@@ -94,7 +94,7 @@ export function summarizeRun(request: number, state: RunState): OperatorRun {
 	}
 	const approvedReviews = Object.entries(state.reviews ?? {})
 		.filter(([, value]) => reviewApprovalFresh(value))
-		.map(([name]) => name)
+		.map(([name]) => safeText(name))
 		.sort();
 	const pendingNode = typeof extra.pending_node?.node === "string" ? safeText(extra.pending_node.node) : null;
 	const pendingAction = typeof extra.pending_action?.type === "string"
@@ -265,26 +265,32 @@ export async function runOperatorTui(args: string[]): Promise<void> {
 	let runs = await listRequests(parsed.runs);
 	let cursor: TuiCursor = { selected: 0, view: 0 };
 	let note = "";
+	let closed = false;
+	let refreshSequence = 0;
 	const render = () => stdout.write("\u001b[H\u001b[2J" + renderTui(runs, cursor, stdout.columns, stdout.rows, note));
 	emitKeypressEvents(stdin);
 	const oldRaw = stdin.isRaw === true;
 	stdin.setRawMode(true);
 	stdin.resume();
-	stdout.write("\u001b[?1049h\u001b[?25l");
-	process.on("SIGWINCH", render);
 	try {
+		stdout.write("\u001b[?1049h\u001b[?25l");
+		process.on("SIGWINCH", render);
+		stdout.on("resize", render);
 		render();
 		await new Promise<void>((done, reject) => {
 			const keypress = (_: string, key: { name?: string; ctrl?: boolean } = {}) => {
 				const name = key.name ?? "";
 				if (name === "q" || name === "escape" || (key.ctrl && name === "c")) { cleanup(); done(); return; }
 				if (name === "r") {
+					const sequence = ++refreshSequence;
 					void listRequests(parsed.runs).then((next) => {
+						if (closed || sequence !== refreshSequence) return;
 						runs = next;
 						cursor = { ...cursor, selected: Math.min(cursor.selected, Math.max(0, runs.length - 1)) };
 						note = "Refreshed from durable state";
 						render();
 					}).catch((error: unknown) => {
+						if (closed || sequence !== refreshSequence) return;
 						note = safeText(error);
 						render();
 					});
@@ -301,7 +307,9 @@ export async function runOperatorTui(args: string[]): Promise<void> {
 			stdin.once("error", fail);
 		});
 	} finally {
+		closed = true;
 		process.off("SIGWINCH", render);
+		stdout.off("resize", render);
 		stdout.write("\u001b[?25h\u001b[?1049l");
 		stdin.setRawMode(oldRaw);
 		stdin.pause();
