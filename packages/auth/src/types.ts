@@ -23,6 +23,8 @@ export interface BrokerTokenRecord {
 	token: GitHubTokenResponse;
 	accessExpiresAt?: number;
 	refreshExpiresAt?: number;
+	/** Immutable absolute broker session expiry; refresh never extends it. */
+	sessionExpiresAt?: number;
 	userId?: string;
 }
 
@@ -35,8 +37,20 @@ function record(value: unknown): Record<string, unknown> | null {
 /** Parses and validates a GitHub OAuth token response inside the broker boundary. */
 export function parseGitHubTokenResponse(value: unknown): GitHubTokenResponse {
 	const input = record(value);
-	if (!input || typeof input.access_token !== "string" || typeof input.token_type !== "string")
-		throw new Error("GitHub token response is missing required fields");
+	if (
+		!input ||
+		typeof input.access_token !== "string" ||
+		!input.access_token ||
+		typeof input.token_type !== "string" ||
+		input.token_type.toLowerCase() !== "bearer" ||
+		(input.refresh_token !== undefined && (typeof input.refresh_token !== "string" || !input.refresh_token)) ||
+		(input.expires_in !== undefined &&
+			(typeof input.expires_in !== "number" || !Number.isSafeInteger(input.expires_in) || input.expires_in <= 0)) ||
+		(input.refresh_token_expires_in !== undefined &&
+			(typeof input.refresh_token_expires_in !== "number" ||
+				!Number.isSafeInteger(input.refresh_token_expires_in) ||
+				input.refresh_token_expires_in <= 0))
+	) throw new Error("Invalid GitHub token response");
 	return {
 		access_token: input.access_token,
 		token_type: input.token_type,
@@ -58,6 +72,8 @@ export function parseBrowserSession(value: unknown): BrowserSession {
 		!input ||
 		typeof input.id !== "string" ||
 		!input.id ||
+		Object.keys(input).some((key) => !["id", "expiresAt", "userId"].includes(key)) ||
+		(input.userId !== undefined && (typeof input.userId !== "string" || !input.userId)) ||
 		typeof input.expiresAt !== "number" ||
 		!Number.isFinite(input.expiresAt)
 	)

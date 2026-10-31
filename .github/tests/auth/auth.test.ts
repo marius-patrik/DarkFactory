@@ -133,3 +133,26 @@ describe("@darkfactory/auth browser client", () => {
 		expect(restoreSession()).toBeNull();
 	});
 });
+
+
+describe("@darkfactory/auth negative callback handling", () => {
+	beforeEach(() => {
+		installStorage("localStorage");
+		installStorage("sessionStorage");
+	});
+	test("OAuth error callbacks and ambiguous codes consume CSRF material", async () => {
+		const url = await initiateAuth("client", "https://example.test/callback", "read:user");
+		const state = new URL(url).searchParams.get("state")!;
+		expect(() => completeAuthCallback(new URLSearchParams({ state, error: "access_denied" }))).toThrow("denied");
+		expect(() => completeAuthCallback(new URLSearchParams({ state, code: "replay" }))).toThrow(
+			"No pending authentication flow",
+		);
+		const next = await initiateAuth("client", "https://example.test/callback", "read:user");
+		const secondState = new URL(next).searchParams.get("state")!;
+		expect(() => completeAuthCallback(`state=${secondState}&code=a&code=b`)).toThrow("ambiguous");
+	});
+	test("rejects non-HTTPS OAuth callback destinations before persisting PKCE state", async () => {
+		await expect(initiateAuth("client", "http://attacker.test/callback", "read:user")).rejects.toThrow("HTTPS");
+		expect(sessionStorage.length).toBe(0);
+	});
+});

@@ -59,7 +59,7 @@ describe("@darkfactory/auth confidential broker", () => {
 		const config = { clientId: "client", clientSecret: "secret" };
 		const session = await createBrokerSession(
 			config,
-			{ code: "code", codeVerifier: "verifier", redirectUri: "https://example.test/callback" },
+			{ code: "code", codeVerifier: "v".repeat(43), redirectUri: "https://example.test/callback" },
 			store,
 			{ sessionId: "session", userId: "octocat", now: 1_000 },
 		);
@@ -109,5 +109,40 @@ describe("@darkfactory/auth confidential broker", () => {
 		globalThis.fetch = fetchReturning(500);
 		await expect(revokeBrokerSession(config, "session", store)).rejects.toThrow("revocation failed");
 		expect(await store.get("session")).toBeDefined();
+	});
+});
+
+
+describe("@darkfactory/auth negative broker security", () => {
+	test("refuses malformed PKCE and unapproved redirect before contacting GitHub", async () => {
+		let contacted = false;
+		globalThis.fetch = (async () => {
+			contacted = true;
+			throw new Error("unexpected outbound exchange");
+		}) as typeof fetch;
+		const store = new MemoryAuthTokenStore();
+		const config = { clientId: "client", clientSecret: "secret", redirectUris: ["https://valid.test/callback"] };
+		await expect(
+			createBrokerSession(config, { code: "code", codeVerifier: "short", redirectUri: "https://valid.test/callback" }, store),
+		).rejects.toThrow("PKCE verifier");
+		await expect(
+			createBrokerSession(config, { code: "code", codeVerifier: "v".repeat(43), redirectUri: "https://other.test/callback" }, store),
+		).rejects.toThrow("not authorized");
+		expect(contacted).toBe(false);
+	});
+	test("expired broker session cannot refresh and is not extended", async () => {
+		const store = new MemoryAuthTokenStore();
+		await store.set("expired", {
+			token: { access_token: "access", refresh_token: "refresh", token_type: "bearer" },
+			sessionExpiresAt: 9_999,
+		});
+		await expect(refreshBrokerSession({ clientId: "client", clientSecret: "secret" }, "expired", store, 10_000))
+			.rejects.toThrow("session has expired");
+	});
+	test("secret-bearing session responses are rejected by the browser-safe parser", async () => {
+		const { parseBrowserSession } = await import("../../../packages/auth/src/types.ts");
+		expect(() => parseBrowserSession({ id: "opaque", expiresAt: 100, access_token: "LEAK" })).toThrow(
+			"Invalid browser auth session",
+		);
 	});
 });

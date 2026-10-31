@@ -18,6 +18,8 @@ interface AuthBrokerConfig {
 	clientSecret: string;
 	/** Maximum browser session lifetime independent of GitHub token lifetime. */
 	sessionTtlMs?: number;
+	/** Explicit redirect allowlist for confidential deployments. */
+	redirectUris?: readonly string[];
 }
 
 /** One-time browser callback material accepted by the confidential broker. */
@@ -39,16 +41,59 @@ export class MemoryAuthTokenStore implements AuthTokenStore {
 	readonly #records = new Map<string, BrokerTokenRecord>();
 
 	async get(sessionId: string): Promise<BrokerTokenRecord | undefined> {
-		return this.#records.get(sessionId);
+		const record = this.#records.get(sessionId);
+		return record ? structuredClone(record) : undefined;
 	}
 
 	async set(sessionId: string, record: BrokerTokenRecord): Promise<void> {
-		this.#records.set(sessionId, record);
+		this.#records.set(sessionId, structuredClone(record));
 	}
 
 	async delete(sessionId: string): Promise<void> {
 		this.#records.delete(sessionId);
 	}
+}
+
+/** Per-store session locks prevent refresh-token reuse, post-revocation resurrection and lost rotation. */
+const storeQueues = new WeakMap<AuthTokenStore, Map<string, Promise<void>>>();
+
+async function withSessionLock<T>(store: AuthTokenStore, sessionId: string, run: () => Promise<T>): Promise<T> {
+	let queues = storeQueues.get(store);
+	if (!queues) {
+		queues = new Map();
+		storeQueues.set(store, queues);
+	}
+	const predecessor = queues.get(sessionId);
+	let release!: () => void;
+	const completion = new Promise<void>((resolve) => {
+		release = resolve;
+	});
+	queues.set(sessionId, completion);
+	await predecessor;
+	try {
+		return await run();
+	} finally {
+		release();
+		if (queues.get(sessionId) === completion) queues.delete(sessionId);
+	}
+}
+
+function validateExchange(config: AuthBrokerConfig, payload: TokenExchangeRequest): void {
+	if (!config.clientId || !config.clientSecret) throw new Error("Confidential OAuth client credentials are missing");
+	if (!payload.code.trim() || !/^[A-Za-z0-9._~-]{43,128}$/u.test(payload.codeVerifier))
+		throw new Error("Invalid OAuth authorization code or PKCE verifier");
+	let redirect: URL;
+	try {
+		redirect = new URL(payload.redirectUri);
+	} catch {
+		throw new Error("Invalid OAuth redirect");
+	}
+	if (redirect.protocol !== "https:" || redirect.username || redirect.password || redirect.hash)
+		throw new Error("Confidential OAuth redirect must be HTTPS");
+	if (config.redirectUris && !config.redirectUris.includes(redirect.href))
+		throw new Error("OAuth redirect is not authorized for this broker");
+	if (config.sessionTtlMs !== undefined && (!Number.isSafeInteger(config.sessionTtlMs) || config.sessionTtlMs <= 0))
+		throw new Error("Invalid broker session lifetime");
 }
 
 async function tokenRequest(params: URLSearchParams): Promise<GitHubTokenResponse> {
@@ -59,6 +104,8 @@ async function tokenRequest(params: URLSearchParams): Promise<GitHubTokenRespons
 			"Content-Type": "application/x-www-form-urlencoded",
 		},
 		body: params.toString(),
+		redirect: "error",
+		cache: "no-store",
 	});
 	if (!response.ok) throw new Error(`GitHub OAuth token request failed with status ${response.status}`);
 	return parseGitHubTokenResponse(await response.json());
@@ -81,7 +128,7 @@ function sessionFromRecord(
 	config: AuthBrokerConfig,
 	now: number,
 ): BrowserSession {
-	const configuredExpiry = now + (config.sessionTtlMs ?? 8 * 60 * 60 * 1_000);
+	const configuredExpiry = record.sessionExpiresAt ?? now + (config.sessionTtlMs ?? 8 * 60 * 60 * 1_000);
 	const expiresAt =
 		record.accessExpiresAt === undefined ? configuredExpiry : Math.min(configuredExpiry, record.accessExpiresAt);
 	return { id: sessionId, expiresAt, ...(record.userId ? { userId: record.userId } : {}) };
@@ -134,9 +181,13 @@ export async function createBrokerSession(
 	store: AuthTokenStore,
 	options: { sessionId?: string; userId?: string; now?: number } = {},
 ): Promise<BrowserSession> {
+	validateExchange(config, payload);
 	const now = options.now ?? Date.now();
 	const token = await exchangeCodeForToken(config, payload);
-	const record = recordFromToken(token, now, options.userId);
+	const record = {
+		...recordFromToken(token, now, options.userId),
+		sessionExpiresAt: now + (config.sessionTtlMs ?? 8 * 60 * 60 * 1_000),
+	};
 	const sessionId = options.sessionId ?? crypto.randomUUID();
 	await store.set(sessionId, record);
 	return sessionFromRecord(sessionId, record, config, now);
@@ -149,15 +200,22 @@ export async function refreshBrokerSession(
 	store: AuthTokenStore,
 	now = Date.now(),
 ): Promise<BrowserSession> {
-	const current = await store.get(sessionId);
-	if (!current) throw new Error("Unknown authentication session");
-	if (!current.token.refresh_token) throw new Error("Authentication session is not refreshable");
-	if (current.refreshExpiresAt !== undefined && current.refreshExpiresAt <= now)
-		throw new Error("Authentication refresh token has expired");
-	const token = await refreshAccessToken(config, current.token.refresh_token);
-	const record = recordFromToken(token, now, current.userId);
-	await store.set(sessionId, record);
-	return sessionFromRecord(sessionId, record, config, now);
+	return withSessionLock(store, sessionId, async () => {
+		const current = await store.get(sessionId);
+		if (!current) throw new Error("Unknown authentication session");
+		if (!current.token.refresh_token) throw new Error("Authentication session is not refreshable");
+		if (current.sessionExpiresAt === undefined || current.sessionExpiresAt <= now)
+			throw new Error("Authentication session has expired");
+		if (current.refreshExpiresAt !== undefined && current.refreshExpiresAt <= now)
+			throw new Error("Authentication refresh token has expired");
+		const token = await refreshAccessToken(config, current.token.refresh_token);
+		const record = {
+			...recordFromToken(token, now, current.userId),
+			sessionExpiresAt: current.sessionExpiresAt,
+		};
+		await store.set(sessionId, record);
+		return sessionFromRecord(sessionId, record, config, now);
+	});
 }
 
 /** Revokes one broker-owned session. Local broker state is deleted only after remote revocation succeeds. */
@@ -166,8 +224,10 @@ export async function revokeBrokerSession(
 	sessionId: string,
 	store: AuthTokenStore,
 ): Promise<void> {
-	const current = await store.get(sessionId);
-	if (!current) return;
-	await revokeAccessToken(config, current.token.access_token);
-	await store.delete(sessionId);
+	await withSessionLock(store, sessionId, async () => {
+		const current = await store.get(sessionId);
+		if (!current) return;
+		await revokeAccessToken(config, current.token.access_token);
+		await store.delete(sessionId);
+	});
 }

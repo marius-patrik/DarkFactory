@@ -35,8 +35,13 @@ export function projectAuthority(
 	const available = appAuthority.installed && appAuthority.repositorySelected;
 	return {
 		canRead: available && appAuthority.canRead && userPermissions.pull,
-		canMutate: available && appAuthority.canWrite && (userPermissions.push || userPermissions.admin),
-		isAdmin: available && appAuthority.canAdminister === true && userPermissions.admin,
+		canMutate:
+			available &&
+			appAuthority.canRead &&
+			userPermissions.pull &&
+			appAuthority.canWrite &&
+			(userPermissions.push || userPermissions.admin),
+		isAdmin: available && appAuthority.canRead && userPermissions.pull && appAuthority.canAdminister === true && userPermissions.admin,
 		userId,
 	};
 }
