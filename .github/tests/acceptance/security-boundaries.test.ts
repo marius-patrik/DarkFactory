@@ -115,9 +115,9 @@ describe("DF-14 adversarial security acceptance", () => {
 							["quality", "success"],
 							["security", "failure"],
 						]),
-						),
+					),
 					sha,
-						)
+				)
 			).conclusion,
 		).toBe("failed");
 		expect(
@@ -129,9 +129,9 @@ describe("DF-14 adversarial security acceptance", () => {
 							["quality", "success"],
 							["security", "pending"],
 						]),
-						),
+					),
 					sha,
-						)
+				)
 			).conclusion,
 		).toBe("pending");
 	});
