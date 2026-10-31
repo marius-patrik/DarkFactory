@@ -317,21 +317,21 @@ describe("canonical production graph recovery", () => {
 		);
 		let verificationCalls = 0;
 		try {
-			await dispatch([
-				"--event-name", "check_suite", "--event", eventFile,
-				"--graph", graphFile, "--runs", join(f.root, "checks"),
-			], {
-				deliveryId: "untrusted-green",
-				runtime: async () => ({
-					handlers: f.handlers,
-					effects: f.effects,
-					verifyChecks: async (ref) => {
-						expect(ref).toBe(sha);
-						verificationCalls++;
-						return "pending" as const;
-					},
-				}),
-			});
+			await dispatch(
+				["--event-name", "check_suite", "--event", eventFile, "--graph", graphFile, "--runs", join(f.root, "checks")],
+				{
+					deliveryId: "untrusted-green",
+					runtime: async () => ({
+						handlers: f.handlers,
+						effects: f.effects,
+						verifyChecks: async (ref) => {
+							expect(ref).toBe(sha);
+							verificationCalls++;
+							return "pending" as const;
+						},
+					}),
+				},
+			);
 		} finally {
 			console.log = previousLog;
 		}
@@ -343,7 +343,8 @@ describe("canonical production graph recovery", () => {
 	test("merge gate rejects an external check result for a different head", async () => {
 		const f = await fixture();
 		const g: WorkflowGraph = {
-			version: 1, checks: [{ name: "quality", required: true }],
+			version: 1,
+			checks: [{ name: "quality", required: true }],
 			nodes: [
 				{ id: "plan-alignment", kind: "agent" },
 				{ id: "merge-gate", kind: "gate", author_associations: ["OWNER"], command: "^/df approve$" },
@@ -355,15 +356,31 @@ describe("canonical production graph recovery", () => {
 			],
 		};
 		await mkdir(f.runDir, { recursive: true });
-		await writeFile(join(f.runDir, "state.df"), JSON.stringify({
-			run_id: "merge-test", current_node: "plan-alignment", hints: [],
-			outputs: { commit_sha: sha, pr_number: 1, aligned: true,
-				plan_artifact: { scope: ["src/*"] }, planning_context: { issue: 1 },
-				implementation_artifact: { files: ["src/a.ts"] } },
-		}));
-		await expect(runGraph(g, f.runDir, f.handlers,
-			{ type: "checks.completed", conclusion: "required_green", ref: "b".repeat(40) } as GraphEvent,
-			{ eventId: "check-wrong" })).rejects.toThrow("exact implementation SHA");
+		await writeFile(
+			join(f.runDir, "state.df"),
+			JSON.stringify({
+				run_id: "merge-test",
+				current_node: "plan-alignment",
+				hints: [],
+				outputs: {
+					commit_sha: sha,
+					pr_number: 1,
+					aligned: true,
+					plan_artifact: { scope: ["src/*"] },
+					planning_context: { issue: 1 },
+					implementation_artifact: { files: ["src/a.ts"] },
+				},
+			}),
+		);
+		await expect(
+			runGraph(
+				g,
+				f.runDir,
+				f.handlers,
+				{ type: "checks.completed", conclusion: "required_green", ref: "b".repeat(40) } as GraphEvent,
+				{ eventId: "check-wrong" },
+			),
+		).rejects.toThrow("exact implementation SHA");
 		const current = JSON.parse(await readFile(join(f.runDir, "state.df"), "utf8"));
 		expect(current.current_node).toBe("plan-alignment");
 		expect(() => assertMergeAuthorization(current.outputs)).toThrow("authorization");
