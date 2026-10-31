@@ -32,7 +32,7 @@ export interface OperatorRun {
 	pr: { number: number; headSha: string; checkedSha: string | null } | null;
 	approval: "valid" | "stale" | "missing";
 	approvedReviews: string[];
-	recovery: "pending" | "ready";
+	recovery: "pending" | "blocked" | "idle";
 }
 
 /**
@@ -148,7 +148,7 @@ export function summarizeRun(request: number, state: RunState): OperatorRun {
 		pr,
 		approval,
 		approvedReviews,
-		recovery: pendingNode || pendingAction ? "pending" : "ready",
+		recovery: pendingNode || pendingAction ? "pending" : state.quota_blocked === true ? "blocked" : "idle",
 	};
 }
 
