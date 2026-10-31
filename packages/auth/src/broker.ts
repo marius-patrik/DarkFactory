@@ -13,7 +13,7 @@ import {
 } from "./types.ts";
 
 /** Confidential GitHub App OAuth broker credentials. */
-interface AuthBrokerConfig {
+export interface AuthBrokerConfig {
 	clientId: string;
 	clientSecret: string;
 	/** Maximum browser session lifetime independent of GitHub token lifetime. */
@@ -30,7 +30,7 @@ interface TokenExchangeRequest {
 }
 
 /** Broker-owned secret token storage contract. */
-interface AuthTokenStore {
+export interface AuthTokenStore {
 	get(sessionId: string): Promise<BrokerTokenRecord | undefined>;
 	set(sessionId: string, record: BrokerTokenRecord): Promise<void>;
 	delete(sessionId: string): Promise<void>;
