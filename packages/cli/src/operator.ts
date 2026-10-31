@@ -4,6 +4,10 @@ import { join, relative, resolve, isAbsolute } from "node:path";
 import { emitKeypressEvents } from "node:readline";
 import { stdin, stdout } from "node:process";
 import { assertMergeAuthorization } from "../../harness/src/graph/approval-evidence.ts";
+import { bundledGraphPath } from "../../harness/src/graph/assets.ts";
+import { validateGraph } from "../../harness/src/graph/validator.ts";
+import { GitHubClient } from "../../github/src/client.ts";
+import { GitHubRepository } from "../../github/src/repository.ts";
 import { reviewApprovalFresh } from "../../harness/src/graph/review-loop.ts";
 import { redactErrorMessage } from "../../harness/src/redaction.ts";
 import type { RunState } from "../../protocol/src/workflow.ts";
@@ -174,6 +178,68 @@ export async function listRequests(runs: string): Promise<OperatorRun[]> {
 	return runsFound;
 }
 
+/** Exact-head GitHub observation. Never interprets a passing check as approval to merge. */
+export interface OperatorCheckSnapshot {
+	request: number;
+	pr: number;
+	persistedHead: string;
+	observedHead: string;
+	headMatches: boolean;
+	state: "green" | "pending" | "failed" | "stale";
+	required: readonly string[];
+	missing: readonly string[];
+	failing: readonly string[];
+	mergeAuthorization: OperatorRun["approval"];
+}
+
+export async function inspectChecks(runs: string, id: number): Promise<OperatorCheckSnapshot> {
+	const snapshot = await inspectRequest(runs, id);
+	if (!snapshot.pr) throw new OperatorCliError("BLOCKED: Request #" + id + " has no observed PR and commit SHA", 3);
+	const token = process.env.GH_TOKEN ?? process.env.GITHUB_TOKEN;
+	const slug = process.env.GITHUB_REPOSITORY ?? process.env.DF_REPO;
+	if (!token || !slug || !/^[^/\s]+\/[^/\s]+$/u.test(slug))
+		throw new OperatorCliError("BLOCKED: exact-head checks require GH_TOKEN and GITHUB_REPOSITORY", 3);
+	const [owner, name] = slug.split("/");
+	const repo = new GitHubRepository(new GitHubClient({ token }), owner!, name!);
+	try {
+		const source = JSON.parse(await readFile(bundledGraphPath(), "utf8")) as unknown;
+		const graph = validateGraph(source && typeof source === "object" && "graph" in source
+			? (source as { graph: unknown }).graph : source);
+		const required = graph.checks.filter((item) => item.required).map((item) => item.name);
+		if (required.length === 0) throw new Error("Graph has no explicitly required external checks");
+		const observedHead = await repo.getPullRequestHeadSha(snapshot.pr.number);
+		if (!SHA.test(observedHead)) throw new Error("GitHub PR has no immutable commit SHA");
+		if (observedHead !== snapshot.pr.headSha)
+			return {
+				request: id,
+				pr: snapshot.pr.number,
+				persistedHead: snapshot.pr.headSha,
+				observedHead,
+				headMatches: false,
+				state: "stale",
+				required,
+				missing: required,
+				failing: [],
+				mergeAuthorization: snapshot.approval,
+			};
+		const checks = await repo.requiredCheckStatus(observedHead, required);
+		return {
+			request: id,
+			pr: snapshot.pr.number,
+			persistedHead: snapshot.pr.headSha,
+			observedHead,
+			headMatches: true,
+			state: checks.state === "success" ? "green" : checks.state === "failure" ? "failed" : "pending",
+			required,
+			missing: checks.missing,
+			failing: checks.failing,
+			mergeAuthorization: snapshot.approval,
+		};
+	} catch (error) {
+		throw new OperatorCliError("BLOCKED: authoritative GitHub checks unavailable: " + safeText(error), 3);
+	}
+}
+
 export function parseOperatorArgs(args: readonly string[]): { command: string; id?: number; runs: string; json: boolean } {
 	let command = "";
 	let id: number | undefined;
@@ -201,6 +267,7 @@ function operatorHelp(): string {
 		"Usage:",
 		"  df operator list [--runs DIR] [--json]",
 		"  df operator inspect <request-id> [--runs DIR] [--json]",
+		"  df operator checks <request-id> [--runs DIR] [--json]   # GitHub exact-head readback",
 		"  df tui [--runs DIR]    # requires an interactive terminal",
 		"  df operator approve|cancel|retry|restart|recover <request-id>  # explicitly blocked",
 		"Production state is read-only. No operator command bypasses the graph's authorization gates.",
@@ -215,12 +282,21 @@ export async function runOperatorCli(args: string[]): Promise<void> {
 		throw new OperatorCliError("BLOCKED: " + parsed.command +
 			" needs an authorized graph lifecycle adapter; no safe mutation API exists on this branch", 3);
 	}
-	if (parsed.command !== "list" && parsed.command !== "inspect")
+	if (parsed.command !== "list" && parsed.command !== "inspect" && parsed.command !== "checks")
 		throw new OperatorCliError("Unknown operator command: " + safeText(parsed.command) + "\n" + operatorHelp(), 2);
 	if (parsed.command === "list" && parsed.id !== undefined)
 		throw new OperatorCliError("list does not accept a request ID", 2);
-	if (parsed.command === "inspect" && parsed.id === undefined)
+	if ((parsed.command === "inspect" || parsed.command === "checks") && parsed.id === undefined)
 		throw new OperatorCliError("inspect requires a request ID", 2);
+	if (parsed.command === "checks") {
+		const checks = await inspectChecks(parsed.runs, parsed.id!);
+		if (parsed.json) console.log(JSON.stringify({ type: "checks", value: checks }));
+		else console.log("PR #" + checks.pr + "  " + checks.state.toUpperCase() +
+			"  exact-head: " + checks.headMatches + "  authorization: " + checks.mergeAuthorization +
+			"
+" + JSON.stringify(checks, null, 2));
+		return;
+	}
 	const value = parsed.id === undefined ? await listRequests(parsed.runs) : await inspectRequest(parsed.runs, parsed.id);
 	if (parsed.json) { console.log(JSON.stringify({ type: parsed.command, value })); return; }
 	const rows = Array.isArray(value) ? value : [value];
