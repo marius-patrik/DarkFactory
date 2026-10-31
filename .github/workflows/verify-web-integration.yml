@@ -1,0 +1,73 @@
+name: Verify DF-07 Unified Web Candidate
+on:
+  push:
+    branches: [integration/2703-web-acceptance]
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: df07-unified-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  repository:
+    name: Full repository static, docs and tests
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6
+      - run: bun install --frozen-lockfile
+      - run: bun run typecheck
+      - run: bun run format:check
+      - run: bun run lint
+      - run: bun run docs
+      - run: bun run test
+  web:
+    name: Build and verify real unified Web and Docs
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6
+      - run: bun install --frozen-lockfile
+      - run: bun test ./.github/tests/web/*.test.ts ./.github/tests/web/*.test.tsx
+      - run: bun packages/web/scripts/build.ts packages/web/dist
+      - run: bun scripts/build-docs.ts --web-dist packages/web/dist --base-path /DarkFactory/ --out site
+      - run: bun scripts/build-docs.ts --verify-artifact site --base-path /DarkFactory/
+      - name: Preserve cleanly verifiable unpublished site
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: df07-unified-site-not-for-publication
+          path: site
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 7
+  browser:
+    name: Real headless Chromium operator and docs smoke
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6
+      - run: bun install --frozen-lockfile
+      - run: bun packages/web/scripts/build.ts packages/web/dist
+      - run: bun scripts/build-docs.ts --web-dist packages/web/dist --base-path /DarkFactory/ --out site
+      - name: Install isolated Chromium automation
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/df-browser"
+          cd "$RUNNER_TEMP/df-browser"
+          npm init -y >/dev/null
+          npm install --no-save --ignore-scripts playwright@1.56.1
+          npx playwright install --with-deps chromium
+      - name: Exercise real browser under Pages prefix
+        env:
+          DF_PLAYWRIGHT_HOME: ${{ runner.temp }}/df-browser
+          DF_BROWSER_SCREENSHOTS: ${{ runner.temp }}/df07-screenshots
+        run: node .github/tests/web/browser-acceptance.mjs site
+      - name: Upload actual browser screenshots
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: df07-browser-candidate-screenshots
+          path: ${{ runner.temp }}/df07-screenshots
+          if-no-files-found: ignore
+          retention-days: 7
