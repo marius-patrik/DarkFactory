@@ -201,10 +201,7 @@ export async function withGraphFileLock<T>(
 			}
 			if (cleanup) {
 				try {
-					await cleanup.writeFile(
-						JSON.stringify({ pid: process.pid, host: hostname(), token: cleanupToken }),
-						"utf8",
-					);
+					await cleanup.writeFile(JSON.stringify({ pid: process.pid, host: hostname(), token: cleanupToken }), "utf8");
 					await cleanup.sync();
 					let owner: Partial<GraphLockOwner> | undefined;
 					try {
@@ -218,11 +215,7 @@ export async function withGraphFileLock<T>(
 						const original = await stat(path);
 						const again = await readOptionalJson<GraphLockOwner>(path);
 						const current = await stat(path);
-						if (
-							again?.token !== owner.token ||
-							original.ino !== current.ino ||
-							original.dev !== current.dev
-						)
+						if (again?.token !== owner.token || original.ino !== current.ino || original.dev !== current.dev)
 							throw new Error(`Graph lock ownership changed during recovery: ${path}`);
 						await unlink(path);
 						await syncDirectory(directory);
