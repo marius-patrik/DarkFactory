@@ -1,6 +1,6 @@
 /// <reference types="bun" />
 import { afterAll, beforeAll, describe, expect, test } from "bun:test";
-import { mkdtemp, readdir, rm } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, readdir, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { loadRunState, saveRunState } from "../../../../packages/harness/src/graph/run-state";
@@ -52,6 +52,20 @@ describe("run-state load/save", () => {
 		const files = await readdir(tmpDir);
 		const tmpFiles = files.filter((f) => f.includes("tmp"));
 		expect(tmpFiles.length).toBe(0);
+	});
+
+	test("rejects corrupt persisted JSON instead of inventing fresh Request state", async () => {
+		const corruptSubject = "corrupt-request";
+		const path = join(tmpDir, `${corruptSubject}.df`);
+		await writeFile(path, "{broken json", "utf8");
+		await expect(loadRunState(tmpDir, corruptSubject, graph)).rejects.toBeInstanceOf(SyntaxError);
+		expect(await readFile(path, "utf8")).toBe("{broken json");
+	});
+
+	test("propagates filesystem read errors instead of replacing existing state", async () => {
+		const unreadableSubject = "directory-instead-of-state";
+		await mkdir(join(tmpDir, `${unreadableSubject}.df`));
+		await expect(loadRunState(tmpDir, unreadableSubject, graph)).rejects.toThrow();
 	});
 
 	test("round‑trip persistence and atomic write", async () => {

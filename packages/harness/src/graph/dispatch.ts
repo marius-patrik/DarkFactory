@@ -188,8 +188,7 @@ export async function dispatch(
 				console.log(JSON.stringify({ type: "none", reason: "required checks pending" }));
 				return;
 			}
-			translated.event.conclusion =
-				gateResult.conclusion === "required_green" ? "required_green" : "failed";
+			translated.event.conclusion = gateResult.conclusion === "required_green" ? "required_green" : "failed";
 		}
 	}
 

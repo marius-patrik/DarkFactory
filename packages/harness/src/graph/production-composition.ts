@@ -379,7 +379,9 @@ export function createGitHubProductionEffects(
 				);
 				if (matches.length > 1) throw new Error("Duplicate GitHub comments share an effect identity");
 				const comment = matches[0];
-				return comment ? { value: { commentId: comment.id }, evidence: `github-comment:${comment.id}:${id}` } : undefined;
+				return comment
+					? { value: { commentId: comment.id }, evidence: `github-comment:${comment.id}:${id}` }
+					: undefined;
 			};
 			return {
 				observe,
@@ -395,9 +397,7 @@ export function createGitHubProductionEffects(
 		closeIssue({ number }) {
 			const observe = async () => {
 				const issue = await repository.getIssue(number);
-				return issue.state === "closed"
-					? { value: { number }, evidence: `github-issue-closed:${number}` }
-					: undefined;
+				return issue.state === "closed" ? { value: { number }, evidence: `github-issue-closed:${number}` } : undefined;
 			};
 			return {
 				observe: async () => observe(),

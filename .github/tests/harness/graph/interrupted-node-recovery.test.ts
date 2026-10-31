@@ -88,7 +88,9 @@ async function fixture() {
 describe("same-executor interrupted automation recovery", () => {
 	test("remote write before checkpoint is observed, not repeated, after restart and duplicate ingress", async () => {
 		const f = await fixture();
-		await expect(runGraph(graph, f.root, f.handlers, ingress, f.options())).rejects.toBeInstanceOf(IndeterminateEffectError);
+		await expect(runGraph(graph, f.root, f.handlers, ingress, f.options())).rejects.toBeInstanceOf(
+			IndeterminateEffectError,
+		);
 		const pending = JSON.parse(await readFile(join(f.root, "state.df"), "utf8"));
 		expect(pending.pending_node).toMatchObject({ node: "sync", iteration: 1 });
 		expect(pending.pending_node.action.nodes).toEqual(["sync"]);
@@ -103,14 +105,20 @@ describe("same-executor interrupted automation recovery", () => {
 	test("absent remote outcome after durable intent remains ambiguous and never repeats mutation", async () => {
 		const f = await fixture();
 		f.crashBeforeMutation();
-		await expect(runGraph(graph, f.root, f.handlers, ingress, f.options())).rejects.toBeInstanceOf(IndeterminateEffectError);
-		await expect(runGraph(graph, f.root, f.handlers, ingress, f.options())).rejects.toBeInstanceOf(IndeterminateEffectError);
+		await expect(runGraph(graph, f.root, f.handlers, ingress, f.options())).rejects.toBeInstanceOf(
+			IndeterminateEffectError,
+		);
+		await expect(runGraph(graph, f.root, f.handlers, ingress, f.options())).rejects.toBeInstanceOf(
+			IndeterminateEffectError,
+		);
 		expect(f.attempts).toBe(1);
 	});
 
 	test("untrusted automation and changed delivery cannot hijack unfinished intent", async () => {
 		const f = await fixture();
-		await expect(runGraph(graph, f.root, f.handlers, ingress, f.options())).rejects.toBeInstanceOf(IndeterminateEffectError);
+		await expect(runGraph(graph, f.root, f.handlers, ingress, f.options())).rejects.toBeInstanceOf(
+			IndeterminateEffectError,
+		);
 		await expect(
 			runGraph(graph, f.root, f.handlers, ingress, {
 				...f.options(),
@@ -128,13 +136,17 @@ describe("same-executor interrupted automation recovery", () => {
 
 	test("durably completed effect but lost node checkpoint rejects changed remote state", async () => {
 		const f = await fixture();
-		await expect(runGraph(graph, f.root, f.handlers, ingress, f.options())).rejects.toBeInstanceOf(IndeterminateEffectError);
+		await expect(runGraph(graph, f.root, f.handlers, ingress, f.options())).rejects.toBeInstanceOf(
+			IndeterminateEffectError,
+		);
 		const original = f.handlers.automation;
 		f.handlers.automation = async (node, ctx) => {
 			await original(node, ctx);
 			throw new IndeterminateEffectError("simulated-checkpoint-loss");
 		};
-		await expect(runGraph(graph, f.root, f.handlers, ingress, f.options())).rejects.toBeInstanceOf(IndeterminateEffectError);
+		await expect(runGraph(graph, f.root, f.handlers, ingress, f.options())).rejects.toBeInstanceOf(
+			IndeterminateEffectError,
+		);
 		await writeFile(f.remote, "changed");
 		await expect(runGraph(graph, f.root, f.handlers, ingress, f.options())).rejects.toBeInstanceOf(StaleEffectError);
 		expect(f.attempts).toBe(1);
@@ -142,7 +154,9 @@ describe("same-executor interrupted automation recovery", () => {
 
 	test("cancellation during recovery leaves intent intact for a later exact-ID restart", async () => {
 		const f = await fixture();
-		await expect(runGraph(graph, f.root, f.handlers, ingress, f.options())).rejects.toBeInstanceOf(IndeterminateEffectError);
+		await expect(runGraph(graph, f.root, f.handlers, ingress, f.options())).rejects.toBeInstanceOf(
+			IndeterminateEffectError,
+		);
 		const controller = new AbortController();
 		controller.abort();
 		await expect(

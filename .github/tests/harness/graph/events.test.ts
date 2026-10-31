@@ -167,14 +167,19 @@ describe("translateGitHubEvent", () => {
 	});
 
 	test("missing and truncated SHA evidence cannot enter production review or checks", () => {
-		expect(translateGitHubEvent("pull_request_review", {
-			action: "submitted",
-			review: { state: "approved", user: { login: "owner" } },
-			pull_request: { number: 12, head: { sha: "a".repeat(40) } },
-		})).toMatchObject({ kind: "skip", reason: "review lacks immutable commit evidence" });
-		expect(translateGitHubEvent("check_suite", {
-			action: "completed", check_suite: { head_sha: "abc", pull_requests: [{ number: 3 }] },
-		})).toMatchObject({ kind: "skip", reason: "check suite lacks immutable commit evidence" });
+		expect(
+			translateGitHubEvent("pull_request_review", {
+				action: "submitted",
+				review: { state: "approved", user: { login: "owner" } },
+				pull_request: { number: 12, head: { sha: "a".repeat(40) } },
+			}),
+		).toMatchObject({ kind: "skip", reason: "review lacks immutable commit evidence" });
+		expect(
+			translateGitHubEvent("check_suite", {
+				action: "completed",
+				check_suite: { head_sha: "abc", pull_requests: [{ number: 3 }] },
+			}),
+		).toMatchObject({ kind: "skip", reason: "check suite lacks immutable commit evidence" });
 	});
 
 	test("check_suite with no pull requests is skipped", () => {

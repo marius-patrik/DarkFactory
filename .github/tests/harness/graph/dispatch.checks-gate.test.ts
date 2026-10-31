@@ -107,16 +107,16 @@ describe("dispatch checks-gate", () => {
 				version: 1,
 				checks: [{ name: "required-check", required: true }],
 				nodes: [
-				{
-					id: "start",
-					kind: "gate",
-					trigger: { event: "checks.completed" },
-					command: "^\\s*(?:/df\\s+|/)(?:approve|reject|revise)\\s*$",
-					author_associations: ["OWNER"],
-				},
-				{ id: "next", kind: "agent" },
-			],
-			edges: [{ from: "start", to: "next", on: { checks: "required_green" } }],
+					{
+						id: "start",
+						kind: "gate",
+						trigger: { event: "checks.completed" },
+						command: "^\\s*(?:/df\\s+|/)(?:approve|reject|revise)\\s*$",
+						author_associations: ["OWNER"],
+					},
+					{ id: "next", kind: "agent" },
+				],
+				edges: [{ from: "start", to: "next", on: { checks: "required_green" } }],
 			}),
 		);
 		await fs.writeFile(
@@ -149,5 +149,4 @@ describe("dispatch checks-gate", () => {
 			}
 		}
 	});
-
 });

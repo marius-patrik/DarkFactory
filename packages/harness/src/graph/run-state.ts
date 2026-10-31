@@ -12,7 +12,10 @@ export async function loadRunState(dir: string, subject: string, graph: Workflow
 	try {
 		const data = await fs.readFile(runsPath, "utf8");
 		return JSON.parse(data) as RunState;
-	} catch {
+	} catch (error) {
+		// Missing state can be initialized. Corrupted or unreadable state must
+		// never silently reset a durable Request preview/recovery identity.
+		if ((error as NodeJS.ErrnoException)?.code !== "ENOENT") throw error;
 		// If file does not exist, create a fresh state.
 		// Determine the first node with a trigger event, otherwise the first node.
 		const firstNode = graph.nodes.find((n) => n.trigger?.event) ?? graph.nodes[0];

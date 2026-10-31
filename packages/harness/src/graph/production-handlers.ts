@@ -160,10 +160,20 @@ export function createProductionGraphHandlers(options: ProductionGraphHandlerOpt
 					outputs: { error: code.error, branch, changed_files: code.changedFiles, verification: code.verification },
 				};
 			// Unsupported/unexecuted checks cannot be counted as verification.
-			if (code.verification.length === 0 ||
-				code.verification.some((check) => !check.action.command ||
-					!check.result || check.result.exitCode !== 0 || check.result.timedOut)) {
-				return { outcome: "failure", outputs: { error: "Deterministic verification was not fully executed", branch, verification: code.verification } };
+			if (
+				code.verification.length === 0 ||
+				code.verification.some(
+					(check) => !check.action.command || !check.result || check.result.exitCode !== 0 || check.result.timedOut,
+				)
+			) {
+				return {
+					outcome: "failure",
+					outputs: {
+						error: "Deterministic verification was not fully executed",
+						branch,
+						verification: code.verification,
+					},
+				};
 			}
 			if (code.changedFiles.length === 0 && !ctx.outputs.commit_sha) {
 				return {
@@ -219,15 +229,23 @@ export function createProductionGraphHandlers(options: ProductionGraphHandlerOpt
 			if (!github || (await github.currentPullRequestHead(prNumber)) !== commitSha)
 				throw new Error("Implementation PR HEAD disagrees with observed pushed commit");
 			const implementation = {
-				branch, commitSha, prNumber, changedFiles: code.changedFiles,
-				verification: code.verification, baseSha: base.sha,
+				branch,
+				commitSha,
+				prNumber,
+				changedFiles: code.changedFiles,
+				verification: code.verification,
+				baseSha: base.sha,
 			};
 			return {
 				outcome: "success",
 				outputs: {
-					branch, pr_number: prNumber, commit_sha: commitSha,
-					changed_files: code.changedFiles, verification: code.verification,
-					implementation_context: implementation, implementation_artifact: implementation,
+					branch,
+					pr_number: prNumber,
+					commit_sha: commitSha,
+					changed_files: code.changedFiles,
+					verification: code.verification,
+					implementation_context: implementation,
+					implementation_artifact: implementation,
 				},
 			};
 		},
@@ -235,13 +253,14 @@ export function createProductionGraphHandlers(options: ProductionGraphHandlerOpt
 		async automation(node, ctx): Promise<NodeResult> {
 			switch (node.script) {
 				case "request-intake": {
-					const [context, base] = await Promise.all([
-						options.loadPlanningContext(ctx), repository.observeBase(),
-					]);
-					return { outcome: "success", outputs: {
-						request_issue: context.request,
-						planning_context: { ...context, base },
-					} };
+					const [context, base] = await Promise.all([options.loadPlanningContext(ctx), repository.observeBase()]);
+					return {
+						outcome: "success",
+						outputs: {
+							request_issue: context.request,
+							planning_context: { ...context, base },
+						},
+					};
 				}
 				case "pr-merge": {
 					const approval = assertMergeAuthorization(ctx.outputs);
@@ -251,35 +270,62 @@ export function createProductionGraphHandlers(options: ProductionGraphHandlerOpt
 						throw new Error("PR head changed since final merge authorization");
 					if (!(await github.requiredChecksGreen(approval.headSha)))
 						throw new Error("Required external checks are no longer green for approved SHA");
-					const merge = await observed(ctx, "github.pr.merge", github.mergePullRequest({
-						number: approval.prNumber, expectedHeadSha: approval.headSha,
-					}));
+					const merge = await observed(
+						ctx,
+						"github.pr.merge",
+						github.mergePullRequest({
+							number: approval.prNumber,
+							expectedHeadSha: approval.headSha,
+						}),
+					);
 					if (!/^[a-f0-9]{40}$/iu.test(merge.value.mergeSha) || merge.value.number !== approval.prNumber)
 						throw new Error("Merge lacks observed PR number and commit evidence");
 					for (const number of asNumbers(ctx.outputs.closing_issues)) {
 						await observed(ctx, "github.issue.close", github.closeIssue({ number }), String(number));
 					}
-					return { outcome: "success", outputs: {
-						merged: true, merged_pr: approval.prNumber, merge_sha: merge.value.mergeSha,
-					} };
+					return {
+						outcome: "success",
+						outputs: {
+							merged: true,
+							merged_pr: approval.prNumber,
+							merge_sha: merge.value.mergeSha,
+						},
+					};
 				}
 				case "branch-update": {
 					const branch = ctx.outputs.branch;
 					if (typeof branch !== "string") throw new Error("Branch update requires observed branch");
 					if (!repository.updateBranch) throw new Error("No deterministic branch update adapter");
 					const base = await repository.observeBase();
-					const update = await observed(ctx, "git.branch.update", repository.updateBranch({
-						branch, base: base.defaultBranch, runId: ctx.runId,
-					}));
+					const update = await observed(
+						ctx,
+						"git.branch.update",
+						repository.updateBranch({
+							branch,
+							base: base.defaultBranch,
+							runId: ctx.runId,
+						}),
+					);
 					if (update.value.status === "conflict") {
-						return { outcome: "failure", outputs: {
-							conflict: true, conflicted_files: update.value.conflictedFiles, branch,
-						} };
+						return {
+							outcome: "failure",
+							outputs: {
+								conflict: true,
+								conflicted_files: update.value.conflictedFiles,
+								branch,
+							},
+						};
 					}
-					const pushed = await observed(ctx, "git.push", repository.push({
-						branch, worktree: update.value.worktree, newSha: update.value.headSha,
-						expectedOldSha: await repository.remoteHead(branch),
-					}));
+					const pushed = await observed(
+						ctx,
+						"git.push",
+						repository.push({
+							branch,
+							worktree: update.value.worktree,
+							newSha: update.value.headSha,
+							expectedOldSha: await repository.remoteHead(branch),
+						}),
+					);
 					if (pushed.value.sha !== update.value.headSha) throw new Error("Updated HEAD differs from remote");
 					return { outcome: "success", outputs: { branch, commit_sha: pushed.value.sha } };
 				}

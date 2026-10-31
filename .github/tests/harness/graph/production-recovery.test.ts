@@ -26,7 +26,8 @@ async function fixture() {
 	const external = join(root, "observed-remote.jsonl");
 	const effects = new FileProductionEffectJournal(join(runDir, "effects"));
 	const graph: WorkflowGraph = {
-		version: 1, checks: [],
+		version: 1,
+		checks: [],
 		nodes: [
 			{ id: "intake", kind: "automation", script: "request-intake", trigger: { event: "issues.opened" } },
 			{ id: "apply", kind: "automation", script: "apply" },
@@ -137,7 +138,8 @@ describe("canonical production graph recovery", () => {
 		const f = await fixture();
 		let repaired = false;
 		const graph: WorkflowGraph = {
-			version: 1, checks: [],
+			version: 1,
+			checks: [],
 			nodes: [
 				{ id: "mutate", kind: "automation", script: "mutate", trigger: { event: "issues.opened" } },
 				{ id: "repair", kind: "automation", script: "repair" },
@@ -177,7 +179,9 @@ describe("canonical production graph recovery", () => {
 		);
 		const logs: string[] = [];
 		const original = console.log;
-		console.log = (v) => { logs.push(String(v)); };
+		console.log = (v) => {
+			logs.push(String(v));
+		};
 		try {
 			const args = [
 				"--event-name",
@@ -208,11 +212,16 @@ describe("canonical production graph recovery", () => {
 	test("quota checkpoint blocks mutation and authorized resume re-enters the same graph run", async () => {
 		const f = await fixture();
 		const g: WorkflowGraph = {
-			version: 1, checks: [],
-			nodes: [{
-				id: "planning", kind: "agent", trigger: { event: "issues.opened" },
-				quota_policy: { on_exhaustion: "checkpoint_and_block", resume: "sweep_or_command" },
-			}],
+			version: 1,
+			checks: [],
+			nodes: [
+				{
+					id: "planning",
+					kind: "agent",
+					trigger: { event: "issues.opened" },
+					quota_policy: { on_exhaustion: "checkpoint_and_block", resume: "sweep_or_command" },
+				},
+			],
 			edges: [],
 		};
 		let attempts = 0;
@@ -221,23 +230,37 @@ describe("canonical production graph recovery", () => {
 			agent: async () => {
 				attempts++;
 				return attempts === 1
-					? { outcome: "quota_exhausted", outputs: {
-						quota_candidate: { provider: "p", account: "a", model: "m" },
-					} }
+					? {
+							outcome: "quota_exhausted",
+							outputs: {
+								quota_candidate: { provider: "p", account: "a", model: "m" },
+							},
+						}
 					: { outcome: "success", outputs: { resumed: true } };
 			},
 		};
 		const blocked = await runGraph(g, f.runDir, handlers, opened, {
-			eventId: "quota-event", onAction: async () => {},
+			eventId: "quota-event",
+			onAction: async () => {},
 		});
 		expect(blocked.quota_blocked).toBe(true);
-		expect(blocked.checkpoints).toEqual([{
-			run_id: blocked.run_id, node: "planning", eligible: false,
-		}]);
-		const resumed = await runGraph(g, f.runDir, handlers,
-			{ type: "comment", body: "/df resume", actor: owner }, {
-				eventId: "resume-event", onAction: async () => {},
-			});
+		expect(blocked.checkpoints).toEqual([
+			{
+				run_id: blocked.run_id,
+				node: "planning",
+				eligible: false,
+			},
+		]);
+		const resumed = await runGraph(
+			g,
+			f.runDir,
+			handlers,
+			{ type: "comment", body: "/df resume", actor: owner },
+			{
+				eventId: "resume-event",
+				onAction: async () => {},
+			},
+		);
 		expect(resumed.run_id).toBe(blocked.run_id);
 		expect(resumed.quota_blocked).toBeUndefined();
 		expect(resumed.outputs.resumed).toBe(true);
@@ -248,9 +271,13 @@ describe("canonical production graph recovery", () => {
 		const f = await fixture();
 		const abort = new AbortController();
 		abort.abort();
-		await expect(runGraph(f.graph, f.runDir, f.handlers, opened,
-			{ effects: f.effects, eventId: "cancel-event", signal: abort.signal }))
-			.rejects.toThrow("cancelled");
+		await expect(
+			runGraph(f.graph, f.runDir, f.handlers, opened, {
+				effects: f.effects,
+				eventId: "cancel-event",
+				signal: abort.signal,
+			}),
+		).rejects.toThrow("cancelled");
 		expect(f.writes()).toBe(0);
 	});
 
@@ -259,40 +286,52 @@ describe("canonical production graph recovery", () => {
 		const graphFile = join(f.root, "checks-graph.json");
 		const eventFile = join(f.root, "check-suite.json");
 		const graph: WorkflowGraph = {
-			version: 1, checks: [{ name: "quality", required: true }],
+			version: 1,
+			checks: [{ name: "quality", required: true }],
 			nodes: [{ id: "verify", kind: "agent", trigger: { event: "checks.completed" } }],
 			edges: [],
 		};
 		await writeFile(graphFile, JSON.stringify(graph));
-		await writeFile(eventFile, JSON.stringify({
-			action: "completed",
-			check_suite: { conclusion: "success", head_sha: sha, pull_requests: [{ number: 27 }] },
-		}));
+		await writeFile(
+			eventFile,
+			JSON.stringify({
+				action: "completed",
+				check_suite: { conclusion: "success", head_sha: sha, pull_requests: [{ number: 27 }] },
+			}),
+		);
 		const logs: string[] = [];
 		const previousLog = console.log;
-		console.log = (v) => { logs.push(String(v)); };
+		console.log = (v) => {
+			logs.push(String(v));
+		};
 		const runsRoot = join(f.root, "checks");
 		await mkdir(join(runsRoot, "13"), { recursive: true });
-		await writeFile(join(runsRoot, "13", "state.df"), JSON.stringify({
-			run_id: "request-13", current_node: "verify", outputs: { pr_number: 27 }, hints: [],
-		}));
+		await writeFile(
+			join(runsRoot, "13", "state.df"),
+			JSON.stringify({
+				run_id: "request-13",
+				current_node: "verify",
+				outputs: { pr_number: 27 },
+				hints: [],
+			}),
+		);
 		let verificationCalls = 0;
 		try {
-			await dispatch([
-				"--event-name", "check_suite", "--event", eventFile,
-				"--graph", graphFile, "--runs", join(f.root, "checks"),
-			], {
-				deliveryId: "untrusted-green",
-				runtime: async () => ({
-					handlers: f.handlers,
-					effects: f.effects,
-					verifyChecks: async (ref) => {
-						expect(ref).toBe(sha);
-						verificationCalls++;
-						return "pending" as const;
-					},
-				}),
-			});
+			await dispatch(
+				["--event-name", "check_suite", "--event", eventFile, "--graph", graphFile, "--runs", join(f.root, "checks")],
+				{
+					deliveryId: "untrusted-green",
+					runtime: async () => ({
+						handlers: f.handlers,
+						effects: f.effects,
+						verifyChecks: async (ref) => {
+							expect(ref).toBe(sha);
+							verificationCalls++;
+							return "pending" as const;
+						},
+					}),
+				},
+			);
 		} finally {
 			console.log = previousLog;
 		}
@@ -304,7 +343,8 @@ describe("canonical production graph recovery", () => {
 	test("merge gate rejects an external check result for a different head", async () => {
 		const f = await fixture();
 		const g: WorkflowGraph = {
-			version: 1, checks: [{ name: "quality", required: true }],
+			version: 1,
+			checks: [{ name: "quality", required: true }],
 			nodes: [
 				{ id: "plan-alignment", kind: "agent" },
 				{ id: "merge-gate", kind: "gate", author_associations: ["OWNER"], command: "^/df approve$" },
@@ -316,15 +356,31 @@ describe("canonical production graph recovery", () => {
 			],
 		};
 		await mkdir(f.runDir, { recursive: true });
-		await writeFile(join(f.runDir, "state.df"), JSON.stringify({
-			run_id: "merge-test", current_node: "plan-alignment", hints: [],
-			outputs: { commit_sha: sha, pr_number: 1, aligned: true,
-				plan_artifact: { scope: ["src/*"] }, planning_context: { issue: 1 },
-				implementation_artifact: { files: ["src/a.ts"] } },
-		}));
-		await expect(runGraph(g, f.runDir, f.handlers,
-			{ type: "checks.completed", conclusion: "required_green", ref: "b".repeat(40) } as GraphEvent,
-			{ eventId: "check-wrong" })).rejects.toThrow("exact implementation SHA");
+		await writeFile(
+			join(f.runDir, "state.df"),
+			JSON.stringify({
+				run_id: "merge-test",
+				current_node: "plan-alignment",
+				hints: [],
+				outputs: {
+					commit_sha: sha,
+					pr_number: 1,
+					aligned: true,
+					plan_artifact: { scope: ["src/*"] },
+					planning_context: { issue: 1 },
+					implementation_artifact: { files: ["src/a.ts"] },
+				},
+			}),
+		);
+		await expect(
+			runGraph(
+				g,
+				f.runDir,
+				f.handlers,
+				{ type: "checks.completed", conclusion: "required_green", ref: "b".repeat(40) } as GraphEvent,
+				{ eventId: "check-wrong" },
+			),
+		).rejects.toThrow("exact implementation SHA");
 		const current = JSON.parse(await readFile(join(f.runDir, "state.df"), "utf8"));
 		expect(current.current_node).toBe("plan-alignment");
 		expect(() => assertMergeAuthorization(current.outputs)).toThrow("authorization");
