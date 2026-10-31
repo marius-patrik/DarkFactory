@@ -11,8 +11,8 @@ permissions:
   contents: read
 
 concurrency:
-  group: df10-acceptance-${{ github.ref }}
-  cancel-in-progress: true
+  group: df10-acceptance-${{ github.sha }}
+  cancel-in-progress: false
 
 jobs:
   github-transport:
