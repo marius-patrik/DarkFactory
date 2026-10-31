@@ -39,7 +39,7 @@ a:hover{text-decoration:underline}
 .df-caveat{border-left:4px solid #7893b2;color:#c6d4e7;background:#182435}
 .df-problem{border-left:4px solid #e0a37c}
 .df-list{padding:0;margin:0;list-style:none;display:grid;gap:.45rem}
-.df-pagination{display:flex;justify-content:center;align-items:center;gap:1rem;flex-wrap:wrap;padding:1.5rem 0;color:var(--df-muted)}
+.df-pagination{display:flex;justify-content:center;align-items:center;gap:1rem;flex-wrap:wrap;padding:1.5rem 0;color:var(--df-muted);border:0;min-width:0;margin:0}
 .df-pagination span{min-width:4.5rem;text-align:center;font-variant-numeric:tabular-nums}
 .df-detail{border:1px solid var(--df-edge);border-radius:.8rem;background:var(--df-panel);padding:clamp(1rem,3vw,2rem);max-width:90ch}
 .df-detail h3{margin:0 0 .8rem;overflow-wrap:anywhere;font-size:1.2rem;line-height:1.3}

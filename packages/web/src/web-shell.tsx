@@ -172,6 +172,7 @@ const Body: FC<Omit<DarkFactoryShellProps, "hook">> = ({
 		return () => controller.abort();
 	}, [reader, page?.resource, currentPage, detailId, refresh]);
 	useEffect(() => {
+		void refresh; // Explicit reload signal for the same detail route.
 		if (!page || detailId === undefined) return;
 		const controller = new AbortController();
 		const key = `${page.resource}:${detailId}`;
@@ -190,7 +191,7 @@ const Body: FC<Omit<DarkFactoryShellProps, "hook">> = ({
 			},
 		);
 		return () => controller.abort();
-	}, [reader, page?.resource, detailId, refresh]);
+	}, [reader, page, detailId, refresh]);
 	useEffect(() => {
 		if (!broker) {
 			setAuth({ status: "signed-out" });

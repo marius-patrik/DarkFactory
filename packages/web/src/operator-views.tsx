@@ -301,7 +301,7 @@ const DetailPanel: FC<{
 						Head: {state.data.head} {state.data.base ? `· Base: ${state.data.base}` : ""}
 					</p>
 				) : null}
-				<pre className="df-detail-body" tabIndex={0}>
+				<pre className="df-detail-body">
 					{state.data.body || "No description supplied by GitHub."}
 				</pre>
 				{safeGitHubLink(state.data.url, repository) ? (
@@ -400,7 +400,7 @@ export const OperatorView: FC<{
 							<p className="df-empty">No matching records on this page. This is not a repository-wide absence claim.</p>
 						)}
 						{onPageChange && (state.data.page > 1 || state.data.morePossible) ? (
-							<div className="df-pagination" role="group" aria-label="GitHub result pages">
+							<fieldset className="df-pagination" aria-label="GitHub result pages">
 								<button type="button" disabled={state.data.page <= 1} onClick={() => onPageChange(activePage - 1)}>
 									Previous page
 								</button>
@@ -412,18 +412,18 @@ export const OperatorView: FC<{
 								>
 									Next page
 								</button>
-							</div>
+							</fieldset>
 						) : null}
 					</div>
 				) : isConfig(state.data) ? (
-					<div>
+					<section aria-label="Canonical repository configuration">
 						<p className="df-data-note">
 							Path: {state.data.path} · SHA: {state.data.sha}
 						</p>
-						<pre className="df-config" tabIndex={0} aria-label="Canonical repository configuration">
+						<pre className="df-config">
 							{state.data.content}
 						</pre>
-					</div>
+					</section>
 				) : (
 					<RepositorySummary value={state.data} />
 				)
