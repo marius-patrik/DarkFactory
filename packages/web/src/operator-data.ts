@@ -44,6 +44,8 @@ export interface OperatorItem {
 export interface OperatorCollection {
 	items: OperatorItem[];
 	limit: number;
+	page: number;
+	morePossible: boolean;
 	note?: string;
 }
 export interface OperatorRepository {
@@ -64,8 +66,8 @@ export interface OperatorConfig {
 }
 export type OperatorResourceData = OperatorCollection | OperatorRepository | OperatorConfig;
 export interface OperatorReadSource {
-	read(resource: OperatorResource, signal?: AbortSignal): Promise<ResourceState<OperatorResourceData>>;
-	issueComments(issue: number, signal?: AbortSignal): Promise<OperatorCollection>;
+	read(resource: OperatorResource, signal?: AbortSignal, page?: number): Promise<ResourceState<OperatorResourceData>>;
+	issueComments(issue: number, signal?: AbortSignal, page?: number): Promise<OperatorCollection>;
 }
 export interface OperatorSourceOptions {
 	fetch?: typeof fetch;
@@ -132,9 +134,15 @@ function item(value: unknown): OperatorItem {
 	};
 }
 const PAGE = 50;
-function collection(rows: unknown, note?: string): OperatorCollection {
+function collection(rows: unknown, note?: string, page = 1, morePossible?: boolean): OperatorCollection {
 	const values = array(rows);
-	return { items: values.map(item), limit: PAGE, ...(note ? { note } : {}) };
+	return {
+		items: values.map(item),
+		limit: PAGE,
+		page,
+		morePossible: morePossible ?? values.length === PAGE,
+		...(note ? { note } : {}),
+	};
 }
 /** Browser reader never adds Authorization headers, cookies, or GitHub tokens. */
 export function createGitHubOperatorSource(
@@ -168,7 +176,9 @@ export function createGitHubOperatorSource(
 		}
 		return response.json() as Promise<unknown>;
 	}
-	async function read(resource: OperatorResource, signal?: AbortSignal): Promise<ResourceState<OperatorResourceData>> {
+	async function read(resource: OperatorResource, signal?: AbortSignal, page = 1): Promise<ResourceState<OperatorResourceData>> {
+		if (!Number.isSafeInteger(page) || page < 1 || page > 1000)
+			return { status: "blocked", detail: "Invalid GitHub page" };
 		if (resource === "quota" || resource === "graph" || resource === "recovery" || resource === "projects")
 			return { status: "blocked", detail: "No verified runtime/broker read contract for this resource" };
 		if (resource === "docs")
@@ -219,16 +229,16 @@ export function createGitHubOperatorSource(
 			}
 			const path =
 				resource === "pulls"
-					? `/pulls?state=all&per_page=${PAGE}`
+					? `/pulls?state=all&per_page=${PAGE}&page=${page}`
 					: resource === "checks"
-						? `/commits/HEAD/check-runs?per_page=${PAGE}`
+						? `/commits/HEAD/check-runs?per_page=${PAGE}&page=${page}`
 						: resource === "runs"
-							? `/actions/runs?per_page=${PAGE}`
+							? `/actions/runs?per_page=${PAGE}&page=${page}`
 							: resource === "releases"
-								? `/releases?per_page=${PAGE}`
+								? `/releases?per_page=${PAGE}&page=${page}`
 								: resource === "audit"
-									? `/events?per_page=${PAGE}`
-									: `/issues?state=all&per_page=${PAGE}`;
+									? `/events?per_page=${PAGE}&page=${page}`
+									: `/issues?state=all&per_page=${PAGE}&page=${page}`;
 			const response = await request(path, signal);
 			const rows =
 				resource === "checks"
@@ -253,21 +263,28 @@ export function createGitHubOperatorSource(
 				: resource === "requests" || resource === "planning" || resource === "approvals" || resource === "epics"
 					? rows
 					: rows;
-			const note = `Latest ${PAGE} records maximum from GitHub; this is not a complete repository history`;
-			return { status: "live", data: collection(selected, note), fetchedAt: Date.now(), limited: rows.length >= PAGE };
+			const note = `Page ${page} of GitHub results (up to ${PAGE} records before label filtering); not a complete history`;
+			return {
+				status: "live",
+				data: collection(selected, note, page, rows.length >= PAGE),
+				fetchedAt: Date.now(),
+				limited: rows.length >= PAGE,
+			};
 		} catch (error) {
 			return classifyReadFailure(error);
 		}
 	}
-	async function issueComments(issue: number, signal?: AbortSignal): Promise<OperatorCollection> {
+	async function issueComments(issue: number, signal?: AbortSignal, page = 1): Promise<OperatorCollection> {
 		if (!Number.isSafeInteger(issue) || issue < 1) throw new Error("Invalid issue number");
-		const rows = array(await request(`/issues/${issue}/comments?per_page=${PAGE}`, signal));
+		if (!Number.isSafeInteger(page) || page < 1 || page > 1000) throw new Error("Invalid GitHub page");
+		const rows = array(await request(`/issues/${issue}/comments?per_page=${PAGE}&page=${page}`, signal));
 		return collection(
 			rows.map((value) => {
 				const r = record(value);
 				return { ...r, title: str(r.body), html_url: str(r.html_url), state: "published" };
 			}),
-			"First page of GitHub issue comments",
+			`Page ${page} of GitHub issue comments`,
+			page,
 		);
 	}
 	return { read, issueComments };
