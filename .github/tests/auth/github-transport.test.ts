@@ -41,6 +41,27 @@ describe("scoped GitHub App broker transport", () => {
 		const readback = await service.readComment({ repository: "org/repo", issue: 3, commentId: 19, userId: "octocat" });
 		expect(readback?.body).toBe("hello");
 	});
+	test("cross-tenant GitHub user identity cannot inherit an existing browser session", async () => {
+		const service = transport([]);
+		await expect(service.authority({ userToken: "USER", userId: "another-user", repository: "org/repo" }))
+			.rejects.toThrow("identity changed");
+	});
+	test("authoritative readback rejects a comment bound to a different repository", async () => {
+		const service = new ScopedGitHubAppTransport({
+			appId: "app", privateKey: "TEST-ONLY",
+			appJwtForRepository: async () => "TEST-JWT",
+			fetcher: async (url) => {
+				if (url.endsWith("/installation")) return json({ id: 123, permissions: { issues: "read" } });
+				if (url.endsWith("/access_tokens")) return json({ token: "SCOPED-TEST", repositories: [{ name: "repo" }] });
+				if (url.endsWith("/issues/comments/19")) return json({
+					id: 19, body: "hello", issue_url: "https://api.github.com/repos/other/repo/issues/3",
+				});
+				throw new Error("Unknown GitHub API fixture");
+			},
+		});
+		expect(await service.readComment({ repository: "org/repo", issue: 3, commentId: 19, userId: "octocat" }))
+			.toBeUndefined();
+	});
 	test("missing installation fails closed instead of granting mutations", async () => {
 		const service = transport([], false);
 		const authority = await service.authority({ userToken: "USER", userId: "octocat", repository: "org/repo" });
