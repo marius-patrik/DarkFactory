@@ -7,6 +7,7 @@ import { assertMergeAuthorization } from "../../harness/src/graph/approval-evide
 import { reviewApprovalFresh } from "../../harness/src/graph/review-loop.ts";
 import { redactErrorMessage } from "../../harness/src/redaction.ts";
 import type { RunState } from "../../protocol/src/workflow.ts";
+import type { OperatorQuotaSnapshot } from "../../protocol/src/quota.ts";
 
 /** An operator command cannot silently succeed without an authoritative backend. */
 export class OperatorCliError extends Error {
@@ -245,7 +246,14 @@ export function stepCursor(cursor: TuiCursor, key: string, count: number): TuiCu
 	return cursor;
 }
 
-export function renderTui(runs: readonly OperatorRun[], cursor: TuiCursor, columns: number, rows: number, note = ""): string {
+export function renderTui(
+	runs: readonly OperatorRun[],
+	cursor: TuiCursor,
+	columns: number,
+	rows: number,
+	note = "",
+	quota?: OperatorQuotaSnapshot,
+): string {
 	const width = Math.max(24, columns || 80);
 	const height = Math.max(8, rows || 24);
 	const picked = runs[cursor.selected];
@@ -275,8 +283,21 @@ export function renderTui(runs: readonly OperatorRun[], cursor: TuiCursor, colum
 		if (picked.pr) lines.push("Checks SHA: " + (picked.pr.checkedSha ?? "not observed"),
 			"Live PR/check progression unavailable: missing authenticated observation interface.");
 	} else if (view === "providers") {
-		lines.push("Provider/account/quota backend not connected to this read-only TUI.",
-			"Use df quota --json and df accounts for available provider observations.");
+		if (!quota) {
+			lines.push("Provider observations unavailable. Use df quota --json for diagnostics.");
+		} else {
+			lines.push("Provider observations: " + quota.generatedAt + " (local canonical quota engine)");
+			for (const provider of quota.providers) {
+				lines.push(provider.id + "  " + provider.state + "  credential: " + provider.credentials);
+				for (const account of provider.accounts) {
+					lines.push("  @" + account.label);
+					for (const model of account.models) {
+						const sources = [...new Set(model.items.map((item) => item.source))].join(",");
+						lines.push("    " + model.model + "  " + model.state + "  " + (sources || "no observation"));
+					}
+				}
+			}
+		}
 	} else if (view === "recovery") {
 		lines.push("Recovery: " + picked.recovery, "Pending action: " + (picked.pendingAction ?? "none"),
 			"Mutation blocked without a durable graph reconciliation/authorization adapter.");
@@ -286,17 +307,26 @@ export function renderTui(runs: readonly OperatorRun[], cursor: TuiCursor, colum
 }
 
 /** Raw-mode cleanup, terminal resize and errors are all handled in the same interactive session. */
-export async function runOperatorTui(args: string[]): Promise<void> {
+export async function runOperatorTui(
+	args: string[],
+	loadQuota?: () => Promise<OperatorQuotaSnapshot>,
+): Promise<void> {
 	const parsed = parseOperatorArgs(["list", ...args]);
 	if (parsed.id !== undefined || parsed.json) throw new OperatorCliError("TUI only supports --runs DIR", 2);
 	if (!stdin.isTTY || !stdout.isTTY || typeof stdin.setRawMode !== "function")
 		throw new OperatorCliError("Interactive TUI requires an attached input and output TTY", 3);
 	let runs = await listRequests(parsed.runs);
+	let quota: OperatorQuotaSnapshot | undefined;
+	let quotaStatus = "Provider observations unavailable";
+	if (loadQuota) {
+		try { quota = await loadQuota(); quotaStatus = ""; }
+		catch (error) { quotaStatus = safeText(error); }
+	}
 	let cursor: TuiCursor = { selected: 0, view: 0 };
 	let note = "";
 	let closed = false;
 	let refreshSequence = 0;
-	const render = () => stdout.write("\u001b[H\u001b[2J" + renderTui(runs, cursor, stdout.columns, stdout.rows, note));
+	const render = () => stdout.write("\u001b[H\u001b[2J" + renderTui(runs, cursor, stdout.columns, stdout.rows, note || quotaStatus, quota));
 	emitKeypressEvents(stdin);
 	const oldRaw = stdin.isRaw === true;
 	stdin.setRawMode(true);
@@ -312,17 +342,19 @@ export async function runOperatorTui(args: string[]): Promise<void> {
 				if (name === "q" || name === "escape" || (key.ctrl && name === "c")) { cleanup(); done(); return; }
 				if (name === "r") {
 					const sequence = ++refreshSequence;
-					void listRequests(parsed.runs).then((next) => {
-						if (closed || sequence !== refreshSequence) return;
-						runs = next;
-						cursor = { ...cursor, selected: Math.min(cursor.selected, Math.max(0, runs.length - 1)) };
-						note = "Refreshed from durable state";
-						render();
-					}).catch((error: unknown) => {
-						if (closed || sequence !== refreshSequence) return;
-						note = safeText(error);
-						render();
-					});
+					void Promise.all([listRequests(parsed.runs), loadQuota ? loadQuota() : Promise.resolve(undefined)])
+						.then(([next, latestQuota]) => {
+							if (closed || sequence !== refreshSequence) return;
+							runs = next;
+							if (latestQuota) { quota = latestQuota; quotaStatus = ""; }
+							cursor = { ...cursor, selected: Math.min(cursor.selected, Math.max(0, runs.length - 1)) };
+							note = "Refreshed from authoritative snapshots";
+							render();
+						}).catch((error: unknown) => {
+							if (closed || sequence !== refreshSequence) return;
+							note = safeText(error);
+							render();
+						});
 					return;
 				}
 				if (name === "a" || name === "c" || name === "x") {
