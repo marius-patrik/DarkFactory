@@ -137,7 +137,8 @@ describe("browser-safe GitHub reads", () => {
 		expect(paths).toEqual(["https://api.github.com/repos/alice/product/issues/42"]);
 		expect((await source.readItem?.("requests", 0))?.status).toBe("blocked");
 		expect((await source.readItem?.("projects", 42))?.status).toBe("blocked");
-		expect(paths).toHaveLength(1);
+		expect((await source.readItem?.("requests", 41))?.status).toBe("blocked");
+		expect(paths).toHaveLength(2);
 	});
 	test("maps permission and rate limits to explicit non-success states", () => {
 		expect(classifyReadFailure(new OperatorHttpError(401)).status).toBe("unauthorized");
