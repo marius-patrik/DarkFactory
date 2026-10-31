@@ -72,12 +72,18 @@ export class GitHubClient {
 		this.#onAuthenticationFailure = options.onAuthenticationFailure;
 	}
 
-	async rest<T>(method: string, path: string, body?: unknown, accept = "application/vnd.github+json"): Promise<T> {
+	async rest<T>(
+		method: string,
+		path: string,
+		body?: unknown,
+		accept = "application/vnd.github+json",
+		options: { apiVersion?: string } = {},
+	): Promise<T> {
 		const url =
 			path.startsWith("http://") || path.startsWith("https://")
 				? path
 				: `${this.#apiBase}${path.startsWith("/") ? "" : "/"}${path}`;
-		return (await this.#request<T>(method.toUpperCase(), url, body, true, accept)).value;
+		return (await this.#request<T>(method.toUpperCase(), url, body, true, accept, options.apiVersion)).value;
 	}
 
 	async graphql<T>(query: string, variables: Record<string, unknown> = {}): Promise<T> {
@@ -166,7 +172,9 @@ export class GitHubClient {
 		body: unknown,
 		useEtag: boolean,
 		accept = "application/vnd.github+json",
+		apiVersion = "2022-11-28",
 	): Promise<{ value: T; headers: Headers; status: number; requestId?: string }> {
+		if (!/^\d{4}-\d{2}-\d{2}$/u.test(apiVersion)) throw this.#protocol(method, url, "invalid API version");
 		this.#assertTrustedUrl(url);
 		const token = await this.#getToken();
 		// An App token source can rotate or switch installation/account. A 304
@@ -179,11 +187,14 @@ export class GitHubClient {
 		const cached = method === "GET" && useEtag ? this.#cache.get(cacheKey) : undefined;
 		let currentUrl = url;
 		let redirects = 0;
+		// A timed-out mutation may already have committed. Retrying it could duplicate a
+		// comment, review, issue, dispatch or merge. Only read requests are replayable.
+		const replayable = method === "GET" || method === "HEAD";
 		for (let attempt = 0; ; attempt++) {
 			const headers = new Headers({
 				Accept: accept,
 				Authorization: `Bearer ${token}`,
-				"X-GitHub-Api-Version": "2022-11-28",
+				"X-GitHub-Api-Version": apiVersion,
 				"User-Agent": this.#userAgent,
 			});
 			if (body !== undefined) headers.set("Content-Type", "application/json");
@@ -199,7 +210,7 @@ export class GitHubClient {
 					redirect: "manual",
 				});
 			} catch (cause) {
-				if (attempt < this.#maxRetries) {
+				if (replayable && attempt < this.#maxRetries) {
 					await this.#sleep(this.#jitter(attempt));
 					continue;
 				}
@@ -229,8 +240,10 @@ export class GitHubClient {
 			}
 			const requestId = response.headers.get("x-github-request-id") ?? undefined;
 			this.#readRestRate(response.headers);
-			if (response.status === 304 && cached)
+			if (response.status === 304) {
+				if (!cached) throw this.#protocol(method, currentUrl, "unexpected 304 without a matching ETag cache entry");
 				return { value: cached.value as T, headers: response.headers, status: 304, requestId };
+			}
 			const raw = await response.text();
 			const value = raw ? (accept.includes("json") ? safeJson(raw) : raw) : undefined;
 			if (response.ok) {
@@ -242,7 +255,7 @@ export class GitHubClient {
 			}
 			const classification = classify(response, value);
 			if (response.status === 401 || response.status === 403) this.#onAuthenticationFailure?.();
-			if (attempt < this.#maxRetries && classification.retryable) {
+			if (replayable && attempt < this.#maxRetries && classification.retryable) {
 				await this.#sleep(classification.delayMs ?? this.#jitter(attempt));
 				continue;
 			}
@@ -351,7 +364,7 @@ function classify(
 	const message =
 		value && typeof value === "object" && "message" in value ? String((value as any).message).toLowerCase() : "";
 	const remaining = numberHeader(response.headers, "x-ratelimit-remaining");
-	const retryAfter = numberHeader(response.headers, "retry-after");
+	const retryAfter = retryAfterMilliseconds(response.headers.get("retry-after"));
 	if (
 		(response.status === 403 || response.status === 429) &&
 		(retryAfter !== undefined || message.includes("secondary rate limit") || message.includes("abuse detection"))
@@ -359,7 +372,7 @@ function classify(
 		return {
 			kind: "secondary-rate-limit",
 			retryable: true,
-			delayMs: retryAfter === undefined ? undefined : retryAfter * 1000,
+			delayMs: retryAfter,
 		};
 	if ((response.status === 403 || response.status === 429) && remaining === 0) {
 		const reset = numberHeader(response.headers, "x-ratelimit-reset");
@@ -375,4 +388,13 @@ function classify(
 	if (response.status === 404) return { kind: "not-found", retryable: false };
 	if (response.status === 409 || response.status === 422) return { kind: "validation", retryable: false };
 	return { kind: "protocol", retryable: false };
+}
+
+/** Retry-After permits seconds or an HTTP-date; neither permits a negative wait. */
+function retryAfterMilliseconds(header: string | null): number | undefined {
+	if (!header) return undefined;
+	const seconds = Number(header);
+	if (Number.isFinite(seconds) && seconds >= 0) return Math.ceil(seconds * 1000);
+	const when = Date.parse(header);
+	return Number.isFinite(when) ? Math.max(0, when - Date.now()) : undefined;
 }
