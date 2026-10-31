@@ -6,7 +6,10 @@ export interface WebSiteRuntimeConfig {
 	/** Public OAuth metadata, with the confidential service reached only over HTTPS. */
 	auth?: { clientId: string; scope: string; redirectUri: string; brokerUrl: string };
 }
-export interface WebAsset { path: string; sha256: string }
+export interface WebAsset {
+	path: string;
+	sha256: string;
+}
 export interface WebBundleManifest {
 	schemaVersion: 1;
 	kind: "darkfactory-operator";
@@ -24,7 +27,8 @@ export function normalizeSiteBasePath(input: string): string {
 		!/^\/(?:[A-Za-z0-9._~-]+\/)*$/u.test(path) ||
 		path.includes("//") ||
 		path.split("/").some((part) => part === "." || part === "..")
-	) throw new Error("Invalid Pages base path");
+	)
+		throw new Error("Invalid Pages base path");
 	return path;
 }
 /** The hash holds operator deep links. The pathname selects real static documentation. */
@@ -60,12 +64,22 @@ export function validateWebConfig(value: unknown): WebSiteRuntimeConfig {
 	if (v.auth !== undefined) {
 		if (!v.auth || typeof v.auth !== "object") throw new Error("Invalid public OAuth metadata");
 		const a = v.auth as Record<string, unknown>;
-		if (typeof a.clientId !== "string" || !a.clientId ||
-			typeof a.scope !== "string" || typeof a.redirectUri !== "string" ||
-			typeof a.brokerUrl !== "string" || !/^https:\/\/[^/]+/u.test(a.brokerUrl) ||
-			!/^https:\/\//u.test(a.redirectUri)) throw new Error("Invalid public OAuth metadata");
-		return { version: 1, repository: v.repository, docsContentUrl: v.docsContentUrl,
-			auth: { clientId: a.clientId, scope: a.scope, redirectUri: a.redirectUri, brokerUrl: a.brokerUrl } };
+		if (
+			typeof a.clientId !== "string" ||
+			!a.clientId ||
+			typeof a.scope !== "string" ||
+			typeof a.redirectUri !== "string" ||
+			typeof a.brokerUrl !== "string" ||
+			!/^https:\/\/[^/]+/u.test(a.brokerUrl) ||
+			!/^https:\/\//u.test(a.redirectUri)
+		)
+			throw new Error("Invalid public OAuth metadata");
+		return {
+			version: 1,
+			repository: v.repository,
+			docsContentUrl: v.docsContentUrl,
+			auth: { clientId: a.clientId, scope: a.scope, redirectUri: a.redirectUri, brokerUrl: a.brokerUrl },
+		};
 	}
 	return { version: 1, repository: v.repository, docsContentUrl: v.docsContentUrl };
 }
