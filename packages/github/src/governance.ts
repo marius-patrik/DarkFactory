@@ -3,6 +3,7 @@
  * This module is transport/governance only; the execution graph owns decisions
  * and the board owner owns Projects writes.
  */
+import { GitHubError } from "./errors.ts";
 import { GitHubRepository, isAuthorizedAssociation } from "./repository.ts";
 
 const SHA = /^[a-f0-9]{40}$/iu;
@@ -105,15 +106,7 @@ export class GovernedPullRequests {
 		if (pr.user.login.toLowerCase() === request.approvedBy.toLowerCase())
 			throw new Error("PR authors cannot approve themselves");
 
-		// Failing to read branch protection (including a 404 or scope denial)
-		// is a hard stop; an unprotected branch must not silently become eligible.
-		const protection = await this.#repo.client.rest<Protection>(
-			"GET",
-			this.#basePath + "/branches/" + encodeURIComponent(pr.base.ref) + "/protection",
-		);
-		const minimumReviews = protection.required_pull_request_reviews?.required_approving_review_count ?? 0;
-		if (!Number.isSafeInteger(minimumReviews) || minimumReviews < 1)
-			throw new Error("Protected branch requires no verified human review");
+		const { minimumReviews, required } = await this.#reviewPolicy(pr.base.ref);
 
 		const currentByReviewer = new Map<
 			string,
@@ -146,12 +139,7 @@ export class GovernedPullRequests {
 		)
 			throw new Error("Missing independent, current-head human approval");
 
-		const required = [
-			...new Set([
-				...(protection.required_status_checks?.contexts ?? []),
-				...(protection.required_status_checks?.checks ?? []).map((check) => check.context),
-			]),
-		];
+
 		if (required.length) {
 			const result = await this.#repo.requiredCheckStatus(request.reviewedHeadSha, required);
 			if (result.state !== "success") throw new Error("Required checks are not green on reviewed SHA");
@@ -165,6 +153,71 @@ export class GovernedPullRequests {
 		});
 		if (parents.some((candidate) => candidate.number !== request.number))
 			throw new Error("Open downstack PR requires its own authorization");
+	}
+
+	/**
+	 * Resolve effective approval policy from the classic branch-protection API,
+	 * or from active rulesets when the installation lacks Administration:read.
+	 * GitHub Apps always have Metadata:read, which suffices for active rulesets.
+	 * Empty, malformed or inaccessible policies never silently authorize merges.
+	 */
+	async #reviewPolicy(base: string): Promise<{ minimumReviews: number; required: string[] }> {
+		let protection: Protection;
+		try {
+			protection = await this.#repo.client.rest<Protection>(
+				"GET",
+				this.#basePath + "/branches/" + encodeURIComponent(base) + "/protection",
+			);
+		} catch (error) {
+			if (
+				!(error instanceof GitHubError) ||
+				!["permission", "not-found"].includes(error.kind)
+			) throw error;
+			const rules = await this.#repo.client.collectRest<unknown>(
+				this.#basePath + "/rules/branches/" + encodeURIComponent(base) + "?per_page=100",
+				1000,
+			);
+			if (rules.length === 0 || rules.length >= 1000)
+				throw new Error("No complete active ruleset approval policy available");
+			let minimumReviews = 0;
+			const required: string[] = [];
+			for (const entry of rules) {
+				if (!entry || typeof entry !== "object" || !("type" in entry) ||
+					typeof entry.type !== "string") {
+					throw new Error("Malformed active branch rule");
+				}
+				const rule = entry as { type: string; parameters?: Record<string, unknown> };
+				if (rule.type === "pull_request") {
+					const count = rule.parameters?.required_approving_review_count;
+					if (!Number.isSafeInteger(count) || (count as number) < 1)
+						throw new Error("Ruleset pull-request review requirement is missing");
+					minimumReviews = Math.max(minimumReviews, count as number);
+				}
+				if (rule.type === "required_status_checks") {
+					const checks = rule.parameters?.required_status_checks;
+					if (!Array.isArray(checks)) throw new Error("Malformed required ruleset checks");
+					for (const check of checks) {
+						if (!check || typeof check.context !== "string" || !check.context)
+							throw new Error("Malformed required ruleset check");
+						required.push(check.context);
+					}
+				}
+			}
+			if (minimumReviews < 1) throw new Error("Active branch rules do not require human review");
+			return { minimumReviews, required: [...new Set(required)] };
+		}
+		const minimumReviews = protection.required_pull_request_reviews?.required_approving_review_count ?? 0;
+		if (!Number.isSafeInteger(minimumReviews) || minimumReviews < 1)
+			throw new Error("Protected branch requires no verified human review");
+		return {
+			minimumReviews,
+			required: [
+				...new Set([
+					...(protection.required_status_checks?.contexts ?? []),
+					...(protection.required_status_checks?.checks ?? []).map((check) => check.context),
+				]),
+			],
+		};
 	}
 
 	/**
