@@ -26,7 +26,7 @@ jobs:
       - name: Install frozen dependencies
         run: bun install --frozen-lockfile
       - name: Scoped GitHub transport and governance tests
-        run: bun test .github/tests/github .github/tests/harness/github .github/tests/harness/release/pr-approval.test.ts
+        run: bun test ./.github/tests/github ./.github/tests/harness/github ./.github/tests/harness/release/pr-approval.test.ts
       - name: Whole-repository TypeScript check
         run: bun run typecheck
       - name: Whole-repository format check
