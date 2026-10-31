@@ -166,7 +166,7 @@ export function createGitHubOperatorSource(repository: string, options: Operator
 			};
 			const selected = labels[resource]
 				? rows.filter(value => array(record(value).labels).some(label =>
-					str(record(label).name).toLowerCase().includes(labels[resource]!)))
+					str(record(label).name).toLowerCase().includes(labels[resource] ?? "")))
 				: resource === "requests" || resource === "planning" || resource === "approvals" || resource === "epics"
 					? rows : rows;
 			const note = `Latest ${PAGE} records maximum from GitHub; this is not a complete repository history`;
