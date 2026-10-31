@@ -54,9 +54,11 @@ describe("confidential durable broker storage", () => {
 		expect(first).toEqual(second);
 		expect(writes).toBe(1);
 		await expect(b.once("idempotency", "different", work)).rejects.toThrow("different intent");
-		await expect(a.once("failed", "intent", async () => {
-			throw new Error("upstream uncertain");
-		})).rejects.toThrow("upstream uncertain");
+		await expect(
+			a.once("failed", "intent", async () => {
+				throw new Error("upstream uncertain");
+			}),
+		).rejects.toThrow("upstream uncertain");
 		await expect(b.once("failed", "intent", work)).rejects.toThrow("reconciliation required");
 		a.close();
 		b.close();

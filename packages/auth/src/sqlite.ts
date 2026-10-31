@@ -64,10 +64,7 @@ function decrypt(key: Buffer, id: string, text: string): BrokerTokenRecord {
 		const decipher = createDecipheriv("aes-256-gcm", key, Buffer.from(payload.iv, "base64"));
 		decipher.setAAD(Buffer.from(id));
 		decipher.setAuthTag(Buffer.from(payload.tag, "base64"));
-		const data = Buffer.concat([
-			decipher.update(Buffer.from(payload.ciphertext, "base64")),
-			decipher.final(),
-		]);
+		const data = Buffer.concat([decipher.update(Buffer.from(payload.ciphertext, "base64")), decipher.final()]);
 		const parsed = JSON.parse(data.toString("utf8")) as BrokerTokenRecord;
 		if (!parsed?.token?.access_token || !parsed?.token?.token_type) throw new Error("Malformed record");
 		return parsed;
@@ -97,9 +94,11 @@ export class SqliteAuthTokenStore implements AuthTokenStore {
 
 	async set(sessionId: string, record: BrokerTokenRecord): Promise<void> {
 		const payload = encrypt(this.#key, sessionId, record);
-		this.#db.query(
-			"INSERT INTO auth_sessions(id, payload) VALUES (?, ?) ON CONFLICT(id) DO UPDATE SET payload = excluded.payload",
-		).run(sessionId, payload);
+		this.#db
+			.query(
+				"INSERT INTO auth_sessions(id, payload) VALUES (?, ?) ON CONFLICT(id) DO UPDATE SET payload = excluded.payload",
+			)
+			.run(sessionId, payload);
 	}
 
 	async delete(sessionId: string): Promise<void> {
@@ -135,13 +134,13 @@ export class SqliteMutationReceiptJournal implements MutationReceiptJournal {
 		intentHash: string,
 		run: () => Promise<VerifiedCommentReceipt>,
 	): Promise<VerifiedCommentReceipt> {
-		const inserted = this.#db.query(
-			"INSERT OR IGNORE INTO mutation_receipts(id, intent_hash, status, receipt) VALUES (?, ?, 'pending', NULL)",
-		).run(key, intentHash);
+		const inserted = this.#db
+			.query("INSERT OR IGNORE INTO mutation_receipts(id, intent_hash, status, receipt) VALUES (?, ?, 'pending', NULL)")
+			.run(key, intentHash);
 		if (inserted.changes === 0) {
-			const row = this.#db.query(
-				"SELECT intent_hash, status, receipt FROM mutation_receipts WHERE id = ?",
-			).get(key) as ReceiptRow | null;
+			const row = this.#db
+				.query("SELECT intent_hash, status, receipt FROM mutation_receipts WHERE id = ?")
+				.get(key) as ReceiptRow | null;
 			if (!row) throw new Error("Mutation journal unavailable");
 			if (row.intent_hash !== intentHash) throw new Error("Idempotency key reused for different intent");
 			if (row.status !== "verified" || !row.receipt)
@@ -149,11 +148,12 @@ export class SqliteMutationReceiptJournal implements MutationReceiptJournal {
 			return JSON.parse(row.receipt) as VerifiedCommentReceipt;
 		}
 		const receipt = await run();
-		if (!Number.isSafeInteger(receipt.id) || receipt.id < 1)
-			throw new Error("Invalid verified mutation receipt");
-		this.#db.query(
-			"UPDATE mutation_receipts SET status = 'verified', receipt = ? WHERE id = ? AND intent_hash = ? AND status = 'pending'",
-		).run(JSON.stringify(receipt), key, intentHash);
+		if (!Number.isSafeInteger(receipt.id) || receipt.id < 1) throw new Error("Invalid verified mutation receipt");
+		this.#db
+			.query(
+				"UPDATE mutation_receipts SET status = 'verified', receipt = ? WHERE id = ? AND intent_hash = ? AND status = 'pending'",
+			)
+			.run(JSON.stringify(receipt), key, intentHash);
 		return receipt;
 	}
 

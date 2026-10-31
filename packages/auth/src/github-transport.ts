@@ -17,7 +17,11 @@ function parsedRepo(repository: string): { owner: string; repo: string; path: st
 	const parts = repository.split("/");
 	if (parts.length !== 2 || parts.some((part) => !/^[a-zA-Z0-9_.-]+$/u.test(part) || part.includes("..")))
 		throw new Error("Invalid scoped GitHub repository");
-	return { owner: parts[0]!, repo: parts[1]!, path: `repos/${encodeURIComponent(parts[0]!)}/${encodeURIComponent(parts[1]!)}` };
+	return {
+		owner: parts[0]!,
+		repo: parts[1]!,
+		path: `repos/${encodeURIComponent(parts[0]!)}/${encodeURIComponent(parts[1]!)}`,
+	};
 }
 
 function object(value: unknown): Record<string, unknown> {
@@ -42,12 +46,7 @@ export class ScopedGitHubAppTransport implements GitHubBrokerTransport {
 		this.#fetch = options.fetcher ?? globalThis.fetch;
 	}
 
-	async #request(
-		path: string,
-		bearer: string,
-		method: "GET" | "POST" = "GET",
-		body?: unknown,
-	): Promise<Response> {
+	async #request(path: string, bearer: string, method: "GET" | "POST" = "GET", body?: unknown): Promise<Response> {
 		return this.#fetch(`https://api.github.com/${path}`, {
 			method,
 			headers: {
@@ -93,8 +92,7 @@ export class ScopedGitHubAppTransport implements GitHubBrokerTransport {
 		if (!installation) throw new Error("GitHub App repository installation unavailable");
 		if (permission(installation.permissions.issues) !== "write" && write)
 			throw new Error("GitHub App issue mutation permission unavailable");
-		if (!permission(installation.permissions.issues))
-			throw new Error("GitHub App issue access unavailable");
+		if (!permission(installation.permissions.issues)) throw new Error("GitHub App issue access unavailable");
 		const jwt = await this.#appJwt(repository);
 		const { repo } = parsedRepo(repository);
 		const response = await this.#request(`app/installations/${installation.id}/access_tokens`, jwt, "POST", {
@@ -107,8 +105,7 @@ export class ScopedGitHubAppTransport implements GitHubBrokerTransport {
 		const repositories = Array.isArray(payload.repositories) ? payload.repositories : null;
 		// GitHub returns scoped repositories when requested; when the field is omitted,
 		// the token grant itself must be trusted to enforce the restricted request.
-		if (repositories && (repositories.length !== 1 ||
-			object(repositories[0]).name !== repo))
+		if (repositories && (repositories.length !== 1 || object(repositories[0]).name !== repo))
 			throw new Error("GitHub installation token is not repository-scoped");
 		return payload.token;
 	}
@@ -155,10 +152,18 @@ export class ScopedGitHubAppTransport implements GitHubBrokerTransport {
 		return issue.updated_at;
 	}
 
-	async createComment(input: { repository: string; issue: number; body: string; userId: string }): Promise<{ id: number }> {
+	async createComment(input: {
+		repository: string;
+		issue: number;
+		body: string;
+		userId: string;
+	}): Promise<{ id: number }> {
 		const token = await this.#repositoryToken(input.repository, true);
 		const response = await this.#request(
-			`${parsedRepo(input.repository).path}/issues/${input.issue}/comments`, token, "POST", { body: input.body },
+			`${parsedRepo(input.repository).path}/issues/${input.issue}/comments`,
+			token,
+			"POST",
+			{ body: input.body },
 		);
 		if (!response.ok) throw new Error("GitHub issue mutation unavailable");
 		const created = object(await response.json());
@@ -175,7 +180,8 @@ export class ScopedGitHubAppTransport implements GitHubBrokerTransport {
 	}): Promise<VerifiedCommentReceipt | undefined> {
 		const token = await this.#repositoryToken(input.repository, false);
 		const response = await this.#request(
-			`${parsedRepo(input.repository).path}/issues/comments/${input.commentId}`, token,
+			`${parsedRepo(input.repository).path}/issues/comments/${input.commentId}`,
+			token,
 		);
 		if (response.status === 404) return undefined;
 		if (!response.ok) throw new Error("GitHub mutation authoritative readback unavailable");
