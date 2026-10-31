@@ -343,9 +343,9 @@ export function renderTui(
 	if (view === "requests") {
 		for (const [index, run] of runs.entries()) lines.push((index === cursor.selected ? "› " : "  ") +
 			"#" + run.request + "  " + run.node + (run.quotaBlocked ? "  [QUOTA BLOCKED]" : ""));
-	} else if (!picked) {
+	} else if (!picked && view !== "providers") {
 		lines.push("No durable Request selected.");
-	} else if (view === "graph") {
+	} else if (view === "graph" && picked) {
 		lines.push("Request #" + picked.request, "Current: " + picked.node,
 			"Pending node: " + (picked.pendingNode ?? "none"));
 		for (const [node, count] of Object.entries(picked.iterations)) lines.push(node + ": " + count + " iteration(s)");
