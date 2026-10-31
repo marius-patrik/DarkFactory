@@ -35,7 +35,7 @@ describe("DF-14 adversarial security acceptance", () => {
 		const store = new MemoryAuthTokenStore();
 		const initial = await createBrokerSession(
 			config,
-			{ code: "authorization", codeVerifier: "verifier", redirectUri: "https://example.test/oauth" },
+			{ code: "authorization", codeVerifier: "v".repeat(43), redirectUri: "https://example.test/oauth" },
 			store,
 			{ sessionId: "session", now: 10_000 },
 		);
