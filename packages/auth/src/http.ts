@@ -7,6 +7,7 @@
  */
 import { createHash } from "node:crypto";
 import {
+	MemoryAuthTokenStore,
 	createBrokerSession,
 	refreshBrokerSession,
 	revokeBrokerSession,
@@ -109,6 +110,8 @@ export interface ConfidentialBrokerOptions {
 	/** Exact OAuth redirect URIs on the GitHub App. */
 	redirectUris: readonly string[];
 	fetcher?: typeof fetch;
+	/** Only for isolated tests. Production must use a durable secret store and receipt journal. */
+	allowEphemeralForTesting?: boolean;
 }
 
 function bodyObject(value: unknown): Record<string, unknown> {
@@ -165,6 +168,9 @@ async function verifiedUser(token: string, fetcher: typeof fetch): Promise<strin
 export function createConfidentialBrokerHandler(options: ConfidentialBrokerOptions): (request: Request) => Promise<Response> {
 	if (!options.allowedOrigins.length || !options.redirectUris.length || !options.journal)
 		throw new Error("Confidential broker requires origin/redirect allowlists and a durable journal");
+	if (!options.allowEphemeralForTesting &&
+		(options.store instanceof MemoryAuthTokenStore || options.journal instanceof MemoryMutationReceiptJournal))
+		throw new Error("Production broker requires durable session storage and receipt journal");
 	if (options.allowedOrigins.some((origin) => {
 		try {
 			const url = new URL(origin);
@@ -176,11 +182,11 @@ export function createConfidentialBrokerHandler(options: ConfidentialBrokerOptio
 	const config: AuthBrokerConfig = { ...options.client, redirectUris: options.redirectUris };
 	const fetcher = options.fetcher ?? globalThis.fetch;
 
-	async function session(id: string): Promise<{ userId: string; record: BrokerTokenRecord }> {
+	async function session(id: string, allowExpiredAccess = false): Promise<{ userId: string; record: BrokerTokenRecord }> {
 		const record = await options.store.get(id);
 		const now = Date.now();
 		if (!record || !record.userId || !record.sessionExpiresAt || record.sessionExpiresAt <= now ||
-			(record.accessExpiresAt !== undefined && record.accessExpiresAt <= now))
+			(!allowExpiredAccess && record.accessExpiresAt !== undefined && record.accessExpiresAt <= now))
 			throw new BrokerRejection(401, "Authentication session expired or unavailable");
 		return { userId: record.userId, record };
 	}
@@ -235,7 +241,7 @@ export function createConfidentialBrokerHandler(options: ConfidentialBrokerOptio
 			}
 			const sessionId = requiredString(input.sessionId, "session");
 			if (path.endsWith("/session/refresh")) {
-				const previous = await session(sessionId);
+				const previous = await session(sessionId, true);
 				const refreshed = await refreshBrokerSession(config, sessionId, options.store);
 				if (refreshed.userId !== previous.userId)
 					throw new BrokerRejection(403, "Authentication session identity mismatch");

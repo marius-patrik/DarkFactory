@@ -15,7 +15,7 @@ function transport(): GitHubBrokerTransport {
 			userId, userPermissions: { admin: true, push: true, pull: true }, appAuthority: app,
 		}),
 		issueUpdatedAt: async () => "2026-10-31T00:00:00Z",
-		createComment: async ({ repository, issue, body }) => ({ id: 7 }),
+		createComment: async () => ({ id: 7 }),
 		readComment: async ({ repository, issue }) => ({ id: 7, repository, issue, body: "hello" }),
 	};
 }
@@ -37,7 +37,7 @@ const intent = {
 describe("confidential broker server boundary", () => {
 	test("cross-origin requests are denied before session access", async () => {
 		const broker = createConfidentialBrokerHandler({
-			client: config, store: new MemoryAuthTokenStore(), journal: new MemoryMutationReceiptJournal(),
+			client: config, store: new MemoryAuthTokenStore(), journal: new MemoryMutationReceiptJournal(), allowEphemeralForTesting: true,
 			transport: transport(), allowedOrigins: [origin], redirectUris: ["https://operator.example.test/callback"],
 		});
 		const response = await broker(req("authority", { sessionId: "opaque", repository: "org/repo" }, "https://attacker.example"));
@@ -47,7 +47,7 @@ describe("confidential broker server boundary", () => {
 	test("unknown sessions and missing GitHub installation scope fail closed", async () => {
 		const store = new MemoryAuthTokenStore();
 		const broker = createConfidentialBrokerHandler({
-			client: config, store, journal: new MemoryMutationReceiptJournal(),
+			client: config, store, journal: new MemoryMutationReceiptJournal(), allowEphemeralForTesting: true,
 			transport: transport(), allowedOrigins: [origin], redirectUris: ["https://operator.example.test/callback"],
 		});
 		expect((await broker(req("authority", { sessionId: "opaque", repository: "org/repo" }))).status).toBe(401);
@@ -56,7 +56,7 @@ describe("confidential broker server boundary", () => {
 			sessionExpiresAt: Date.now() + 3600_000, accessExpiresAt: Date.now() + 3600_000,
 		});
 		const blocked = createConfidentialBrokerHandler({
-			client: config, store, journal: new MemoryMutationReceiptJournal(),
+			client: config, store, journal: new MemoryMutationReceiptJournal(), allowEphemeralForTesting: true,
 			transport: { ...transport(), authority: async () => ({
 				userId: "octocat", userPermissions: { admin: true, pull: true, push: true },
 				appAuthority: { ...app, repositorySelected: false },
@@ -75,7 +75,7 @@ describe("confidential broker server boundary", () => {
 		});
 		let posted = 0;
 		const broker = createConfidentialBrokerHandler({
-			client: config, store, journal: new MemoryMutationReceiptJournal(),
+			client: config, store, journal: new MemoryMutationReceiptJournal(), allowEphemeralForTesting: true,
 			transport: { ...transport(), createComment: async () => { posted++; return { id: 7 }; } },
 			allowedOrigins: [origin], redirectUris: ["https://operator.example.test/callback"],
 		});
@@ -86,4 +86,11 @@ describe("confidential broker server boundary", () => {
 		expect(posted).toBe(1);
 		expect((await broker(req("issues/comment", { ...intent, body: "different" }))).status).toBe(409);
 	});
+});
+
+test("confidential handler rejects ephemeral production stores", () => {
+	expect(() => createConfidentialBrokerHandler({
+		client: config, store: new MemoryAuthTokenStore(), journal: new MemoryMutationReceiptJournal(),
+		transport: transport(), allowedOrigins: [origin], redirectUris: ["https://operator.example.test/callback"],
+	})).toThrow("Production broker requires durable");
 });
