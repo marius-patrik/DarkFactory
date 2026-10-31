@@ -328,6 +328,7 @@ export function renderTui(
 	rows: number,
 	note = "",
 	quota?: OperatorQuotaSnapshot,
+	checks?: OperatorCheckSnapshot,
 ): string {
 	const width = Math.max(24, columns || 80);
 	const height = Math.max(8, rows || 24);
@@ -355,8 +356,18 @@ export function renderTui(
 	} else if (view === "pr") {
 		lines.push(picked.pr ? "PR #" + picked.pr.number + " head " + picked.pr.headSha :
 			"No PR head has been recorded.");
-		if (picked.pr) lines.push("Checks SHA: " + (picked.pr.checkedSha ?? "not observed"),
-			"Live PR/check progression unavailable: missing authenticated observation interface.");
+		if (picked.pr) {
+			lines.push("Recorded checks SHA: " + (picked.pr.checkedSha ?? "not observed"));
+			if (checks?.request === picked.request) {
+				lines.push("GitHub readback: " + checks.state.toUpperCase(),
+					"Exact current head: " + checks.headMatches,
+					"Required checks: " + checks.required.join(", "),
+					"Missing: " + (checks.missing.join(", ") || "none"),
+					"Failing: " + (checks.failing.join(", ") || "none"));
+			} else {
+				lines.push("Live checks: entering this view fetches authoritative GitHub readback.");
+			}
+		}
 	} else if (view === "providers") {
 		if (!quota) {
 			lines.push("Provider observations unavailable. Use df quota --json for diagnostics.");
@@ -401,7 +412,30 @@ export async function runOperatorTui(
 	let note = "";
 	let closed = false;
 	let refreshSequence = 0;
-	const render = () => stdout.write("\u001b[H\u001b[2J" + renderTui(runs, cursor, stdout.columns, stdout.rows, note || quotaStatus, quota));
+	let checkSequence = 0;
+	let checkSnapshot: OperatorCheckSnapshot | undefined;
+	const render = () => stdout.write("\u001b[H\u001b[2J" +
+		renderTui(runs, cursor, stdout.columns, stdout.rows,
+			note || (TUI_VIEWS[cursor.view] === "providers" ? quotaStatus : ""), quota, checkSnapshot));
+	const refreshChecks = () => {
+		const picked = runs[cursor.selected];
+		if (TUI_VIEWS[cursor.view] !== "pr" || !picked?.pr) return;
+		const sequence = ++checkSequence;
+		note = "Reading immutable GitHub PR head and required checks...";
+		render();
+		void inspectChecks(parsed.runs, picked.request)
+			.then((value) => {
+				if (closed || sequence !== checkSequence || runs[cursor.selected]?.request !== value.request) return;
+				checkSnapshot = value;
+				note = "";
+				render();
+			}).catch((error: unknown) => {
+				if (closed || sequence !== checkSequence) return;
+				checkSnapshot = undefined;
+				note = safeText(error);
+				render();
+			});
+	};
 	emitKeypressEvents(stdin);
 	const oldRaw = stdin.isRaw === true;
 	stdin.setRawMode(true);
@@ -424,7 +458,8 @@ export async function runOperatorTui(
 							if (latestQuota) { quota = latestQuota; quotaStatus = ""; }
 							cursor = { ...cursor, selected: Math.min(cursor.selected, Math.max(0, runs.length - 1)) };
 							note = "Refreshed from authoritative snapshots";
-							render();
+							if (TUI_VIEWS[cursor.view] === "pr") refreshChecks();
+							else render();
 						}).catch((error: unknown) => {
 							if (closed || sequence !== refreshSequence) return;
 							note = safeText(error);
@@ -434,7 +469,13 @@ export async function runOperatorTui(
 				}
 				if (name === "a" || name === "c" || name === "x") {
 					note = "BLOCKED: requires governed graph " + ({ a: "approval", c: "cancellation", x: "retry" } as Record<string, string>)[name] + " API";
-				} else { cursor = stepCursor(cursor, name, runs.length); note = ""; }
+				} else {
+					const next = stepCursor(cursor, name, runs.length);
+					const changed = next.view !== cursor.view || next.selected !== cursor.selected;
+					cursor = next;
+					note = "";
+					if (changed && TUI_VIEWS[cursor.view] === "pr") { refreshChecks(); return; }
+				}
 				render();
 			};
 			stdin.on("keypress", keypress);
