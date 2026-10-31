@@ -111,13 +111,13 @@ describe("DF-14 adversarial security acceptance", () => {
 				await evaluateChecksGate(
 					graph,
 					source(
-					new Map([
-						["quality", "success"],
-						["security", "failure"],
-					]),
-				),
+						new Map([
+							["quality", "success"],
+							["security", "failure"],
+						]),
+						),
 					sha,
-				)
+						)
 			).conclusion,
 		).toBe("failed");
 		expect(
@@ -125,13 +125,13 @@ describe("DF-14 adversarial security acceptance", () => {
 				await evaluateChecksGate(
 					graph,
 					source(
-					new Map([
-						["quality", "success"],
-						["security", "pending"],
-					]),
-				),
+						new Map([
+							["quality", "success"],
+							["security", "pending"],
+						]),
+						),
 					sha,
-				)
+						)
 			).conclusion,
 		).toBe("pending");
 	});
