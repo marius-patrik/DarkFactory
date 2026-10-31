@@ -84,6 +84,14 @@ jobs:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
       - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6
       - run: bun install --frozen-lockfile
+      - name: Expanded full-repository Biome lint diagnostics (investigative)
+        shell: bash
+        run: |
+          set +e
+          bunx biome lint . --max-diagnostics=1000
+          rc=$?
+          printf 'DF12_LINT_EXIT=%s\n' "$rc"
+          exit 0
       - name: Emit full independently formatted browser source
         shell: bash
         run: |
