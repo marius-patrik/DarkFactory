@@ -70,9 +70,7 @@ describe("durable fan-out recovery", () => {
 			effects: new FileProductionEffectJournal(effects.directory),
 			recoverableAutomations: ["board-sync"],
 		});
-		await expect(runGraph(graph, root, handlers, opened, options())).rejects.toBeInstanceOf(
-			IndeterminateEffectError,
-		);
+		await expect(runGraph(graph, root, handlers, opened, options())).rejects.toBeInstanceOf(IndeterminateEffectError);
 		expect(writes).toEqual([1, 2]);
 		const resumed = await runGraph(graph, root, handlers, opened, options());
 		expect(writes).toEqual([1, 2, 3]);
@@ -145,5 +143,4 @@ describe("durable fan-out recovery", () => {
 		).rejects.toBeInstanceOf(IndeterminateEffectError);
 		expect(siblingSettled).toBe(true);
 	});
-
 });
