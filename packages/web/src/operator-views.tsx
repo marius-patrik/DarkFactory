@@ -37,7 +37,7 @@ export const SURFACES: readonly OperatorSurface[] = [
 	{
 		id: "/planning",
 		title: "Planning",
-		description: "Issues labeled Planning, subject to the GitHub first-page limit.",
+		description: "Issues labeled Planning, filtered within each explicitly paged GitHub response.",
 		group: "Workspace",
 		resource: "planning",
 	},
@@ -151,13 +151,32 @@ function isCollection(value: OperatorResourceData): value is OperatorCollection 
 function isConfig(value: OperatorResourceData): value is OperatorConfig {
 	return "content" in value;
 }
-const Row: FC<{ item: OperatorItem; repository: string }> = ({ item, repository }) => {
+const DETAIL_RESOURCES: ReadonlySet<OperatorResource> = new Set([
+	"requests",
+	"planning",
+	"approvals",
+	"epics",
+	"pulls",
+	"checks",
+	"runs",
+	"releases",
+]);
+const Row: FC<{ item: OperatorItem; repository: string; surface: OperatorSurface }> = ({ item, repository, surface }) => {
 	const href = safeGitHubLink(item.url, repository);
+	const detailHref =
+		DETAIL_RESOURCES.has(surface.resource) &&
+		typeof item.id === "number" &&
+		Number.isSafeInteger(item.id) &&
+		item.id > 0
+			? `#${surface.id}/${item.id}`
+			: undefined;
 	return (
 		<li className="df-row">
 			<div className="df-row-content">
 				<strong>
-					{href ? (
+					{detailHref ? (
+						<a href={detailHref}>{item.title}</a>
+					) : href ? (
 						<a href={href} target="_blank" rel="noopener noreferrer">
 							{item.title}
 						</a>
@@ -220,18 +239,107 @@ function RepositorySummary({ value }: { value: OperatorRepository }) {
 		</section>
 	);
 }
+const DetailPanel: FC<{
+	surface: OperatorSurface;
+	repository: string;
+	id: number;
+	state: ResourceState<OperatorItem>;
+	onRefresh?: () => void;
+}> = ({ surface, repository, id, state, onRefresh }) => (
+	<section className="df-section" aria-labelledby="df-surface-heading">
+		<header className="df-heading">
+			<a href={`#${surface.id}`}>← Back to {surface.title}</a>
+			<h2 id="df-surface-heading" tabIndex={-1}>
+				{surface.title} · #{id}
+			</h2>
+			<p>
+				Read-only GitHub record. Approval, cancellation, retry, and mutation require independently verified authority and
+				receipts.
+			</p>
+		</header>
+		<div className="df-toolbar">
+			<span className="df-data-note">GitHub: {repository}</span>
+			{onRefresh ? (
+				<button type="button" onClick={onRefresh} disabled={state.status === "loading"}>
+					Refresh detail
+				</button>
+			) : null}
+		</div>
+		{state.status === "loading" || state.status === "idle" ? (
+			<p className="df-notice" role="status" aria-busy="true">
+				Loading the authoritative GitHub record…
+			</p>
+		) : state.status !== "live" ? (
+			<div className="df-notice df-problem" role="alert">
+				<strong>{state.status === "unauthorized" ? "Authorization required" : "Record unavailable"}</strong>
+				<p>{state.detail}</p>
+				{state.retryAt ? <p>Retry hint: {state.retryAt}</p> : null}
+			</div>
+		) : (
+			<article className="df-detail">
+				<h3>{state.data.title}</h3>
+				<div className="df-meta">
+					{state.data.state ? <span className="df-badge">{state.data.state}</span> : null}
+					{state.data.subtitle ? <span>{state.data.subtitle}</span> : null}
+					{state.data.updatedAt ? <time dateTime={state.data.updatedAt}>{state.data.updatedAt}</time> : null}
+				</div>
+				{state.data.labels?.length ? (
+					<div className="df-tags">
+						{state.data.labels.map((label) => (
+							<span key={label} className="df-tag">
+								{label}
+							</span>
+						))}
+					</div>
+				) : null}
+				{state.data.head ? (
+					<p className="df-data-note">
+						Head: {state.data.head} {state.data.base ? `· Base: ${state.data.base}` : ""}
+					</p>
+				) : null}
+				<pre className="df-detail-body" tabIndex={0}>
+					{state.data.body || "No description supplied by GitHub."}
+				</pre>
+				{safeGitHubLink(state.data.url, repository) ? (
+					<p>
+						<a href={safeGitHubLink(state.data.url, repository)} target="_blank" rel="noopener noreferrer">
+							Open authoritative record on GitHub ↗
+						</a>
+					</p>
+				) : (
+					<p className="df-data-note">The returned external record link is not within the configured repository.</p>
+				)}
+			</article>
+		)}
+	</section>
+);
+
 export const OperatorView: FC<{
 	surface: OperatorSurface;
 	repository: string;
 	state: ResourceState<OperatorResourceData>;
 	quotaState?: QuotaDashboardState;
+	detail?: { id: number; state: ResourceState<OperatorItem> };
 	onRefresh?: () => void;
-}> = ({ surface, repository, state, quotaState, onRefresh }) => {
+	onPageChange?: (page: number) => void;
+}> = ({ surface, repository, state, quotaState, detail, onRefresh, onPageChange }) => {
 	if (surface.resource === "quota") return <QuotaDashboardView state={quotaState ?? { status: "disconnected" }} />;
+	if (detail)
+		return (
+			<DetailPanel
+				surface={surface}
+				repository={repository}
+				id={detail.id}
+				state={detail.state}
+				onRefresh={onRefresh}
+			/>
+		);
 	return (
 		<section className="df-section" aria-labelledby="df-surface-heading">
 			<header className="df-heading">
-				<h2 id="df-surface-heading">{surface.title}</h2>
+				<h2 id="df-surface-heading" tabIndex={-1}>
+					{surface.title}
+				</h2>
 				<p>{surface.description}</p>
 			</header>
 			<div className="df-toolbar">
@@ -280,21 +388,42 @@ export const OperatorView: FC<{
 						{state.data.items.length ? (
 							<ul className="df-list">
 								{state.data.items.map((item) => (
-									<Row key={item.id} item={item} repository={repository} />
+									<Row key={item.id} item={item} repository={repository} surface={surface} />
 								))}
 							</ul>
 						) : (
 							<p className="df-empty">
-								No records in the verified response. This is not a repository-wide absence claim.
+								No matching records on this page. This is not a repository-wide absence claim.
 							</p>
 						)}
+						{onPageChange && (state.data.page > 1 || state.data.morePossible) ? (
+							<div className="df-pagination" role="group" aria-label="GitHub result pages">
+								<button
+									type="button"
+									disabled={state.data.page <= 1}
+									onClick={() => onPageChange(state.data.page - 1)}
+								>
+									Previous page
+								</button>
+								<span aria-live="polite">Page {state.data.page}</span>
+								<button
+									type="button"
+									disabled={!state.data.morePossible || state.data.page >= 1000}
+									onClick={() => onPageChange(state.data.page + 1)}
+								>
+									Next page
+								</button>
+							</div>
+						) : null}
 					</div>
 				) : isConfig(state.data) ? (
 					<div>
 						<p className="df-data-note">
 							Path: {state.data.path} · SHA: {state.data.sha}
 						</p>
-						<pre className="df-config">{state.data.content}</pre>
+						<pre className="df-config" tabIndex={0} aria-label="Canonical repository configuration">
+							{state.data.content}
+						</pre>
 					</div>
 				) : (
 					<RepositorySummary value={state.data} />

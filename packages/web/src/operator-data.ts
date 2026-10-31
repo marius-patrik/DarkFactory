@@ -44,6 +44,8 @@ export interface OperatorItem {
 export interface OperatorCollection {
 	items: OperatorItem[];
 	limit: number;
+	page: number;
+	morePossible: boolean;
 	note?: string;
 }
 export interface OperatorRepository {
@@ -64,8 +66,9 @@ export interface OperatorConfig {
 }
 export type OperatorResourceData = OperatorCollection | OperatorRepository | OperatorConfig;
 export interface OperatorReadSource {
-	read(resource: OperatorResource, signal?: AbortSignal): Promise<ResourceState<OperatorResourceData>>;
-	issueComments(issue: number, signal?: AbortSignal): Promise<OperatorCollection>;
+	read(resource: OperatorResource, signal?: AbortSignal, page?: number): Promise<ResourceState<OperatorResourceData>>;
+	readItem?(resource: OperatorResource, id: number, signal?: AbortSignal): Promise<ResourceState<OperatorItem>>;
+	issueComments(issue: number, signal?: AbortSignal, page?: number): Promise<OperatorCollection>;
 }
 export interface OperatorSourceOptions {
 	fetch?: typeof fetch;
@@ -110,31 +113,43 @@ function array(value: unknown): unknown[] {
 }
 function item(value: unknown): OperatorItem {
 	const r = record(value);
-	const number = typeof r.number === "number" ? r.number : typeof r.id === "number" ? r.id : str(r.sha);
+	const number = typeof r.number === "number" ? r.number : typeof r.id === "number" ? r.id : str(r.id) || str(r.sha);
 	const labels = array(r.labels)
 		.map((x) => str(record(x).name))
 		.filter(Boolean);
-	const title = str(r.title) || str(r.name) || str(r.message) || str(r.sha) || String(number);
+	const title = str(r.title) || str(r.name) || str(r.type) || str(r.message) || str(r.sha) || String(number);
 	const url = str(r.html_url);
 	const pull = record(r.pull_request);
 	return {
 		id: number,
 		title,
 		url,
-		...(str(r.state) || str(r.status) ? { state: str(r.state) || str(r.status) } : {}),
-		...(str(r.updated_at) ? { updatedAt: str(r.updated_at) } : {}),
+		...(str(r.state) || str(r.status) || str(r.conclusion)
+			? { state: str(r.conclusion) || str(r.state) || str(r.status) }
+			: {}),
+		...(str(r.updated_at) || str(r.published_at) || str(r.created_at)
+			? { updatedAt: str(r.updated_at) || str(r.published_at) || str(r.created_at) }
+			: {}),
 		...(str(r.body) ? { body: str(r.body) } : {}),
 		...(labels.length ? { labels } : {}),
-		...(str(record(r.user).login) ? { subtitle: str(record(r.user).login) } : {}),
+		...(str(record(r.user).login) || str(record(r.actor).login) || str(record(r.author).login)
+			? { subtitle: str(record(r.user).login) || str(record(r.actor).login) || str(record(r.author).login) }
+			: {}),
 		...(str(record(r.head).sha) ? { head: str(record(r.head).sha) } : {}),
 		...(str(record(r.base).sha) ? { base: str(record(r.base).sha) } : {}),
 		...(str(pull.html_url) && !url ? { url: str(pull.html_url) } : {}),
 	};
 }
 const PAGE = 50;
-function collection(rows: unknown, note?: string): OperatorCollection {
+function collection(rows: unknown, note?: string, page = 1, morePossible?: boolean): OperatorCollection {
 	const values = array(rows);
-	return { items: values.map(item), limit: PAGE, ...(note ? { note } : {}) };
+	return {
+		items: values.map(item),
+		limit: PAGE,
+		page,
+		morePossible: morePossible ?? values.length === PAGE,
+		...(note ? { note } : {}),
+	};
 }
 /** Browser reader never adds Authorization headers, cookies, or GitHub tokens. */
 export function createGitHubOperatorSource(
@@ -168,7 +183,9 @@ export function createGitHubOperatorSource(
 		}
 		return response.json() as Promise<unknown>;
 	}
-	async function read(resource: OperatorResource, signal?: AbortSignal): Promise<ResourceState<OperatorResourceData>> {
+	async function read(resource: OperatorResource, signal?: AbortSignal, page = 1): Promise<ResourceState<OperatorResourceData>> {
+		if (!Number.isSafeInteger(page) || page < 1 || page > 1000)
+			return { status: "blocked", detail: "Invalid GitHub page" };
 		if (resource === "quota" || resource === "graph" || resource === "recovery" || resource === "projects")
 			return { status: "blocked", detail: "No verified runtime/broker read contract for this resource" };
 		if (resource === "docs")
@@ -219,16 +236,16 @@ export function createGitHubOperatorSource(
 			}
 			const path =
 				resource === "pulls"
-					? `/pulls?state=all&per_page=${PAGE}`
+					? `/pulls?state=all&per_page=${PAGE}&page=${page}`
 					: resource === "checks"
-						? `/commits/HEAD/check-runs?per_page=${PAGE}`
+						? `/commits/HEAD/check-runs?per_page=${PAGE}&page=${page}`
 						: resource === "runs"
-							? `/actions/runs?per_page=${PAGE}`
+							? `/actions/runs?per_page=${PAGE}&page=${page}`
 							: resource === "releases"
-								? `/releases?per_page=${PAGE}`
+								? `/releases?per_page=${PAGE}&page=${page}`
 								: resource === "audit"
-									? `/events?per_page=${PAGE}`
-									: `/issues?state=all&per_page=${PAGE}`;
+									? `/events?per_page=${PAGE}&page=${page}`
+									: `/issues?state=all&per_page=${PAGE}&page=${page}`;
 			const response = await request(path, signal);
 			const rows =
 				resource === "checks"
@@ -253,22 +270,84 @@ export function createGitHubOperatorSource(
 				: resource === "requests" || resource === "planning" || resource === "approvals" || resource === "epics"
 					? rows
 					: rows;
-			const note = `Latest ${PAGE} records maximum from GitHub; this is not a complete repository history`;
-			return { status: "live", data: collection(selected, note), fetchedAt: Date.now(), limited: rows.length >= PAGE };
+			const note = `Page ${page} of GitHub results (up to ${PAGE} records before label filtering); not a complete history`;
+			return {
+				status: "live",
+				data: collection(selected, note, page, rows.length >= PAGE),
+				fetchedAt: Date.now(),
+				limited: rows.length >= PAGE,
+			};
 		} catch (error) {
 			return classifyReadFailure(error);
 		}
 	}
-	async function issueComments(issue: number, signal?: AbortSignal): Promise<OperatorCollection> {
+	/** Detail routes are exact GitHub REST reads; no local workflow state is inferred. */
+	async function readItem(
+		resource: OperatorResource,
+		id: number,
+		signal?: AbortSignal,
+	): Promise<ResourceState<OperatorItem>> {
+		if (!Number.isSafeInteger(id) || id < 1)
+			return { status: "blocked", detail: "Invalid GitHub record identity" };
+		const path =
+			resource === "requests" || resource === "planning" || resource === "approvals" || resource === "epics"
+				? `/issues/${id}`
+				: resource === "pulls"
+					? `/pulls/${id}`
+					: resource === "checks"
+						? `/check-runs/${id}`
+						: resource === "runs"
+							? `/actions/runs/${id}`
+							: resource === "releases"
+								? `/releases/${id}`
+								: undefined;
+		if (!path) return { status: "blocked", detail: "No verified detail endpoint for this section" };
+		try {
+			const data = record(await request(path, signal));
+			const recordId = typeof data.number === "number" ? data.number : data.id;
+			if (recordId !== id || !str(data.html_url))
+				return { status: "blocked", detail: "GitHub record identity did not match the requested detail" };
+			const recordUrl = new URL(str(data.html_url));
+			if (
+				recordUrl.protocol !== "https:" ||
+				recordUrl.hostname !== "github.com" ||
+				recordUrl.username ||
+				recordUrl.password ||
+				!recordUrl.pathname.toLowerCase().startsWith(`/${owner}/${name}/`.toLowerCase())
+			)
+				return { status: "blocked", detail: "GitHub detail link is outside the configured repository" };
+			const requiredLabel: Record<string, string> = {
+				requests: "request",
+				planning: "planning",
+				approvals: "approval",
+				epics: "epic",
+			};
+			if (
+				requiredLabel[resource] &&
+				!array(data.labels).some((label) =>
+					str(record(label).name)
+						.toLowerCase()
+						.includes(requiredLabel[resource] ?? ""),
+				)
+			)
+				return { status: "blocked", detail: "GitHub record does not belong to this labeled section" };
+			return { status: "live", data: item(data), fetchedAt: Date.now(), limited: false };
+		} catch (error) {
+			return classifyReadFailure(error);
+		}
+	}
+	async function issueComments(issue: number, signal?: AbortSignal, page = 1): Promise<OperatorCollection> {
 		if (!Number.isSafeInteger(issue) || issue < 1) throw new Error("Invalid issue number");
-		const rows = array(await request(`/issues/${issue}/comments?per_page=${PAGE}`, signal));
+		if (!Number.isSafeInteger(page) || page < 1 || page > 1000) throw new Error("Invalid GitHub page");
+		const rows = array(await request(`/issues/${issue}/comments?per_page=${PAGE}&page=${page}`, signal));
 		return collection(
 			rows.map((value) => {
 				const r = record(value);
 				return { ...r, title: str(r.body), html_url: str(r.html_url), state: "published" };
 			}),
-			"First page of GitHub issue comments",
+			`Page ${page} of GitHub issue comments`,
+			page,
 		);
 	}
-	return { read, issueComments };
+	return { read, readItem, issueComments };
 }

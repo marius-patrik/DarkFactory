@@ -5,6 +5,7 @@ import {
 	useContext,
 	useEffect,
 	useMemo,
+	useRef,
 	useState,
 	useSyncExternalStore,
 } from "react";
@@ -22,6 +23,7 @@ import {
 import {
 	createGitHubOperatorSource,
 	type OperatorReadSource,
+	type OperatorItem,
 	type OperatorResourceData,
 	type ResourceState,
 } from "./operator-data.ts";
@@ -52,7 +54,12 @@ function subscribeHash(listener: () => void): () => void {
 }
 function currentHashPath(): string {
 	if (typeof window === "undefined") return "/";
-	const hash = decodeURI(window.location.hash.replace(/^#/u, ""));
+	let hash: string;
+	try {
+		hash = decodeURI(window.location.hash.replace(/^#/u, ""));
+	} catch {
+		return "/invalid-route";
+	}
 	if (hash.startsWith("/") && !hash.startsWith("//")) return hash.replace(/\/+$/u, "") || "/";
 	const base = document.querySelector<HTMLMetaElement>('meta[name="darkfactory-base-path"]')?.content ?? "/";
 	return operatorPathFromLocation(window.location.pathname, base);
@@ -85,7 +92,7 @@ export interface RouteConfig {
 }
 export const RouteLink: FC<{ to: string; children: ReactNode; className?: string }> = ({ to, children, className }) => {
 	const router = useRouter();
-	const active = router.path === to;
+	const active = router.path === to || (to !== "/" && router.path.startsWith(`${to}/`));
 	return (
 		<a
 			className={[className ?? "route-link", active ? "is-active" : ""].filter(Boolean).join(" ")}
@@ -115,10 +122,33 @@ const Body: FC<Omit<DarkFactoryShellProps, "hook">> = ({
 	quotaState,
 }) => {
 	const { path, basename } = useRouter();
-	const page = SURFACES.find((surface) => surface.id === path);
+	const detailMatch = /^\/(requests|planning|approvals|epics|pulls|checks|runs|releases)\/([1-9][0-9]*)$/u.exec(path);
+	const detailId = detailMatch ? Number(detailMatch[2]) : undefined;
+	const page = SURFACES.find((surface) => surface.id === (detailMatch ? `/${detailMatch[1]}` : path));
 	const reader = useMemo(() => source ?? createGitHubOperatorSource(repository), [repository, source]);
+	const [pagination, setPagination] = useState({ resource: "", page: 1 });
+	const currentPage = pagination.resource === page?.resource ? pagination.page : 1;
+	const previousPage = useRef(currentPage);
+	useEffect(() => {
+		if (previousPage.current === currentPage) return;
+		previousPage.current = currentPage;
+		if (detailId === undefined) document.getElementById("df-surface-heading")?.focus();
+	}, [currentPage, detailId]);
+	const previousPath = useRef(path);
+	useEffect(() => {
+		if (previousPath.current === path) return;
+		previousPath.current = path;
+		document.getElementById(page ? "df-surface-heading" : "df-not-found-heading")?.focus();
+	}, [path, page]);
 	const [refresh, setRefresh] = useState(0);
 	const [resource, setResource] = useState<ResourceState<OperatorResourceData>>({ status: "idle" });
+	const [detailSnapshot, setDetailSnapshot] = useState<{ key: string; state: ResourceState<OperatorItem> }>({
+		key: "",
+		state: { status: "idle" },
+	});
+	const detailKey = detailId !== undefined && page ? `${page.resource}:${detailId}` : "";
+	const currentDetailState: ResourceState<OperatorItem> =
+		detailSnapshot.key === detailKey ? detailSnapshot.state : { status: "loading" };
 	const [auth, setAuth] = useState<AuthState>({ status: "signed-out" });
 	const [authBusy, setAuthBusy] = useState(false);
 	const broker: OperatorBroker | undefined = useMemo(
@@ -129,8 +159,8 @@ const Body: FC<Omit<DarkFactoryShellProps, "hook">> = ({
 		const controller = new AbortController();
 		void refresh; // A changed refresh counter deliberately reruns the GitHub request.
 		setResource({ status: "loading" });
-		if (page?.resource && page.resource !== "quota") {
-			void reader.read(page.resource, controller.signal).then(
+		if (page?.resource && page.resource !== "quota" && detailId === undefined) {
+			void reader.read(page.resource, controller.signal, currentPage).then(
 				(result) => {
 					if (!controller.signal.aborted) setResource(result);
 				},
@@ -140,7 +170,27 @@ const Body: FC<Omit<DarkFactoryShellProps, "hook">> = ({
 			);
 		}
 		return () => controller.abort();
-	}, [reader, page?.resource, refresh]);
+	}, [reader, page?.resource, currentPage, detailId, refresh]);
+	useEffect(() => {
+		if (!page || detailId === undefined) return;
+		const controller = new AbortController();
+		const key = `${page.resource}:${detailId}`;
+		setDetailSnapshot({ key, state: { status: "loading" } });
+		if (!reader.readItem) {
+			setDetailSnapshot({ key, state: { status: "blocked", detail: "This reader has no verified detail contract" } });
+			return () => controller.abort();
+		}
+		void reader.readItem(page.resource, detailId, controller.signal).then(
+			(result) => {
+				if (!controller.signal.aborted) setDetailSnapshot({ key, state: result });
+			},
+			() => {
+				if (!controller.signal.aborted)
+					setDetailSnapshot({ key, state: { status: "failed", detail: "GitHub detail read was interrupted" } });
+			},
+		);
+		return () => controller.abort();
+	}, [reader, page?.resource, detailId, refresh]);
 	useEffect(() => {
 		if (!broker) {
 			setAuth({ status: "signed-out" });
@@ -194,7 +244,14 @@ const Body: FC<Omit<DarkFactoryShellProps, "hook">> = ({
 	};
 	return (
 		<div className="darkfactory-shell">
-			<a href="#df-main" className="df-skip">
+			<a
+				href={`${basename}#${path}`}
+				className="df-skip"
+				onClick={(event) => {
+					event.preventDefault();
+					document.getElementById("df-main")?.focus();
+				}}
+			>
 				Skip to main content
 			</a>
 			<aside className="df-side" aria-label="Primary navigation">
@@ -258,12 +315,14 @@ const Body: FC<Omit<DarkFactoryShellProps, "hook">> = ({
 						surface={page}
 						repository={repository}
 						state={resource}
+						detail={detailId !== undefined ? { id: detailId, state: currentDetailState } : undefined}
 						quotaState={quotaState}
 						onRefresh={() => setRefresh((counter) => counter + 1)}
+						onPageChange={(nextPage) => setPagination({ resource: page.resource, page: nextPage })}
 					/>
 				) : (
 					<section role="alert" className="df-section">
-						<h2>Page not found</h2>
+						<h2 id="df-not-found-heading" tabIndex={-1}>Page not found</h2>
 						<p>The requested operator route is not part of this release candidate.</p>
 						<RouteLink to="/">Return to overview</RouteLink>
 					</section>

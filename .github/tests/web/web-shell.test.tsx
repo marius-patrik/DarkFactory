@@ -25,6 +25,19 @@ test("Pages-safe operator navigation exposes hash links and static Docs entry", 
 	expect(output).toContain("#/configuration");
 	expect(output).toContain("docs/");
 });
+test("detail links are routable without mutable client-side records", () => {
+	const detail = renderAt("/requests/42");
+	expect(detail.replaceAll("<!-- -->", "")).toContain("Requests · #42");
+	expect(detail).toContain("Loading the authoritative GitHub record");
+	expect(detail).toContain('href="#/requests"');
+	expect(detail).toContain("Approval, cancellation, retry, and mutation require");
+});
+test("skip link does not corrupt the hash router", () => {
+	const html = renderAt("/requests");
+	expect(html).not.toContain('href="#df-main"');
+	expect(html).toContain('href="/#/requests"');
+	expect(html).toMatch(/tabindex="-1"/iu);
+});
 test("unknown routes fail closed with recovery navigation", () => {
 	const output = renderAt("/unknown");
 	expect(output).toContain("Page not found");
