@@ -303,13 +303,18 @@ export function compileDocsContentGraph(
 	api?: DocsApiReference,
 ): DocsContentGraph {
 	const pages: DocsPage[] = [markdownPage(repoRoot, config.home, "home", "home")];
-	for (const section of GUIDE_SECTIONS) {
-		for (const guide of section.pages) {
-			const source = guidePath(section.id, guide.slug);
-			pages.push(markdownPage(repoRoot, source, "guide", `guide-${section.id}-${guide.slug}`));
+	// Only the producer owns the registered DarkFactory manual and generated
+	// first-party code references. Consumer/test fixtures retain generic docs.
+	// A producer missing any authored page still fails closed during compilation.
+	if (existsSync(join(repoRoot, "packages", "docs", "src", "guides.ts"))) {
+		for (const section of GUIDE_SECTIONS) {
+			for (const guide of section.pages) {
+				const source = guidePath(section.id, guide.slug);
+				pages.push(markdownPage(repoRoot, source, "guide", `guide-${section.id}-${guide.slug}`));
+			}
 		}
+		pages.push(...generatedReferencePages(repoRoot));
 	}
-	pages.push(...generatedReferencePages(repoRoot));
 	for (const source of ruleSources(repoRoot)) pages.push(markdownPage(repoRoot, source, "rule"));
 	pages.push(...adrPages(repoRoot));
 	// Preserve one full ADR landing for source-relative links from the manual.

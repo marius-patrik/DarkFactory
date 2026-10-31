@@ -600,11 +600,19 @@ describe("documentation publishing", () => {
 		}
 	});
 
-	it("test_the_deploy_workflow_is_main_actions_release: production documentation is a direct main deploy", () => {
+	it("production Pages requires explicit immutable release promotion, never a bare main push", () => {
 		const declared = triggers(deploy);
+		expect(declared.push).toBeUndefined();
 		expect(Object.keys(declared)).not.toContain("workflow_call");
-		expect((declared.push as { branches: string[] }).branches).toEqual(["main"]);
 		expect(Object.keys(declared)).toContain("workflow_dispatch");
+		const source = workflowSource("deploy-docs.yml");
+		expect(source).toContain("web_build_run_id");
+		expect(source).toContain("candidate_sha");
+		expect(source).toContain("promote:");
+		expect(source).toContain("build-web.yml");
+		expect(source).toContain("darkfactory-web-candidate");
+		expect(source).toContain("refs/tags/v");
+		expect(source).toContain("github-pages");
 	});
 
 	it("test_native_docs_owners_are_present: the current compiler, renderer and configuration exist", () => {
@@ -619,9 +627,14 @@ describe("documentation publishing", () => {
 		expect(existsSync(join(repoRoot, "packages", "web", "src", "docs.ts"))).toBe(true);
 	});
 
-	it("test_preview_validates_without_publishing: production Pages remains main-only", () => {
+	it("test_preview_validates_without_publishing: preview cannot deploy live Pages", () => {
 		const source = workflowSource("preview-docs.yml");
-		expect(steps(preview, "validate").map((step) => step.name)).toContain("Validate documentation projections");
+		expect(steps(preview, "validate").map((step) => step.name)).toContain(
+			"Strict documentation graph and reference verification",
+		);
+		expect(steps(preview, "validate").map((step) => step.name)).toContain(
+			"All documentation and artifact security tests",
+		);
 		expect(workflowScripts(preview)).toContain("bun scripts/build-docs.ts");
 		expect(source).not.toContain("deploy-pages");
 		expect(source).not.toContain("gh-pages");
@@ -772,10 +785,13 @@ describe("branch roles", () => {
 		const identity = repoConfig().identity;
 		expect(identity.default_branch).toBe("main");
 		expect(identity.development_branch).toBe("main");
-		for (const name of ["ci.yml", "project-automation.yml", "deploy-docs.yml"]) {
+		for (const name of ["ci.yml", "project-automation.yml"]) {
 			const push = triggers(parseWorkflow(name)).push as { branches: string[] };
 			expect(push.branches, `${name} must follow the trunk`).toEqual(["main"]);
 		}
+		// Pages is intentionally stricter than ordinary quality automation:
+		// even a successful main push is not release publication authority.
+		expect(triggers(parseWorkflow("deploy-docs.yml")).push).toBeUndefined();
 		const mergeGroup = triggers(parseWorkflow("ci.yml")).merge_group as { branches: string[] };
 		expect(mergeGroup.branches).toEqual(["main"]);
 	});

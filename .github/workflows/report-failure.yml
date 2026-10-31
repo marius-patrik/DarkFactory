@@ -14,13 +14,13 @@ on:
       - Branch Policy
       - CI
       - DarkFactory Self-Hosted Control
-      - Deploy Documentation
+      - Publish Verified DarkFactory Web and Documentation
       - Install Pipeline
       - Install Sweep
       - Open Pull Request
       - Quota Resume Sweep
       - PR Approval and Auto-Merge
-      - Validate Documentation
+      - Validate Documentation and Unified Site Contract
       - Project Board Automation
       - Release
       - Synchronize DarkFactory Fleet
