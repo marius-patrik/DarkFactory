@@ -5,6 +5,7 @@ on:
     branches:
       - agent/2698-runtime-lifecycle-df09
   workflow_dispatch:
+  workflow_call:
 permissions:
   contents: read
 concurrency:
