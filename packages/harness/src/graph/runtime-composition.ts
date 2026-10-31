@@ -3,6 +3,7 @@ import { contextFingerprint } from "./review-loop.ts";
 import { join } from "node:path";
 import type { GitHubRepository } from "../../../github/src/repository.ts";
 import type { ConflictResolver } from "../workspace/conflict-repair.ts";
+import type { RunGraphOptions } from "./executor.ts";
 import type { DispatchRuntime, DispatchRuntimeInput } from "./dispatch.ts";
 import { FileProductionEffectJournal, runObservedProductionEffect } from "./durable-effects.ts";
 import {
@@ -27,6 +28,10 @@ export interface ProductionRuntimeFactoryOptions {
 	automation?: ProductionGraphHandlerOptions["automation"];
 	workRoot?: string;
 	resolveConflict?: ConflictResolver;
+	/** DF-10 must provide a GitHub-backed, renewable and fenced lease for multi-runner execution. */
+	distributedLease?: RunGraphOptions["distributedLease"];
+	/** Explicitly permit one-host-only operation while GitHub transport is not connected. */
+	localOnly?: boolean;
 }
 
 /** Stable comment identity also differentiates repeated reminders by ingress delivery. */
@@ -58,6 +63,8 @@ export function createProductionRuntimeFactory(options: ProductionRuntimeFactory
 		...(options.resolveConflict ? { resolveConflict: options.resolveConflict } : {}),
 	});
 	return async ({ subject, runDir, graph }: DispatchRuntimeInput): Promise<DispatchRuntime> => {
+		if (!options.distributedLease && !options.localOnly)
+			throw new Error("Production Request execution requires a fenced distributed lease or explicit localOnly mode");
 		const github = createGitHubProductionEffects(options.repository, {
 			requiredChecks: graph.checks.filter((check) => check.required).map((check) => check.name),
 			mergeBoundary: options.mergeBoundary,
@@ -103,6 +110,7 @@ export function createProductionRuntimeFactory(options: ProductionRuntimeFactory
 		return {
 			handlers,
 			effects,
+			...(options.distributedLease ? { distributedLease: options.distributedLease } : {}),
 			onAction: performAction,
 			reconcileAction,
 			recoverableAutomations: ["request-intake", "pr-merge", "board-sync", "quota-resume"],
