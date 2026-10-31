@@ -76,6 +76,46 @@ describe("browser-safe GitHub reads", () => {
 		expect(result.status).toBe("live");
 		if (result.status === "live" && "items" in result.data) expect(result.data.items.map((x) => x.id)).toEqual([1]);
 	});
+	test("paginates tokenless GitHub collections and never treats a filtered empty page as complete", async () => {
+		const urls: string[] = [];
+		const source = createGitHubOperatorSource("alice/product", {
+			fetch: (async (url: string | URL | Request) => {
+				urls.push(String(url));
+				const page = new URL(String(url)).searchParams.get("page");
+				const rows =
+					page === "2"
+						? Array.from({ length: 50 }, (_, index) => ({
+								id: index + 101,
+								number: index + 101,
+								title: `Issue ${index + 101}`,
+								labels: [{ name: "bug" }],
+								html_url: `https://github.com/alice/product/issues/${index + 101}`,
+							}))
+						: [];
+				return new Response(JSON.stringify(rows));
+			}) as unknown as typeof fetch,
+		});
+		const second = await source.read("requests", undefined, 2);
+		expect(second.status).toBe("live");
+		if (second.status === "live" && "items" in second.data) {
+			expect(second.data.items).toHaveLength(0);
+			expect(second.data.page).toBe(2);
+			expect(second.data.morePossible).toBe(true);
+			expect(second.limited).toBe(true);
+		}
+		const third = await source.read("requests", undefined, 3);
+		expect(third.status).toBe("live");
+		if (third.status === "live" && "items" in third.data) {
+			expect(third.data.morePossible).toBe(false);
+			expect(third.data.page).toBe(3);
+		}
+		expect(urls).toEqual([
+			"https://api.github.com/repos/alice/product/issues?state=all&per_page=50&page=2",
+			"https://api.github.com/repos/alice/product/issues?state=all&per_page=50&page=3",
+		]);
+		expect((await source.read("requests", undefined, 0)).status).toBe("blocked");
+		expect(urls).toHaveLength(2);
+	});
 	test("maps permission and rate limits to explicit non-success states", () => {
 		expect(classifyReadFailure(new OperatorHttpError(401)).status).toBe("unauthorized");
 		expect(classifyReadFailure(new OperatorHttpError(404)).status).toBe("blocked");
