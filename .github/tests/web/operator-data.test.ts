@@ -116,6 +116,28 @@ describe("browser-safe GitHub reads", () => {
 		expect((await source.read("requests", undefined, 0)).status).toBe("blocked");
 		expect(urls).toHaveLength(2);
 	});
+	test("loads only allowlisted record details and does not accept unverified response identities", async () => {
+		const paths: string[] = [];
+		const source = createGitHubOperatorSource("alice/product", {
+			fetch: (async (url: string | URL | Request) => {
+				paths.push(String(url));
+				return new Response(JSON.stringify({
+					id: 42,
+					number: 42,
+					title: "GitHub request details",
+					body: "Authoritative body",
+					html_url: "https://github.com/alice/product/issues/42",
+				}));
+			}) as unknown as typeof fetch,
+		});
+		const result = await source.readItem?.("requests", 42);
+		expect(result?.status).toBe("live");
+		if (result?.status === "live") expect(result.data.body).toBe("Authoritative body");
+		expect(paths).toEqual(["https://api.github.com/repos/alice/product/issues/42"]);
+		expect((await source.readItem?.("requests", 0))?.status).toBe("blocked");
+		expect((await source.readItem?.("projects", 42))?.status).toBe("blocked");
+		expect(paths).toHaveLength(1);
+	});
 	test("maps permission and rate limits to explicit non-success states", () => {
 		expect(classifyReadFailure(new OperatorHttpError(401)).status).toBe("unauthorized");
 		expect(classifyReadFailure(new OperatorHttpError(404)).status).toBe("blocked");
