@@ -287,14 +287,13 @@ export async function runOperatorCli(args: string[]): Promise<void> {
 	if (parsed.command === "list" && parsed.id !== undefined)
 		throw new OperatorCliError("list does not accept a request ID", 2);
 	if ((parsed.command === "inspect" || parsed.command === "checks") && parsed.id === undefined)
-		throw new OperatorCliError("inspect requires a request ID", 2);
+		throw new OperatorCliError(parsed.command + " requires a request ID", 2);
 	if (parsed.command === "checks") {
 		const checks = await inspectChecks(parsed.runs, parsed.id!);
 		if (parsed.json) console.log(JSON.stringify({ type: "checks", value: checks }));
 		else console.log("PR #" + checks.pr + "  " + checks.state.toUpperCase() +
 			"  exact-head: " + checks.headMatches + "  authorization: " + checks.mergeAuthorization +
-			"
-" + JSON.stringify(checks, null, 2));
+			"\n" + JSON.stringify(checks, null, 2));
 		return;
 	}
 	const value = parsed.id === undefined ? await listRequests(parsed.runs) : await inspectRequest(parsed.runs, parsed.id);
