@@ -114,4 +114,36 @@ describe("durable fan-out recovery", () => {
 		).rejects.toThrow("fan-out cancelled");
 		expect(items).toEqual([1]);
 	});
+
+	test("parallel child failure waits for sibling completion before releasing the run lock", async () => {
+		const root = await mkdtemp(join(tmpdir(), "df-foreach-parallel-"));
+		roots.push(root);
+		const parallel: WorkflowGraph = {
+			...graph,
+			nodes: graph.nodes.map((node) =>
+				node.id === "fanout" ? { ...node, foreach: { items: "chunks", as: "chunk", max_parallel: 2 } } : node,
+			),
+		};
+		let siblingSettled = false;
+		const handlers: NodeHandlers = {
+			agent: async () => {
+				throw new Error("unexpected agent");
+			},
+			automation: async (node, ctx) => {
+				if (node.id === "intake") return { outcome: "success", outputs: { chunks: [1, 2] } };
+				if (ctx.item === 1) throw new IndeterminateEffectError("a".repeat(64));
+				await Bun.sleep(80);
+				siblingSettled = true;
+				return { outcome: "success", outputs: {} };
+			},
+		};
+		await expect(
+			runGraph(parallel, root, handlers, opened, {
+				eventId: "parallel",
+				effects: new FileProductionEffectJournal(join(root, "effects")),
+			}),
+		).rejects.toBeInstanceOf(IndeterminateEffectError);
+		expect(siblingSettled).toBe(true);
+	});
+
 });
