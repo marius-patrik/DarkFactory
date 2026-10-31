@@ -124,7 +124,7 @@ async function reclaimOrphanCleanupLock(directory: string, cleanupPath: string):
 		throw error;
 	}
 	try {
-		const owner = await readOptionalJson<GraphLockOwner>(cleanupPath);
+		const owner = await readOptionalJson<Partial<GraphLockOwner>>(cleanupPath);
 		if (!owner) return;
 		if (!confirmedDeadLocalOwner(owner)) {
 			const age = Date.now() - (await stat(cleanupPath)).mtimeMs;
