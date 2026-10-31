@@ -119,7 +119,7 @@ describe("@darkfactory/auth negative broker security", () => {
 		globalThis.fetch = (async () => {
 			contacted = true;
 			throw new Error("unexpected outbound exchange");
-		}) as typeof fetch;
+		}) as unknown as typeof fetch;
 		const store = new MemoryAuthTokenStore();
 		const config = { clientId: "client", clientSecret: "secret", redirectUris: ["https://valid.test/callback"] };
 		await expect(
