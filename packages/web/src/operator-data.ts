@@ -113,22 +113,28 @@ function array(value: unknown): unknown[] {
 }
 function item(value: unknown): OperatorItem {
 	const r = record(value);
-	const number = typeof r.number === "number" ? r.number : typeof r.id === "number" ? r.id : str(r.sha);
+	const number = typeof r.number === "number" ? r.number : typeof r.id === "number" ? r.id : str(r.id) || str(r.sha);
 	const labels = array(r.labels)
 		.map((x) => str(record(x).name))
 		.filter(Boolean);
-	const title = str(r.title) || str(r.name) || str(r.message) || str(r.sha) || String(number);
+	const title = str(r.title) || str(r.name) || str(r.type) || str(r.message) || str(r.sha) || String(number);
 	const url = str(r.html_url);
 	const pull = record(r.pull_request);
 	return {
 		id: number,
 		title,
 		url,
-		...(str(r.state) || str(r.status) ? { state: str(r.state) || str(r.status) } : {}),
-		...(str(r.updated_at) ? { updatedAt: str(r.updated_at) } : {}),
+		...(str(r.state) || str(r.status) || str(r.conclusion)
+			? { state: str(r.conclusion) || str(r.state) || str(r.status) }
+			: {}),
+		...(str(r.updated_at) || str(r.published_at) || str(r.created_at)
+			? { updatedAt: str(r.updated_at) || str(r.published_at) || str(r.created_at) }
+			: {}),
 		...(str(r.body) ? { body: str(r.body) } : {}),
 		...(labels.length ? { labels } : {}),
-		...(str(record(r.user).login) ? { subtitle: str(record(r.user).login) } : {}),
+		...(str(record(r.user).login) || str(record(r.actor).login) || str(record(r.author).login)
+			? { subtitle: str(record(r.user).login) || str(record(r.actor).login) || str(record(r.author).login) }
+			: {}),
 		...(str(record(r.head).sha) ? { head: str(record(r.head).sha) } : {}),
 		...(str(record(r.base).sha) ? { base: str(record(r.base).sha) } : {}),
 		...(str(pull.html_url) && !url ? { url: str(pull.html_url) } : {}),
