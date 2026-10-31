@@ -1,5 +1,6 @@
 import { createHash, randomUUID } from "node:crypto";
-import { open, mkdir, readFile, rename, stat, unlink } from "node:fs/promises";
+import { open, mkdir, readFile, rename, stat, unlink, rmdir } from "node:fs/promises";
+import { hostname } from "node:os";
 import { dirname, join } from "node:path";
 import { isDeepStrictEqual } from "node:util";
 
@@ -92,6 +93,64 @@ function pidAlive(pid: number): boolean {
 	}
 }
 
+interface GraphLockOwner {
+	pid: number;
+	host: string;
+	token: string;
+}
+
+function confirmedDeadLocalOwner(owner: Partial<GraphLockOwner> | undefined): owner is GraphLockOwner {
+	return (
+		owner?.host === hostname() &&
+		Number.isSafeInteger(owner.pid) &&
+		owner.pid! > 0 &&
+		typeof owner.token === "string" &&
+		owner.token.length > 0 &&
+		!pidAlive(owner.pid!)
+	);
+}
+
+/**
+ * An orphaned cleaner otherwise blocks every future recovery. A distinct
+ * mkdir-based recovery claim admits one cleaner of a dead, same-host owner.
+ * An unidentifiable or cross-host owner must be resolved by an operator.
+ */
+async function reclaimOrphanCleanupLock(directory: string, cleanupPath: string): Promise<void> {
+	const recoveryPath = `${cleanupPath}.recovery`;
+	try {
+		await mkdir(recoveryPath);
+	} catch (error) {
+		if (errno(error) === "EEXIST") return;
+		throw error;
+	}
+	try {
+		const owner = await readOptionalJson<GraphLockOwner>(cleanupPath);
+		if (!owner) return;
+		if (!confirmedDeadLocalOwner(owner)) {
+			const age = Date.now() - (await stat(cleanupPath)).mtimeMs;
+			if (age > 5_000 && (!owner.host || !owner.token || !Number.isSafeInteger(owner.pid)))
+				throw new Error(`Unidentifiable graph cleanup lock ${cleanupPath} requires operator reconciliation`);
+			return;
+		}
+		const first = await stat(cleanupPath);
+		const current = await readOptionalJson<GraphLockOwner>(cleanupPath);
+		const second = await stat(cleanupPath);
+		if (
+			current?.token !== owner.token ||
+			first.ino !== second.ino ||
+			first.dev !== second.dev ||
+			!confirmedDeadLocalOwner(current)
+		)
+			throw new Error(`Graph cleanup lock ownership changed during recovery: ${cleanupPath}`);
+		await unlink(cleanupPath);
+		await syncDirectory(directory);
+	} catch (error) {
+		if (errno(error) !== "ENOENT") throw error;
+	} finally {
+		await rmdir(recoveryPath);
+	}
+}
+
 /** Verify the lock is still ours before unlinking; never delete a replacement owner. */
 async function releaseOwnedGraphLock(path: string, token: string, directory: string): Promise<void> {
 	const owner = await readOptionalJson<{ token?: string }>(path);
@@ -122,7 +181,7 @@ export async function withGraphFileLock<T>(
 		try {
 			const handle = await open(path, "wx", 0o600);
 			try {
-				await handle.writeFile(JSON.stringify({ pid: process.pid, token }), "utf8");
+				await handle.writeFile(JSON.stringify({ pid: process.pid, host: hostname(), token }), "utf8");
 				await handle.sync();
 				acquired = true;
 			} finally {
@@ -133,34 +192,48 @@ export async function withGraphFileLock<T>(
 			// A separate exclusive cleaner prevents two recovering actors from
 			// removing one another's freshly acquired replacement lock.
 			let cleanup: Awaited<ReturnType<typeof open>> | undefined;
+			const cleanupToken = randomUUID();
 			try {
 				cleanup = await open(cleanupPath, "wx", 0o600);
 			} catch (cleanError) {
 				if (errno(cleanError) !== "EEXIST") throw cleanError;
+				await reclaimOrphanCleanupLock(directory, cleanupPath);
 			}
 			if (cleanup) {
 				try {
-					let owner: { pid?: number; token?: string } | undefined;
+					await cleanup.writeFile(
+						JSON.stringify({ pid: process.pid, host: hostname(), token: cleanupToken }),
+						"utf8",
+					);
+					await cleanup.sync();
+					let owner: Partial<GraphLockOwner> | undefined;
 					try {
 						owner = await readOptionalJson(path);
 					} catch (error) {
-						// A competitor may still be writing the just-created lock.
+						// The primary owner may be writing its identity.
 						if (!(error instanceof SyntaxError)) throw error;
 					}
 					const age = Date.now() - (await stat(path)).mtimeMs;
-					if (owner && Number.isSafeInteger(owner.pid) && owner.pid! > 0 && !pidAlive(owner.pid!)) {
+					if (confirmedDeadLocalOwner(owner)) {
+						const original = await stat(path);
+						const again = await readOptionalJson<GraphLockOwner>(path);
+						const current = await stat(path);
+						if (
+							again?.token !== owner.token ||
+							original.ino !== current.ino ||
+							original.dev !== current.dev
+						)
+							throw new Error(`Graph lock ownership changed during recovery: ${path}`);
 						await unlink(path);
 						await syncDirectory(directory);
-					} else if (!owner && age > 5_000) {
-						// Never steal an unidentifiable lock: its owner may be
-						// paused between exclusive creation and writing identity.
+					} else if ((!owner || !owner.host || !owner.token) && age > 5_000) {
 						throw new Error(`Unowned graph lock ${path} requires operator reconciliation`);
 					}
 				} catch (error) {
 					if (errno(error) !== "ENOENT") throw error;
 				} finally {
 					await cleanup.close();
-					await unlink(cleanupPath);
+					await releaseOwnedGraphLock(cleanupPath, cleanupToken, directory);
 				}
 			}
 			if (Date.now() >= until) throw new Error(`Graph lock contention timeout: ${path}`);
