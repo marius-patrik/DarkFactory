@@ -92,7 +92,9 @@ describe("@darkfactory/docs", () => {
 			"home",
 			"darkfactory-plugins-df-rules-skills-001-test",
 			"darkfactory-adrs-md-adr-0001-test",
+			"architecture-decisions",
 		]);
+		expect(graph.pages.find((page) => page.id === "architecture-decisions")?.markdown).toContain("ADR-0001");
 		expect(graph.pages[0]?.source).toBe("README.md");
 		expect(graph.workflows).toEqual([{ source: ".github/workflows/ci.yml", name: "CI", jobs: ["test"] }]);
 	});
