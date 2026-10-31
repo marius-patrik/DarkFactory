@@ -1,0 +1,40 @@
+# Isolated DF-11 acceptance. No credentials, publishing, deployment or branch promotion.
+name: DF-11 Auth and Keychain Acceptance
+on:
+  push:
+    branches:
+      - agent/2700-auth-broker-df11
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: df11-acceptance-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  static:
+    name: Typecheck, format and lint
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+      - run: bun install --frozen-lockfile
+      - run: bun run typecheck
+      - run: bun run format:check
+      - run: bun run lint
+  focused:
+    name: Auth and keychain negative tests
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+      - run: bun install --frozen-lockfile
+      - run: bun test .github/tests/auth .github/tests/keychain
+  full:
+    name: Complete test suite and build
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+      - run: bun install --frozen-lockfile
+      - run: bun run test
+      - run: bun run build
