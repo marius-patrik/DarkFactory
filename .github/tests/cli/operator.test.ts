@@ -69,7 +69,8 @@ describe("production operator CLI", () => {
 		}));
 		expect(snap.pr?.number).toBe(17);
 		expect(snap.approval).toBe("stale");
-		expect(snap.recovery).toBe("ready");
+		expect(snap.recovery).toBe("idle");
+		expect(summarizeRun(42, state({ quota_blocked: true })).recovery).toBe("blocked");
 		expect(JSON.stringify(snap)).not.toContain("not-shown");
 		expect(JSON.stringify(snap)).not.toContain("SECRET");
 	});
