@@ -50,7 +50,7 @@ function getPlatform(options: KeychainOptions): string {
 
 // macOS
 async function storeMac(key: string, runner: CommandRunner): Promise<void> {
-	await runner("security", ["delete-generic-password", "-s", SERVICE, "-a", ACCOUNT]);
+	// -U updates an existing item; never destroy the old key before an update succeeds.
 	const { exitCode } = await runner("security", [
 		"add-generic-password",
 		"-s",
@@ -98,7 +98,7 @@ function psEscape(s: string): string {
 }
 
 async function storeWindows(key: string, runner: CommandRunner): Promise<void> {
-	await deleteWindows(runner);
+	// PasswordVault.Add updates existing credentials for the same resource/user.
 	const script = `
 [void][Windows.Security.Credentials.PasswordVault,Windows.Security.Credentials,ContentType=WindowsRuntime]
 $vault = [Windows.Security.Credentials.PasswordVault]::new()

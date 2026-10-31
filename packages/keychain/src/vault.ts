@@ -22,10 +22,17 @@ interface VaultMetaEntry {
 	updated: { by: string; at: string };
 }
 
-/** Persisted set of machine-managed secret entries. */
+/** Durable deletion marker preventing stale replicas from restoring removed secrets. */
+export interface VaultTombstone {
+	name: string;
+	removed: { by: string; at: string };
+}
+
+/** Persisted set of machine-managed secret entries and replicated deletions. */
 export interface Vault {
 	version: 1;
 	entries: VaultEntry[];
+	tombstones?: VaultTombstone[];
 }
 
 /** Redacted vault representation safe for diagnostics. */

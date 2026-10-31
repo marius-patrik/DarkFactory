@@ -15,7 +15,7 @@ export function isValidVaultKey(keyBase64: string): boolean {
 	if (!keyBase64 || typeof keyBase64 !== "string") return false;
 	try {
 		const buf = Buffer.from(keyBase64, "base64");
-		return buf.length === KEY_BYTE_LENGTH;
+		return buf.length === KEY_BYTE_LENGTH && buf.toString("base64") === keyBase64;
 	} catch {
 		return false;
 	}
