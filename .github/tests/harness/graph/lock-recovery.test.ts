@@ -59,6 +59,35 @@ describe("filesystem run lock crash recovery", () => {
 		expect(completed).toBe(3);
 	});
 
+	test("two independent OS processes never overlap the same critical section", async () => {
+		const dir = await fixture();
+		const log = join(dir, "processes.log");
+		const source = join(process.cwd(), "packages/harness/src/graph/durable-effects.ts");
+		const script = `
+import { appendFile } from "node:fs/promises";
+const { withGraphFileLock } = await import(${JSON.stringify(source)});
+await withGraphFileLock(${JSON.stringify(dir)}, "run", async () => {
+  await appendFile(${JSON.stringify(log)}, "enter:" + process.pid + "\\n");
+  await Bun.sleep(120);
+  await appendFile(${JSON.stringify(log)}, "exit:" + process.pid + "\\n");
+});
+`;
+		const processes = Array.from({ length: 2 }, () =>
+			Bun.spawn({ cmd: [process.execPath, "-e", script], stdout: "pipe", stderr: "pipe" }),
+		);
+		for (const child of processes) {
+			const code = await child.exited;
+			const stderr = await new Response(child.stderr).text();
+			expect(code, stderr).toBe(0);
+		}
+		const entries = (await readFile(log, "utf8")).trim().split("\n");
+		expect(entries).toHaveLength(4);
+		const first = entries[0]?.replace("enter:", "");
+		const second = entries[2]?.replace("enter:", "");
+		expect(first).not.toBe(second);
+		expect(entries).toEqual([`enter:${first}`, `exit:${first}`, `enter:${second}`, `exit:${second}`]);
+	});
+
 	test("never steals a cross-host primary lock even when its PID is absent locally", async () => {
 		const dir = await fixture();
 		await writeFile(
