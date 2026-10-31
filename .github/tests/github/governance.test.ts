@@ -20,6 +20,8 @@ function fixture() {
 	let reviewerType = "User";
 	let approvedChecks = true;
 	let protectionDenied = false;
+	let rulesDenied = false;
+	let missingRules = false;
 	let compareStatus = "ahead";
 	let mutationFailure = false;
 	let pendingUuid = "630b9d5e-3f2a-4f7e-8b0c-2d5f9a8c1e42";
@@ -53,6 +55,14 @@ function fixture() {
 				required_pull_request_reviews: { required_approving_review_count: 1 },
 				required_status_checks: { checks: [{ context: "test" }] },
 			});
+		}
+		if (url === endpoint + "/rules/branches/main?per_page=100") {
+			if (rulesDenied) return ok({ message: "Forbidden" }, 403);
+			if (missingRules) return ok([]);
+			return ok([
+				{ type: "pull_request", parameters: { required_approving_review_count: 1 } },
+				{ type: "required_status_checks", parameters: { required_status_checks: [{ context: "test" }] } },
+			]);
 		}
 		if (url === endpoint + "/pulls/7/reviews?per_page=100") {
 			return ok([
@@ -149,6 +159,12 @@ function fixture() {
 		setProtectionDenied: () => {
 			protectionDenied = true;
 		},
+		setRulesDenied: () => {
+			rulesDenied = true;
+		},
+		setMissingRules: () => {
+			missingRules = true;
+		},
 		setCompareStatus: (value: string) => {
 			compareStatus = value;
 		},
@@ -219,8 +235,26 @@ describe("GovernedPullRequests (API-only)", () => {
 		expect(f.writes()).toHaveLength(0);
 		const g = fixture();
 		g.setProtectionDenied();
+		g.setRulesDenied();
 		await expect(g.governance.requestMerge(g.request)).rejects.toThrow("Forbidden");
 		expect(g.writes()).toHaveLength(0);
+	});
+
+	test("uses metadata-visible active branch rulesets when App administration is unavailable", async () => {
+		const f = fixture();
+		f.setProtectionDenied();
+		const result = await f.governance.requestMerge(f.request);
+		expect(result.merged).toBe(false);
+		expect(f.calls.some((call) => call.url.includes("/rules/branches/main"))).toBe(true);
+		expect(f.writes()).toHaveLength(1);
+	});
+
+	test("does not authorize absent rulesets when classic protection is inaccessible", async () => {
+		const f = fixture();
+		f.setProtectionDenied();
+		f.setMissingRules();
+		await expect(f.governance.requestMerge(f.request)).rejects.toThrow("No complete active ruleset");
+		expect(f.writes()).toHaveLength(0);
 	});
 
 	test("rejects a downstack side-effect even when the target itself is authorized", async () => {
