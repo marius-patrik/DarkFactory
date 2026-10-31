@@ -17,6 +17,7 @@ import {
 } from "../../../packages/cli/src/operator.ts";
 import type { RunState } from "../../../packages/protocol/src/workflow.ts";
 import { exitCodeFor, main, redactToolInput } from "../../../packages/cli/src/cli.ts";
+import type { OperatorQuotaSnapshot } from "../../../packages/protocol/src/quota.ts";
 import { RUNNER_COMMANDS } from "../../../packages/harness/src/pipeline/main.ts";
 
 function state(overrides: Partial<RunState> = {}): RunState {
@@ -182,6 +183,51 @@ describe("interactive operator TUI", () => {
 		for (const secret of ["exposed-token", "myplaintexttoken", "sensitive", "topsecret"])
 			expect(serialized).not.toContain(secret);
 		expect(serialized).toContain("[REDACTED]");
+	});
+
+	test("provider tab uses canonical redacted quota snapshot, not made-up status", () => {
+		const snapshot: OperatorQuotaSnapshot = {
+			version: 1,
+			generatedAt: "2026-10-31T11:00:00Z",
+			providers: [{
+				id: "example",
+				name: "Example",
+				enabled: true,
+				credentials: "configured",
+				state: "available",
+				accounts: [{
+					label: "work",
+					models: [{ provider: "example", account: "work", model: "model-1", state: "available", items: [] }],
+				}],
+			}],
+		};
+		const output = renderTui([], { selected: 0, view: TUI_VIEWS.indexOf("providers") }, 80, 30, "", snapshot);
+		expect(output).toContain("example");
+		expect(output).toContain("model-1");
+		expect(output).toContain("configured");
+		expect(output).not.toContain("api_key");
+	});
+
+	test("exact-head checks fail closed when there is no authenticated GitHub backend", async () => {
+		const root = await fixture();
+		const previous = {
+			GH_TOKEN: process.env.GH_TOKEN,
+			GITHUB_TOKEN: process.env.GITHUB_TOKEN,
+		};
+		try {
+			delete process.env.GH_TOKEN;
+			delete process.env.GITHUB_TOKEN;
+			await expect(runOperatorCli(["checks", "42", "--runs", root])).rejects.toMatchObject({
+				exitCode: 3,
+				message: expect.stringContaining("BLOCKED"),
+			});
+		} finally {
+			if (previous.GH_TOKEN === undefined) delete process.env.GH_TOKEN;
+			else process.env.GH_TOKEN = previous.GH_TOKEN;
+			if (previous.GITHUB_TOKEN === undefined) delete process.env.GITHUB_TOKEN;
+			else process.env.GITHUB_TOKEN = previous.GITHUB_TOKEN;
+			await rm(root, { recursive: true, force: true });
+		}
 	});
 
 	test("refuses to enter raw mode when stdin/stdout are not interactive", async () => {
