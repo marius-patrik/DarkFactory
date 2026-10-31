@@ -343,9 +343,25 @@ export function renderTui(
 	if (view === "requests") {
 		for (const [index, run] of runs.entries()) lines.push((index === cursor.selected ? "› " : "  ") +
 			"#" + run.request + "  " + run.node + (run.quotaBlocked ? "  [QUOTA BLOCKED]" : ""));
-	} else if (!picked && view !== "providers") {
+	} else if (view === "providers") {
+		if (!quota) {
+			lines.push("Provider observations unavailable. Use df quota --json for diagnostics.");
+		} else {
+			lines.push("Provider observations: " + quota.generatedAt + " (local canonical quota engine)");
+			for (const provider of quota.providers) {
+				lines.push(provider.id + "  " + provider.state + "  credential: " + provider.credentials);
+				for (const account of provider.accounts) {
+					lines.push("  @" + account.label);
+					for (const model of account.models) {
+						const sources = [...new Set(model.items.map((item) => item.source))].join(",");
+						lines.push("    " + model.model + "  " + model.state + "  " + (sources || "no observation"));
+					}
+				}
+			}
+		}
+	} else if (!picked) {
 		lines.push("No durable Request selected.");
-	} else if (view === "graph" && picked) {
+	} else if (view === "graph") {
 		lines.push("Request #" + picked.request, "Current: " + picked.node,
 			"Pending node: " + (picked.pendingNode ?? "none"));
 		for (const [node, count] of Object.entries(picked.iterations)) lines.push(node + ": " + count + " iteration(s)");
@@ -366,22 +382,6 @@ export function renderTui(
 					"Failing: " + (checks.failing.join(", ") || "none"));
 			} else {
 				lines.push("Live checks: entering this view fetches authoritative GitHub readback.");
-			}
-		}
-	} else if (view === "providers") {
-		if (!quota) {
-			lines.push("Provider observations unavailable. Use df quota --json for diagnostics.");
-		} else {
-			lines.push("Provider observations: " + quota.generatedAt + " (local canonical quota engine)");
-			for (const provider of quota.providers) {
-				lines.push(provider.id + "  " + provider.state + "  credential: " + provider.credentials);
-				for (const account of provider.accounts) {
-					lines.push("  @" + account.label);
-					for (const model of account.models) {
-						const sources = [...new Set(model.items.map((item) => item.source))].join(",");
-						lines.push("    " + model.model + "  " + model.state + "  " + (sources || "no observation"));
-					}
-				}
 			}
 		}
 	} else if (view === "recovery") {
