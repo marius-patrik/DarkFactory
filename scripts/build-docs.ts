@@ -110,6 +110,9 @@ try {
 		if (!webDist) throw new Error("Missing DF-03 Web bundle");
 		const web = await stageWebBundle(resolve(webDist), stage, basePath, process.env.GITHUB_SHA);
 		await renderDocsSite(graph, join(stage, "docs"));
+		// Only the Pages site root needs .nojekyll. The nested docs renderer
+		// creates its own marker, which would violate the strict site manifest.
+		await rm(join(stage, "docs", ".nojekyll"), { force: true });
 		await writeFile(join(stage, "docs", "search.json"), `${JSON.stringify(docsSearchIndex(graph), null, 2)}\n`);
 		const packageJson = JSON.parse(await readFile(join(repoRoot, "package.json"), "utf8")) as { version?: unknown };
 		if (typeof packageJson.version !== "string") throw new Error("Product version missing from package.json");
