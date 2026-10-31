@@ -22,7 +22,9 @@ jobs:
       - name: Verify frontend source integrity and tests
         run: |
           bun test ./.github/tests/web/*.test.ts ./.github/tests/web/*.test.tsx
-          bunx biome ci packages/web .github/tests/web
+          bun run typecheck
+          bun run format:check
+          bun run lint
       - name: Build browser artifact with immutable SHA
         env:
           DF_WEB_BASE_PATH: ${{ vars.DF_PAGES_BASE_PATH || '/DarkFactory/' }}
