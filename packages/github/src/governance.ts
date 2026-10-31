@@ -139,7 +139,6 @@ export class GovernedPullRequests {
 		)
 			throw new Error("Missing independent, current-head human approval");
 
-
 		if (required.length) {
 			const result = await this.#repo.requiredCheckStatus(request.reviewedHeadSha, required);
 			if (result.state !== "success") throw new Error("Required checks are not green on reviewed SHA");
@@ -169,10 +168,7 @@ export class GovernedPullRequests {
 				this.#basePath + "/branches/" + encodeURIComponent(base) + "/protection",
 			);
 		} catch (error) {
-			if (
-				!(error instanceof GitHubError) ||
-				!["permission", "not-found"].includes(error.kind)
-			) throw error;
+			if (!(error instanceof GitHubError) || !["permission", "not-found"].includes(error.kind)) throw error;
 			const rules = await this.#repo.client.collectRest<unknown>(
 				this.#basePath + "/rules/branches/" + encodeURIComponent(base) + "?per_page=100",
 				1000,
@@ -182,8 +178,7 @@ export class GovernedPullRequests {
 			let minimumReviews = 0;
 			const required: string[] = [];
 			for (const entry of rules) {
-				if (!entry || typeof entry !== "object" || !("type" in entry) ||
-					typeof entry.type !== "string") {
+				if (!entry || typeof entry !== "object" || !("type" in entry) || typeof entry.type !== "string") {
 					throw new Error("Malformed active branch rule");
 				}
 				const rule = entry as { type: string; parameters?: Record<string, unknown> };
