@@ -483,6 +483,11 @@ async function runGraphUnlocked(
 		) {
 			if (!reviewApprovalFresh(state.reviews.planning))
 				throw new Error("Final merge authorization requires fresh approved Planning");
+			if (
+				state.outputs.awaiting_merge_fingerprint !== mergeProposalFingerprint(state.outputs) ||
+				state.outputs.external_checks_head_sha !== state.outputs.commit_sha
+			)
+				throw new Error("Final merge gate changed since required checks and proposal were presented");
 			if (current.type === "review" && (!("ref" in current) || current.ref !== state.outputs.commit_sha))
 				throw new Error("GitHub review approval refers to a stale PR head");
 			if (!("actor" in current) || !current.actor.login) throw new Error("Final approval has no attributable actor");
@@ -512,6 +517,8 @@ async function runGraphUnlocked(
 					throw new Error("Cannot enter final merge gate without passing external checks for exact implementation SHA");
 				}
 				state.outputs.external_checks_head_sha = checked;
+				state.outputs.awaiting_merge_fingerprint = mergeProposalFingerprint(state.outputs);
+				delete state.outputs.merge_authorization;
 			}
 			state.current_node = action.node;
 			if (action.type === "hint" && !state.hints.includes(action.node)) state.hints.push(action.node);
