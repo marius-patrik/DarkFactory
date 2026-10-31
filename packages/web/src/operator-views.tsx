@@ -67,7 +67,7 @@ const Row: FC<{ item: OperatorItem; repository: string }> = ({ item, repository 
 	</li>;
 };
 function RepositorySummary({ value }: { value: OperatorRepository }) {
-	return <div className="df-summary" aria-label="Repository metadata">
+	return <div className="df-summary" role="group" aria-label="Repository metadata">
 		<div className="df-stat"><span>Repository</span><strong>{value.fullName}</strong></div>
 		<div className="df-stat"><span>Default branch</span><strong>{value.defaultBranch || "Unknown"}</strong></div>
 		<div className="df-stat"><span>Visibility</span><strong>{value.private ? "Private" : "Public"}</strong></div>
@@ -98,7 +98,7 @@ export const OperatorView: FC<{
 		</div>
 		{state.status === "idle" || state.status === "loading"
 			? <p className="df-notice" role="status" aria-busy="true">Loading verified repository data…</p> : null}
-		{state.status !== "live" && state.status !== "idle" && state.status !== "loading"
+		{(state.status === "unauthorized" || state.status === "rate-limited" || state.status === "blocked" || state.status === "failed")
 			? <div role="alert" className="df-notice df-problem">
 				<strong>{state.status === "blocked" ? "Backend unavailable or access denied" : state.status === "rate-limited" ? "Rate limited" : "Data unavailable"}</strong>
 				<p>{state.detail}</p>
