@@ -108,7 +108,8 @@ describe("@darkfactory/auth confidential broker", () => {
 		const config = { clientId: "client", clientSecret: "secret" };
 		globalThis.fetch = fetchReturning(500);
 		await expect(revokeBrokerSession(config, "session", store)).rejects.toThrow("revocation failed");
-		expect(await store.get("session")).toBeDefined();
+		expect((await store.get("session"))?.revokedAt).toEqual(expect.any(Number));
+		await expect(refreshBrokerSession(config, "session", store)).rejects.toThrow("revoked");
 	});
 });
 

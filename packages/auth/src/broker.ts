@@ -34,6 +34,8 @@ export interface AuthTokenStore {
 	get(sessionId: string): Promise<BrokerTokenRecord | undefined>;
 	set(sessionId: string, record: BrokerTokenRecord): Promise<void>;
 	delete(sessionId: string): Promise<void>;
+	/** Optional cross-process lock for stores shared by multiple broker instances. */
+	withLock?<T>(sessionId: string, run: () => Promise<T>): Promise<T>;
 }
 
 /** In-memory broker token store for tests and single-process deployments. */
@@ -71,7 +73,7 @@ async function withSessionLock<T>(store: AuthTokenStore, sessionId: string, run:
 	queues.set(sessionId, completion);
 	await predecessor;
 	try {
-		return await run();
+		return store.withLock ? await store.withLock(sessionId, run) : await run();
 	} finally {
 		release();
 		if (queues.get(sessionId) === completion) queues.delete(sessionId);
@@ -203,6 +205,7 @@ export async function refreshBrokerSession(
 	return withSessionLock(store, sessionId, async () => {
 		const current = await store.get(sessionId);
 		if (!current) throw new Error("Unknown authentication session");
+		if (current.revokedAt !== undefined) throw new Error("Authentication session was revoked");
 		if (!current.token.refresh_token) throw new Error("Authentication session is not refreshable");
 		if (current.sessionExpiresAt === undefined || current.sessionExpiresAt <= now)
 			throw new Error("Authentication session has expired");
@@ -227,6 +230,9 @@ export async function revokeBrokerSession(
 	await withSessionLock(store, sessionId, async () => {
 		const current = await store.get(sessionId);
 		if (!current) return;
+		// Session revocation becomes authoritative locally BEFORE remote calls; network errors
+		// leave a tombstone for safe retry rather than an active logged-out session.
+		if (current.revokedAt === undefined) await store.set(sessionId, { ...current, revokedAt: Date.now() });
 		await revokeAccessToken(config, current.token.access_token);
 		await store.delete(sessionId);
 	});

@@ -25,6 +25,8 @@ export interface BrokerTokenRecord {
 	refreshExpiresAt?: number;
 	/** Immutable absolute broker session expiry; refresh never extends it. */
 	sessionExpiresAt?: number;
+	/** Fail-closed local revocation tombstone; persists while upstream revoke retries. */
+	revokedAt?: number;
 	userId?: string;
 }
 

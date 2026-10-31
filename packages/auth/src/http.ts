@@ -185,6 +185,7 @@ export function createConfidentialBrokerHandler(
 		if (
 			!record ||
 			!record.userId ||
+			record.revokedAt !== undefined ||
 			!record.sessionExpiresAt ||
 			record.sessionExpiresAt <= now ||
 			(!allowExpiredAccess && record.accessExpiresAt !== undefined && record.accessExpiresAt <= now)
