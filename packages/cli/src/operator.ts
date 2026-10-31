@@ -330,8 +330,8 @@ export function renderTui(
 	quota?: OperatorQuotaSnapshot,
 	checks?: OperatorCheckSnapshot,
 ): string {
-	const width = Math.max(24, columns || 80);
-	const height = Math.max(8, rows || 24);
+	const width = Math.max(1, columns || 80);
+	const height = Math.max(1, rows || 24);
 	const picked = runs[cursor.selected];
 	const view = TUI_VIEWS[cursor.view] ?? "requests";
 	const lines: string[] = [
@@ -388,8 +388,20 @@ export function renderTui(
 		lines.push("Recovery: " + picked.recovery, "Pending action: " + (picked.pendingAction ?? "none"),
 			"Mutation blocked without a durable graph reconciliation/authorization adapter.");
 	}
-	lines.push("", note || "↑↓ select · ←→/Tab views · r refresh · q exit · a approve · c cancel · x retry");
-	return lines.slice(0, height).map((line) => safeText(line).slice(0, width)).join("\n");
+	const footer = note || "↑↓ select · ←→/Tab views · r refresh · q exit · a approve · c cancel · x retry";
+	const headerRows = Math.min(4, height);
+	const footerRows = Math.min(2, Math.max(0, height - headerRows));
+	const availableRows = Math.max(0, height - headerRows - footerRows);
+	const body = lines.slice(4);
+	const offset = view === "requests"
+		? Math.min(Math.max(0, cursor.selected - availableRows + 1), Math.max(0, body.length - availableRows))
+		: 0;
+	const visible = [
+		...lines.slice(0, headerRows),
+		...body.slice(offset, offset + availableRows),
+		...(footerRows === 2 ? ["", footer] : footerRows === 1 ? [footer] : []),
+	];
+	return visible.map((line) => safeText(line).slice(0, width)).join("\n");
 }
 
 /** Raw-mode cleanup, terminal resize and errors are all handled in the same interactive session. */
