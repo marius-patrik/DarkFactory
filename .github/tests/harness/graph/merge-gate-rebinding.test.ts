@@ -81,13 +81,7 @@ describe("final approval is bound to the proposal presented at the gate", () => 
 		state.outputs.plan_artifact = { scope: ["other/**"] };
 		await writeFile(path, JSON.stringify(state));
 		await expect(
-			runGraph(
-				graph,
-				dir,
-				handlers,
-				{ type: "comment", body: "/df approve", actor },
-				{ eventId: "approval" },
-			),
+			runGraph(graph, dir, handlers, { type: "comment", body: "/df approve", actor }, { eventId: "approval" }),
 		).rejects.toThrow("Final merge gate changed");
 	});
 
