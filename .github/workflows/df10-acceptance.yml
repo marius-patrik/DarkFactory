@@ -37,3 +37,12 @@ jobs:
         run: bun run test
       - name: Build
         run: bun run build
+      - name: Render exact Biome formatting proposals
+        if: always()
+        run: |
+          bunx biome format --write packages/github/src/governance.ts .github/tests/github/governance.test.ts
+          for file in packages/github/src/governance.ts .github/tests/github/governance.test.ts; do
+            echo "DF10_FORMAT_BEGIN:${file}"
+            base64 -w 76 "$file"
+            echo "DF10_FORMAT_END:${file}"
+          done
