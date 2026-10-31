@@ -25,6 +25,8 @@ const source: OperatorReadSource = {
 	issueComments: async () => ({
 		items: [{ id: 123, title: "reviewed", body: "reviewed", url: "https://github.com/o/r/issues/1#issuecomment-123" }],
 		limit: 50,
+		page: 1,
+		morePossible: false,
 	}),
 };
 const valid = {
@@ -64,7 +66,7 @@ describe("permission-aware browser mutation", () => {
 				...valid,
 				source: {
 					...source,
-					issueComments: async () => ({ items: [], limit: 50 }),
+					issueComments: async () => ({ items: [], limit: 50, page: 1, morePossible: false }),
 				},
 			}),
 		).rejects.toThrow("not verified");

@@ -269,7 +269,7 @@ const DetailPanel: FC<{
 			<p className="df-notice" role="status" aria-busy="true">
 				Loading the authoritative GitHub record…
 			</p>
-		) : state.status !== "live" ? (
+		) : "detail" in state ? (
 			<div className="df-notice df-problem" role="alert">
 				<strong>{state.status === "unauthorized" ? "Authorization required" : "Record unavailable"}</strong>
 				<p>{state.detail}</p>
@@ -334,6 +334,7 @@ export const OperatorView: FC<{
 				onRefresh={onRefresh}
 			/>
 		);
+	const activePage = state.status === "live" && isCollection(state.data) ? state.data.page : 1;
 	return (
 		<section className="df-section" aria-labelledby="df-surface-heading">
 			<header className="df-heading">
@@ -401,7 +402,7 @@ export const OperatorView: FC<{
 								<button
 									type="button"
 									disabled={state.data.page <= 1}
-									onClick={() => onPageChange(state.data.page - 1)}
+									onClick={() => onPageChange(activePage - 1)}
 								>
 									Previous page
 								</button>
@@ -409,7 +410,7 @@ export const OperatorView: FC<{
 								<button
 									type="button"
 									disabled={!state.data.morePossible || state.data.page >= 1000}
-									onClick={() => onPageChange(state.data.page + 1)}
+									onClick={() => onPageChange(activePage + 1)}
 								>
 									Next page
 								</button>
