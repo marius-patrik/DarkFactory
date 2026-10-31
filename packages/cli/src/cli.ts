@@ -59,7 +59,7 @@ import {
 import { runDoctorIdentities } from "../../harness/src/identities/index.ts";
 import { LimitLedger } from "../../harness/src/limits/ledger.ts";
 import { QuotaEngine } from "../../harness/src/limits/quota-engine.ts";
-import { buildQuotaReport } from "../../harness/src/limits/quota-report.ts";
+import { buildQuotaReport, operatorQuotaSnapshot } from "../../harness/src/limits/quota-report.ts";
 import { sweepQuotaResumes } from "../../harness/src/limits/resume-sweep.ts";
 import { estimateTask } from "../../harness/src/limits/routing.ts";
 import { type CatalogResult, isRunnableCatalogModel, ModelCatalog } from "../../harness/src/models/catalog.ts";
@@ -1495,13 +1495,13 @@ async function licenseCommand(args: string[]): Promise<void> {
 	if (process.env.GITHUB_OUTPUT) appendFileSync(process.env.GITHUB_OUTPUT, `spdx=${written ?? ""}\n`);
 }
 
-async function quotaCommand(
+async function quotaReport(
 	registry: ProviderRegistry,
 	store: FileCredentialStore,
 	ledger: LimitLedger,
 	config: DfConfig,
-	args: string[],
-): Promise<void> {
+	provider?: string,
+) {
 	const home = defaultDfHome();
 	const engine = new QuotaEngine(home, ledger, new Map(registry.entries.map((entry) => [entry.id, entry])));
 	const chains = [config.defaultChain, config.hardReasoningChain, config.sensitiveChain].flatMap((chain) =>
@@ -1518,13 +1518,23 @@ async function quotaCommand(
 		if (await store.readCredential(candidate.provider, candidate.account).catch(() => undefined))
 			accounts.push({ provider: candidate.provider, label: candidate.account });
 	}
-	const report = await buildQuotaReport({
+	return buildQuotaReport({
 		providers: registry.entries,
 		accounts,
 		chains,
 		engine,
-		provider: option(args, "--provider"),
+		provider,
 	});
+}
+
+async function quotaCommand(
+	registry: ProviderRegistry,
+	store: FileCredentialStore,
+	ledger: LimitLedger,
+	config: DfConfig,
+	args: string[],
+): Promise<void> {
+	const report = await quotaReport(registry, store, ledger, config, option(args, "--provider"));
 	if (args.includes("--json")) {
 		console.log(JSON.stringify(report, null, 2));
 		return;
@@ -1692,7 +1702,6 @@ export async function main(args = process.argv.slice(2)): Promise<void> {
 		return;
 	}
 	if (args[0] === "operator") return runOperatorCli(args.slice(1));
-	if (args[0] === "tui") return runOperatorTui(args.slice(1));
 	if (args[0] === "--version" || args[0] === "version") {
 		console.log(`df ${executableReleaseVersion() ?? "development/unmanaged"}`);
 		return;
@@ -1764,6 +1773,8 @@ export async function main(args = process.argv.slice(2)): Promise<void> {
 			return licenseCommand(args.slice(1));
 		case "quota":
 			return quotaCommand(registry, store, ledger, config, args.slice(1));
+		case "tui":
+			return runOperatorTui(args.slice(1), async () => operatorQuotaSnapshot(await quotaReport(registry, store, ledger, config)));
 		case "route":
 			return routeCommand(registry, store, config, args.slice(1));
 		case "account":
