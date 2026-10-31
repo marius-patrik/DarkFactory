@@ -1701,7 +1701,11 @@ export async function main(args = process.argv.slice(2)): Promise<void> {
 		console.log(usage());
 		return;
 	}
-	if (args[0] === "operator") return runOperatorCli(args.slice(1));
+	if (args[0] === "operator") {
+		const status = await runOperatorCli(args.slice(1));
+		if (status !== 0) process.exitCode = status;
+		return;
+	}
 	if (args[0] === "tui" && (!stdin.isTTY || !stdout.isTTY))
 		throw new OperatorCliError("Interactive TUI requires an attached input and output TTY", 3);
 	if (args[0] === "--version" || args[0] === "version") {
