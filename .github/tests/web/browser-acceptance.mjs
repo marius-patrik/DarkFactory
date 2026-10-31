@@ -50,8 +50,7 @@ const errors = [];
 const page = await browser.newPage({ viewport: { width: 1440, height: 900 } });
 page.on("pageerror", (err) => errors.push(err.message));
 page.on("request", (request) => {
-	if (request.headers().authorization)
-		errors.push("Browser request exposed Authorization header");
+	if (request.headers().authorization) errors.push("Browser request exposed Authorization header");
 });
 await page.route("https://api.github.com/**", (route) => {
 	const pathname = new URL(route.request().url()).pathname;
