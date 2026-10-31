@@ -183,7 +183,11 @@ export function createGitHubOperatorSource(
 		}
 		return response.json() as Promise<unknown>;
 	}
-	async function read(resource: OperatorResource, signal?: AbortSignal, page = 1): Promise<ResourceState<OperatorResourceData>> {
+	async function read(
+		resource: OperatorResource,
+		signal?: AbortSignal,
+		page = 1,
+	): Promise<ResourceState<OperatorResourceData>> {
 		if (!Number.isSafeInteger(page) || page < 1 || page > 1000)
 			return { status: "blocked", detail: "Invalid GitHub page" };
 		if (resource === "quota" || resource === "graph" || resource === "recovery" || resource === "projects")
@@ -287,8 +291,7 @@ export function createGitHubOperatorSource(
 		id: number,
 		signal?: AbortSignal,
 	): Promise<ResourceState<OperatorItem>> {
-		if (!Number.isSafeInteger(id) || id < 1)
-			return { status: "blocked", detail: "Invalid GitHub record identity" };
+		if (!Number.isSafeInteger(id) || id < 1) return { status: "blocked", detail: "Invalid GitHub record identity" };
 		const path =
 			resource === "requests" || resource === "planning" || resource === "approvals" || resource === "epics"
 				? `/issues/${id}`

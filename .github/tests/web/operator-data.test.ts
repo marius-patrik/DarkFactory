@@ -121,14 +121,16 @@ describe("browser-safe GitHub reads", () => {
 		const source = createGitHubOperatorSource("alice/product", {
 			fetch: (async (url: string | URL | Request) => {
 				paths.push(String(url));
-				return new Response(JSON.stringify({
-					id: 42,
-					number: 42,
-					title: "GitHub request details",
-					labels: [{ name: "Request" }],
-					body: "Authoritative body",
-					html_url: "https://github.com/alice/product/issues/42",
-				}));
+				return new Response(
+					JSON.stringify({
+						id: 42,
+						number: 42,
+						title: "GitHub request details",
+						labels: [{ name: "Request" }],
+						body: "Authoritative body",
+						html_url: "https://github.com/alice/product/issues/42",
+					}),
+				);
 			}) as unknown as typeof fetch,
 		});
 		const result = await source.readItem?.("requests", 42);

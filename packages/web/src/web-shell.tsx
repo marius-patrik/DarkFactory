@@ -322,7 +322,9 @@ const Body: FC<Omit<DarkFactoryShellProps, "hook">> = ({
 					/>
 				) : (
 					<section role="alert" className="df-section">
-						<h2 id="df-not-found-heading" tabIndex={-1}>Page not found</h2>
+						<h2 id="df-not-found-heading" tabIndex={-1}>
+							Page not found
+						</h2>
 						<p>The requested operator route is not part of this release candidate.</p>
 						<RouteLink to="/">Return to overview</RouteLink>
 					</section>

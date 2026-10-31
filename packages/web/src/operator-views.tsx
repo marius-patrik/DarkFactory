@@ -161,7 +161,11 @@ const DETAIL_RESOURCES: ReadonlySet<OperatorResource> = new Set([
 	"runs",
 	"releases",
 ]);
-const Row: FC<{ item: OperatorItem; repository: string; surface: OperatorSurface }> = ({ item, repository, surface }) => {
+const Row: FC<{ item: OperatorItem; repository: string; surface: OperatorSurface }> = ({
+	item,
+	repository,
+	surface,
+}) => {
 	const href = safeGitHubLink(item.url, repository);
 	const detailHref =
 		DETAIL_RESOURCES.has(surface.resource) &&
@@ -253,8 +257,8 @@ const DetailPanel: FC<{
 				{surface.title} · #{id}
 			</h2>
 			<p>
-				Read-only GitHub record. Approval, cancellation, retry, and mutation require independently verified authority and
-				receipts.
+				Read-only GitHub record. Approval, cancellation, retry, and mutation require independently verified authority
+				and receipts.
 			</p>
 		</header>
 		<div className="df-toolbar">
@@ -393,17 +397,11 @@ export const OperatorView: FC<{
 								))}
 							</ul>
 						) : (
-							<p className="df-empty">
-								No matching records on this page. This is not a repository-wide absence claim.
-							</p>
+							<p className="df-empty">No matching records on this page. This is not a repository-wide absence claim.</p>
 						)}
 						{onPageChange && (state.data.page > 1 || state.data.morePossible) ? (
 							<div className="df-pagination" role="group" aria-label="GitHub result pages">
-								<button
-									type="button"
-									disabled={state.data.page <= 1}
-									onClick={() => onPageChange(activePage - 1)}
-								>
+								<button type="button" disabled={state.data.page <= 1} onClick={() => onPageChange(activePage - 1)}>
 									Previous page
 								</button>
 								<span aria-live="polite">Page {state.data.page}</span>

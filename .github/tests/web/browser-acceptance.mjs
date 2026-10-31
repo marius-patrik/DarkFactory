@@ -74,16 +74,16 @@ await page.route("https://api.github.com/**", (route) => {
 				}
 			: pathname.endsWith("/issues")
 				? [
-					{
-						id: 1,
-						number: 1,
-						title: "Browser test Request",
-						state: "open",
-						labels: [{ name: "Request" }],
-						html_url: "https://github.com/marius-patrik/DarkFactory/issues/1",
-					},
-				]
-			: [];
+						{
+							id: 1,
+							number: 1,
+							title: "Browser test Request",
+							state: "open",
+							labels: [{ name: "Request" }],
+							html_url: "https://github.com/marius-patrik/DarkFactory/issues/1",
+						},
+					]
+				: [];
 	return route.fulfill({
 		status: 200,
 		contentType: "application/json",
@@ -116,9 +116,15 @@ try {
 	assert.match(await page.locator("body").innerText(), /DarkFactory/i);
 	const docsSearch = page.getByRole("searchbox", { name: "Find a page" });
 	await docsSearch.fill("coverage");
-	assert.ok(await page.locator("#df-doc-links a:visible").count() > 0, "Compiled documentation must provide searchable page titles");
+	assert.ok(
+		(await page.locator("#df-doc-links a:visible").count()) > 0,
+		"Compiled documentation must provide searchable page titles",
+	);
 	await docsSearch.press("Escape");
-	assert.ok(await page.locator("#df-doc-links a:visible").count() > 1, "Escape must restore the full authoritative page list");
+	assert.ok(
+		(await page.locator("#df-doc-links a:visible").count()) > 1,
+		"Escape must restore the full authoritative page list",
+	);
 	response = await page.goto(url + "docs/reference-runtime-contracts/", { waitUntil: "domcontentloaded" });
 	assert.equal(response?.status(), 200);
 	assert.match(await page.locator("body").innerText(), /workflow|approval|capability/i);
@@ -132,7 +138,9 @@ try {
 	assert.equal(await blocked.getByRole("button", { name: "Sign in with GitHub" }).count(), 0);
 	await blocked.close();
 	assert.deepEqual(errors, [], "Browser app errors or unexpected authorization headers");
-	console.log("DF12 Chromium smoke PASS: desktop, mobile, detail route, docs search, hashes, fail-closed public config.");
+	console.log(
+		"DF12 Chromium smoke PASS: desktop, mobile, detail route, docs search, hashes, fail-closed public config.",
+	);
 } finally {
 	await page.close();
 	await browser.close();
