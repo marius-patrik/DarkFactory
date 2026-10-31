@@ -52,9 +52,14 @@ describe("DF-14 real-process fault acceptance", () => {
 		expect(crashed.exit).toBe(71);
 		expect(await readFile(marker, "utf8")).toBe("owner exited without finally");
 		let count = 0;
-		await withGraphFileLock(root, "mutation", async () => {
-			count++;
-		}, { waitMs: 2_000 });
+		await withGraphFileLock(
+			root,
+			"mutation",
+			async () => {
+				count++;
+			},
+			{ waitMs: 2_000 },
+		);
 		expect(count).toBe(1);
 	});
 
@@ -72,14 +77,7 @@ describe("DF-14 real-process fault acceptance", () => {
 		`;
 		const results = await Promise.all([child(script), child(script), child(script)]);
 		for (const result of results) expect(result).toMatchObject({ exit: 0 });
-		expect((await readFile(log, "utf8")).trim().split("\n")).toEqual([
-			"begin",
-			"end",
-			"begin",
-			"end",
-			"begin",
-			"end",
-		]);
+		expect((await readFile(log, "utf8")).trim().split("\n")).toEqual(["begin", "end", "begin", "end", "begin", "end"]);
 	});
 
 	test("FAULT-03: actual process death after remote write but before journal completion never repeats mutation", async () => {
