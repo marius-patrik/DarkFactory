@@ -125,6 +125,7 @@ describe("browser-safe GitHub reads", () => {
 					id: 42,
 					number: 42,
 					title: "GitHub request details",
+					labels: [{ name: "Request" }],
 					body: "Authoritative body",
 					html_url: "https://github.com/alice/product/issues/42",
 				}));
