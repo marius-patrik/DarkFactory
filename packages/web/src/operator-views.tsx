@@ -301,9 +301,7 @@ const DetailPanel: FC<{
 						Head: {state.data.head} {state.data.base ? `· Base: ${state.data.base}` : ""}
 					</p>
 				) : null}
-				<pre className="df-detail-body">
-					{state.data.body || "No description supplied by GitHub."}
-				</pre>
+				<pre className="df-detail-body">{state.data.body || "No description supplied by GitHub."}</pre>
 				{safeGitHubLink(state.data.url, repository) ? (
 					<p>
 						<a href={safeGitHubLink(state.data.url, repository)} target="_blank" rel="noopener noreferrer">
@@ -420,9 +418,7 @@ export const OperatorView: FC<{
 						<p className="df-data-note">
 							Path: {state.data.path} · SHA: {state.data.sha}
 						</p>
-						<pre className="df-config">
-							{state.data.content}
-						</pre>
+						<pre className="df-config">{state.data.content}</pre>
 					</section>
 				) : (
 					<RepositorySummary value={state.data} />
