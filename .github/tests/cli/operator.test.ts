@@ -16,7 +16,8 @@ import {
 	TUI_VIEWS,
 } from "../../../packages/cli/src/operator.ts";
 import type { RunState } from "../../../packages/protocol/src/workflow.ts";
-import { exitCodeFor } from "../../../packages/cli/src/cli.ts";
+import { exitCodeFor, main, redactToolInput } from "../../../packages/cli/src/cli.ts";
+import { RUNNER_COMMANDS } from "../../../packages/harness/src/pipeline/main.ts";
 
 function state(overrides: Partial<RunState> = {}): RunState {
 	return {
@@ -150,6 +151,37 @@ describe("interactive operator TUI", () => {
 		expect(rendered.split("\n").every((line) => [...line].length <= 35)).toBe(true);
 		expect(rendered).not.toContain("\u001b");
 		expect(rendered).toContain("DARKFACTORY");
+	});
+
+	test("help advertises every delegated stage and real operator command without provider setup", async () => {
+		const lines: string[] = [];
+		const original = console.log;
+		console.log = (...parts: unknown[]) => { lines.push(parts.join(" ")); };
+		try {
+			await main(["--help"]);
+			for (const stage of RUNNER_COMMANDS) expect(lines.join("\n")).toContain(stage);
+			expect(lines.join("\n")).toContain("df operator");
+			expect(lines.join("\n")).toContain("df tui");
+			expect(lines.join("\n")).toContain("lifecycle mutations blocked");
+		} finally {
+			console.log = original;
+		}
+	});
+
+	test("redacts nested credentials in streamed event payloads and diagnostic text", () => {
+		const output = redactToolInput({
+			type: "step",
+			token: "exposed-token",
+			detail: {
+				errorMessage: "Authorization: Bearer myplaintexttoken",
+				password: "sensitive",
+				headers: ["api_key=topsecret"],
+			},
+		});
+		const serialized = JSON.stringify(output);
+		for (const secret of ["exposed-token", "myplaintexttoken", "sensitive", "topsecret"])
+			expect(serialized).not.toContain(secret);
+		expect(serialized).toContain("[REDACTED]");
 	});
 
 	test("refuses to enter raw mode when stdin/stdout are not interactive", async () => {
