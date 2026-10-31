@@ -92,6 +92,14 @@ function pidAlive(pid: number): boolean {
 	}
 }
 
+/** Verify the lock is still ours before unlinking; never delete a replacement owner. */
+async function releaseOwnedGraphLock(path: string, token: string, directory: string): Promise<void> {
+	const owner = await readOptionalJson<{ token?: string }>(path);
+	if (owner?.token !== token) throw new Error(`Graph lock ownership was lost: ${path}`);
+	await unlink(path);
+	await syncDirectory(directory);
+}
+
 /**
  * Exclusive per-key lock for local processes. A crashed process's lock may be
  * reclaimed only when its PID is confirmed dead; unknown ownership fails closed.
@@ -124,7 +132,7 @@ export async function withGraphFileLock<T>(
 			if (errno(error) !== "EEXIST") throw error;
 			// A separate exclusive cleaner prevents two recovering actors from
 			// removing one another's freshly acquired replacement lock.
-			let cleanup;
+			let cleanup: Awaited<ReturnType<typeof open>> | undefined;
 			try {
 				cleanup = await open(cleanupPath, "wx", 0o600);
 			} catch (cleanError) {
@@ -162,11 +170,7 @@ export async function withGraphFileLock<T>(
 	try {
 		return await work();
 	} finally {
-		// Fail closed if ownership was unexpectedly replaced.
-		const owner = await readOptionalJson<{ token?: string }>(path);
-		if (owner?.token !== token) throw new Error(`Graph lock ownership was lost: ${path}`);
-		await unlink(path);
-		await syncDirectory(directory);
+		await releaseOwnedGraphLock(path, token, directory);
 	}
 }
 

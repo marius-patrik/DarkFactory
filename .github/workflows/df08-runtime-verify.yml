@@ -5,6 +5,7 @@ on:
     branches:
       - agent/2698-final-quality
   workflow_dispatch:
+  workflow_call:
 permissions:
   contents: read
 concurrency:
@@ -52,3 +53,18 @@ jobs:
       - run: bun install --frozen-lockfile
       - run: bun run build --target=linux-x64
       - run: bun packages/harness/scripts/verify-target.ts --target linux-x64
+
+  format-reference:
+    name: Produce exact Biome-formatted regression test for independent review
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6
+      - run: bun install --frozen-lockfile
+      - name: Emit formatted test as base64 for deterministic replay
+        shell: bash
+        run: |
+          bunx biome format --write .github/tests/harness/graph/production-recovery.test.ts
+          printf 'DF08_FORMAT_B64='
+          base64 -w0 .github/tests/harness/graph/production-recovery.test.ts
+          echo
