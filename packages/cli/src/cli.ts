@@ -10,6 +10,7 @@ import { createInterface } from "node:readline/promises";
 import type { AuthEvent, AuthPrompt, Provider } from "@earendil-works/pi-ai";
 import { fauxAssistantMessage, fauxProvider } from "@earendil-works/pi-ai";
 import { formatCaptureSchema } from "./capture-schema.ts";
+import { OperatorCliError, runOperatorCli, runOperatorTui } from "./operator.ts";
 import { importAntigravityAccount, OsKeyringAdapter } from "../../keychain/src/import/antigravity.ts";
 import { importClaudeAccount } from "../../keychain/src/import/claude.ts";
 import { importCodexAccount } from "../../keychain/src/import/codex.ts";
@@ -123,6 +124,9 @@ function usage(): string {
 		"  df secrets init|import-key|export-key|list|rm|sync|doctor [--insecure-file-key]",
 		"  df secrets set NAME [--from-stdin] | get NAME [--reveal] | push <owner/repo> [--only NAME] [--dry-run]",
 		"  df workspace <status|diff|log|fetch|continue|abort> [options]",
+		"  df operator <list|inspect|approve|cancel|retry|restart> [--runs DIR] [--json]",
+		"  df tui [--runs DIR]                 # interactive read-only production Request dashboard",
+		"  df dispatch|interpret|plan|implement|self-review|self-review-fix|plan-alignment|respond|token-refresh [options]",
 	].join("\n");
 }
 
@@ -1682,6 +1686,13 @@ async function secretsCli(home: string, args: string[]): Promise<void> {
  */
 
 export async function main(args = process.argv.slice(2)): Promise<void> {
+	// Global inspection must not require configured provider credentials or a writable home.
+	if (["help", "--help", "-h"].includes(args[0] ?? "")) {
+		console.log(usage());
+		return;
+	}
+	if (args[0] === "operator") return runOperatorCli(args.slice(1));
+	if (args[0] === "tui") return runOperatorTui(args.slice(1));
 	if (args[0] === "--version" || args[0] === "version") {
 		console.log(`df ${executableReleaseVersion() ?? "development/unmanaged"}`);
 		return;
@@ -1806,6 +1817,7 @@ export async function main(args = process.argv.slice(2)): Promise<void> {
  * @returns The process exit code
  */
 export function exitCodeFor(error: unknown): number {
+	if (error instanceof OperatorCliError) return error.exitCode;
 	if (error instanceof ChainExhaustedError) return error.exitCode;
 	if (error instanceof RunTimeoutError) return error.exitCode;
 	return 1;
