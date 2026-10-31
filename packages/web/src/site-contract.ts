@@ -46,8 +46,8 @@ export function operatorStaticRoutes(ids: readonly string[]): readonly string[] 
 export function repositoryIdentity(slug: string): { owner: string; name: string; slug: string } {
 	if (!/^[A-Za-z0-9](?:[A-Za-z0-9-]{0,38})\/[A-Za-z0-9_.-]+$/u.test(slug) || slug.includes("..") || slug.endsWith("."))
 		throw new Error("Invalid repository identity");
-	const [owner, name] = slug.split("/");
-	return { owner: owner!, name: name!, slug };
+	const [owner = "", name = ""] = slug.split("/");
+	return { owner, name, slug };
 }
 export function validateWebConfig(value: unknown): WebSiteRuntimeConfig {
 	if (!value || typeof value !== "object") throw new Error("Missing public Web configuration");
