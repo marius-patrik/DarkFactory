@@ -275,7 +275,7 @@ const DetailPanel: FC<{
 				<p>{state.detail}</p>
 				{state.retryAt ? <p>Retry hint: {state.retryAt}</p> : null}
 			</div>
-		) : (
+		) : state.status === "live" ? (
 			<article className="df-detail">
 				<h3>{state.data.title}</h3>
 				<div className="df-meta">
@@ -310,7 +310,7 @@ const DetailPanel: FC<{
 					<p className="df-data-note">The returned external record link is not within the configured repository.</p>
 				)}
 			</article>
-		)}
+		) : null}
 	</section>
 );
 
