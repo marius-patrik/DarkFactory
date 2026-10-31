@@ -158,7 +158,7 @@ describe("production GitHub approval event reconciliation", () => {
 
   test("privileged approval checkout remains trusted, unbounded bodies remain file-based", () => {
     const workflow = readFileSync(
-      new URL("../../../.github/workflows/pr-approval-automerge.yml", import.meta.url), "utf8",
+      new URL("../../workflows/pr-approval-automerge.yml", import.meta.url), "utf8",
     );
     expect(workflow).toContain("Checkout trusted default branch");
     expect(workflow).toContain("git -C .darkfactory-pipeline merge-base --is-ancestor");
