@@ -270,9 +270,13 @@ async function runForeach(
 			results[index] = { ...result, index };
 		}
 	};
-	await Promise.all(
+	// A failing child must not release the per-run lock while sibling workers
+	// are still running external effects. Promise.all fails fast; allSettled does not.
+	const settled = await Promise.allSettled(
 		Array.from({ length: Math.min(Math.max(1, spec.max_parallel ?? 1), Math.max(1, items.length)) }, worker),
 	);
+	const failure = settled.find((result): result is PromiseRejectedResult => result.status === "rejected");
+	if (failure) throw failure.reason;
 	state.children = results.map((result) => ({
 		run_id: `${state.run_id}/${node.id}/${result.index}/${contextFingerprint({
 			item: items[result.index],
