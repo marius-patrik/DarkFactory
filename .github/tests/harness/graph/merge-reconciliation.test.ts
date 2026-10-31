@@ -69,8 +69,7 @@ function fixture(enableReconciliation: boolean) {
 			? {
 					automation: {
 						"board-sync": () => ({
-							observe: async () =>
-								synced ? { value: { board: "Done" }, evidence: "board:2698:Done" } : undefined,
+							observe: async () => (synced ? { value: { board: "Done" }, evidence: "board:2698:Done" } : undefined),
 							execute: async () => {
 								boardWrites++;
 								synced = true;
@@ -118,8 +117,9 @@ function fixture(enableReconciliation: boolean) {
 describe("merge completion includes observed Request reconciliation", () => {
 	test("missing board adapter refuses to merge rather than reporting success prematurely", async () => {
 		const f = fixture(false);
-		const result = await f.handlers.automation({ id: "merge", kind: "automation", script: "pr-merge" }, f.ctx);
-		expect(result.outcome).toBe("failure");
+		await expect(f.handlers.automation({ id: "merge", kind: "automation", script: "pr-merge" }, f.ctx)).rejects.toThrow(
+			"Merge requires a durable board reconciliation adapter",
+		);
 		expect(f.counts()).toEqual({ mergeWrites: 0, closeWrites: 0, boardWrites: 0 });
 	});
 
