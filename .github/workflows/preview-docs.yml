@@ -1,4 +1,4 @@
-name: Validate Documentation
+name: Validate Documentation and Unified Site Contract
 
 on:
   pull_request:
@@ -17,17 +17,59 @@ jobs:
     name: validate-docs
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Set up Bun
-        uses: oven-sh/setup-bun@v2
-
-      - name: Install DarkFactory workspace
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+      - name: Install exact workspace
         run: bun install --frozen-lockfile
-
-      - name: Validate documentation projections
-        run: bun scripts/build-docs.ts --repo-root "$GITHUB_WORKSPACE" --check
-
-      - name: Build documentation
-        run: bun scripts/build-docs.ts --repo-root "$GITHUB_WORKSPACE"
+      - name: Strict documentation graph and reference verification
+        run: bun scripts/build-docs.ts --check
+      - name: Canonical no-argument documentation validation
+        run: bun run docs
+      - name: All documentation and artifact security tests
+        run: bun test ./.github/tests/docs
+      - name: Compare documented CLI help with executable source entrypoint
+        shell: bash
+        run: |
+          set -euo pipefail
+          bun packages/cli/src/cli.ts --help > "$RUNNER_TEMP/df-source-help.txt"
+          grep -Fq 'df --version' "$RUNNER_TEMP/df-source-help.txt"
+          grep -Fq 'df graph validate' "$RUNNER_TEMP/df-source-help.txt"
+          bun packages/cli/src/cli.ts --version > "$RUNNER_TEMP/df-source-version.txt"
+          grep -Eq '^df (development/unmanaged|[0-9]+\\.[0-9]+\\.[0-9]+)' "$RUNNER_TEMP/df-source-version.txt"
+          bun packages/cli/src/cli.ts graph validate > "$RUNNER_TEMP/df-source-graph.txt"
+          grep -Fq 'valid workflow graph' "$RUNNER_TEMP/df-source-graph.txt"
+      - name: Verify owned documentation code with Biome
+        run: >
+          bunx biome ci
+          packages/docs/src/content.ts
+          packages/docs/src/guides.ts
+          packages/docs/src/references.ts
+          packages/docs/src/validation.ts
+          packages/docs/src/site.ts
+          packages/docs/src/search.ts
+          packages/docs/src/index.ts
+          scripts/build-docs.ts
+          .github/tests/docs/quality-contract.test.ts
+      - name: Build nonpublishable docs-only preview
+        run: bun scripts/build-docs.ts --docs-only --out "$RUNNER_TEMP/darkfactory-docs-preview"
+      - name: Check preview route and graph output
+        run: |
+          test -s "$RUNNER_TEMP/darkfactory-docs-preview/index.html"
+          test -s "$RUNNER_TEMP/darkfactory-docs-preview/content.json"
+          test -s "$RUNNER_TEMP/darkfactory-docs-preview/guide-getting-started-installation/index.html"
+          test -s "$RUNNER_TEMP/darkfactory-docs-preview/reference-cli/index.html"
+          test -s "$RUNNER_TEMP/darkfactory-docs-preview/reference-runtime-contracts/index.html"
+          test -s "$RUNNER_TEMP/darkfactory-docs-preview/guide-reference-coverage/index.html"
+          test ! -e "$RUNNER_TEMP/darkfactory-docs-preview/site-manifest.json"
+      - name: Preserve documentation preview for source review
+        uses: actions/upload-artifact@v4
+        with:
+          name: docs-only-preview-not-for-publication
+          path: ${{ runner.temp }}/darkfactory-docs-preview
+          include-hidden-files: true
+      - name: Lint
+        run: bun run lint
+      - name: Formatting
+        run: bun run format:check
+      - name: Typecheck
+        run: bun run typecheck

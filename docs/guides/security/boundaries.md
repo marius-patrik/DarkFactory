@@ -1,0 +1,27 @@
+# Security and authorization boundaries
+
+The public Pages artifact is **static and public**. Never publish GitHub App private keys, provider credentials, session secrets, bearer tokens, keychain state or internal runner environment snapshots.
+
+## Identities
+
+An App installation token is automation identity; browser user authorization must remain tied to the authenticated user and permitted GitHub scopes. Server-side auth broker/session mechanisms are not embedded in frontend assets. Machine keychain and browser session storage have separate owners.
+
+## Untrusted input
+
+Docs Markdown is repository-controlled but still must be escaped by the renderer and checked for executable schemes/control characters, unsafe HTML, missing assets and malformed links. No `javascript:`, `data:`, protocol-relative script URLs or HTML injection may become clickable content.
+
+## Governance
+
+Every mutation must be approval-bound where required and later verified by readback. Webhook event arrival is not a current-state proof. PR source and secrets must never be combined in a privileged CI job without an independent trust decision.
+
+## Incident
+
+On suspicion of credential leakage, stop deployment, rotate affected credentials, invalidate sessions as appropriate, collect non-secret provenance and review the exact artifact. #2700/#2706 own runtime security and negative-case acceptance.
+
+## Static artifact and auth test cases
+
+A browser can read every file published under a public Pages base path. Treat **all** JavaScript, HTML, JSON, source maps and downloaded artifacts as public, even when a UI control is hidden. The packager rejects known credential signatures, symlinks, unlisted files, unsafe relative asset names and manifest checksum mismatches, but signature scanning is a **defense-in-depth heuristic**, not a proof that an arbitrary secret was absent. DF-03 must show the bundle uses public OAuth metadata and a confidential server-side broker, never App installation keys or provider tokens.
+
+Required negative tests include a tampered asset checksum, unlisted hidden file, symlinked bundle entry, mismatched Web source SHA/base path, unauthorized user action, expired OAuth session, wrong broker redirect URI, missing backend and root-vs-project Pages URL. A failed or unavailable live test is a release blocker under #2706, not a passing security claim.
+
+For a suspected leak, freeze publication and affected credentials, preserve only nonsecret artifact digests and GitHub run IDs, revoke/rotate the breached secret and repeat independent inspection before authorizing a replacement. Browser cache/CDN invalidation must be evaluated separately from deleting source files.
