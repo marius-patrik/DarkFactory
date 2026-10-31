@@ -68,6 +68,7 @@ await page.route("https://api.github.com/**", (route) => {
 					id: 1,
 					number: 1,
 					title: "Browser test Request",
+					labels: [{ name: "Request" }],
 					body: "Source-backed detail from controlled GitHub response",
 					html_url: "https://github.com/marius-patrik/DarkFactory/issues/1",
 				}
