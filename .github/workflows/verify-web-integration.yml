@@ -71,3 +71,18 @@ jobs:
           path: ${{ runner.temp }}/df07-screenshots
           if-no-files-found: ignore
           retention-days: 7
+
+  format-reference:
+    name: Produce exact Biome-formatted browser smoke for source acceptance
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6
+      - run: bun install --frozen-lockfile
+      - name: Emit full independently formatted browser source
+        shell: bash
+        run: |
+          bunx biome format --write .github/tests/web/browser-acceptance.mjs
+          printf 'DF07_BROWSER_FORMAT_B64='
+          base64 -w0 .github/tests/web/browser-acceptance.mjs
+          echo
