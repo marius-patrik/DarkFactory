@@ -226,12 +226,13 @@ export const OperatorView: FC<{
 	state: ResourceState<OperatorResourceData>;
 	quotaState?: QuotaDashboardState;
 	onRefresh?: () => void;
-}> = ({ surface, repository, state, quotaState, onRefresh }) => {
+	onPageChange?: (page: number) => void;
+}> = ({ surface, repository, state, quotaState, onRefresh, onPageChange }) => {
 	if (surface.resource === "quota") return <QuotaDashboardView state={quotaState ?? { status: "disconnected" }} />;
 	return (
 		<section className="df-section" aria-labelledby="df-surface-heading">
 			<header className="df-heading">
-				<h2 id="df-surface-heading">{surface.title}</h2>
+				<h2 id="df-surface-heading" tabIndex={-1}>{surface.title}</h2>
 				<p>{surface.description}</p>
 			</header>
 			<div className="df-toolbar">
@@ -285,16 +286,27 @@ export const OperatorView: FC<{
 							</ul>
 						) : (
 							<p className="df-empty">
-								No records in the verified response. This is not a repository-wide absence claim.
+								No matching records on this page. This is not a repository-wide absence claim.
 							</p>
 						)}
+						{onPageChange && (state.data.page > 1 || state.data.morePossible) ? (
+							<div className="df-pagination" role="group" aria-label="GitHub result pages">
+								<button type="button" disabled={state.data.page <= 1} onClick={() => onPageChange(state.data.page - 1)}>
+									Previous page
+								</button>
+								<span aria-live="polite">Page {state.data.page}</span>
+								<button type="button" disabled={!state.data.morePossible || state.data.page >= 1000} onClick={() => onPageChange(state.data.page + 1)}>
+									Next page
+								</button>
+							</div>
+						) : null}
 					</div>
 				) : isConfig(state.data) ? (
 					<div>
 						<p className="df-data-note">
 							Path: {state.data.path} · SHA: {state.data.sha}
 						</p>
-						<pre className="df-config">{state.data.content}</pre>
+						<pre className="df-config" tabIndex={0} aria-label="Canonical repository configuration">{state.data.content}</pre>
 					</div>
 				) : (
 					<RepositorySummary value={state.data} />
