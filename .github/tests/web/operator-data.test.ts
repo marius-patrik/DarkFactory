@@ -21,7 +21,7 @@ describe("browser-safe GitHub reads", () => {
 				full_name: "alice/product", default_branch: "main", private: false,
 				html_url: "https://github.com/alice/product", open_issues_count: 7, updated_at: "2026-10-27T00:00:00Z",
 			}), { status: 200 });
-		}) as typeof fetch;
+		}) as unknown as typeof fetch;
 		const source = createGitHubOperatorSource("alice/product", { fetch: fetcher });
 		const state = await source.read("repository");
 		expect(state.status).toBe("live");
@@ -36,7 +36,7 @@ describe("browser-safe GitHub reads", () => {
 	test("never invents durable graph or quota snapshots", async () => {
 		const source = createGitHubOperatorSource("alice/product", { fetch: (async () => {
 			throw new Error("must not fetch");
-		}) as typeof fetch });
+		}) as unknown as typeof fetch });
 		for (const id of ["graph", "recovery", "projects", "quota", "docs"] as const)
 			expect((await source.read(id)).status).toBe("blocked");
 	});
