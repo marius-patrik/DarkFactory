@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, test } from "bun:test";
 import { createHash } from "node:crypto";
-import { mkdtemp, readFile, rm, symlink, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, rm, symlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { stageWebBundle } from "../../../packages/docs/src/site.ts";
@@ -18,7 +18,7 @@ async function bundle() {
 	roots.push(root);
 	const source = join(root, "untrusted");
 	const destination = join(root, "staged");
-	await Bun.$`mkdir -p ${source}`.quiet();
+	await mkdir(source, { recursive: true });
 	const assets = [
 		{ path: "index.html", body: '<!DOCTYPE html><html><head><base href="/DarkFactory/"></head><body></body></html>' },
 		{ path: "app.js", body: "console.log('release candidate')" },
