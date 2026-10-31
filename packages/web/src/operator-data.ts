@@ -306,6 +306,21 @@ export function createGitHubOperatorSource(
 			const data = record(await request(path, signal));
 			if (!str(data.html_url) || (typeof data.id !== "number" && typeof data.number !== "number"))
 				return { status: "blocked", detail: "GitHub did not return a verifiable record" };
+			const requiredLabel: Record<string, string> = {
+				requests: "request",
+				planning: "planning",
+				approvals: "approval",
+				epics: "epic",
+			};
+			if (
+				requiredLabel[resource] &&
+				!array(data.labels).some((label) =>
+					str(record(label).name)
+						.toLowerCase()
+						.includes(requiredLabel[resource] ?? ""),
+				)
+			)
+				return { status: "blocked", detail: "GitHub record does not belong to this labeled section" };
 			return { status: "live", data: item(data), fetchedAt: Date.now(), limited: false };
 		} catch (error) {
 			return classifyReadFailure(error);
