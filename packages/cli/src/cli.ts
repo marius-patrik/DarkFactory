@@ -1053,7 +1053,7 @@ export function executableChainFor(route: Pick<RouteResult, "chain" | "ranked">)
  */
 export function redactToolInput(value: unknown, key?: string): unknown {
 	if (key && SECRET_KEY.test(key)) return "[REDACTED]";
-	if (typeof value === "string") return BEARER_VALUE.test(value) ? "[REDACTED]" : value;
+	if (typeof value === "string") return BEARER_VALUE.test(value) ? "[REDACTED]" : redactErrorMessage(value);
 	if (Array.isArray(value)) return value.map((entry) => redactToolInput(entry));
 	if (!value || typeof value !== "object") return value;
 	return Object.fromEntries(
@@ -1064,7 +1064,7 @@ export function redactToolInput(value: unknown, key?: string): unknown {
 function renderEvent(event: HarnessEvent, json: boolean): void {
 	if (json) {
 		console.log(
-			JSON.stringify(event.type === "tool_start" ? { ...event, input: redactToolInput(event.input) } : event),
+			JSON.stringify(redactToolInput(event)),
 		);
 		return;
 	}
@@ -1077,11 +1077,11 @@ function renderEvent(event: HarnessEvent, json: boolean): void {
 		);
 	else if (event.type === "failover")
 		console.error(
-			`\n[failover] ${event.from.provider}/${event.from.account}/${event.from.model} -> ${event.to.provider}/${event.to.account}/${event.to.model} (${event.reason}: ${event.errorMessage})`,
+			`\n[failover] ${event.from.provider}/${event.from.account}/${event.from.model} -> ${event.to.provider}/${event.to.account}/${event.to.model} (${event.reason}: ${redactErrorMessage(event.errorMessage)})`,
 		);
 	else if (event.type === "candidate_unavailable")
 		console.error(
-			`[unavailable] ${event.candidate.provider}/${event.candidate.account}/${event.candidate.model} (${event.message})`,
+			`[unavailable] ${event.candidate.provider}/${event.candidate.account}/${event.candidate.model} (${redactErrorMessage(event.message)})`,
 		);
 	else if (event.type === "candidate_skipped")
 		console.error(
@@ -1101,7 +1101,7 @@ function renderEvent(event: HarnessEvent, json: boolean): void {
 		);
 	else if (event.type === "step" && event.errorKind)
 		console.error(
-			`\n[step] ${event.provider}/${event.account}/${event.model}: ${event.errorKind}: ${event.errorMessage}`,
+			`\n[step] ${event.provider}/${event.account}/${event.model}: ${event.errorKind}: ${redactErrorMessage(event.errorMessage)}`,
 		);
 }
 
@@ -1833,7 +1833,7 @@ if (import.meta.main) {
 					type: "error",
 					message,
 					exitCode,
-					...(error instanceof ChainExhaustedError ? { reasons: error.reasons, limits: error.limits } : {}),
+					...(error instanceof ChainExhaustedError ? { reasons: redactToolInput(error.reasons), limits: redactToolInput(error.limits) } : {}),
 					...(error instanceof RunTimeoutError
 						? {
 								kind: "timeout",
