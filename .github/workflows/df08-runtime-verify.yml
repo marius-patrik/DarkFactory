@@ -34,7 +34,7 @@ jobs:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
       - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6
       - run: bun install --frozen-lockfile
-      - run: bun test .github/tests/harness/graph
+      - run: bun test ./.github/tests/harness/graph/*.test.ts
   all-tests:
     name: Full repository tests
     runs-on: ubuntu-24.04

@@ -317,6 +317,13 @@ describe("canonical production graph recovery", () => {
 		);
 		let verificationCalls = 0;
 		try {
+			await dispatch([
+				"--event-name", "check_suite", "--event", eventFile,
+				"--graph", graphFile, "--runs", join(f.root, "checks"),
+			], {
+				deliveryId: "untrusted-green",
+				runtime: async () => ({
+					handlers: f.handlers,
 					effects: f.effects,
 					verifyChecks: async (ref) => {
 						expect(ref).toBe(sha);
