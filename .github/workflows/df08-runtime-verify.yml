@@ -1,0 +1,54 @@
+# Isolated DF-08 acceptance diagnostics; never publishes or mutates remote resources.
+name: DF-08 Exact Runtime Verification
+on:
+  push:
+    branches:
+      - agent/2698-final-quality
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: df08-runtime-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  quality:
+    name: Runtime typecheck / format / expanded lint
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6
+      - run: bun install --frozen-lockfile
+      - name: Execute every quality gate with untruncated lint diagnostics
+        shell: bash
+        run: |
+          set +e
+          bun run typecheck; typecheck=$?
+          bun run format:check; format=$?
+          bunx biome lint . --max-diagnostics=1000; lint=$?
+          printf 'DF08_RESULTS typecheck=%s format=%s lint=%s\n' "$typecheck" "$format" "$lint"
+          test "$typecheck" -eq 0 && test "$format" -eq 0 && test "$lint" -eq 0
+  graph-tests:
+    name: Standalone graph tests
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6
+      - run: bun install --frozen-lockfile
+      - run: bun test .github/tests/harness/graph
+  all-tests:
+    name: Full repository tests
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6
+      - run: bun install --frozen-lockfile
+      - run: bun run test
+  native:
+    name: Native Linux source-free candidate
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6
+      - run: bun install --frozen-lockfile
+      - run: bun run build --target=linux-x64
+      - run: bun packages/harness/scripts/verify-target.ts --target linux-x64
