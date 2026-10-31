@@ -4,6 +4,7 @@ import { join, relative, resolve, isAbsolute } from "node:path";
 import { emitKeypressEvents } from "node:readline";
 import { stdin, stdout } from "node:process";
 import { assertMergeAuthorization } from "../../harness/src/graph/approval-evidence.ts";
+import { reviewApprovalFresh } from "../../harness/src/graph/review-loop.ts";
 import { redactErrorMessage } from "../../harness/src/redaction.ts";
 import type { RunState } from "../../protocol/src/workflow.ts";
 
@@ -92,7 +93,7 @@ export function summarizeRun(request: number, state: RunState): OperatorRun {
 		}
 	}
 	const approvedReviews = Object.entries(state.reviews ?? {})
-		.filter(([, value]) => !!value?.approvedFingerprint && !!value?.clean)
+		.filter(([, value]) => reviewApprovalFresh(value))
 		.map(([name]) => name)
 		.sort();
 	const pendingNode = typeof extra.pending_node?.node === "string" ? safeText(extra.pending_node.node) : null;
@@ -134,7 +135,7 @@ export async function listRequests(runs: string): Promise<OperatorRun[]> {
 	} catch (error) {
 		if ((error as NodeJS.ErrnoException).code === "ENOENT")
 			throw new OperatorCliError("Production graph run store unavailable at " + safeText(resolve(runs)), 3);
-		throw error;
+		throw new OperatorCliError("Cannot read production run store: " + safeText(error), 3);
 	}
 	const ids = entries.filter((entry) => entry.isDirectory() && REQUEST.test(entry.name))
 		.map((entry) => parseRequestId(entry.name)).sort((a, b) => a - b);
@@ -171,7 +172,7 @@ function operatorHelp(): string {
 		"  df operator list [--runs DIR] [--json]",
 		"  df operator inspect <request-id> [--runs DIR] [--json]",
 		"  df tui [--runs DIR]    # requires an interactive terminal",
-		"  df operator approve|cancel|retry|restart <request-id>  # blocked until governed backend is exposed",
+		"  df operator approve|cancel|retry|restart|recover <request-id>  # explicitly blocked",
 		"Production state is read-only. No operator command bypasses the graph's authorization gates.",
 	].join("\n");
 }
