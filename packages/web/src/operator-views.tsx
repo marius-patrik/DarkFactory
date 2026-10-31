@@ -37,7 +37,7 @@ export const SURFACES: readonly OperatorSurface[] = [
 	{
 		id: "/planning",
 		title: "Planning",
-		description: "Issues labeled Planning, subject to the GitHub first-page limit.",
+		description: "Issues labeled Planning, filtered within each explicitly paged GitHub response.",
 		group: "Workspace",
 		resource: "planning",
 	},
