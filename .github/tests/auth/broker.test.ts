@@ -112,7 +112,6 @@ describe("@darkfactory/auth confidential broker", () => {
 	});
 });
 
-
 describe("@darkfactory/auth negative broker security", () => {
 	test("refuses malformed PKCE and unapproved redirect before contacting GitHub", async () => {
 		let contacted = false;
@@ -123,10 +122,18 @@ describe("@darkfactory/auth negative broker security", () => {
 		const store = new MemoryAuthTokenStore();
 		const config = { clientId: "client", clientSecret: "secret", redirectUris: ["https://valid.test/callback"] };
 		await expect(
-			createBrokerSession(config, { code: "code", codeVerifier: "short", redirectUri: "https://valid.test/callback" }, store),
+			createBrokerSession(
+				config,
+				{ code: "code", codeVerifier: "short", redirectUri: "https://valid.test/callback" },
+				store,
+			),
 		).rejects.toThrow("PKCE verifier");
 		await expect(
-			createBrokerSession(config, { code: "code", codeVerifier: "v".repeat(43), redirectUri: "https://other.test/callback" }, store),
+			createBrokerSession(
+				config,
+				{ code: "code", codeVerifier: "v".repeat(43), redirectUri: "https://other.test/callback" },
+				store,
+			),
 		).rejects.toThrow("not authorized");
 		expect(contacted).toBe(false);
 	});
@@ -136,8 +143,9 @@ describe("@darkfactory/auth negative broker security", () => {
 			token: { access_token: "access", refresh_token: "refresh", token_type: "bearer" },
 			sessionExpiresAt: 9_999,
 		});
-		await expect(refreshBrokerSession({ clientId: "client", clientSecret: "secret" }, "expired", store, 10_000))
-			.rejects.toThrow("session has expired");
+		await expect(
+			refreshBrokerSession({ clientId: "client", clientSecret: "secret" }, "expired", store, 10_000),
+		).rejects.toThrow("session has expired");
 	});
 	test("secret-bearing session responses are rejected by the browser-safe parser", async () => {
 		const { parseBrowserSession } = await import("../../../packages/auth/src/types.ts");

@@ -40,22 +40,9 @@ export interface VerifiedCommentReceipt {
 
 /** Server-owned transport: must use verified GitHub user identity and scoped App credentials. */
 export interface GitHubBrokerTransport {
-	authority(input: {
-		userToken: string;
-		userId: string;
-		repository: string;
-	}): Promise<ScopedRepositoryAuthority>;
-	issueUpdatedAt(input: {
-		repository: string;
-		issue: number;
-		userId: string;
-	}): Promise<string>;
-	createComment(input: {
-		repository: string;
-		issue: number;
-		body: string;
-		userId: string;
-	}): Promise<{ id: number }>;
+	authority(input: { userToken: string; userId: string; repository: string }): Promise<ScopedRepositoryAuthority>;
+	issueUpdatedAt(input: { repository: string; issue: number; userId: string }): Promise<string>;
+	createComment(input: { repository: string; issue: number; body: string; userId: string }): Promise<{ id: number }>;
 	readComment(input: {
 		repository: string;
 		issue: number;
@@ -143,7 +130,7 @@ function response(body: unknown, status: number, origin: string): Response {
 			"Cache-Control": "no-store",
 			"Referrer-Policy": "no-referrer",
 			"Access-Control-Allow-Origin": origin,
-			"Vary": "Origin",
+			Vary: "Origin",
 		},
 	});
 }
@@ -165,28 +152,43 @@ async function verifiedUser(token: string, fetcher: typeof fetch): Promise<strin
  * configure HTTPS, a private session store, a distributed journal and scoped App
  * transport; never mount this handler in GitHub Pages or any client bundle.
  */
-export function createConfidentialBrokerHandler(options: ConfidentialBrokerOptions): (request: Request) => Promise<Response> {
+export function createConfidentialBrokerHandler(
+	options: ConfidentialBrokerOptions,
+): (request: Request) => Promise<Response> {
 	if (!options.allowedOrigins.length || !options.redirectUris.length || !options.journal)
 		throw new Error("Confidential broker requires origin/redirect allowlists and a durable journal");
-	if (!options.allowEphemeralForTesting &&
-		(options.store instanceof MemoryAuthTokenStore || options.journal instanceof MemoryMutationReceiptJournal))
+	if (
+		!options.allowEphemeralForTesting &&
+		(options.store instanceof MemoryAuthTokenStore || options.journal instanceof MemoryMutationReceiptJournal)
+	)
 		throw new Error("Production broker requires durable session storage and receipt journal");
-	if (options.allowedOrigins.some((origin) => {
-		try {
-			const url = new URL(origin);
-			return url.protocol !== "https:" || url.origin !== origin;
-		} catch {
-			return true;
-		}
-	})) throw new Error("Invalid confidential broker origin allowlist");
+	if (
+		options.allowedOrigins.some((origin) => {
+			try {
+				const url = new URL(origin);
+				return url.protocol !== "https:" || url.origin !== origin;
+			} catch {
+				return true;
+			}
+		})
+	)
+		throw new Error("Invalid confidential broker origin allowlist");
 	const config: AuthBrokerConfig = { ...options.client, redirectUris: options.redirectUris };
 	const fetcher = options.fetcher ?? globalThis.fetch;
 
-	async function session(id: string, allowExpiredAccess = false): Promise<{ userId: string; record: BrokerTokenRecord }> {
+	async function session(
+		id: string,
+		allowExpiredAccess = false,
+	): Promise<{ userId: string; record: BrokerTokenRecord }> {
 		const record = await options.store.get(id);
 		const now = Date.now();
-		if (!record || !record.userId || !record.sessionExpiresAt || record.sessionExpiresAt <= now ||
-			(!allowExpiredAccess && record.accessExpiresAt !== undefined && record.accessExpiresAt <= now))
+		if (
+			!record ||
+			!record.userId ||
+			!record.sessionExpiresAt ||
+			record.sessionExpiresAt <= now ||
+			(!allowExpiredAccess && record.accessExpiresAt !== undefined && record.accessExpiresAt <= now)
+		)
 			throw new BrokerRejection(401, "Authentication session expired or unavailable");
 		return { userId: record.userId, record };
 	}
@@ -197,24 +199,24 @@ export function createConfidentialBrokerHandler(options: ConfidentialBrokerOptio
 			userId,
 			repository,
 		});
-		if (permissions.userId !== userId)
-			throw new BrokerRejection(403, "Repository identity mismatch");
+		if (permissions.userId !== userId) throw new BrokerRejection(403, "Repository identity mismatch");
 		return permissions;
 	}
 	return async (request: Request): Promise<Response> => {
 		const origin = request.headers.get("Origin") ?? "";
 		if (!options.allowedOrigins.includes(origin))
 			return new Response(null, { status: 403, headers: { "Cache-Control": "no-store" } });
-		if (request.method === "OPTIONS") return new Response(null, {
-			status: 204,
-			headers: {
-				"Access-Control-Allow-Origin": origin,
-				"Access-Control-Allow-Methods": "POST, OPTIONS",
-				"Access-Control-Allow-Headers": "Content-Type",
-				"Vary": "Origin",
-				"Cache-Control": "no-store",
-			},
-		});
+		if (request.method === "OPTIONS")
+			return new Response(null, {
+				status: 204,
+				headers: {
+					"Access-Control-Allow-Origin": origin,
+					"Access-Control-Allow-Methods": "POST, OPTIONS",
+					"Access-Control-Allow-Headers": "Content-Type",
+					Vary: "Origin",
+					"Cache-Control": "no-store",
+				},
+			});
 		if (request.method !== "POST" || !request.headers.get("Content-Type")?.startsWith("application/json"))
 			return response({ error: "Unsupported broker request" }, 405, origin);
 		try {
@@ -253,8 +255,7 @@ export function createConfidentialBrokerHandler(options: ConfidentialBrokerOptio
 			}
 			const repository = repositorySlug(input.repository);
 			const access = await authority(sessionId, repository);
-			if (path.endsWith("/authority"))
-				return response(access, 200, origin);
+			if (path.endsWith("/authority")) return response(access, 200, origin);
 			if (path.endsWith("/issues/comment")) {
 				const permissions = projectAuthority(access.userPermissions, access.appAuthority, access.userId);
 				if (!permissions.canMutate || !permissions.canRead)
@@ -263,13 +264,20 @@ export function createConfidentialBrokerHandler(options: ConfidentialBrokerOptio
 				const body = requiredString(input.body, "comment body", 60_000);
 				const expectedUpdatedAt = requiredString(input.expectedUpdatedAt, "issue revision", 64);
 				const idempotencyKey = requiredString(input.idempotencyKey, "idempotency key", 128);
-				if (!/^[A-Za-z0-9._-]{16,128}$/u.test(idempotencyKey) ||
-					!Number.isFinite(Date.parse(expectedUpdatedAt)))
+				if (!/^[A-Za-z0-9._-]{16,128}$/u.test(idempotencyKey) || !Number.isFinite(Date.parse(expectedUpdatedAt)))
 					throw new BrokerRejection(400, "Invalid mutation precondition");
 				const key = `${access.userId}:${sessionId}:${repository}:${idempotencyKey}`;
-				const intentHash = createHash("sha256").update(JSON.stringify({
-					repository, issue, body, expectedUpdatedAt, userId: access.userId,
-				})).digest("hex");
+				const intentHash = createHash("sha256")
+					.update(
+						JSON.stringify({
+							repository,
+							issue,
+							body,
+							expectedUpdatedAt,
+							userId: access.userId,
+						}),
+					)
+					.digest("hex");
 				const receipt = await options.journal.once(key, intentHash, async () => {
 					// Revalidate authority and the source revision inside the exclusive receipt scope.
 					const rechecked = await authority(sessionId, repository);
@@ -277,16 +285,23 @@ export function createConfidentialBrokerHandler(options: ConfidentialBrokerOptio
 					if (!effective.canRead || !effective.canMutate)
 						throw new BrokerRejection(403, "Repository mutation not permitted");
 					const updated = await options.transport.issueUpdatedAt({ repository, issue, userId: access.userId });
-					if (updated !== expectedUpdatedAt)
-						throw new BrokerRejection(409, "Issue revision changed");
+					if (updated !== expectedUpdatedAt) throw new BrokerRejection(409, "Issue revision changed");
 					const posted = await options.transport.createComment({ repository, issue, body, userId: access.userId });
 					if (!Number.isSafeInteger(posted.id) || posted.id < 1)
 						throw new BrokerRejection(502, "GitHub mutation receipt invalid");
 					const observed = await options.transport.readComment({
-						repository, issue, commentId: posted.id, userId: access.userId,
+						repository,
+						issue,
+						commentId: posted.id,
+						userId: access.userId,
 					});
-					if (!observed || observed.id !== posted.id || observed.body !== body ||
-						observed.repository !== repository || observed.issue !== issue)
+					if (
+						!observed ||
+						observed.id !== posted.id ||
+						observed.body !== body ||
+						observed.repository !== repository ||
+						observed.issue !== issue
+					)
 						throw new BrokerRejection(502, "GitHub mutation not verified");
 					return observed;
 				});

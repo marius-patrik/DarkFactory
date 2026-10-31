@@ -50,7 +50,8 @@ export function parseGitHubTokenResponse(value: unknown): GitHubTokenResponse {
 			(typeof input.refresh_token_expires_in !== "number" ||
 				!Number.isSafeInteger(input.refresh_token_expires_in) ||
 				input.refresh_token_expires_in <= 0))
-	) throw new Error("Invalid GitHub token response");
+	)
+		throw new Error("Invalid GitHub token response");
 	return {
 		access_token: input.access_token,
 		token_type: input.token_type,

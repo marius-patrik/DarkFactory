@@ -41,7 +41,12 @@ export function projectAuthority(
 			userPermissions.pull &&
 			appAuthority.canWrite &&
 			(userPermissions.push || userPermissions.admin),
-		isAdmin: available && appAuthority.canRead && userPermissions.pull && appAuthority.canAdminister === true && userPermissions.admin,
+		isAdmin:
+			available &&
+			appAuthority.canRead &&
+			userPermissions.pull &&
+			appAuthority.canAdminister === true &&
+			userPermissions.admin,
 		userId,
 	};
 }

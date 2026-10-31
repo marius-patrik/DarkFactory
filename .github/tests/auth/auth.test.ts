@@ -134,7 +134,6 @@ describe("@darkfactory/auth browser client", () => {
 	});
 });
 
-
 describe("@darkfactory/auth negative callback handling", () => {
 	beforeEach(() => {
 		installStorage("localStorage");
