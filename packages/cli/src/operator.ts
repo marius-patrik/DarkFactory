@@ -1,3 +1,4 @@
+import type { Dirent } from "node:fs";
 import { lstat, readFile, readdir, realpath } from "node:fs/promises";
 import { join, relative, resolve, isAbsolute } from "node:path";
 import { emitKeypressEvents } from "node:readline";
@@ -127,9 +128,9 @@ export async function inspectRequest(runs: string, id: number): Promise<Operator
 }
 
 export async function listRequests(runs: string): Promise<OperatorRun[]> {
-	let entries: Awaited<ReturnType<typeof readdir>>;
+	let entries: Dirent[];
 	try {
-		entries = await readdir(runs, { withFileTypes: true }) as Awaited<ReturnType<typeof readdir>>;
+		entries = await readdir(runs, { withFileTypes: true });
 	} catch (error) {
 		if ((error as NodeJS.ErrnoException).code === "ENOENT")
 			throw new OperatorCliError("Production graph run store unavailable at " + safeText(resolve(runs)), 3);
@@ -275,7 +276,7 @@ export async function runOperatorTui(args: string[]): Promise<void> {
 		await new Promise<void>((done, reject) => {
 			const keypress = (_: string, key: { name?: string; ctrl?: boolean } = {}) => {
 				const name = key.name ?? "";
-				if (name === "q" || name === "escape" || (key.ctrl && name === "c")) { done(); return; }
+				if (name === "q" || name === "escape" || (key.ctrl && name === "c")) { cleanup(); done(); return; }
 				if (name === "r") {
 					void listRequests(parsed.runs).then((next) => {
 						runs = next;
@@ -294,13 +295,9 @@ export async function runOperatorTui(args: string[]): Promise<void> {
 				render();
 			};
 			stdin.on("keypress", keypress);
-			const fail = (error: Error) => { stdin.off("keypress", keypress); reject(error); };
-			stdin.once("error", fail);
+			const fail = (error: Error) => { cleanup(); reject(error); };
 			const cleanup = () => { stdin.off("keypress", keypress); stdin.off("error", fail); };
-			// Keep listeners scoped to this session even on signal-driven exit.
-			void Promise.resolve().then(() => undefined);
-			const originalDone = done;
-			done = () => { cleanup(); originalDone(); };
+			stdin.once("error", fail);
 		});
 	} finally {
 		process.off("SIGWINCH", render);
