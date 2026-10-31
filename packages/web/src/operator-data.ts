@@ -67,6 +67,7 @@ export interface OperatorConfig {
 export type OperatorResourceData = OperatorCollection | OperatorRepository | OperatorConfig;
 export interface OperatorReadSource {
 	read(resource: OperatorResource, signal?: AbortSignal, page?: number): Promise<ResourceState<OperatorResourceData>>;
+	readItem?(resource: OperatorResource, id: number, signal?: AbortSignal): Promise<ResourceState<OperatorItem>>;
 	issueComments(issue: number, signal?: AbortSignal, page?: number): Promise<OperatorCollection>;
 }
 export interface OperatorSourceOptions {
@@ -274,6 +275,36 @@ export function createGitHubOperatorSource(
 			return classifyReadFailure(error);
 		}
 	}
+	/** Detail routes are exact GitHub REST reads; no local workflow state is inferred. */
+	async function readItem(
+		resource: OperatorResource,
+		id: number,
+		signal?: AbortSignal,
+	): Promise<ResourceState<OperatorItem>> {
+		if (!Number.isSafeInteger(id) || id < 1)
+			return { status: "blocked", detail: "Invalid GitHub record identity" };
+		const path =
+			resource === "requests" || resource === "planning" || resource === "approvals" || resource === "epics"
+				? `/issues/${id}`
+				: resource === "pulls"
+					? `/pulls/${id}`
+					: resource === "checks"
+						? `/check-runs/${id}`
+						: resource === "runs"
+							? `/actions/runs/${id}`
+							: resource === "releases"
+								? `/releases/${id}`
+								: undefined;
+		if (!path) return { status: "blocked", detail: "No verified detail endpoint for this section" };
+		try {
+			const data = record(await request(path, signal));
+			if (!str(data.html_url) || (typeof data.id !== "number" && typeof data.number !== "number"))
+				return { status: "blocked", detail: "GitHub did not return a verifiable record" };
+			return { status: "live", data: item(data), fetchedAt: Date.now(), limited: false };
+		} catch (error) {
+			return classifyReadFailure(error);
+		}
+	}
 	async function issueComments(issue: number, signal?: AbortSignal, page = 1): Promise<OperatorCollection> {
 		if (!Number.isSafeInteger(issue) || issue < 1) throw new Error("Invalid issue number");
 		if (!Number.isSafeInteger(page) || page < 1 || page > 1000) throw new Error("Invalid GitHub page");
@@ -287,5 +318,5 @@ export function createGitHubOperatorSource(
 			page,
 		);
 	}
-	return { read, issueComments };
+	return { read, readItem, issueComments };
 }
