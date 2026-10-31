@@ -39,6 +39,11 @@ a:hover{text-decoration:underline}
 .df-caveat{border-left:4px solid #7893b2;color:#c6d4e7;background:#182435}
 .df-problem{border-left:4px solid #e0a37c}
 .df-list{padding:0;margin:0;list-style:none;display:grid;gap:.45rem}
+.df-pagination{display:flex;justify-content:center;align-items:center;gap:1rem;flex-wrap:wrap;padding:1.5rem 0;color:var(--df-muted);border:0;min-width:0;margin:0}
+.df-pagination span{min-width:4.5rem;text-align:center;font-variant-numeric:tabular-nums}
+.df-detail{border:1px solid var(--df-edge);border-radius:.8rem;background:var(--df-panel);padding:clamp(1rem,3vw,2rem);max-width:90ch}
+.df-detail h3{margin:0 0 .8rem;overflow-wrap:anywhere;font-size:1.2rem;line-height:1.3}
+.df-detail-body{white-space:pre-wrap;overflow-wrap:anywhere;word-break:break-word;max-height:60vh;overflow:auto;background:#0b121d;border:1px solid var(--df-edge);border-radius:.6rem;padding:1.1rem;color:var(--df-text);font-family:inherit;line-height:1.65;margin:1.2rem 0}
 .df-row{display:flex;justify-content:space-between;align-items:flex-start;gap:1.4rem;padding:1rem 1.2rem;border:1px solid var(--df-edge);border-radius:.65rem;background:var(--df-panel)}
 .df-row-content{min-width:0}
 .df-row-content strong{display:block;font-size:.94rem;line-height:1.35;margin-bottom:.35rem}
