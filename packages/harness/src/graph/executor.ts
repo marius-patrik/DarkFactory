@@ -76,8 +76,15 @@ export interface NodeHandlers {
 	automation(node: AutomationNode, ctx: NodeContext): Promise<NodeResult>;
 }
 
+/** DF-10 transport must renew its cross-runner lease and reject stale fencing tokens. */
+export interface DistributedGraphLease {
+	withLease<T>(runDir: string, work: (claim: { assertOwned(): Promise<void> }) => Promise<T>): Promise<T>;
+}
+
 /** Options for {@link runGraph}. */
 export interface RunGraphOptions {
+	/** Cross-runner fence. Without it execution is safe only on one local host. */
+	distributedLease?: DistributedGraphLease;
 	/**
 	 * Receives gate, hint and comment actions (post the comment, move the board card). The run then stops and waits
 	 * for the next external event; a gate is never passed without one.
@@ -102,6 +109,8 @@ export interface RunGraphOptions {
 	/** Only trusted, journal-only production automations can replay a pending node. */
 	recoverableAutomations?: readonly string[];
 }
+
+type InternalRunGraphOptions = RunGraphOptions & { verifyLeaseOwnership?: () => Promise<void> };
 
 async function writeJson(path: string, value: unknown): Promise<void> {
 	await replaceDurableJson(path, value);
@@ -158,13 +167,21 @@ function effectFor(
 	runId: string,
 	nodeId: string,
 	iteration: number,
+	verifyLeaseOwnership?: () => Promise<void>,
 ): NodeContext["effect"] {
 	if (!journal) return undefined;
 	return async (kind, operations, suffix = "") => {
+		await verifyLeaseOwnership?.();
 		const id = productionEffectId(runId, nodeId, iteration, kind, suffix);
 		const record = await runObservedProductionEffect(journal, id, kind, {
-			observe: () => operations.observe(id),
-			execute: () => operations.execute(id),
+			observe: async () => {
+				await verifyLeaseOwnership?.();
+				return operations.observe(id);
+			},
+			execute: async () => {
+				await verifyLeaseOwnership?.();
+				return operations.execute(id);
+			},
 		});
 		return { value: record.value, evidence: record.evidence };
 	};
@@ -199,6 +216,7 @@ async function runForeach(
 	iteration: number,
 	journal?: FileProductionEffectJournal,
 	signal?: AbortSignal,
+	verifyLeaseOwnership?: () => Promise<void>,
 ): Promise<Extract<GraphEvent, { type: "children.completed" }>> {
 	const spec = node.foreach!;
 	const items = state.outputs[spec.items];
@@ -212,6 +230,7 @@ async function runForeach(
 	let next = 0;
 	const worker = async () => {
 		while (next < items.length) {
+			await verifyLeaseOwnership?.();
 			if (signal?.aborted) throw new Error("Graph fan-out cancelled before next child");
 			const index = next++;
 			const item = items[index];
@@ -239,7 +258,7 @@ async function runForeach(
 				item,
 				iteration,
 				...(signal ? { signal } : {}),
-				...(journal ? { effect: effectFor(journal, childRunId, node.id, 1) } : {}),
+				...(journal ? { effect: effectFor(journal, childRunId, node.id, 1, verifyLeaseOwnership) } : {}),
 				...(action.feedback ? { feedback: action.feedback } : {}),
 				...(action.alerts ? { alerts: action.alerts } : {}),
 			});
@@ -299,8 +318,9 @@ async function runGraphUnlocked(
 	runDir: string,
 	handlers: NodeHandlers,
 	event: GraphEvent,
-	options: RunGraphOptions = {},
+	options: InternalRunGraphOptions = {},
 ): Promise<RunState> {
+	await options.verifyLeaseOwnership?.();
 	await mkdir(runDir, { recursive: true });
 	const statePath = join(runDir, "state.df");
 	const eventsPath = join(runDir, "events.df");
@@ -380,6 +400,7 @@ async function runGraphUnlocked(
 		}
 	}
 	if (state.pending_action) {
+		await options.verifyLeaseOwnership?.();
 		if (!options.reconcileAction) throw new Error("Interrupted external graph action requires explicit reconciliation");
 		await options.reconcileAction(state.pending_action, state);
 		delete state.pending_action;
@@ -404,6 +425,7 @@ async function runGraphUnlocked(
 		return state;
 	};
 	for (;;) {
+		await options.verifyLeaseOwnership?.();
 		if (options.signal?.aborted) throw new Error("Graph run cancelled before next transition");
 		refreshReviewContexts(graph, state);
 		const currentNode = graph.nodes.find((node) => node.id === state.current_node);
@@ -498,6 +520,7 @@ async function runGraphUnlocked(
 			if (action.type === "comment" && /quota/iu.test(action.message)) state.quota_blocked = true;
 			state.pending_action = action;
 			await save();
+			await options.verifyLeaseOwnership?.();
 			await options.onAction?.(action, state);
 			delete state.pending_action;
 			return finishIngress();
@@ -535,7 +558,17 @@ async function runGraphUnlocked(
 		if (!replayPending) state.pending_node = { node: node.id, iteration, action, input_event: current };
 		await save();
 		if (node.foreach) {
-			current = await runForeach(node, action, state, runDir, handlers, iteration, options.effects, options.signal);
+			current = await runForeach(
+				node,
+				action,
+				state,
+				runDir,
+				handlers,
+				iteration,
+				options.effects,
+				options.signal,
+				options.verifyLeaseOwnership,
+			);
 		} else {
 			const reviewConfig = node.kind === "agent" ? node.review : undefined;
 			const existingReview = reviewConfig ? state.reviews[reviewConfig.subject] : undefined;
@@ -548,7 +581,9 @@ async function runGraphUnlocked(
 				runId: state.run_id,
 				outputs: state.outputs,
 				iteration,
-				...(options.effects ? { effect: effectFor(options.effects, state.run_id, node.id, iteration) } : {}),
+				...(options.effects
+					? { effect: effectFor(options.effects, state.run_id, node.id, iteration, options.verifyLeaseOwnership) }
+					: {}),
 				...(options.signal ? { signal: options.signal } : {}),
 				...(existingReview ? { review: existingReview } : {}),
 				...(action.feedback ? { feedback: action.feedback } : {}),
@@ -620,7 +655,7 @@ async function runGraphUnlocked(
 	}
 }
 
-/** The canonical graph executor, serialized per run on a local filesystem. */
+/** The canonical graph executor, with optional cross-runner fencing. */
 export async function runGraph(
 	graph: WorkflowGraph,
 	runDir: string,
@@ -629,7 +664,12 @@ export async function runGraph(
 	options: RunGraphOptions = {},
 ): Promise<RunState> {
 	await mkdir(runDir, { recursive: true });
-	return withGraphFileLock(join(runDir, "locks"), "run", () =>
-		runGraphUnlocked(graph, runDir, handlers, event, options),
-	);
+	const locallyLocked = (verifyLeaseOwnership?: () => Promise<void>) =>
+		withGraphFileLock(join(runDir, "locks"), "run", () =>
+			runGraphUnlocked(graph, runDir, handlers, event, { ...options, verifyLeaseOwnership }),
+		);
+	if (options.distributedLease) {
+		return options.distributedLease.withLease(runDir, (claim) => locallyLocked(() => claim.assertOwned()));
+	}
+	return locallyLocked();
 }
