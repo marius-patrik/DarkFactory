@@ -1,6 +1,9 @@
 import { afterEach, describe, expect, test } from "bun:test";
 import { MemoryAuthTokenStore, createBrokerSession, refreshBrokerSession } from "../../../packages/auth/src/broker.ts";
-import { assertMergeAuthorization, mergeProposalFingerprint } from "../../../packages/harness/src/graph/approval-evidence.ts";
+import {
+	assertMergeAuthorization,
+	mergeProposalFingerprint,
+} from "../../../packages/harness/src/graph/approval-evidence.ts";
 import { evaluateChecksGate } from "../../../packages/harness/src/graph/checks-gate.ts";
 import { translateGitHubEvent } from "../../../packages/harness/src/graph/events.ts";
 import type { WorkflowGraph } from "../../../packages/harness/src/graph/types.ts";
@@ -27,7 +30,7 @@ function oauthResponse(access: string): Response {
 describe("DF-14 adversarial security acceptance", () => {
 	test("SEC-AUTH-01: broker refresh must not extend the declared maximum browser session lifetime", async () => {
 		let requests = 0;
-		globalThis.fetch = (async () => oauthResponse(`access-${++requests}`)) as typeof fetch;
+		globalThis.fetch = (async () => oauthResponse(`access-${++requests}`)) as unknown as typeof fetch;
 		const config = { clientId: "test-app", clientSecret: "in-memory-only", sessionTtlMs: 1_000 };
 		const store = new MemoryAuthTokenStore();
 		const initial = await createBrokerSession(
@@ -100,14 +103,19 @@ describe("DF-14 adversarial security acceptance", () => {
 				return states;
 			},
 		});
-		expect(
-			(await evaluateChecksGate(graph, source(new Map([["quality", "success"]])), sha)).conclusion,
-		).toBe("pending");
+		expect((await evaluateChecksGate(graph, source(new Map([["quality", "success"]])), sha)).conclusion).toBe(
+			"pending",
+		);
 		expect(
 			(
 				await evaluateChecksGate(
 					graph,
-					source(new Map([["quality", "success"], ["security", "failure"]])),
+					source(
+					new Map([
+						["quality", "success"],
+						["security", "failure"],
+					]),
+				),
 					sha,
 				)
 			).conclusion,
@@ -116,7 +124,12 @@ describe("DF-14 adversarial security acceptance", () => {
 			(
 				await evaluateChecksGate(
 					graph,
-					source(new Map([["quality", "success"], ["security", "pending"]])),
+					source(
+					new Map([
+						["quality", "success"],
+						["security", "pending"],
+					]),
+				),
 					sha,
 				)
 			).conclusion,
