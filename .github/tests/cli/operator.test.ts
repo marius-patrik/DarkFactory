@@ -185,6 +185,19 @@ describe("interactive operator TUI", () => {
 		expect(serialized).toContain("[REDACTED]");
 	});
 
+	test("scrolls selected request into view and keeps the footer visible on resize", () => {
+		const runs = Array.from({ length: 28 }, (_, index) =>
+			summarizeRun(index + 1, state({ current_node: "node-" + (index + 1) })),
+		);
+		const output = renderTui(runs, { selected: 27, view: 0 }, 45, 9);
+		expect(output).toContain("#28");
+		expect(output).not.toContain("#1  node-1");
+		expect(output).toContain("r refresh");
+		expect(output.split("\n").length).toBeLessThanOrEqual(9);
+		const tiny = renderTui(runs, { selected: 27, view: 0 }, 10, 5);
+		expect(tiny.split("\n").every((line) => line.length <= 10)).toBe(true);
+	});
+
 	test("provider tab uses canonical redacted quota snapshot, not made-up status", () => {
 		const snapshot: OperatorQuotaSnapshot = {
 			version: 1,
