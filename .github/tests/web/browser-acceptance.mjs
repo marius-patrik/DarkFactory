@@ -63,8 +63,16 @@ await page.route("https://api.github.com/**", (route) => {
 				updated_at: "2026-10-31T00:00:00Z",
 				html_url: "https://github.com/marius-patrik/DarkFactory",
 			}
-		: pathname.endsWith("/issues")
-			? [
+		: pathname.endsWith("/issues/1")
+			? {
+					id: 1,
+					number: 1,
+					title: "Browser test Request",
+					body: "Source-backed detail from controlled GitHub response",
+					html_url: "https://github.com/marius-patrik/DarkFactory/issues/1",
+				}
+			: pathname.endsWith("/issues")
+				? [
 					{
 						id: 1,
 						number: 1,
@@ -93,12 +101,23 @@ try {
 	await page.reload({ waitUntil: "domcontentloaded" });
 	await page.getByRole("heading", { name: "Requests", exact: true }).waitFor();
 	await page.screenshot({ path: join(screenshotDir, "requests-desktop.png"), fullPage: true });
+	await page.getByRole("link", { name: "Browser test Request" }).click();
+	await page.getByRole("heading", { name: "Requests · #1" }).waitFor();
+	await page.getByText("Source-backed detail from controlled GitHub response").waitFor();
+	assert.equal(new URL(page.url()).hash, "#/requests/1");
+	await page.getByRole("link", { name: "Back to Requests" }).click();
+	await page.getByRole("heading", { name: "Requests", exact: true }).waitFor();
 	await page.setViewportSize({ width: 390, height: 844 });
 	await page.getByRole("navigation", { name: "Operator sections" }).waitFor();
 	await page.screenshot({ path: join(screenshotDir, "requests-mobile.png"), fullPage: true });
 	response = await page.goto(url + "docs/", { waitUntil: "domcontentloaded" });
 	assert.equal(response?.status(), 200);
 	assert.match(await page.locator("body").innerText(), /DarkFactory/i);
+	const docsSearch = page.getByRole("searchbox", { name: "Find a page" });
+	await docsSearch.fill("coverage");
+	assert.ok(await page.locator("#df-doc-links a:visible").count() > 0, "Compiled documentation must provide searchable page titles");
+	await docsSearch.press("Escape");
+	assert.ok(await page.locator("#df-doc-links a:visible").count() > 1, "Escape must restore the full authoritative page list");
 	response = await page.goto(url + "docs/reference-runtime-contracts/", { waitUntil: "domcontentloaded" });
 	assert.equal(response?.status(), 200);
 	assert.match(await page.locator("body").innerText(), /workflow|approval|capability/i);
@@ -112,7 +131,7 @@ try {
 	assert.equal(await blocked.getByRole("button", { name: "Sign in with GitHub" }).count(), 0);
 	await blocked.close();
 	assert.deepEqual(errors, [], "Browser app errors or unexpected authorization headers");
-	console.log("DF07 real Chromium smoke PASS: desktop, mobile, hashes, docs, fail-closed public config.");
+	console.log("DF12 Chromium smoke PASS: desktop, mobile, detail route, docs search, hashes, fail-closed public config.");
 } finally {
 	await page.close();
 	await browser.close();
