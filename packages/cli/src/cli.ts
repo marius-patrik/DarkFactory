@@ -124,7 +124,7 @@ function usage(): string {
 		"  df secrets init|import-key|export-key|list|rm|sync|doctor [--insecure-file-key]",
 		"  df secrets set NAME [--from-stdin] | get NAME [--reveal] | push <owner/repo> [--only NAME] [--dry-run]",
 		"  df workspace <status|diff|log|fetch|continue|abort> [options]",
-		"  df operator <list|inspect> [--runs DIR] [--json]    # read-only; lifecycle mutations blocked",
+		"  df operator <list|inspect|checks> [--runs DIR] [--json]    # read-only; lifecycle mutations blocked",
 		"  df tui [--runs DIR]                 # interactive read-only production Request dashboard",
 		"  df dispatch|interpret|plan|implement|self-review|self-review-fix|plan-alignment|respond|token-refresh [options]",
 	].join("\n");
