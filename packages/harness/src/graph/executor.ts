@@ -198,6 +198,7 @@ async function runForeach(
 	handlers: NodeHandlers,
 	iteration: number,
 	journal?: FileProductionEffectJournal,
+	signal?: AbortSignal,
 ): Promise<Extract<GraphEvent, { type: "children.completed" }>> {
 	const spec = node.foreach!;
 	const items = state.outputs[spec.items];
@@ -211,6 +212,7 @@ async function runForeach(
 	let next = 0;
 	const worker = async () => {
 		while (next < items.length) {
+			if (signal?.aborted) throw new Error("Graph fan-out cancelled before next child");
 			const index = next++;
 			const item = items[index];
 			const fingerprint = contextFingerprint({
@@ -236,6 +238,7 @@ async function runForeach(
 				outputs: { ...state.outputs, [as]: item },
 				item,
 				iteration,
+				...(signal ? { signal } : {}),
 				...(journal ? { effect: effectFor(journal, childRunId, node.id, 1) } : {}),
 				...(action.feedback ? { feedback: action.feedback } : {}),
 				...(action.alerts ? { alerts: action.alerts } : {}),
@@ -354,7 +357,6 @@ async function runGraphUnlocked(
 			const candidate = graph.nodes.find((entry) => entry.id === node);
 			if (
 				candidate?.kind !== "automation" ||
-				candidate.foreach ||
 				!options.effects ||
 				!options.recoverableAutomations?.includes(candidate.script) ||
 				!state.pending_node.action ||
@@ -533,7 +535,7 @@ async function runGraphUnlocked(
 		if (!replayPending) state.pending_node = { node: node.id, iteration, action, input_event: current };
 		await save();
 		if (node.foreach) {
-			current = await runForeach(node, action, state, runDir, handlers, iteration, options.effects);
+			current = await runForeach(node, action, state, runDir, handlers, iteration, options.effects, options.signal);
 		} else {
 			const reviewConfig = node.kind === "agent" ? node.review : undefined;
 			const existingReview = reviewConfig ? state.reviews[reviewConfig.subject] : undefined;
