@@ -263,6 +263,10 @@ export function createProductionGraphHandlers(options: ProductionGraphHandlerOpt
 					};
 				}
 				case "pr-merge": {
+					// Reconciliation is part of the same authoritative merge transition,
+					// not an optional best-effort action after a reported success.
+					const reconcile = options.automation?.["board-sync"];
+					if (!reconcile) throw new Error("Merge requires a durable board reconciliation adapter");
 					const approval = assertMergeAuthorization(ctx.outputs);
 					if (!github) throw new Error("Merge requires GitHub effects");
 					// Re-read the mutable external head and checks AFTER final human authorization.
@@ -283,12 +287,15 @@ export function createProductionGraphHandlers(options: ProductionGraphHandlerOpt
 					for (const number of asNumbers(ctx.outputs.closing_issues)) {
 						await observed(ctx, "github.issue.close", github.closeIssue({ number }), String(number));
 					}
+					const reconciled = await observed(ctx, "board-sync", reconcile(ctx.runId));
 					return {
 						outcome: "success",
 						outputs: {
 							merged: true,
 							merged_pr: approval.prNumber,
 							merge_sha: merge.value.mergeSha,
+							reconciled: true,
+							reconciliation: reconciled.value,
 						},
 					};
 				}
