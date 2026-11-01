@@ -112,7 +112,25 @@ await tarCommand(["-czf", bundle, ...contents], dist);
 const standalone = await mkdtemp(join(tmpdir(), "df-standalone-"));
 try {
 	await tarCommand(["-xzf", join(dist, bundle), "-C", standalone], standalone);
-	await run([join(standalone, asset), "__packaging-smoke"], "standalone packaging smoke", true, standalone);
+	const installed = join(standalone, asset);
+	if ((await readdir(standalone)).includes("packages") || (await readdir(standalone)).includes("node_modules"))
+		throw new Error("Source-free archive incorrectly includes a development checkout");
+	await run([installed, "__packaging-smoke"], "standalone packaging smoke", true, standalone);
+	await run([installed, "--help"], "standalone help", true, standalone);
+	await run([installed, "providers"], "standalone provider discovery", true, standalone);
+	await run([installed, "graph", "validate"], "standalone canonical graph", true, standalone);
+	await run([installed, "plugin", "list", "--json"], "standalone official plugin discovery", true, standalone);
+	// Negative acceptance is executable: invalid input must fail rather than producing a false pass.
+	const invalidGraph = join(standalone, "invalid-graph.json");
+	await writeFile(invalidGraph, "{not json");
+	const invalid = Bun.spawn([installed, "graph", "validate", invalidGraph], {
+		cwd: standalone, stdout: "pipe", stderr: "pipe",
+	});
+	const [invalidExit, invalidStdout, invalidStderr] = await Promise.all([
+		invalid.exited, new Response(invalid.stdout).text(), new Response(invalid.stderr).text(),
+	]);
+	if (invalidExit === 0) throw new Error(`Invalid graph was accepted by extracted binary: ${invalidStdout} ${invalidStderr}`);
+	process.stdout.write("standalone invalid graph: rejected as required\\n");
 	const child = Bun.spawn([join(standalone, asset), "--version"], { cwd: standalone, stdout: "pipe", stderr: "pipe" });
 	const [exit, output, diagnostics] = await Promise.all([
 		child.exited,
@@ -143,7 +161,6 @@ try {
 	};
 	await writeFile(join(consumer, "package.json"), JSON.stringify(manifest));
 	await run(["bun", "install"], "fixture dependency resolution", true, consumer);
-	const installed = join(standalone, asset);
 	await run([installed, "ci", "matrix", "--repo", consumer], "standalone capability discovery", true, consumer);
 
 	async function qualitySummary(): Promise<{
