@@ -37,8 +37,8 @@ jobs:
         run: bun run typecheck
       - name: Lint
         run: bun run lint
-      - name: Format
-        run: bun run format:check
+      - name: Normalize formatting and verify
+        run: bun run format && bun run format:check
       - name: Tests
         run: bun test --timeout=30000
       - name: Native compilation
