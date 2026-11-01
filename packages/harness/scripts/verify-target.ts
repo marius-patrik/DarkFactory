@@ -124,12 +124,17 @@ try {
 	const invalidGraph = join(standalone, "invalid-graph.json");
 	await writeFile(invalidGraph, "{not json");
 	const invalid = Bun.spawn([installed, "graph", "validate", invalidGraph], {
-		cwd: standalone, stdout: "pipe", stderr: "pipe",
+		cwd: standalone,
+		stdout: "pipe",
+		stderr: "pipe",
 	});
 	const [invalidExit, invalidStdout, invalidStderr] = await Promise.all([
-		invalid.exited, new Response(invalid.stdout).text(), new Response(invalid.stderr).text(),
+		invalid.exited,
+		new Response(invalid.stdout).text(),
+		new Response(invalid.stderr).text(),
 	]);
-	if (invalidExit === 0) throw new Error(`Invalid graph was accepted by extracted binary: ${invalidStdout} ${invalidStderr}`);
+	if (invalidExit === 0)
+		throw new Error(`Invalid graph was accepted by extracted binary: ${invalidStdout} ${invalidStderr}`);
 	process.stdout.write("standalone invalid graph: rejected as required\\n");
 	const child = Bun.spawn([join(standalone, asset), "--version"], { cwd: standalone, stdout: "pipe", stderr: "pipe" });
 	const [exit, output, diagnostics] = await Promise.all([
