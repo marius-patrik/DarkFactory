@@ -158,7 +158,9 @@ try {
 		const child = Bun.spawn([process.execPath, "-e", childCode], { stdout: "pipe", stderr: "pipe" });
 		const output = await new Response(child.stdout).text();
 		const errors = await new Response(child.stderr).text();
-		expect(await child.exited, errors).toBe(0);
+		const exitCode = await child.exited;
+		if (exitCode !== 0) throw new Error(`Child authentication regression failed: ${errors}`);
+		expect(exitCode).toBe(0);
 		expect(JSON.parse(output)).toEqual({ id: "durable", expiresAt: 11_000 });
 		const reloaded = new SqliteAuthTokenStore({ path, keyBase64: key });
 		try {
@@ -171,15 +173,19 @@ try {
 	});
 
 	test("malformed PKCE and unapproved redirects are rejected before the token endpoint", async () => {
-		const used = mockRotatingOAuth();
+		let contacted = false;
+		globalThis.fetch = (async () => {
+			contacted = true;
+			throw new Error("Unexpected OAuth exchange");
+		}) as unknown as typeof fetch;
 		const store = new MemoryAuthTokenStore();
-		await expect(
-			createBrokerSession(config, { ...callback, codeVerifier: "short" }, store),
-		).rejects.toThrow("PKCE verifier");
+		await expect(createBrokerSession(config, { ...callback, codeVerifier: "short" }, store)).rejects.toThrow(
+			"PKCE verifier",
+		);
 		await expect(
 			createBrokerSession(config, { ...callback, redirectUri: "https://wrong.example/oauth" }, store),
 		).rejects.toThrow("not authorized");
-		expect(used).toHaveLength(0);
+		expect(contacted).toBe(false);
 		expect(await store.get("session")).toBeUndefined();
 	});
 

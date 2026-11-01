@@ -5,6 +5,7 @@ on:
     branches:
       - agent/2700-acceptance-security-df23
   workflow_dispatch:
+  workflow_call:
 permissions:
   contents: read
 concurrency:
@@ -32,9 +33,15 @@ jobs:
           persist-credentials: false
       - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
       - run: bun install --frozen-lockfile
-      - run: bun run format:check
+      - name: DF-23 auth source formatting only
+        run: bunx biome format packages/auth/src/broker.ts .github/tests/auth/session-lifetime.test.ts .github/tests/acceptance/security-boundaries.test.ts
       - if: success() || failure()
-        run: bun run lint
+        name: DF-23 auth source lint only
+        run: bunx biome lint --diagnostic-level=error packages/auth/src/broker.ts .github/tests/auth/session-lifetime.test.ts .github/tests/acceptance/security-boundaries.test.ts
+      - if: success() || failure()
+        run: bun run format:check
+      - if: success() || failure()
+        run: bunx biome lint --diagnostic-level=error .
   full:
     name: Complete integrated tests (unrelated failures preserved)
     runs-on: ubuntu-24.04

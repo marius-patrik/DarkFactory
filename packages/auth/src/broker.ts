@@ -126,9 +126,9 @@ function recordFromToken(token: GitHubTokenResponse, now: number, userId?: strin
 
 function sessionFromRecord(sessionId: string, record: BrokerTokenRecord): BrowserSession {
 	// A missing boundary is never repaired by calculating a new lifetime at read time.
-	if (!Number.isSafeInteger(record.sessionExpiresAt))
+	const maximum = record.sessionExpiresAt;
+	if (maximum === undefined || !Number.isSafeInteger(maximum))
 		throw new Error("Authentication session lifetime unavailable");
-	const maximum = record.sessionExpiresAt!;
 	const expiresAt = record.accessExpiresAt === undefined ? maximum : Math.min(maximum, record.accessExpiresAt);
 	return { id: sessionId, expiresAt, ...(record.userId ? { userId: record.userId } : {}) };
 }
@@ -217,8 +217,7 @@ export async function refreshBrokerSession(
 		// An upstream refresh can complete after the absolute session deadline.
 		// Use elapsed monotonic time so an injected test clock and real requests agree.
 		const completedAt = now + Math.max(0, performance.now() - startedAt);
-		if (current.sessionExpiresAt <= completedAt)
-			throw new Error("Authentication session has expired");
+		if (current.sessionExpiresAt <= completedAt) throw new Error("Authentication session has expired");
 		const record = {
 			...recordFromToken(token, now, current.userId),
 			sessionExpiresAt: current.sessionExpiresAt,
