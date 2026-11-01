@@ -29,15 +29,20 @@ try {
 			edges: [],
 		};
 		const handlers: NodeHandlers = {
-			agent: async () => { throw new Error("unexpected agent stage"); },
+			agent: async () => {
+				throw new Error("unexpected agent stage");
+			},
 			automation: async (_node, ctx) => {
 				if (!ctx.effect) throw new Error("missing durable effect");
 				const result = await ctx.effect("external.write", {
 					observe: async (effectId) => {
 						let found: { id: string; value: string } | undefined;
 						try {
-							const rows = (await readFile(remote, "utf8")).trim().split("\n")
-								.filter(Boolean).map((entry) => JSON.parse(entry) as { id: string; value: string });
+							const rows = (await readFile(remote, "utf8"))
+								.trim()
+								.split("\n")
+								.filter(Boolean)
+								.map((entry) => JSON.parse(entry) as { id: string; value: string });
 							found = rows.find((item) => item.id === effectId);
 						} catch (error) {
 							if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error;
@@ -53,22 +58,28 @@ try {
 				return { outcome: "success", outputs: { mutation: result.value } };
 			},
 		};
-		await runGraph(graph, runDir, handlers, {
-			type: "issues.opened",
-			actor: { login: "owner", association: "OWNER", is_bot: false },
-		}, {
-			distributedLease: lease,
-			effects,
-			eventId: "stable-remote-delivery",
-			recoverableAutomations: ["board-sync"],
-		});
+		await runGraph(
+			graph,
+			runDir,
+			handlers,
+			{
+				type: "issues.opened",
+				actor: { login: "owner", association: "OWNER", is_bot: false },
+			},
+			{
+				distributedLease: lease,
+				effects,
+				eventId: "stable-remote-delivery",
+				recoverableAutomations: ["board-sync"],
+			},
+		);
 		await writeFile(join(directory, "completed-" + actor), "completed");
 	} else {
 		await lease.withLease(join(directory, "different-local-path-" + actor), async (claim) => {
-		await writeFile(join(directory, "acquired-" + actor), "acquired");
-		if (mode === "hold") await Bun.sleep(10_000);
-		await claim.assertOwned();
-		await writeFile(join(directory, "completed-" + actor), "completed");
+			await writeFile(join(directory, "acquired-" + actor), "acquired");
+			if (mode === "hold") await Bun.sleep(10_000);
+			await claim.assertOwned();
+			await writeFile(join(directory, "completed-" + actor), "completed");
 		});
 	}
 } catch (error) {
