@@ -1,8 +1,8 @@
 /** Assemble the existing Node/npm distribution from all five verified native bundles. No publication. */
 import { createHash } from "node:crypto";
-import { chmod, copyFile, mkdir, mkdtemp, readFile, readdir, rm, writeFile } from "node:fs/promises";
+import { chmod, mkdir, mkdtemp, readFile, readdir, rm, stat, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
-import { dirname, join, resolve } from "node:path";
+import { join, resolve } from "node:path";
 import { RELEASE_TARGETS, releaseAssetName } from "./release-targets.ts";
 import { collectReleaseChecksums } from "./release-checksums.ts";
 
@@ -85,5 +85,5 @@ process.exit(child.status === null ? 1 : child.status);
 	await rm(stage, { recursive: true, force: true, maxRetries: 5, retryDelay: 200 });
 }
 async function isDirectory(path: string): Promise<boolean> {
-	try { return (await (await import("node:fs/promises")).stat(path)).isDirectory(); } catch { return false; }
+	try { return (await stat(path)).isDirectory(); } catch { return false; }
 }
