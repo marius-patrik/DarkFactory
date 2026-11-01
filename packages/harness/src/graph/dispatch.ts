@@ -30,6 +30,7 @@ export interface DispatchRuntime {
 	reconcileAction?: RunGraphOptions["reconcileAction"];
 	effects?: RunGraphOptions["effects"];
 	recoverableAutomations?: RunGraphOptions["recoverableAutomations"];
+	distributedLease?: RunGraphOptions["distributedLease"];
 	/** Observe every declared required external check for the event commit SHA. */
 	verifyChecks?(sha: string): Promise<"required_green" | "failed" | "pending">;
 	verifyPlanningContext?: RunGraphOptions["verifyPlanningContext"];
@@ -237,6 +238,7 @@ export async function dispatch(
 		const state = await runGraph(workflowGraph, runDir, runtime.handlers, translated.event, {
 			eventId,
 			...(runtime.effects ? { effects: runtime.effects } : {}),
+			...(runtime.distributedLease ? { distributedLease: runtime.distributedLease } : {}),
 			...(runtime.recoverableAutomations ? { recoverableAutomations: runtime.recoverableAutomations } : {}),
 			...(runtime.verifyPlanningContext ? { verifyPlanningContext: runtime.verifyPlanningContext } : {}),
 			...(runtime.onAction ? { onAction: runtime.onAction } : {}),
