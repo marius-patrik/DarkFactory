@@ -99,8 +99,8 @@ describe("DF-16 live GitHub release promotion negative paths", () => {
 								type: "required_status_checks",
 								parameters: {
 									required_status_checks: ["quality", "verify-bound-issue", "candidate"].map((context) => ({
-									context,
-								})),
+										context,
+									})),
 								},
 							},
 						],
