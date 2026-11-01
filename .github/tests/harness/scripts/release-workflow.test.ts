@@ -160,8 +160,9 @@ describe("release workflow", () => {
 	test("keeps Stage A immutable and seals Stage B only after protected approval", () => {
 		const resolve = workflow.jobs.resolve?.steps ?? [];
 		const publish = workflow.jobs.publish?.steps ?? [];
-		expect(resolve.find((step) => step.name?.includes("Retrieve immutable DF-17"))?.run)
-			.toContain("-n technical-candidate");
+		expect(resolve.find((step) => step.name?.includes("Retrieve immutable DF-17"))?.run).toContain(
+			"-n technical-candidate",
+		);
 		expect(resolve.some((step) => step.run?.includes("--phase=resolve"))).toBe(true);
 		const seal = publish.findIndex((step) => step.run?.includes("--phase=seal"));
 		const immutableDownload = publish.findIndex((step) => step.run?.includes('gh run download "$DF_CANDIDATE_RUN"'));
