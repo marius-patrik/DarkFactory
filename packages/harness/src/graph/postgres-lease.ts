@@ -90,14 +90,20 @@ export class PostgresGraphLease implements DistributedGraphLease {
 			const ownedGeneration = generation;
 			const assertOwned = async () => {
 				if (lost) throw lost;
-				const rows = await sql<{ owned: boolean }[]>`
-					SELECT EXISTS (
-						SELECT 1 FROM darkfactory_graph_leases
-						WHERE run_key = ${key} AND owner_id = ${owner}
-						  AND generation = ${ownedGeneration}
-						  AND expires_at > clock_timestamp()
-					) AS owned
-				`;
+				let rows: { owned: boolean }[];
+				try {
+					rows = await sql<{ owned: boolean }[]>`
+						SELECT EXISTS (
+							SELECT 1 FROM darkfactory_graph_leases
+							WHERE run_key = ${key} AND owner_id = ${owner}
+							  AND generation = ${ownedGeneration}
+							  AND expires_at > clock_timestamp()
+						) AS owned
+					`;
+				} catch {
+					lost = new FencedGraphLeaseError("Distributed ownership verification failed");
+					throw lost;
+				}
 				if (!rows[0]?.owned) {
 					lost = new FencedGraphLeaseError("Distributed graph ownership expired or a newer generation acquired");
 					throw lost;
