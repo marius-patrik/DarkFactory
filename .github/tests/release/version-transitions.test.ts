@@ -12,7 +12,10 @@ function git(root: string, ...args: string[]): void {
 async function repo(): Promise<string> {
 	const root = await mkdtemp(join(tmpdir(), "df16-semver-"));
 	roots.push(root);
-	await writeFile(join(root, "repo.dfconfig"), JSON.stringify({ repo: { versioning: { mode: "semver", initial: "1.0.0", tag_prefix: "v" } } }));
+	await writeFile(
+		join(root, "repo.dfconfig"),
+		JSON.stringify({ repo: { versioning: { mode: "semver", initial: "1.0.0", tag_prefix: "v" } } }),
+	);
 	await writeFile(join(root, "VERSION"), "1.0.0\n");
 	await writeFile(join(root, "package.json"), JSON.stringify({ name: "test", version: "1.0.0", private: true }));
 	git(root, "init", "-q", "-b", "main");
@@ -23,12 +26,19 @@ async function repo(): Promise<string> {
 	git(root, "tag", "v0.292.4");
 	return root;
 }
-afterEach(async () => { for (const root of roots.splice(0)) await rm(root, { recursive: true, force: true }); });
+afterEach(async () => {
+	for (const root of roots.splice(0)) await rm(root, { recursive: true, force: true });
+});
 
 describe("DF-16 stable SemVer transition", () => {
 	test("v0.292.4 transitions only by explicit 1.0.0", async () => {
 		const root = await repo();
-		expect(resolveRelease(root, "1.0.0")).toMatchObject({ current: "0.292.4", next: "1.0.0", tag: "v1.0.0", bump: "explicit" });
+		expect(resolveRelease(root, "1.0.0")).toMatchObject({
+			current: "0.292.4",
+			next: "1.0.0",
+			tag: "v1.0.0",
+			bump: "explicit",
+		});
 		for (const value of ["major", "minor", "patch", "0.292.5", "1.1.0", "1.0.0-rc.1", "v1.0.0", "01.0.0", "broken"]) {
 			expect(() => resolveRelease(root, value)).toThrow();
 		}

@@ -1,7 +1,10 @@
 import { describe, expect, test } from "bun:test";
 import { createHash } from "node:crypto";
 import { releaseAssetNames } from "../../../packages/harness/scripts/release-targets.ts";
-import { assertArtifactBytes, assertPromotionEvidence } from "../../../packages/harness/src/release/promotion-evidence.ts";
+import {
+	assertArtifactBytes,
+	assertPromotionEvidence,
+} from "../../../packages/harness/src/release/promotion-evidence.ts";
 
 const digest = (s: string) => createHash("sha256").update(s).digest("hex");
 const sha = (c: string) => c.repeat(40);

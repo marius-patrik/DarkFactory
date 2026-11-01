@@ -24,7 +24,11 @@ try {
 	const evidence = assertPromotionEvidence(JSON.parse(bytes.toString("utf8")), "publish");
 	if (roots.length === 1 && roots[0]?.startsWith("--remote=")) {
 		const release = JSON.parse(readFileSync(roots[0].slice("--remote=".length), "utf8"));
-		if (release.draft !== true || release.tag_name !== "v" + evidence.version || release.target_commitish !== evidence.source.final_sha) {
+		if (
+			release.draft !== true ||
+			release.tag_name !== "v" + evidence.version ||
+			release.target_commitish !== evidence.source.final_sha
+		) {
 			throw new Error("Remote draft identity/version/target mismatch");
 		}
 		const recorded = new Map(evidence.artifacts.map((item) => [item.name, item.sha256]));
@@ -36,7 +40,15 @@ try {
 		}
 	} else {
 		if (roots.length < 1 || roots.length > 2) throw new Error("Expected built asset directory/directories");
-		const files = roots.flatMap((root) => existsSync(root) ? scan(root) : root === "release-assets" ? [] : (() => { throw new Error("Missing mandatory asset directory: " + root); })());
+		const files = roots.flatMap((root) =>
+			existsSync(root)
+				? scan(root)
+				: root === "release-assets"
+					? []
+					: (() => {
+							throw new Error("Missing mandatory asset directory: " + root);
+						})(),
+		);
 		assertArtifactBytes(evidence, files);
 	}
 	console.log("Candidate-bound artifact inventory verified.");
