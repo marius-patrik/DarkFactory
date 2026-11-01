@@ -1,6 +1,6 @@
 # CLI and TUI
 
-The [generated CLI reference](../../../packages/cli/src/cli.ts) is extracted directly from the current `usage()` function in `packages/cli/src/cli.ts`; it must match source and update automatically.
+The [generated CLI reference](../../../../packages/cli/src/cli.ts) is extracted directly from the current `usage()` function in `packages/cli/src/cli.ts`; it must match source and update automatically.
 
 ## Command families
 

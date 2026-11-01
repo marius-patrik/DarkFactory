@@ -43,12 +43,11 @@ Test.
 }
 
 function adr(id: string, related: string): DocsPage {
-	const number = id.slice(-4);
 	return {
 		id: id.toLowerCase(),
 		kind: "adr",
 		title: `${id} — Test decision`,
-		source: `.agents/adr/${number}-test.md`,
+		source: `.agents/notes/ADRs.md`,
 		markdown: `# ${id} — Test decision
 
 **Status**: Accepted
@@ -75,7 +74,7 @@ describe("rule/note relationships", () => {
 		const empty = graph([]);
 		const findings = analyzeRuleNoteRelations(empty).findings;
 		expect(findings).toContain("rules: at least one canonical rule is required");
-		expect(findings).toContain(".darkfactory/ADRs.md: at least one accepted ADR is required");
+		expect(findings).toContain(".agents/notes/ADRs.md: at least one accepted ADR is required");
 		expect(() => assertRuleNoteRelations(empty)).toThrow("Rule/note relationship contract failed");
 	});
 
@@ -91,7 +90,7 @@ describe("rule/note relationships", () => {
 			".darkfactory/plugins/df-rules/skills/001-test/SKILL.md: canonical rule is missing non-empty Enforcement section",
 		);
 		expect(findings).toContain(
-			".agents/adr/0001-test.md#ADR-0001: accepted ADR is missing non-empty Consequences section",
+			".agents/notes/ADRs.md#ADR-0001: accepted ADR is missing non-empty Consequences section",
 		);
 	});
 
@@ -106,7 +105,7 @@ describe("rule/note relationships", () => {
 		expect(
 			analyzeRuleNoteRelations(graph([rule("DF-RULE-001"), adr("ADR-0001", "DF-RULE-001"), note])).findings,
 		).toContain(
-			".agents/notes/loose.md: current long-term notes must be accepted numbered ADRs in .darkfactory/ADRs.md",
+			".agents/notes/loose.md: current long-term notes must be accepted numbered ADRs in .agents/notes/ADRs.md",
 		);
 	});
 });

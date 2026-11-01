@@ -1,6 +1,6 @@
 # System architecture
 
-The normative package table is in the [README](../../../README.md); decisions are exclusively maintained in the [ADRs](../../../.darkfactory/ADRs.md).
+The normative package table is in the [README](../../../../README.md); decisions are exclusively maintained in the [ADRs](../../ADRs.md).
 
 ## Ownership
 

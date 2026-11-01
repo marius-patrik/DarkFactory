@@ -8,7 +8,7 @@ Run `bun install --frozen-lockfile`, `bun run typecheck`, `bun run lint`, `bun r
 
 ## Documentation changes
 
-Update the source with the authority for its claim: README for requirements, one accepted ADR for a decision, `repo.dfconfig` for executable declarations, and the owned TS implementation for behavior. Reader-oriented pages under `docs/guides/` explain those sources; they are **not** another PRD. Add the page to `packages/docs/src/guides.ts` and ensure links, anchors and generated CLI/config references pass validation.
+Update the source with the authority for its claim: README for requirements, one accepted ADR for a decision, `repo.dfconfig` for executable declarations, and the owned TS implementation for behavior. Reader-oriented pages under `.agents/notes/guides/` explain those sources; they are **not** another PRD. Add the page to `packages/docs/src/guides.ts` and ensure links, anchors and generated CLI/config references pass validation.
 
 ## Review and merge
 

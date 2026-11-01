@@ -1,6 +1,5 @@
-import { lstatSync, readlinkSync, realpathSync } from "node:fs";
-import { dirname, join, resolve } from "node:path";
-import { darkFactoryDirectory } from "../../protocol/src/config-document.ts";
+import { lstatSync } from "node:fs";
+import { join } from "node:path";
 import type { DocsContentGraph } from "./content.ts";
 import { analyzeRuleNoteRelations } from "./relations.ts";
 
@@ -10,10 +9,11 @@ interface DocumentationTruthFinding {
 	message: string;
 }
 
-const CURRENT_ALIASES = [
-	// The ADRs are authored once under the DarkFactory directory and discovered at the root by symlink,
-	// the same arrangement as `.agents` itself. Copied rather than linked would let the two drift.
-	{ path: "ADRs.md", target: join(darkFactoryDirectory(), "ADRs.md") },
+/** Canonical documentation must be regular files in a real .agents directory, never aliases. */
+const REQUIRED_DOCUMENTATION_SOURCES = [
+	{ path: ".agents", kind: "directory" },
+	{ path: ".agents/notes", kind: "directory" },
+	{ path: ".agents/notes/ADRs.md", kind: "file" },
 ] as const;
 
 const RETIRED_DOCUMENTATION_PATHS = [
@@ -22,9 +22,12 @@ const RETIRED_DOCUMENTATION_PATHS = [
 	"PLAN.md",
 	"PRD.md",
 	"docs.df",
+	"docs",
+	"ADRs.md",
+	"CONTRIBUTING.md",
+	join(".darkfactory", "ADRs.md"),
 	join(".darkfactory", "docs.df"),
 	join(".agents", "docs.df"),
-	join("docs", "home.md"),
 	"tsconfig.docs.json",
 	".claude",
 	join(".agents", "README.md"),
@@ -32,22 +35,18 @@ const RETIRED_DOCUMENTATION_PATHS = [
 	"properdocs.yml",
 	"mkdocs.yml",
 	"harness/README.md",
-	// The notes tree is retired. It held a symlink to the README, which is what the root already is,
-	// so a file reintroduced there is content nothing reads.
-	join(".agents", "notes"),
-	join(darkFactoryDirectory(), "notes"),
-	// The records live in one document now, so the per-decision directory is a retired surface too.
-	join(darkFactoryDirectory(), "adr"),
+	join(".darkfactory", "notes"),
+	join(".darkfactory", "adr"),
+	join(".agents", "adr"),
 	"_notes",
 	"_rules",
 ] as const;
 
-function pathExists(path: string): boolean {
+function statOrUndefined(path: string): ReturnType<typeof lstatSync> | undefined {
 	try {
-		lstatSync(path);
-		return true;
+		return lstatSync(path);
 	} catch (error) {
-		if ((error as NodeJS.ErrnoException).code === "ENOENT") return false;
+		if ((error as NodeJS.ErrnoException).code === "ENOENT") return undefined;
 		throw error;
 	}
 }
@@ -58,67 +57,24 @@ export function currentDocumentationFindings(
 	graph: DocsContentGraph,
 ): readonly DocumentationTruthFinding[] {
 	const findings: DocumentationTruthFinding[] = [];
-
 	for (const path of RETIRED_DOCUMENTATION_PATHS) {
-		if (pathExists(join(repoRoot, path))) {
+		if (statOrUndefined(join(repoRoot, path))) {
 			findings.push({ path: path.replaceAll("\\", "/"), message: "retired documentation surface must not exist" });
 		}
 	}
-
-	for (const alias of CURRENT_ALIASES) {
-		const absolute = join(repoRoot, alias.path);
-		let stat: ReturnType<typeof lstatSync>;
-		try {
-			stat = lstatSync(absolute);
-		} catch (error) {
-			if ((error as NodeJS.ErrnoException).code === "ENOENT") {
-				findings.push({
-					path: alias.path.replaceAll("\\", "/"),
-					message: "required documentation discovery alias is missing",
-				});
-				continue;
-			}
-			throw error;
-		}
-		if (!stat.isSymbolicLink()) {
+	for (const source of REQUIRED_DOCUMENTATION_SOURCES) {
+		const stat = statOrUndefined(join(repoRoot, source.path));
+		if (!stat) {
+			findings.push({ path: source.path, message: "required documentation source is missing" });
+		} else if (stat.isSymbolicLink() || (source.kind === "directory" ? !stat.isDirectory() : !stat.isFile())) {
 			findings.push({
-				path: alias.path.replaceAll("\\", "/"),
-				message: "documentation discovery alias must remain a symlink, not a copied document",
+				path: source.path,
+				message: "documentation source must be a real directory or regular file, not a symlink",
 			});
-			continue;
-		}
-		if (readlinkSync(absolute) !== alias.target) {
-			findings.push({
-				path: alias.path.replaceAll("\\", "/"),
-				message: `documentation discovery alias must target ${alias.target}`,
-			});
-			continue;
-		}
-		try {
-			const resolvedAlias = realpathSync(absolute);
-			const resolvedTarget = realpathSync(resolve(dirname(absolute), alias.target));
-			if (resolvedAlias !== resolvedTarget) {
-				findings.push({
-					path: alias.path.replaceAll("\\", "/"),
-					message: `documentation discovery alias must target ${alias.target}`,
-				});
-			}
-		} catch (error) {
-			if ((error as NodeJS.ErrnoException).code === "ENOENT") {
-				findings.push({
-					path: alias.path.replaceAll("\\", "/"),
-					message: "documentation discovery alias target is missing",
-				});
-				continue;
-			}
-			throw error;
 		}
 	}
-
 	const relations = analyzeRuleNoteRelations(graph);
-	for (const message of relations.findings) findings.push({ path: ".agents", message });
-	if (relations.findings.length > 0) return findings;
-
+	for (const message of relations.findings) findings.push({ path: ".agents/notes", message });
 	return findings;
 }
 

@@ -10,7 +10,7 @@ DarkFactory is a self-hosting autonomous software-delivery system built around a
 
 1. `README.md` defines product requirements and architecture.
 2. Current active Request/Planning records define approved feature-specific behavior and executable delivery scope.
-3. Accepted ADRs in `ADRs.md`, authored once at `.darkfactory/ADRs.md` and symlinked at the root, record durable decisions and rationale.
+3. Accepted ADRs in `.agents/notes/ADRs.md`, with no root alias, record durable decisions and rationale.
 4. The combined `repo.dfconfig` document (or accepted root `config.dfconfig` or `.dfconfig` alias) and the workflow graph are executable declarations.
 5. `.darkfactory/plugins/df-rules/skills/` define mandatory contribution/governance behavior, one skill per rule.
 6. Generated docs/web views are projections, not independent sources of truth.
@@ -288,7 +288,7 @@ TypeDoc may be used internally as the TypeScript/TSDoc extractor.
 
 Documentation builds are deterministic, strict and zero-warning for required API surfaces.
 
-`README.md` **is** the canonical product-documentation homepage: a regular file at the repository root, not a symlink. The binding rules are skills in `.darkfactory/plugins/df-rules/skills/`, one per rule, and the architecture decisions live in `.darkfactory/ADRs.md`, symlinked here as `ADRs.md`. CI fails when a rule is missing a required front-matter field, when a skill's `name` does not match its directory, or when an accepted ADR lacks a required section.
+`README.md` **is** the canonical product-documentation homepage: a regular file at the repository root, not a symlink. The binding rules are skills in `.darkfactory/plugins/df-rules/skills/`, one per rule, and the architecture decisions live in `.agents/notes/ADRs.md` with no root alias. CI fails when a rule is missing a required front-matter field, when a skill's `name` does not match its directory, or when an accepted ADR lacks a required section.
 
 ## 14. DarkFactory Web
 

@@ -1,6 +1,6 @@
 # Operating a governed Request
 
-**Source of authority:** [README product lifecycle](../../../README.md), [finish plan #2070](https://github.com/marius-patrik/DarkFactory/issues/2070) and current linked Request/Planning.
+**Source of authority:** [README product lifecycle](../../../../README.md), [finish plan #2070](https://github.com/marius-patrik/DarkFactory/issues/2070) and current linked Request/Planning.
 
 ## Intake and planning
 

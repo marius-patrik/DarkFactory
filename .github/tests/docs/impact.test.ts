@@ -50,6 +50,14 @@ describe("documentation impact policy", () => {
 		]);
 	});
 
+	test("recognizes moved notes guides as authored documentation for an API change", () => {
+		const path = ".agents/notes/guides/architecture/system.md";
+		const impact = evaluateDocumentationImpact(["packages/example/src/index.ts", path], evidence);
+		expect(impact.classification.documentationFiles).toEqual([path]);
+		expect(impact.classification.impactKinds).toEqual(["public-api"]);
+		expect(impact.findings).toEqual([]);
+	});
+
 	test("does not invent docs impact for an internal implementation helper", () => {
 		const result = classifyDocumentationImpact(["packages/example/src/internal.ts"], evidence);
 		expect(result.impactKinds).toEqual([]);

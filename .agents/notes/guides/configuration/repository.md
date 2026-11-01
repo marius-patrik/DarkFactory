@@ -1,6 +1,6 @@
 # Combined configuration
 
-**Executable declaration:** [repo.dfconfig](../../../repo.dfconfig). **Normative rule:** [README](../../../README.md) §7. These are not alternate configuration authorities.
+**Executable declaration:** [repo.dfconfig](../../../../repo.dfconfig). **Normative rule:** [README](../../../../README.md) §7. These are not alternate configuration authorities.
 
 ## Discovery and aliases
 
@@ -25,12 +25,12 @@ This is a fragment illustrating the `docs` block, not a stand-alone complete con
 
 ## Validation
 
-Use the strict docs build to check the docs block. The [generated configuration field index](../../../repo.dfconfig) enumerates present property paths/types without printing credential values. Policies beyond docs are validated by their owning runtime/schema.
+Use the strict docs build to check the docs block. The [generated configuration field index](../../../../repo.dfconfig) enumerates present property paths/types without printing credential values. Policies beyond docs are validated by their owning runtime/schema.
 
 ## Practical consumer configuration procedure
 
 1. Inspect the consumer repository's current single config path and avoid changing unrelated files. Confirm exactly one source is discovered, not a root and `DF_CONFIG_DIR` duplicate.
-2. Confirm the consumer's own stable identity/default branch, protection lane, App installation, allowed provider scopes and supported ecosystems. The producer's [configuration](../../../repo.dfconfig) is an example of **producer policy**, not a safe consumer template.
+2. Confirm the consumer's own stable identity/default branch, protection lane, App installation, allowed provider scopes and supported ecosystems. The producer's [configuration](../../../../repo.dfconfig) is an example of **producer policy**, not a safe consumer template.
 3. Keep `docs.home` pointing to an existing repository-relative Markdown page, and choose nonsecret `docs.site.name`. When TypeDoc is enabled, use actual exported entry points and a repository-local tsconfig.
 4. Run `bun run docs` in a source checkout, observe a strict zero-error result, then execute the owning native config/quality validators. A docs pass validates the docs projection, **not** the entire runtime policy.
 
