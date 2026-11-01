@@ -380,7 +380,7 @@ export function resolveRelease(repoRoot: string, requested?: string | null): Rel
 		};
 	}
 
-	if (config.mode === "semver") {
+	if (config.mode === "semver" && config.initial === "1.0.0") {
 		const stablePublished = eligibleTags.some((tag) => /^v[1-9]\d*\.\d+\.\d+$/u.test(tag));
 		if (
 			!stablePublished &&
