@@ -302,6 +302,13 @@ export async function handlePrApproval(deps: HandlePrApprovalDeps): Promise<PrAp
 	const { client, run } = deps;
 	const logger = deps.logger ?? CONSOLE;
 	const env = deps.env ?? process.env;
+	// The actual privileged workflow must never run subprocess-based GitHub
+	// mutations. Preserve the injected legacy runner only for existing fixtures;
+	// production uses the transport-owned, exact-SHA governance implementation.
+	if (run === runGh) {
+		const { handleProductionEnvironment } = await import("./production-approval.ts");
+		return handleProductionEnvironment(env, client, logger);
+	}
 	const sleep = deps.sleep ?? ((milliseconds: number) => Bun.sleep(milliseconds));
 	const actor = env.GITHUB_ACTOR ?? "";
 	const repo = env.GITHUB_REPOSITORY ?? "";

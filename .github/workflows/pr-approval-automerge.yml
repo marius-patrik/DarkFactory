@@ -48,7 +48,6 @@ jobs:
         id: app-token
         if: env.HAS_APP_KEY == 'true'
         uses: actions/create-github-app-token@d72941d797fd3113feb6b93fd0dec494b13a2547 # v1.11.0
-        continue-on-error: true
         with:
           app-id: ${{ vars.DARKFACTORY_APP_ID || '4861004' }}
           private-key: ${{ secrets.DARKFACTORY_APP_PRIVATE_KEY }}
@@ -67,6 +66,19 @@ jobs:
           repository: ${{ inputs.pipeline-repo }}
           ref: ${{ inputs.pipeline-ref }}
           path: .darkfactory-pipeline
+          fetch-depth: 0
+
+      - name: Verify pinned pipeline belongs to trusted main history
+        if: inputs.pipeline-ref != ''
+        env:
+          DF_PIPELINE_REF: ${{ inputs.pipeline-ref }}
+          DF_PIPELINE_REPO: ${{ inputs.pipeline-repo }}
+        run: |
+          set -euo pipefail
+          test "$DF_PIPELINE_REPO" = "marius-patrik/DarkFactory"
+          [[ "$DF_PIPELINE_REF" =~ ^[a-f0-9]{40}$ ]]
+          git -C .darkfactory-pipeline fetch --no-tags origin main
+          git -C .darkfactory-pipeline merge-base --is-ancestor "$DF_PIPELINE_REF" origin/main
 
       - name: Resolve the pinned pipeline
         # ROOT is the same resolution the other converted workflows use: a repository pinned to a
@@ -91,12 +103,8 @@ jobs:
         # not redden the workflow. A rejected board write propagates, as it did in the Python.
         run: bun "$DF_ROOT/packages/harness/src/board/pr-approval-main.ts"
         env:
-          GH_TOKEN: ${{ steps.app-token.outputs.token || github.token }}
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
           GH_PROJECT_TOKEN: ${{ secrets.GH_PROJECT_TOKEN }}
-          # The proxy approval must come from github-actions[bot], which is neither the App nor
-          # the maintainer. Whichever of the two opened the pull request is its author, and GitHub
-          # rejects an author approving their own.
-          BOT_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PROJECT_OWNER: ${{ github.repository_owner }}
           PROJECT_NUMBER: ${{ vars.PROJECT_NUMBER || 1 }}
           GITHUB_EVENT_NAME: ${{ github.event_name }}

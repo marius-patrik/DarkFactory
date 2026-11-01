@@ -1,0 +1,49 @@
+name: DF-10 GitHub Transport Acceptance
+
+on:
+  push:
+    branches:
+      - agent/2699-github-transport-df10
+  workflow_dispatch:
+  workflow_call:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: df10-acceptance-${{ github.sha }}
+  cancel-in-progress: false
+
+jobs:
+  github-transport:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout exact source head
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+      - name: Set up Bun
+        uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+      - name: Install frozen dependencies
+        run: bun install --frozen-lockfile
+      - name: Scoped GitHub transport and governance tests
+        run: bun test ./.github/tests/github ./.github/tests/harness/github ./.github/tests/harness/release/pr-approval.test.ts
+      - name: Whole-repository TypeScript check
+        run: bun run typecheck
+      - name: Whole-repository format check
+        run: bun run format:check
+      - name: Whole-repository lint
+        run: bun run lint
+      - name: Whole-repository tests
+        run: bun run test
+      - name: Build
+        run: bun run build
+      - name: Render exact Biome formatting proposals
+        if: always()
+        run: |
+          bunx biome format --write packages/github/src/governance.ts .github/tests/github/governance.test.ts packages/github/src/approvals/production-approval.ts .github/tests/github/production-approval.test.ts
+          for file in packages/github/src/governance.ts .github/tests/github/governance.test.ts packages/github/src/approvals/production-approval.ts .github/tests/github/production-approval.test.ts; do
+            echo "DF10_FORMAT_BEGIN:${file}"
+            base64 -w 76 "$file"
+            echo "DF10_FORMAT_END:${file}"
+          done
