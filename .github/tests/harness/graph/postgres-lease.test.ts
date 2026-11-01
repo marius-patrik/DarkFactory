@@ -91,6 +91,23 @@ describe("PostgreSQL distributed ownership (independent OS processes)", () => {
 		20_000,
 	);
 
+	databaseTest("a new OS process reconciles a remotely committed effect after the previous process crashes", async () => {
+		const root = await mkdtemp(join(tmpdir(), "df21-graph-"));
+		roots.push(root);
+		const namespace = "df21-graph-" + crypto.randomUUID();
+		const first = await started("graph-crash", "writer", root, namespace);
+		expect(await first.exited).toBe(67);
+		const remote = join(root, "remote-observed.jsonl");
+		const original = await readFile(remote, "utf8");
+		expect(original.trim().split("\n")).toHaveLength(1);
+		const second = await started("graph-recover", "replacement", root, namespace);
+		await visible(join(root, "completed-replacement"));
+		expect(await second.exited).toBe(0);
+		expect(await readFile(remote, "utf8")).toBe(original);
+		expect(JSON.parse(await readFile(join(root, "durable-run", "state.df"), "utf8")).outputs.mutation)
+			.toBe("committed");
+	}, 20_000);
+
 	databaseTest("a stale generation cannot renew or release a newer owner's claim", async () => {
 		const root = await mkdtemp(join(tmpdir(), "df21-generation-"));
 		roots.push(root);
