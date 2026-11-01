@@ -112,10 +112,21 @@ describe("current documentation truth", () => {
 		withRepo((root) => {
 			writeCanonical(root);
 			const paths = [
-				"AGENTS.md", "CLAUDE.md", "PLAN.md", "PRD.md", "docs.df",
-				".darkfactory/docs.df", ".agents/docs.df", "tsconfig.docs.json",
-				".agents/README.md", ".agents/CLAUDE.md", ".darkfactory/notes",
-				".darkfactory/adr", ".agents/adr", "harness/README.md",
+				"AGENTS.md",
+				"CLAUDE.md",
+				"PLAN.md",
+				"PRD.md",
+				"docs.df",
+				".darkfactory/docs.df",
+				".agents/docs.df",
+				"tsconfig.docs.json",
+				".agents/README.md",
+				".agents/CLAUDE.md",
+				".darkfactory/notes",
+				".darkfactory/adr",
+				".agents/adr",
+				"harness/README.md",
+
 			];
 			for (const path of paths) {
 				const absolute = join(root, path);
