@@ -1,6 +1,6 @@
 import { mkdir, writeFile } from "node:fs/promises";
 import { join, resolve } from "node:path";
-import { assertCurrentDocumentation, compileDocsContentGraphWithDetectedApi } from "../packages/docs/src/index.ts";
+import { assertCurrentDocumentation, compileDocsContentGraphWithDetectedApi } from "../plugins/docs/src/index.ts";
 import { renderDocsSite } from "../packages/web/src/docs.ts";
 
 function option(name: string): string | undefined {

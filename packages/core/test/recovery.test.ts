@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import type { RecoveryIntakeRecord, RecoverySourceIdentity } from "../../protocol/src/recovery.ts";
+import type { RecoveryIntakeRecord, RecoverySourceIdentity } from "../../../plugins/protocol/src/recovery.ts";
 import {
 	assertRecoveryCleanupTruth,
 	assertRecoveryPublicationAllowed,

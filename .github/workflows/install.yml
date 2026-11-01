@@ -148,7 +148,7 @@ jobs:
           PIPELINE_REF: ${{ inputs.ref || github.sha }}
         run: |
           cd .darkfactory-pipeline
-          bun packages/harness/src/install/main.ts
+          bun plugins/harness/src/install/main.ts
 
       - name: Apply the declared licence
         # A df subcommand rather than a pipeline script. The licence text is fetched from GitHub's
@@ -308,7 +308,7 @@ jobs:
             PIPELINE_REPO="$PIPELINE_REPO" \
             bun -e '
             import { existsSync } from "node:fs";
-            import { configurationIssue } from "./packages/harness/src/install/configuration-issue.ts";
+            import { configurationIssue } from "./plugins/harness/src/install/configuration-issue.ts";
             console.log(configurationIssue(
               process.env.TARGET_REPOSITORY,
               process.env.PIPELINE_REPO,
@@ -349,4 +349,4 @@ jobs:
           DARKFACTORY_REPO_ROOT: ${{ github.workspace }}/target
         run: |
           cd .darkfactory-pipeline
-          bun packages/harness/src/ci/repo-settings.ts --apply --skip-protection
+          bun plugins/harness/src/ci/repo-settings.ts --apply --skip-protection

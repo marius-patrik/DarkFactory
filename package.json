@@ -6,15 +6,15 @@
   "scripts": {
     "test": "bun test --timeout=30000",
     "typecheck": "tsc --noEmit -p tsconfig.json",
-    "build": "bun packages/harness/scripts/build.ts",
-    "install:df": "bun packages/harness/scripts/install.ts",
+    "build": "bun plugins/harness/scripts/build.ts",
+    "install:df": "bun plugins/harness/scripts/install.ts",
     "format": "biome format --write .",
     "format:check": "biome format .",
     "lint": "biome lint .",
     "check": "biome ci .",
     "docs": "bun scripts/build-docs.ts",
-    "release:version": "bun packages/harness/src/release/versioning.ts",
-    "release:targets": "bun packages/harness/scripts/release-targets.ts"
+    "release:version": "bun plugins/harness/src/release/versioning.ts",
+    "release:targets": "bun plugins/harness/scripts/release-targets.ts"
   },
   "devDependencies": {
     "@biomejs/biome": "2.5.13",

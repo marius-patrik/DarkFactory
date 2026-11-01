@@ -4,7 +4,7 @@ import {
 	type CapabilityHookDefinition,
 	type CapabilityHookResult,
 	defineCapability,
-} from "../../../packages/capability/src/index.ts";
+} from "../../../plugins/capability/src/index.ts";
 
 function pass(): CapabilityHookResult {
 	return { status: "pass" };

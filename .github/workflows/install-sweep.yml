@@ -59,7 +59,7 @@ jobs:
           PIPELINE_ROOT: ${{ github.workspace }}
           PIPELINE_REPO: ${{ github.repository }}
           DARKFACTORY_APP_PRIVATE_KEY: ${{ secrets.DARKFACTORY_APP_PRIVATE_KEY }}
-        run: bun packages/harness/src/install/sweep-main.ts
+        run: bun plugins/harness/src/install/sweep-main.ts
 
       - name: Report
         if: always()

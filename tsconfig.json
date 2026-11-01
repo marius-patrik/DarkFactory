@@ -7,7 +7,10 @@
     ".darkfactory/plugins/*",
     "paper",
     "scripts",
-    "tests"
+    "tests",
+    "plugins/*/src",
+    "plugins/*/test",
+    "plugins/*/scripts"
   ],
   "exclude": ["node_modules", "**/node_modules", "**/dist"]
 }

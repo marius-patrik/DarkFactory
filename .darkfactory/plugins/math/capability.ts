@@ -1,4 +1,4 @@
-import { CAPABILITY_ABI_VERSION, defineCapability } from "../../../packages/capability/src/index.ts";
+import { CAPABILITY_ABI_VERSION, defineCapability } from "../../../plugins/capability/src/index.ts";
 
 /** Official mathematics-domain capability definition. */
 export const capability = defineCapability({

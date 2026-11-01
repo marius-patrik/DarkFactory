@@ -86,7 +86,7 @@ Lightweight models can serve appropriate work without consuming scarce high-capa
 ### Decision
 DarkFactory executes delivery as a declarative graph of agent, gate, automation and check-reference nodes with explicit edges and loop semantics.
 Planning, implementation, review/fix, alignment and deterministic effects are orchestrated by the graph/runtime. Static CI checks may remain external and are observed through check-reference nodes.
-The agent container invokes `df dispatch`, which delegates to the runner in `packages/harness/src/pipeline/main.ts`. The declarative graph is bundled and validated; production stage transitions must be verified against the graph contract.
+The agent container invokes `df dispatch`, which delegates to the runner in `plugins/harness/src/pipeline/main.ts`. The declarative graph is bundled and validated; production stage transitions must be verified against the graph contract.
 Execution is serializable per durable run identity. Concurrent ingress for the same run cannot execute the same transition concurrently or overwrite a newer persisted transition. External effects are separately serialized by deterministic effect identity and reconciled after ambiguous interruption.
 ### Consequences
 Execution state is durable and resumable. Workflow topology has one declarative source rather than duplicated script orchestration, and duplicate/out-of-order ingress cannot create duplicate logical mutations.
@@ -127,7 +127,7 @@ DarkFactory is a root Bun workspace with stable first-party package boundaries:
 - `@darkfactory/cli`
 - `@darkfactory/web`
 Agentic/product behavior is implemented as versioned capabilities under `.darkfactory/plugins/`. Core owns reusable mechanisms, harness owns runtime orchestration and the governed agent workflow, and capabilities own feature/domain behavior. CLI owns the public command/TUI interface without duplicating harness runtime execution.
-Each concern has one final implementation owner. The existing TypeScript harness is retained as a final package; working code is not relocated solely to remove `packages/harness/`. Any duplicated registries, state, configuration, commands, routing, and engine implementations must be consolidated at their actual authoritative owner.
+Each concern has one final implementation owner. The existing TypeScript harness is retained as a final package; working code is not relocated solely to remove `plugins/harness/`. Any duplicated registries, state, configuration, commands, routing, and engine implementations must be consolidated at their actual authoritative owner.
 ### Consequences
 Package dependencies remain acyclic and browser-safe boundaries are explicit. Official and third-party capabilities use the same ABI/loader. Harness is an explicit supported package rather than deletion-bound legacy code. Historical implementation shape is not a compatibility contract.
 

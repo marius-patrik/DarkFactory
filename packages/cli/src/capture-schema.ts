@@ -3,7 +3,7 @@ import {
 	captureJsonSchema,
 	getCaptureSchema,
 	listCaptureSchemas,
-} from "../../protocol/src/result-capture.ts";
+} from "../../../plugins/protocol/src/result-capture.ts";
 
 /**
  * Format registered capture schemas for `--capture-schema [name]`.

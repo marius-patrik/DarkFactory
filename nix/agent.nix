@@ -70,8 +70,8 @@ let
 
     # One compiler for release assets and container images; includes worker,
     # WASM, graph assets and independently bundled official capabilities.
-    bun packages/harness/scripts/build.ts --target ${target}
-    dist="packages/harness/dist"
+    bun plugins/harness/scripts/build.ts --target ${target}
+    dist="plugins/harness/dist"
     test -x "$dist/df-${target}"
     test -d "$dist/assets"
     test -d "$dist/plugins"

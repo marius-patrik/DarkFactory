@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { type CapabilityRuntimeContext, defineCapability } from "../../capability/src/index.ts";
+import { type CapabilityRuntimeContext, defineCapability } from "../../../plugins/capability/src/index.ts";
 import { CommandRegistry, type CoreCliCommandDefinition, createCommandRegistry } from "../src/registry.ts";
 
 const context: CapabilityRuntimeContext = {

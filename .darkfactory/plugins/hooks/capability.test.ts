@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import type { CapabilityHookContext, CapabilityRuntimeContext } from "../../../packages/capability/src/index.ts";
+import type { CapabilityHookContext, CapabilityRuntimeContext } from "../../../plugins/capability/src/index.ts";
 import { branchName, capability, commitTypes, conventionalCommit, testsTouched } from "./capability.ts";
 
 const runtime: CapabilityRuntimeContext = {
@@ -129,7 +129,7 @@ describe("the declared hooks are reachable by the runner", () => {
 	// capability's own hooks are reachable through the same path a real invocation would use, and
 	// that a hook which fails is reported rather than silently skipped.
 	test("every declared hook is selected and executed for each of its events", async () => {
-		const { runHooks } = await import("../../../packages/capability/src/index.ts");
+		const { runHooks } = await import("../../../plugins/capability/src/index.ts");
 		const declared = (capability.hooks ?? []).flatMap((hook) =>
 			(hook.events ?? (hook.event ? [hook.event] : [])).map((event) => ({ id: hook.id, event })),
 		);
@@ -142,9 +142,9 @@ describe("the declared hooks are reachable by the runner", () => {
 				// Evidence every hook in this capability can evaluate: a source file, its test, a
 				// conforming commit message and a conforming branch name.
 				context({
-					changedFiles: ["packages/harness/src/ci/detected.ts", "packages/harness/test/ci/detected.test.ts"],
-					sourceFiles: ["packages/harness/src/ci/detected.ts"],
-					testFiles: ["packages/harness/test/ci/detected.test.ts"],
+					changedFiles: ["plugins/harness/src/ci/detected.ts", "plugins/harness/test/ci/detected.test.ts"],
+					sourceFiles: ["plugins/harness/src/ci/detected.ts"],
+					testFiles: ["plugins/harness/test/ci/detected.test.ts"],
 					commitMessage: "fix(ci): a conforming subject",
 					branch: "v1/hookenforce",
 				}),
@@ -156,15 +156,15 @@ describe("the declared hooks are reachable by the runner", () => {
 	});
 
 	test("a hook that rejects the evidence is reported as a failure through the runner", async () => {
-		const { runHooks } = await import("../../../packages/capability/src/index.ts");
+		const { runHooks } = await import("../../../plugins/capability/src/index.ts");
 		const result = await runHooks(
 			[capability],
 			"pre-commit",
 			// The hook's first move is to pass when nothing changed, so the evidence has to name the
 			// changed files: sourceFiles and testFiles alone describe a tree, not a change.
 			context({
-				changedFiles: ["packages/harness/src/ci/detected.ts"],
-				sourceFiles: ["packages/harness/src/ci/detected.ts"],
+				changedFiles: ["plugins/harness/src/ci/detected.ts"],
+				sourceFiles: ["plugins/harness/src/ci/detected.ts"],
 				testFiles: [],
 			}),
 			runtime,
