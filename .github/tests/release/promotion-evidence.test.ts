@@ -92,6 +92,9 @@ describe("DF-19 immutable Stage A / postmerge Stage B contract", () => {
 		fixture.acceptance = technical().acceptance;
 		fixture.acceptance[0]!.conclusion = "skipped";
 		expect(() => assertTechnicalCandidate(fixture)).toThrow("technical acceptance");
+		fixture.acceptance = technical().acceptance;
+		fixture.acceptance[0]!.run_id = 999;
+		expect(() => assertTechnicalCandidate(fixture)).toThrow("technical acceptance");
 	});
 	test("rejects changed lockfile identity, unsupported ABI and malformed version", () => {
 		const fixture = technical();

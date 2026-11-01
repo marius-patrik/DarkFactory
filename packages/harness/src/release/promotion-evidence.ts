@@ -134,7 +134,8 @@ export function assertTechnicalCandidate(value: unknown): TechnicalCandidate {
 			matching.length === 1 &&
 				runId(matching[0]?.run_id) &&
 				matching[0]?.head_sha === e.source.sha &&
-				matching[0]?.conclusion === "success",
+				matching[0]?.conclusion === "success" &&
+				(name !== "source-free" || matching[0]?.run_id === e.build.run_id),
 			"missing/stale technical acceptance: " + name,
 		);
 	}

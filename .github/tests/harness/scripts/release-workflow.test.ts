@@ -34,7 +34,11 @@ interface WorkflowJob {
 	strategy?: { matrix: unknown; failFast?: boolean };
 	steps: WorkflowStep[];
 }
-const workflow = Bun.YAML.parse(source) as { permissions: Record<string, string>; jobs: Record<string, WorkflowJob> };
+const workflow = Bun.YAML.parse(source) as {
+	permissions: Record<string, string>;
+	concurrency: { group: string; "cancel-in-progress": boolean };
+	jobs: Record<string, WorkflowJob>;
+};
 
 /** One `uses: owner/repo@ref # version` reference, split into its parts. */
 const ACTION_REFERENCE = /uses:\s*(?<action>[\w.-]+\/[\w.-]+)@(?<ref>\S+)/gu;
@@ -50,6 +54,7 @@ function actionReferences(text: string): { action: string; ref: string }[] {
 describe("release workflow", () => {
 	test("parses as YAML and keeps its write permission and its single concurrency group", () => {
 		expect(Object.keys(workflow.jobs).sort()).toEqual(["build", "publish", "resolve"]);
+		expect(workflow.concurrency).toEqual({ group: "release", "cancel-in-progress": false });
 		expect(workflow.permissions).toEqual({
 			contents: "read",
 			actions: "read",
