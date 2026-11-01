@@ -54,7 +54,7 @@ for (const original of tracked) {
   // Preserve the exact compiled worker-entry identity assertion after the root move.
   if (current === "plugins/harness/test/packaging.test.ts") {
     output = output.replace(
-      'import "../../harness/src/image-resize-worker.ts"',
+      'import "../src/image-resize-worker.ts"',
       'import "../../../plugins/harness/src/image-resize-worker.ts"'
     );
   }
