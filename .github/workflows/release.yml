@@ -21,7 +21,15 @@ on:
   workflow_dispatch:
     inputs:
       bump:
-        description: "Explicit bump: patch, minor, major, proud (pridever only), or an exact version"
+        description: "Exact authorized version; the first stable release is 1.0.0"
+        required: true
+        type: string
+      candidate_run_id:
+        description: "Successful DF-17 candidate run that uploaded promotion-evidence"
+        required: true
+        type: string
+      evidence_sha256:
+        description: "SHA-256 of promotion-evidence.json independently verified by the operator"
         required: true
         type: string
 
@@ -36,6 +44,9 @@ on:
 # Only the final explicitly authorized publish job receives repository mutation rights.
 permissions:
   contents: read
+  actions: read
+  checks: read
+  pull-requests: read
 
 concurrency:
   group: release
@@ -90,6 +101,45 @@ jobs:
       - name: Set up Bun
         uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
 
+      - name: Retrieve immutable DF-17 promotion evidence (read-only)
+        if: github.repository == 'marius-patrik/DarkFactory'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          DF_CANDIDATE_RUN: ${{ inputs.candidate_run_id }}
+          DF_EVIDENCE_SHA256: ${{ inputs.evidence_sha256 }}
+        run: |
+          set -euo pipefail
+          [[ "$DF_CANDIDATE_RUN" =~ ^[1-9][0-9]*$ ]] || { echo "::error::Candidate run ID required"; exit 1; }
+          [[ "$DF_EVIDENCE_SHA256" =~ ^[a-f0-9]{64}$ ]] || { echo "::error::Evidence SHA-256 required"; exit 1; }
+          mkdir -p "$RUNNER_TEMP/df-promotion"
+          gh run download "$DF_CANDIDATE_RUN" -R "$GITHUB_REPOSITORY" \
+            -n promotion-evidence -D "$RUNNER_TEMP/df-promotion"
+          test -s "$RUNNER_TEMP/df-promotion/promotion-evidence.json"
+          echo "$DF_EVIDENCE_SHA256  $RUNNER_TEMP/df-promotion/promotion-evidence.json" | sha256sum -c -
+
+      - name: Verify candidate, security, review, fleet, protected final SHA and release environment
+        if: github.repository == 'marius-patrik/DarkFactory'
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          RELEASE_VERSION: ${{ inputs.bump }}
+          EXPECTED_CANDIDATE_RUN: ${{ inputs.candidate_run_id }}
+          DF_EVIDENCE_SHA256: ${{ inputs.evidence_sha256 }}
+        run: |
+          set -euo pipefail
+          bun packages/harness/src/release/promotion-preflight.ts \
+            --phase=candidate \
+            --evidence="$RUNNER_TEMP/df-promotion/promotion-evidence.json" \
+            --digest="$DF_EVIDENCE_SHA256"
+
+      - name: Retain verified candidate evidence for guarded publication
+        if: github.repository == 'marius-patrik/DarkFactory'
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: verified-promotion-evidence
+          path: ${{ runner.temp }}/df-promotion/promotion-evidence.json
+          if-no-files-found: error
+          retention-days: 3
+
       - name: Resolve the next release version
         id: version
         env:
@@ -135,6 +185,15 @@ jobs:
             --repo-root . \
             --notes-out "$RUNNER_TEMP/notes.md" > "$RUNNER_TEMP/release.json"
           cat "$RUNNER_TEMP/release.json"
+
+      - name: Assert one exact resolution for manifest, notes, build and publication
+        if: github.repository == 'marius-patrik/DarkFactory' && steps.version.outputs.warranted == 'true'
+        env:
+          DF_REQUESTED_VERSION: ${{ inputs.bump }}
+        run: |
+          set -euo pipefail
+          jq -e --arg v "$DF_REQUESTED_VERSION"             '.next == $v and .tag == ("v" + $v) and .mode == "semver"'             "$RUNNER_TEMP/version.json"
+          jq -e --arg v "$DF_REQUESTED_VERSION"             '.version == $v and .tag == ("v" + $v) and .mode == "semver"'             "$RUNNER_TEMP/release.json"
 
       - name: Verify package metadata agrees with the release
         if: steps.version.outputs.warranted == 'true'
@@ -343,12 +402,56 @@ jobs:
     needs: [resolve, build]
     if: needs.resolve.outputs.warranted == 'true'
     runs-on: ubuntu-latest
+    # No environment configuration is assumed: preflight reads back protection
+    # settings, and the producer requires an external reviewer for this exact run.
+    environment: ${{ github.repository == 'marius-patrik/DarkFactory' && 'production-release' || 'consumer-release' }}
     permissions:
       contents: write
+      actions: read
+      checks: read
+      pull-requests: read
     env:
       # The secrets context cannot be read from a step-level `if`, so the test is hoisted to the job.
       HAS_APP_KEY: ${{ secrets.DARKFACTORY_APP_PRIVATE_KEY != '' }}
     steps:
+      - name: Checkout repository
+        # Tags decide whether this release already exists, so the history has to be here.
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Check out the pinned pipeline
+        if: inputs.pipeline-ref != ''
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          repository: ${{ inputs.pipeline-repo }}
+          ref: ${{ inputs.pipeline-ref }}
+          path: .darkfactory-pipeline
+
+      - name: Set up Bun
+        uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+
+      - name: Download immutable, independently reviewed candidate evidence
+        if: github.repository == 'marius-patrik/DarkFactory'
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: verified-promotion-evidence
+          path: approved
+
+      - name: Verify independent environment approval and live final SHA before write credentials
+        if: github.repository == 'marius-patrik/DarkFactory'
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          RELEASE_VERSION: ${{ inputs.bump }}
+          EXPECTED_CANDIDATE_RUN: ${{ inputs.candidate_run_id }}
+          DF_EVIDENCE_SHA256: ${{ inputs.evidence_sha256 }}
+        run: |
+          set -euo pipefail
+          bun packages/harness/src/release/promotion-preflight.ts \
+            --phase=publish --evidence=approved/promotion-evidence.json \
+            --digest="$DF_EVIDENCE_SHA256"
+
       - name: Mint an installation token for the App
         # `GITHUB_TOKEN` cannot open a pull request: GitHub deliberately withholds
         # `pull_requests: write` from the token a workflow gets for itself, so
@@ -367,23 +470,6 @@ jobs:
           private-key: ${{ secrets.DARKFACTORY_APP_PRIVATE_KEY }}
           owner: ${{ github.repository_owner }}
           repositories: ${{ github.event.repository.name }}
-      - name: Checkout repository
-        # Tags decide whether this release already exists, so the history has to be here.
-        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
-        with:
-          fetch-depth: 0
-
-      - name: Check out the pinned pipeline
-        if: inputs.pipeline-ref != ''
-        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
-        with:
-          repository: ${{ inputs.pipeline-repo }}
-          ref: ${{ inputs.pipeline-ref }}
-          path: .darkfactory-pipeline
-
-      - name: Set up Bun
-        uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
-
       - name: Require explicit producer release promotion
         env:
           DF_REPOSITORY: ${{ github.repository }}
@@ -439,6 +525,14 @@ jobs:
       - name: Re-verify every df artifact and write the release checksums
         run: bun packages/harness/scripts/release-checksums.ts dist
 
+      - name: Re-hash the complete candidate-bound inventory before any publication
+        if: github.repository == 'marius-patrik/DarkFactory'
+        env:
+          DF_EVIDENCE_SHA256: ${{ inputs.evidence_sha256 }}
+        run: |
+          bun packages/harness/src/release/promotion-assets.ts \
+            approved/promotion-evidence.json "$DF_EVIDENCE_SHA256" dist release-assets
+
       - name: List the assets to attach
         id: assets
         run: |
@@ -457,35 +551,46 @@ jobs:
           printf '%s\n' "${ASSETS[@]}" | tee "$RUNNER_TEMP/asset-list.txt"
           echo "Assets: ${#ASSETS[@]}" >> "$GITHUB_STEP_SUMMARY"
 
-      - name: Create the tag and the release
+      - name: Create a complete DRAFT release, verify remote asset digests, then explicitly promote
         env:
-          # The App first, as below: `GITHUB_TOKEN` cannot open the pull request that records the
-          # version, and using one credential for both steps keeps the release attributable.
           GH_TOKEN: ${{ steps.app-token.outputs.token || secrets.GITHUB_TOKEN }}
           TAG: ${{ needs.resolve.outputs.tag }}
+          DF_COMMIT: ${{ github.sha }}
+          DF_EVIDENCE_SHA256: ${{ inputs.evidence_sha256 }}
+          GITHUB_TOKEN: ${{ github.token }}
+          RELEASE_VERSION: ${{ inputs.bump }}
+          EXPECTED_CANDIDATE_RUN: ${{ inputs.candidate_run_id }}
         run: |
-          # A colliding immutable release tag is a *hard* failure. Previously the job
-          # exited green here after five successful native builds but published no assets.
-          # Never move an existing tag and never claim success for a skipped release.
+          set -euo pipefail
+          git fetch --tags --force
           if git rev-parse -q --verify "refs/tags/$TAG" >/dev/null 2>&1; then
-            echo "::error title=Existing release tag::$TAG already exists. Fix the version resolver instead of reusing or rewriting a tag." >&2
+            echo "::error title=Existing release tag::$TAG already exists. Fix the version resolver; immutable tags cannot be reused." >&2
             exit 1
           fi
-          git tag "$TAG"
-          git push origin "$TAG"
-
-          # Every asset is attached by one `gh release create`, so a reader never sees a release
-          # that is missing a platform the matrix claims to publish.
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            echo "::error::Existing release or interrupted draft; manual reconciliation required." >&2
+            exit 1
+          fi
+          # The draft is not public. If upload fails, leave the failed draft for
+          # investigation; never claim public success or overwrite its assets.
           mapfile -t ASSETS < "$RUNNER_TEMP/asset-list.txt"
-          gh release create "$TAG" \
-            --title "$TAG" \
-            --notes-file notes/notes.md \
-            "${ASSETS[@]}"
-
+          gh release create "$TAG" --draft --target "$DF_COMMIT" \
+            --title "$TAG" --notes-file notes/notes.md "${ASSETS[@]}"
+          if [ "$GITHUB_REPOSITORY" = "marius-patrik/DarkFactory" ]; then
+            # GitHub hashes the uploaded bytes independently. Require exact name
+            # inventory, digest inventory, draft state and bound target commit.
+            gh api "repos/$GITHUB_REPOSITORY/releases/tags/$TAG" > "$RUNNER_TEMP/draft.json"
+            bun packages/harness/src/release/promotion-assets.ts \
+              approved/promotion-evidence.json "$DF_EVIDENCE_SHA256" \
+              --remote="$RUNNER_TEMP/draft.json"
+            bun packages/harness/src/release/promotion-preflight.ts \
+              --phase=finalize --evidence=approved/promotion-evidence.json \
+              --digest="$DF_EVIDENCE_SHA256"
+          fi
+          gh release edit "$TAG" --draft=false
           {
             echo "## Released \`$TAG\`"
-            echo
-            sed 's/^/- /' "$RUNNER_TEMP/asset-list.txt"
+            printf '%s\n' "${ASSETS[@]}"
           } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Record the released version

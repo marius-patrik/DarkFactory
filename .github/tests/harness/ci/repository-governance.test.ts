@@ -84,6 +84,8 @@ const NOT_CALLABLE = [
 	"candidate-release.yml",
 	"quality-python-versions.yml",
 	"finish-integration-verify.yml",
+	// Release owner-only read-only dispatch verification is not a reusable consumer workflow.
+	"df16-verification.yml",
 	// The Nix container verification matrix tests producer source and is not a consumer workflow.
 ];
 
@@ -688,7 +690,9 @@ describe("release.yml", () => {
 		expect(producerGuard?.run).toContain('if [ "$DF_EVENT" != "workflow_dispatch" ]');
 		expect(producerGuard?.run).toContain('"1.0.0"');
 		const promotionIndex = steps(release, "publish").indexOf(producerGuard as never);
-		const tagIndex = steps(release, "publish").findIndex((step) => step.name === "Create the tag and the release");
+		const tagIndex = steps(release, "publish").findIndex(
+			(step) => step.name === "Create a complete DRAFT release, verify remote asset digests, then explicitly promote",
+		);
 		expect(tagIndex).toBeGreaterThan(promotionIndex);
 	});
 

@@ -380,6 +380,22 @@ export function resolveRelease(repoRoot: string, requested?: string | null): Rel
 		};
 	}
 
+	if (config.mode === "semver" && config.initial === "1.0.0") {
+		const stablePublished = eligibleTags.some((tag) => /^v[1-9]\d*\.\d+\.\d+$/u.test(tag));
+		if (
+			!stablePublished &&
+			requested !== null &&
+			requested !== undefined &&
+			requested !== "1.0.0" &&
+			declared === "1.0.0"
+		) {
+			throw new VersioningError("The first stable release requires an explicit 1.0.0 intent");
+		}
+		if (requested && !/^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$/u.test(requested)) {
+			throw new VersioningError("Stable SemVer intent must be exact three-component numeric SemVer");
+		}
+	}
+
 	if (requested && parseVersion(requested)) {
 		const upcoming = requested.replace(/^v/, "");
 		if (config.mode === "semver" && !/^\d+\.\d+\.\d+$/u.test(upcoming)) {

@@ -50,10 +50,20 @@ function actionReferences(text: string): { action: string; ref: string }[] {
 describe("release workflow", () => {
 	test("parses as YAML and keeps its write permission and its single concurrency group", () => {
 		expect(Object.keys(workflow.jobs).sort()).toEqual(["build", "publish", "resolve"]);
-		expect(workflow.permissions).toEqual({ contents: "read" });
+		expect(workflow.permissions).toEqual({
+			contents: "read",
+			actions: "read",
+			checks: "read",
+			"pull-requests": "read",
+		});
 		expect(workflow.jobs.resolve?.permissions).toBeUndefined();
 		expect(workflow.jobs.build?.permissions).toBeUndefined();
-		expect(workflow.jobs.publish?.permissions).toEqual({ contents: "write" });
+		expect(workflow.jobs.publish?.permissions).toEqual({
+			contents: "write",
+			actions: "read",
+			checks: "read",
+			"pull-requests": "read",
+		});
 	});
 
 	// A floating `@v4` is a tag the action's owner can repoint at new code. In the job that creates
