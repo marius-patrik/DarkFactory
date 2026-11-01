@@ -69,7 +69,7 @@ export class PostgresGraphLease implements DistributedGraphLease {
 		try {
 			const deadline = performance.now() + acquireTimeoutMs;
 			for (;;) {
-				const acquired = await sql<{ generation: string }[]> `
+				const acquired = await sql<{ generation: string }[]>`
 					INSERT INTO darkfactory_graph_leases (run_key, owner_id, generation, expires_at)
 					VALUES (${key}, ${owner}, 1, clock_timestamp() + make_interval(secs => ${ttlMs / 1000}))
 					ON CONFLICT (run_key) DO UPDATE SET
@@ -83,13 +83,14 @@ export class PostgresGraphLease implements DistributedGraphLease {
 					generation = acquired[0]!.generation;
 					break;
 				}
-				if (performance.now() >= deadline) throw new FencedGraphLeaseError("Distributed run lease is held by another runner");
+				if (performance.now() >= deadline)
+					throw new FencedGraphLeaseError("Distributed run lease is held by another runner");
 				await Bun.sleep(Math.min(250, Math.max(1, deadline - performance.now())));
 			}
 			const ownedGeneration = generation;
 			const assertOwned = async () => {
 				if (lost) throw lost;
-				const rows = await sql<{ owned: boolean }[]> `
+				const rows = await sql<{ owned: boolean }[]>`
 					SELECT EXISTS (
 						SELECT 1 FROM darkfactory_graph_leases
 						WHERE run_key = ${key} AND owner_id = ${owner}
@@ -103,19 +104,24 @@ export class PostgresGraphLease implements DistributedGraphLease {
 				}
 			};
 			interval = setInterval(() => {
-				renewal = renewal.then(async () => {
-					if (lost) return;
-					const rows = await sql<{ generation: string }[]> `
+				renewal = renewal
+					.then(async () => {
+						if (lost) return;
+						const rows = await sql<{ generation: string }[]>`
 						UPDATE darkfactory_graph_leases
 						SET expires_at = clock_timestamp() + make_interval(secs => ${ttlMs / 1000})
 						WHERE run_key = ${key} AND owner_id = ${owner}
 						  AND generation = ${ownedGeneration} AND expires_at > clock_timestamp()
 						RETURNING generation::text AS generation
 					`;
-					if (rows.length !== 1) throw new FencedGraphLeaseError("Distributed lease renewal lost ownership");
-				}).catch((error: unknown) => {
-					lost = error instanceof FencedGraphLeaseError ? error : new FencedGraphLeaseError("Distributed lease renewal failed");
-				});
+						if (rows.length !== 1) throw new FencedGraphLeaseError("Distributed lease renewal lost ownership");
+					})
+					.catch((error: unknown) => {
+						lost =
+							error instanceof FencedGraphLeaseError
+								? error
+								: new FencedGraphLeaseError("Distributed lease renewal failed");
+					});
 			}, renewMs);
 			const value = await work({ assertOwned });
 			await renewal;
