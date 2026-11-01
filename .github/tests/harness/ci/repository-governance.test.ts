@@ -690,7 +690,9 @@ describe("release.yml", () => {
 		expect(producerGuard?.run).toContain('if [ "$DF_EVENT" != "workflow_dispatch" ]');
 		expect(producerGuard?.run).toContain('"1.0.0"');
 		const promotionIndex = steps(release, "publish").indexOf(producerGuard as never);
-		const tagIndex = steps(release, "publish").findIndex((step) => step.name === "Create a complete DRAFT release, verify remote asset digests, then explicitly promote");
+		const tagIndex = steps(release, "publish").findIndex(
+			(step) => step.name === "Create a complete DRAFT release, verify remote asset digests, then explicitly promote",
+		);
 		expect(tagIndex).toBeGreaterThan(promotionIndex);
 	});
 
