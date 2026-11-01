@@ -84,7 +84,8 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          bun packages/harness/scripts/verify-target.ts --target "${{ matrix.target }}" 2>&1 | tee "packages/harness/dist/verification-${{ matrix.target }}.log"
+          bun packages/harness/scripts/verify-target.ts --target "${{ matrix.target }}" 2>&1 | tee "$RUNNER_TEMP/verification-${{ matrix.target }}.log"
+          cp "$RUNNER_TEMP/verification-${{ matrix.target }}.log" "packages/harness/dist/verification-${{ matrix.target }}.log"
       - name: Record source tree, compiler, ABI, lock and every packaged resource digest
         shell: bash
         run: |
@@ -244,7 +245,7 @@ jobs:
         run: |
           set -euo pipefail
           prefix=$(mktemp -d)
-          npm install --prefix "$prefix" --ignore-scripts --no-audit --no-fund ./candidate/npm/*.tgz
+          npm install --prefix "$prefix" --ignore-scripts --no-fund ./candidate/npm/*.tgz
           test -f "$prefix/node_modules/@darkfactory/cli/bin/df.cjs"
           cd "$prefix"
           ./node_modules/.bin/df --version | tee "$RUNNER_TEMP/df17-npm-result.txt"
