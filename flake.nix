@@ -8,7 +8,7 @@
         name = system; value = f system;
       }) systems);
       agentFor = system:
-        import ./nix/agent.nix { pkgs = import nixpkgs { inherit system; }; };
+        import ./plugins/hosts/containers/nix/agent.nix { pkgs = import nixpkgs { inherit system; }; };
     in {
       packages = eachSystem (system:
         let agent = agentFor system;

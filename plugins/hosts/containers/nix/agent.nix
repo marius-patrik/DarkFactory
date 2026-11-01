@@ -20,8 +20,8 @@ let
       runHook preInstall
       mkdir -p "$TMPDIR/work" "$TMPDIR/home" "$TMPDIR/cache"
       cd "$TMPDIR/work"
-      cp ${../package.json} package.json
-      cp ${../bun.lock} bun.lock
+      cp ${../../../../package.json} package.json
+      cp ${../../../../bun.lock} bun.lock
       export HOME="$TMPDIR/home"
       export BUN_INSTALL_CACHE_DIR="$TMPDIR/cache"
       bun install --frozen-lockfile --production
@@ -32,16 +32,19 @@ let
   };
 
   source = lib.cleanSourceWith {
-    src = ../.;
+    src = ../../../..;
     name = "darkfactory-agent-source";
     filter = path: type:
       let
-        rel = lib.removePrefix "${toString ../.}/" (toString path);
+        rel = lib.removePrefix "${toString ../../../..}/" (toString path);
         name = baseNameOf path;
       in
         !(builtins.elem name [ ".git" "node_modules" ".worktrees" "dist" "result" ])
-        && !(lib.hasPrefix ".github/" rel || rel == ".github")
-        && !(lib.hasPrefix "nix/" rel || rel == "nix")
+        # Admit only repository-owned script entrypoints: build scripts may move
+        # to .github/scripts, but workflow definitions and CI tests stay excluded.
+        && (!(lib.hasPrefix ".github/" rel)
+            || rel == ".github/scripts"
+            || lib.hasPrefix ".github/scripts/" rel)
         && !(lib.hasPrefix "docker/" rel || rel == "docker")
         && !(lib.hasSuffix ".pdf" name);
   };
