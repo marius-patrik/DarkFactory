@@ -252,7 +252,11 @@ describe("DF-19 live GitHub governance transitions (fully mocked REST, never pub
 		await expect(verifyLivePromotion(a, context)).rejects.toThrow("final-head check");
 		mockLive(a, { "environments/production-release": { protection_rules: [] } });
 		await expect(verifyLivePromotion(a, context)).rejects.toThrow("protected publication environment");
-		mockLive(a, { "environments/production-release": { protection_rules: [{ type: "required_reviewers", prevent_self_review: false, reviewers: [{ id: 10 }] }] } });
+		mockLive(a, {
+			"environments/production-release": {
+				protection_rules: [{ type: "required_reviewers", prevent_self_review: false, reviewers: [{ id: 10 }] }],
+			},
+		});
 		await expect(verifyLivePromotion(a, context)).rejects.toThrow("protected publication environment");
 		mockLive(a, { "actions/runs/701/approvals": [] });
 		await expect(verifyLivePromotion(a, { ...context, phase: "seal" }, undefined, "d".repeat(64))).rejects.toThrow(
