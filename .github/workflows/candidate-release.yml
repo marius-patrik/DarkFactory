@@ -5,8 +5,12 @@ on:
   merge_group:
     branches: [main]
   workflow_dispatch:
+  workflow_call:
+  push:
+    branches: [agent/2709-candidate-verification-df22]
 permissions:
   contents: read
+  actions: read
 concurrency:
   group: candidate-release-${{ github.event.pull_request.head.sha || github.sha }}
   cancel-in-progress: true
@@ -25,6 +29,7 @@ jobs:
           bun packages/harness/scripts/release-targets.ts > "$RUNNER_TEMP/candidate-targets.json"
           echo "matrix=$(jq -c . "$RUNNER_TEMP/candidate-targets.json")" >> "$GITHUB_OUTPUT"
   build:
+    name: Native executable - ${{ matrix.target }}
     needs: targets
     strategy:
       fail-fast: false
@@ -87,3 +92,368 @@ jobs:
           test "$DF_TARGETS_RESULT" = "success"
           test "$DF_BUILD_RESULT" = "success"
           test "$DF_DOCKER_RESULT" = "success"
+
+  df22-quality:
+    name: Frozen-source quality
+    if: github.event_name == 'push' && github.ref == 'refs/heads/agent/2709-candidate-verification-df22'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+      - run: bun install --frozen-lockfile
+      - name: Verify checkout and committed source
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          test "$(cat VERSION)" = 1.0.0
+          git diff --check
+      - run: bun run typecheck
+      - run: bun run format:check
+      - run: bun run lint
+      - run: bun run test
+
+  df22-web-docs:
+    name: Unified Web and integrated documentation candidate
+    if: github.event_name == 'push' && github.ref == 'refs/heads/agent/2709-candidate-verification-df22'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+      - run: bun install --frozen-lockfile
+      - run: bun run docs
+      - name: Build one integrated operator Web + Docs application
+        env:
+          DF_WEB_BASE_PATH: /DarkFactory/
+          DF_WEB_REPOSITORY: marius-patrik/DarkFactory
+        shell: bash
+        run: |
+          set -euo pipefail
+          bun packages/web/scripts/build.ts packages/web/dist
+          bun scripts/build-docs.ts --repo-root . --out "$RUNNER_TEMP/df17-site" --web-dist packages/web/dist --base-path /DarkFactory/
+          bun scripts/build-docs.ts --verify-artifact "$RUNNER_TEMP/df17-site" --base-path /DarkFactory/
+
+  df22-supply-chain:
+    name: supply-chain
+    if: github.event_name == 'push' && github.ref == 'refs/heads/agent/2709-candidate-verification-df22'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+      - run: bun install --frozen-lockfile
+      - name: Generate lockfile-derived CycloneDX inventory and explicit unknown licenses
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p candidate/security
+          bun packages/harness/scripts/candidate-evidence.ts sbom --out candidate/security/sbom.cdx.json
+          git grep -nE 'uses: [^#]+@(v[0-9]+|main|master)' -- .github/workflows/release.yml .github/workflows/candidate-release.yml .github/workflows/df17-source-free-candidate.yml > candidate/security/unpinned-actions.txt || true
+          if test -s candidate/security/unpinned-actions.txt; then
+            echo "::error::Floating action references found (see retained security findings)"
+            cat candidate/security/unpinned-actions.txt
+            exit 1
+          fi
+      - name: Run actual Bun vulnerability advisory scanner; never report unknown as clean
+        shell: bash
+        run: |
+          set +e
+          bun audit --audit-level=high --json > candidate/security/audit.json 2> candidate/security/audit-stderr.txt
+          result=$?
+          printf '%s\n' "$result" > candidate/security/audit-exit-code.txt
+          if [ "$result" -ne 0 ]; then
+            echo "::error::Bun advisory scanner failed or found vulnerabilities. Review raw retained results."
+            cat candidate/security/audit-stderr.txt
+            cat candidate/security/audit.json
+            exit "$result"
+          fi
+
+  df22-security:
+    name: security
+    if: github.event_name == 'push' && github.ref == 'refs/heads/agent/2709-candidate-verification-df22'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+      - run: bun install --frozen-lockfile
+      - run: bun test ./.github/tests/harness/capability-security.test.ts .github/tests/release/promotion-evidence.test.ts .github/tests/release/promotion-preflight.test.ts
+
+  df22-fleet:
+    name: fleet
+    if: github.event_name == 'push' && github.ref == 'refs/heads/agent/2709-candidate-verification-df22'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+      - run: bun install --frozen-lockfile
+      - run: bun test ./.github/tests/harness/board/fleet.test.ts .github/tests/harness/graph/executor.test.ts .github/tests/harness/graph/distributed-lease.test.ts
+
+  df22-web-ux:
+    name: web-ux
+    if: github.event_name == 'push' && github.ref == 'refs/heads/agent/2709-candidate-verification-df22'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+      - run: bun install --frozen-lockfile
+      - run: bun test ./.github/tests/web
+
+  df22-governed-e2e:
+    name: governed-e2e
+    if: github.event_name == 'push' && github.ref == 'refs/heads/agent/2709-candidate-verification-df22'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+      - run: bun install --frozen-lockfile
+      - run: bun test ./.github/tests/harness/graph/production-git.test.ts .github/tests/harness/graph/merge-gate-rebinding.test.ts .github/tests/harness/graph/merge-reconciliation.test.ts
+
+  df22-npm-install:
+    name: npm install - ${{ matrix.target }}
+    if: github.event_name == 'push' && github.ref == 'refs/heads/agent/2709-candidate-verification-df22'
+    needs: [targets, build]
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJSON(needs.targets.outputs.matrix) }}
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: "24"
+      - run: bun install --frozen-lockfile
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          pattern: candidate-*
+          path: candidate/native
+          merge-multiple: true
+      - name: Assemble and execute installed source-free native npm payload
+        shell: bash
+        run: |
+          set -euo pipefail
+          bun packages/harness/scripts/candidate-npm.ts --native candidate/native --out candidate/npm
+          prefix=$(mktemp -d)
+          npm install --prefix "$prefix" --ignore-scripts --no-fund ./candidate/npm/*.tgz
+          test -f "$prefix/node_modules/@darkfactory/cli/bin/df.cjs"
+          cd "$prefix"
+          ./node_modules/.bin/df --version | tee "$RUNNER_TEMP/df22-version.txt"
+          grep -q 'df v1.0.0' "$RUNNER_TEMP/df22-version.txt"
+          ./node_modules/.bin/df graph validate
+          if ./node_modules/.bin/df graph validate missing.json; then
+            echo "::error::Invalid configuration accepted"; exit 1
+          fi
+
+  df22-reproducibility:
+    name: source-free reproducibility
+    if: github.event_name == 'push' && github.ref == 'refs/heads/agent/2709-candidate-verification-df22'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+      - run: bun install --frozen-lockfile
+      - name: Require two byte-identical Linux x64 builds
+        shell: bash
+        run: |
+          set -euo pipefail
+          bun run build --target=linux-x64
+          cp packages/harness/dist/df-linux-x64 "$RUNNER_TEMP/df-first-build"
+          bun run build --target=linux-x64
+          cmp "$RUNNER_TEMP/df-first-build" packages/harness/dist/df-linux-x64
+          sha256sum packages/harness/dist/df-linux-x64
+
+  df22-stage-a:
+    name: DF22 immutable Stage A technical evidence
+    if: always() && github.event_name == 'push' && github.ref == 'refs/heads/agent/2709-candidate-verification-df22'
+    needs: [candidate, df22-quality, df22-web-docs, df22-supply-chain, df22-security, df22-fleet, df22-web-ux, df22-governed-e2e, df22-npm-install, df22-reproducibility]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 55
+    permissions:
+      contents: read
+      actions: read
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: "24"
+      - run: bun install --frozen-lockfile
+      - name: Require independent PR-safe source-free candidate and all DF22 technical checks
+        env:
+          DF_CANDIDATE: ${{ needs.candidate.result }}
+          DF_QUALITY: ${{ needs.df22-quality.result }}
+          DF_WEB: ${{ needs.df22-web-docs.result }}
+          DF_NPM: ${{ needs.df22-npm-install.result }}
+          DF_SUPPLY_CHAIN: ${{ needs.df22-supply-chain.result }}
+          DF_SECURITY: ${{ needs.df22-security.result }}
+          DF_FLEET: ${{ needs.df22-fleet.result }}
+          DF_WEB_UX: ${{ needs.df22-web-ux.result }}
+          DF_GOVERNED_E2E: ${{ needs.df22-governed-e2e.result }}
+          DF_REPRO: ${{ needs.df22-reproducibility.result }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          for job in DF_CANDIDATE DF_QUALITY DF_WEB DF_NPM DF_SUPPLY_CHAIN DF_SECURITY DF_FLEET DF_WEB_UX DF_GOVERNED_E2E DF_REPRO; do
+            test "${!job}" = success || { echo "::error::$job failed or skipped: ${!job}"; exit 1; }
+          done
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          pattern: candidate-*
+          path: candidate/native
+          merge-multiple: true
+      - name: Independently read back and verify all five native artifacts
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd candidate/native
+          for record in df-*.sha256; do sha256sum -c "$record"; done
+          for archive in df-*.tar.gz; do
+            tar -tzf "$archive" > "$RUNNER_TEMP/df22-archive-contents.txt"
+            grep -q 'assets/graph.darkfactory.json' "$RUNNER_TEMP/df22-archive-contents.txt"
+            grep -q 'schemas/graph.schema.json' "$RUNNER_TEMP/df22-archive-contents.txt"
+            grep -q 'photon_rs_bg.wasm' "$RUNNER_TEMP/df22-archive-contents.txt"
+            grep -q 'plugins/' "$RUNNER_TEMP/df22-archive-contents.txt"
+          done
+          sha256sum df-* > ../native-readback.txt
+      - name: Construct npm distribution from downloaded native bytes
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p candidate/extra
+          bun packages/harness/scripts/candidate-npm.ts --native candidate/native --out candidate/npm
+          cp candidate/npm/*.tgz candidate/extra/
+          cp candidate/native-readback.txt candidate/extra/native-readback.txt
+      - name: Rebuild and package verified integrated Web and Docs distribution
+        env:
+          DF_WEB_BASE_PATH: /DarkFactory/
+          DF_WEB_REPOSITORY: marius-patrik/DarkFactory
+        shell: bash
+        run: |
+          set -euo pipefail
+          bun run docs
+          bun packages/web/scripts/build.ts packages/web/dist
+          bun scripts/build-docs.ts --repo-root . --out "$RUNNER_TEMP/df22-site" --web-dist packages/web/dist --base-path /DarkFactory/
+          bun scripts/build-docs.ts --verify-artifact "$RUNNER_TEMP/df22-site" --base-path /DarkFactory/
+          tar -czf candidate/extra/unified-web-docs.tar.gz -C "$RUNNER_TEMP/df22-site" .
+      - name: Produce and verify non-root Docker image archive
+        shell: bash
+        run: |
+          set -euo pipefail
+          docker build --progress=plain -f docker/Dockerfile.agent -t darkfactory-agent:df22 .
+          test "$(docker run --rm --entrypoint id darkfactory-agent:df22 -u)" = 1001
+          docker run --rm darkfactory-agent:df22 --version | grep -q 'df v1.0.0'
+          docker run --rm --read-only --tmpfs /tmp darkfactory-agent:df22 --version | grep -q 'df v1.0.0'
+          docker save darkfactory-agent:df22 | gzip -n > candidate/extra/darkfactory-agent-df22.tar.gz
+          docker image inspect --format '{{.Id}}' darkfactory-agent:df22 > candidate/extra/docker-image-id.txt
+      # The pinned TypeDoc depends on minimatch 10 APIs removed in v11. All high
+      # advisories are eliminated; its remaining moderate advisory is reported in
+      # the unfiltered bun-audit.json and requires explicit downstream triage.
+      - name: Create CycloneDX SBOM and record license, vulnerability and pin results
+        shell: bash
+        run: |
+          set -euo pipefail
+          bun packages/harness/scripts/candidate-evidence.ts sbom --out candidate/extra/sbom.cdx.json
+          bun audit --audit-level=high --json > candidate/extra/bun-audit.json
+          git grep -nE 'uses: [^#]+@(v[0-9]+|main|master)' -- .github/workflows/release.yml .github/workflows/candidate-release.yml .github/workflows/df17-source-free-candidate.yml > candidate/extra/unpinned-actions.txt || true
+          test ! -s candidate/extra/unpinned-actions.txt
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: candidate-extra
+          path: candidate/extra/
+          if-no-files-found: error
+          retention-days: 14
+      - name: Generate exactly DF-19 schema-2 Stage A from actual source, Actions and bytes
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          bun packages/harness/scripts/candidate-stage-a.ts --native candidate/native --extra candidate/extra --out candidate/technical-candidate.json
+          sha256sum candidate/technical-candidate.json
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: technical-candidate
+          path: candidate/technical-candidate.json
+          if-no-files-found: error
+          retention-days: 14
+
+  df22-readback:
+    name: DF22 independent retained-artifact download and SHA-256 readback
+    if: always() && needs.df22-stage-a.result == 'success' && github.event_name == 'push' && github.ref == 'refs/heads/agent/2709-candidate-verification-df22'
+    needs: df22-stage-a
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      actions: read
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+      - run: bun install --frozen-lockfile
+      - name: Redownload exact retained canonical Stage A from the workflow artifact store
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: technical-candidate
+          path: readback
+      - name: Independently redownload all five native bundles and supplemental distributions
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          pattern: candidate-*
+          path: readback/assets
+          merge-multiple: true
+      - name: Require exact DF19 schema, provenance, asset inventory and hashes after independent download
+        shell: bash
+        run: |
+          set -euo pipefail
+          manifest=readback/technical-candidate.json
+          test -s "$manifest"
+          jq -e --arg sha "$GITHUB_SHA" --arg run "$GITHUB_RUN_ID" \
+            '.schema == 2 and .kind == "technical-candidate" and .source.sha == $sha and .build.run_id == ($run | tonumber) and .build.workflow == ".github/workflows/candidate-release.yml"' "$manifest"
+          digest=$(sha256sum "$manifest" | awk '{print $1}')
+          bun packages/harness/src/release/promotion-assets.ts "$manifest" "$digest" readback/assets
+          jq -r '.artifacts[] | "\(.sha256)  readback/assets/\(.name)"' "$manifest" | sha256sum -c -
+          echo "DF22_INDEPENDENT_READBACK_OK source=$GITHUB_SHA run=$GITHUB_RUN_ID manifest_sha256=$digest"
+          echo "IMMUTABLE_SHA256_MANIFEST_BEGIN"
+          jq -r '.artifacts[] | "\(.sha256)  \(.name) [\(.bundle)]"' "$manifest"
+          echo "IMMUTABLE_SHA256_MANIFEST_END"
