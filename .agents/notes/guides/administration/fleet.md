@@ -1,6 +1,6 @@
 # Fleet scope and installation policy
 
-App installation access is not authorization to modify every accessible repository. `repo.app.sweep.repositories` in the producer's [repo.dfconfig](../../../repo.dfconfig) is the explicit allowlist; at the integration base it is empty. Consumer eligibility requires an approved stable repository identity and observed permissions.
+App installation access is not authorization to modify every accessible repository. `repo.app.sweep.repositories` in the producer's [repo.dfconfig](../../../../repo.dfconfig) is the explicit allowlist; at the integration base it is empty. Consumer eligibility requires an approved stable repository identity and observed permissions.
 
 ## Before an update
 

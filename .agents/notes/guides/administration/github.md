@@ -1,6 +1,6 @@
 # GitHub administration
 
-**Configuration authority:** the `repo.app`, `repo.board` and `repo.protection` blocks in [repo.dfconfig](../../../repo.dfconfig).
+**Configuration authority:** the `repo.app`, `repo.board` and `repo.protection` blocks in [repo.dfconfig](../../../../repo.dfconfig).
 
 ## Installation
 
