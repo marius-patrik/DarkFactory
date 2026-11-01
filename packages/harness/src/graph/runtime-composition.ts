@@ -64,8 +64,13 @@ export function createProductionRuntimeFactory(options: ProductionRuntimeFactory
 		...(options.resolveConflict ? { resolveConflict: options.resolveConflict } : {}),
 	});
 	return async ({ subject, runDir, graph }: DispatchRuntimeInput): Promise<DispatchRuntime> => {
-		if (!options.distributedLease && !options.localOnly)
-			throw new Error("Production Request execution requires a fenced distributed lease or explicit localOnly mode");
+		if (options.distributedLease) {
+			throw new Error(
+				"Distributed production execution is blocked: PostgreSQL lease ownership alone cannot fence in-flight GitHub mutations, and a shared durable run/effect journal is not installed",
+			);
+		}
+		if (!options.localOnly)
+			throw new Error("Production Request execution requires verified distributed mutation fencing or explicit localOnly mode");
 		const github = createGitHubProductionEffects(options.repository, {
 			requiredChecks: graph.checks.filter((check) => check.required).map((check) => check.name),
 			mergeBoundary: options.mergeBoundary ?? createGovernedGitHubMergeBoundary(options.repository),
