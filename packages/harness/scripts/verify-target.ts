@@ -120,6 +120,52 @@ try {
 	await run([installed, "providers"], "standalone provider discovery", true, standalone);
 	await run([installed, "graph", "validate"], "standalone canonical graph", true, standalone);
 	await run([installed, "plugin", "list", "--json"], "standalone official plugin discovery", true, standalone);
+	// A bounded graph transition must be executable without a GitHub token or source checkout.
+	const eventPath = join(standalone, "graph-event.json");
+	const statePath = join(standalone, "graph-state.json");
+	await writeFile(eventPath, JSON.stringify({ type: "node.completed", node: "request-intake", outcome: "success", outputs: {} }));
+	await writeFile(statePath, JSON.stringify({
+		run_id: "df17-local-transition",
+		current_node: "request-intake",
+		outputs: {},
+		hints: [],
+	}));
+	const lifecycle = Bun.spawn([installed, "graph", "plan", "--event", eventPath, "--state", statePath], {
+		cwd: standalone,
+		stdout: "pipe",
+		stderr: "pipe",
+	});
+	const [planExit, planStdout, planStderr] = await Promise.all([
+		lifecycle.exited,
+		new Response(lifecycle.stdout).text(),
+		new Response(lifecycle.stderr).text(),
+	]);
+	if (planExit !== 0) throw new Error(`Standalone graph plan failed: ${planStderr || planStdout}`);
+	const next = JSON.parse(planStdout) as { type?: string; nodes?: string[] };
+	if (next.type !== "run" || !next.nodes?.includes("planning"))
+		throw new Error(`Standalone graph did not advance request-intake to planning: ${planStdout}`);
+	await writeFile(eventPath, JSON.stringify({ type: "node.completed", node: "planning", outcome: "quota_exhausted", outputs: {} }));
+	await writeFile(statePath, JSON.stringify({
+		run_id: "df17-local-transition",
+		current_node: "planning",
+		outputs: {},
+		hints: [],
+	}));
+	const blocked = Bun.spawn([installed, "graph", "plan", "--event", eventPath, "--state", statePath], {
+		cwd: standalone,
+		stdout: "pipe",
+		stderr: "pipe",
+	});
+	const [blockedExit, blockedOutput, blockedError] = await Promise.all([
+		blocked.exited,
+		new Response(blocked.stdout).text(),
+		new Response(blocked.stderr).text(),
+	]);
+	if (blockedExit !== 0) throw new Error(`Quota-blocked graph plan failed: ${blockedError}`);
+	const quota = JSON.parse(blockedOutput) as { type?: string; status?: string };
+	if (quota.type !== "comment" || quota.status !== "Blocked")
+		throw new Error(`Quota exhaustion was not checkpoint-blocked: ${blockedOutput}`);
+	process.stdout.write("standalone graph: request-to-planning transition and quota block validated\\n");
 	// Negative acceptance is executable: invalid input must fail rather than producing a false pass.
 	const invalidGraph = join(standalone, "invalid-graph.json");
 	await writeFile(invalidGraph, "{not json");
