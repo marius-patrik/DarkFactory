@@ -68,24 +68,28 @@ describe("PostgreSQL distributed ownership (independent OS processes)", () => {
 		}
 	});
 
-	databaseTest("paused stale runner cannot commit after an expired lease is handed over", async () => {
-		if (process.platform !== "linux") return;
-		const root = await mkdtemp(join(tmpdir(), "df21-stale-"));
-		roots.push(root);
-		const namespace = "df21-stale-" + crypto.randomUUID();
-		const stale = await started("hold", "stale", root, namespace);
-		await visible(join(root, "acquired-stale"));
-		stale.kill("SIGSTOP");
-		await Bun.sleep(1750);
-		const replacement = await started("quick", "fresh", root, namespace);
-		await visible(join(root, "completed-fresh"));
-		expect(await replacement.exited).toBe(0);
-		stale.kill("SIGCONT");
-		await visible(join(root, "lost-stale"), 12000);
-		expect(existsSync(join(root, "completed-stale"))).toBe(false);
-		expect(await readFile(join(root, "lost-stale"), "utf8")).toMatch(/lease|ownership/iu);
-		expect(await stale.exited).toBe(2);
-	}, 20_000);
+	databaseTest(
+		"paused stale runner cannot commit after an expired lease is handed over",
+		async () => {
+			if (process.platform !== "linux") return;
+			const root = await mkdtemp(join(tmpdir(), "df21-stale-"));
+			roots.push(root);
+			const namespace = "df21-stale-" + crypto.randomUUID();
+			const stale = await started("hold", "stale", root, namespace);
+			await visible(join(root, "acquired-stale"));
+			stale.kill("SIGSTOP");
+			await Bun.sleep(1750);
+			const replacement = await started("quick", "fresh", root, namespace);
+			await visible(join(root, "completed-fresh"));
+			expect(await replacement.exited).toBe(0);
+			stale.kill("SIGCONT");
+			await visible(join(root, "lost-stale"), 12000);
+			expect(existsSync(join(root, "completed-stale"))).toBe(false);
+			expect(await readFile(join(root, "lost-stale"), "utf8")).toMatch(/lease|ownership/iu);
+			expect(await stale.exited).toBe(2);
+		},
+		20_000,
+	);
 
 	databaseTest("a stale generation cannot renew or release a newer owner's claim", async () => {
 		const root = await mkdtemp(join(tmpdir(), "df21-generation-"));
