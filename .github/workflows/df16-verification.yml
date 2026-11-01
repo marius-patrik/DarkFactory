@@ -1,0 +1,26 @@
+name: DF-16 Nonpublishing Release Governance
+on:
+  push:
+    branches: [agent/2708-release-gate-df16]
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: df16-release-verification-${{ github.sha }}
+  cancel-in-progress: false
+jobs:
+  validate:
+    name: DF-16 release policy verification
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+      - run: bun install --frozen-lockfile
+      - run: bun run typecheck
+      - run: bun run format:check
+      - run: bun run lint
+      - run: bun test .github/tests/release
+      - run: bun run test

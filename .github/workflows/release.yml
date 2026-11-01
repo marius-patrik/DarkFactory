@@ -547,6 +547,9 @@ jobs:
           TAG: ${{ needs.resolve.outputs.tag }}
           DF_COMMIT: ${{ github.sha }}
           DF_EVIDENCE_SHA256: ${{ inputs.evidence_sha256 }}
+          GITHUB_TOKEN: ${{ github.token }}
+          RELEASE_VERSION: ${{ inputs.bump }}
+          EXPECTED_CANDIDATE_RUN: ${{ inputs.candidate_run_id }}
         run: |
           set -euo pipefail
           git fetch --tags --force

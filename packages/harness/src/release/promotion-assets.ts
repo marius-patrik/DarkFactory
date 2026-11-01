@@ -1,4 +1,4 @@
-import { readFileSync, readdirSync, statSync } from "node:fs";
+import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
 import { basename, join } from "node:path";
 import { createHash } from "node:crypto";
 import { assertArtifactBytes, assertPromotionEvidence } from "./promotion-evidence.ts";
@@ -36,7 +36,7 @@ try {
 		}
 	} else {
 		if (roots.length < 1 || roots.length > 2) throw new Error("Expected built asset directory/directories");
-		const files = roots.flatMap((root) => scan(root));
+		const files = roots.flatMap((root) => existsSync(root) ? scan(root) : root === "release-assets" ? [] : (() => { throw new Error("Missing mandatory asset directory: " + root); })());
 		assertArtifactBytes(evidence, files);
 	}
 	console.log("Candidate-bound artifact inventory verified.");
