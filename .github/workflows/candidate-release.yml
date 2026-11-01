@@ -414,3 +414,46 @@ jobs:
           path: candidate/technical-candidate.json
           if-no-files-found: error
           retention-days: 14
+
+  df22-readback:
+    name: DF22 independent retained-artifact download and SHA-256 readback
+    if: always() && needs.df22-stage-a.result == 'success' && github.event_name == 'push' && github.ref == 'refs/heads/agent/2709-candidate-verification-df22'
+    needs: df22-stage-a
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      actions: read
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+      - run: bun install --frozen-lockfile
+      - name: Redownload exact retained canonical Stage A from the workflow artifact store
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: technical-candidate
+          path: readback
+      - name: Independently redownload all five native bundles and supplemental distributions
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          pattern: candidate-*
+          path: readback/assets
+          merge-multiple: true
+      - name: Require exact DF19 schema, provenance, asset inventory and hashes after independent download
+        shell: bash
+        run: |
+          set -euo pipefail
+          manifest=readback/technical-candidate.json
+          test -s "$manifest"
+          jq -e --arg sha "$GITHUB_SHA" --arg run "$GITHUB_RUN_ID" \
+            '.schema == 2 and .kind == "technical-candidate" and .source.sha == $sha and .build.run_id == ($run | tonumber) and .build.workflow == ".github/workflows/candidate-release.yml"' "$manifest"
+          digest=$(sha256sum "$manifest" | awk '{print $1}')
+          bun packages/harness/src/release/promotion-assets.ts "$manifest" "$digest" readback/assets
+          jq -r '.artifacts[] | "\(.sha256)  readback/assets/\(.name)"' "$manifest" | sha256sum -c -
+          echo "DF22_INDEPENDENT_READBACK_OK source=$GITHUB_SHA run=$GITHUB_RUN_ID manifest_sha256=$digest"
+          echo "IMMUTABLE_SHA256_MANIFEST_BEGIN"
+          jq -r '.artifacts[] | "\(.sha256)  \(.name) [\(.bundle)]"' "$manifest"
+          echo "IMMUTABLE_SHA256_MANIFEST_END"
