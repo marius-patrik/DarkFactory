@@ -13,13 +13,13 @@ const processes: Array<ReturnType<typeof Bun.spawn>> = [];
 const worker = join(import.meta.dir, "fixtures", "pg-lease-worker.ts");
 
 async function started(mode: string, actor: string, directory: string, namespace: string) {
-	const process = Bun.spawn([process.execPath, worker, mode, actor, directory, namespace], {
+	const child = Bun.spawn([process.execPath, worker, mode, actor, directory, namespace], {
 		env: { ...Bun.env, DF21_TEST_DATABASE_URL: connectionString ?? "" },
 		stdout: "pipe",
 		stderr: "pipe",
 	});
-	processes.push(process);
-	return process;
+	processes.push(child);
+	return child;
 }
 
 async function visible(path: string, limitMs = 9000): Promise<void> {
