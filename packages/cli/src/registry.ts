@@ -2,7 +2,7 @@ import type {
 	CapabilityCommandDefinition,
 	CapabilityDefinition,
 	CapabilityRuntimeContext,
-} from "../../capability/src/index.ts";
+} from "../../../plugins/capability/src/index.ts";
 
 /** Origin of one command in the composed DarkFactory operator surface. */
 type CliCommandSource = "core" | "capability";

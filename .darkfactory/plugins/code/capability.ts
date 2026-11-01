@@ -2,7 +2,7 @@ import {
 	CAPABILITY_ABI_VERSION,
 	type CapabilityPackageContext,
 	defineCapability,
-} from "../../../packages/capability/src/index.ts";
+} from "../../../plugins/capability/src/index.ts";
 
 function nodeRun(pkg: CapabilityPackageContext, script: string): string | undefined {
 	if (!pkg.scripts.includes(script)) return undefined;

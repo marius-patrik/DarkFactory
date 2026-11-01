@@ -67,7 +67,7 @@ jobs:
         # pipeline ref runs that ref's code rather than its own. It replaces PYTHONPATH and
         # PIPELINE_SCRIPTS, which only existed to locate a Python script.
         run: |
-          if [ -d .darkfactory-pipeline/packages/harness ]; then
+          if [ -d .darkfactory-pipeline/plugins/harness ]; then
             echo "DF_ROOT=$GITHUB_WORKSPACE/.darkfactory-pipeline" >> "$GITHUB_ENV"
           else
             echo "DF_ROOT=$GITHUB_WORKSPACE" >> "$GITHUB_ENV"
@@ -83,7 +83,7 @@ jobs:
         # `pr-approval-main.ts` is the entry `handle_pr_approval.py` was. It takes no arguments, reads
         # the same environment, and exits 0 on every path the Python reached — a declined event must
         # not redden the workflow. A rejected board write propagates, as it did in the Python.
-        run: bun "$DF_ROOT/packages/harness/src/board/pr-approval-main.ts"
+        run: bun "$DF_ROOT/plugins/harness/src/board/pr-approval-main.ts"
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token || secrets.GH_PROJECT_TOKEN || secrets.GITHUB_TOKEN }}
           # The proxy approval must come from github-actions[bot], which is neither the App nor

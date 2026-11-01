@@ -9,7 +9,7 @@ on:
     types: [opened, edited, synchronize, reopened]
   workflow_dispatch:
 
-  # A consumer gets this check from the template in packages/harness/assets/workflows, not by calling
+  # A consumer gets this check from the template in plugins/harness/assets/workflows, not by calling
   # this file, so the two carry the same grammar from two owners until that template is converted.
   workflow_call:
     inputs:
@@ -56,7 +56,7 @@ jobs:
           if [ -d "$GITHUB_WORKSPACE/.darkfactory-pipeline" ]; then
             ROOT="$GITHUB_WORKSPACE/.darkfactory-pipeline"
           fi
-          bun "$ROOT/packages/harness/src/ci/bound-issue.ts"
+          bun "$ROOT/plugins/harness/src/ci/bound-issue.ts"
         env:
           PR_BODY: ${{ github.event.pull_request.body }}
           GITHUB_EVENT_NAME: ${{ github.event_name }}

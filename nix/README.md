@@ -4,7 +4,7 @@ The production agent container is a reproducible Nix image from `flake.nix`.
 The resolved Bun dependencies come from the root `bun.lock`, and there is
 one TypeScript CLI implementation at `packages/cli/src/cli.ts`. The image runs
 the **same compiled executable** and accompanying assets produced by
-`packages/harness/scripts/build.ts` for native releases; no source-tree
+`plugins/harness/scripts/build.ts` for native releases; no source-tree
 interpreter or runtime `node_modules` installation is involved.
 
 ## Build and execute

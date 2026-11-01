@@ -104,7 +104,7 @@ jobs:
           if [ -d "$GITHUB_WORKSPACE/.darkfactory-pipeline" ]; then
             ROOT="$GITHUB_WORKSPACE/.darkfactory-pipeline"
           fi
-          bun "$ROOT/packages/harness/src/board/main.ts"
+          bun "$ROOT/plugins/harness/src/board/main.ts"
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token || secrets.GH_PROJECT_TOKEN || secrets.GITHUB_TOKEN }}
           GH_PROJECT_TOKEN: ${{ secrets.GH_PROJECT_TOKEN }}

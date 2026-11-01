@@ -1,6 +1,6 @@
 import { mkdir, rm, writeFile } from "node:fs/promises";
 import { join, posix } from "node:path";
-import type { DocsApiSymbol, DocsContentGraph, DocsPage } from "../../docs/src/content.ts";
+import type { DocsApiSymbol, DocsContentGraph, DocsPage } from "../../../plugins/docs/src/content.ts";
 
 function escapeHtml(value: string): string {
 	return value.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;").replaceAll('"', "&quot;");

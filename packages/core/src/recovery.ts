@@ -4,7 +4,7 @@ import {
 	type RecoveryIntakeRecord,
 	type RecoverySourceIdentity,
 	recoveryIntakeRecordSchema,
-} from "../../protocol/src/recovery.ts";
+} from "../../../plugins/protocol/src/recovery.ts";
 
 /** Current authoritative context used to decide whether approved Planning remains reusable. */
 interface RecoveryPlanningContext {

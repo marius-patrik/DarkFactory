@@ -10,14 +10,14 @@ import { createInterface } from "node:readline/promises";
 import type { AuthEvent, AuthPrompt, Provider } from "@earendil-works/pi-ai";
 import { fauxAssistantMessage, fauxProvider } from "@earendil-works/pi-ai";
 import { formatCaptureSchema } from "./capture-schema.ts";
-import { importAntigravityAccount, OsKeyringAdapter } from "../../keychain/src/import/antigravity.ts";
-import { importClaudeAccount } from "../../keychain/src/import/claude.ts";
-import { importCodexAccount } from "../../keychain/src/import/codex.ts";
-import { importGrokAccount } from "../../keychain/src/import/grok.ts";
-import { OsClaudeKeyringAdapter } from "../../keychain/src/import/keyring.ts";
-import { importKimiAccount } from "../../keychain/src/import/kimi.ts";
-import { OsHomeReader } from "../../keychain/src/import/reader.ts";
-import type { ExternalCredentialSourceConfig, ExternalExpiryFormat } from "../../keychain/src/index.ts";
+import { importAntigravityAccount, OsKeyringAdapter } from "../../../plugins/keychain/src/import/antigravity.ts";
+import { importClaudeAccount } from "../../../plugins/keychain/src/import/claude.ts";
+import { importCodexAccount } from "../../../plugins/keychain/src/import/codex.ts";
+import { importGrokAccount } from "../../../plugins/keychain/src/import/grok.ts";
+import { OsClaudeKeyringAdapter } from "../../../plugins/keychain/src/import/keyring.ts";
+import { importKimiAccount } from "../../../plugins/keychain/src/import/kimi.ts";
+import { OsHomeReader } from "../../../plugins/keychain/src/import/reader.ts";
+import type { ExternalCredentialSourceConfig, ExternalExpiryFormat } from "../../../plugins/keychain/src/index.ts";
 import {
 	ConfiguredBorrowedCredentialCoordinator,
 	defaultDfHome,
@@ -27,26 +27,26 @@ import {
 	loadVaultKey,
 	OsExternalKeyring,
 	parseAccountId,
-} from "../../keychain/src/index.ts";
-import { loginProviderAccount } from "../../keychain/src/login.ts";
-import { runPluginCli } from "../../plugins/src/index.ts";
-import { runCiCli } from "../../harness/src/ci/cli.ts";
-import { executableReleaseVersion, runReleasedInstaller } from "../../harness/src/install/released-df.ts";
-import { applyLicence } from "../../harness/src/ci/licensing.ts";
-import { observeWorkflowCompletion } from "../../harness/src/ci/report-failure.ts";
+} from "../../../plugins/keychain/src/index.ts";
+import { loginProviderAccount } from "../../../plugins/keychain/src/login.ts";
+import { runPluginCli } from "../../../plugins/plugins/src/index.ts";
+import { runCiCli } from "../../../plugins/harness/src/ci/cli.ts";
+import { executableReleaseVersion, runReleasedInstaller } from "../../../plugins/harness/src/install/released-df.ts";
+import { applyLicence } from "../../../plugins/harness/src/ci/licensing.ts";
+import { observeWorkflowCompletion } from "../../../plugins/harness/src/ci/report-failure.ts";
 import {
 	DEFAULT_ROUTER_CONFIG,
 	type DfConfig,
 	loadDfConfig,
 	localCredentialFallback,
-} from "../../harness/src/config.ts";
-import type { Candidate } from "../../harness/src/failover.ts";
-import { GitHubClient } from "../../harness/src/github/client.ts";
-import { GitHubRepository } from "../../harness/src/github/repository.ts";
-import { bundledGraphPath } from "../../harness/src/graph/assets.ts";
-import { type GraphEvent, plan, type RunState, validateGraph } from "../../harness/src/graph/index.ts";
-import { parseCandidate, parseChain, resolveRouting } from "../../harness/src/harness/routing.ts";
-import { validateCandidateCredentials } from "../../harness/src/harness/runtime.ts";
+} from "../../../plugins/harness/src/config.ts";
+import type { Candidate } from "../../../plugins/harness/src/failover.ts";
+import { GitHubClient } from "../../../plugins/harness/src/github/client.ts";
+import { GitHubRepository } from "../../../plugins/harness/src/github/repository.ts";
+import { bundledGraphPath } from "../../../plugins/harness/src/graph/assets.ts";
+import { type GraphEvent, plan, type RunState, validateGraph } from "../../../plugins/harness/src/graph/index.ts";
+import { parseCandidate, parseChain, resolveRouting } from "../../../plugins/harness/src/harness/routing.ts";
+import { validateCandidateCredentials } from "../../../plugins/harness/src/harness/runtime.ts";
 import {
 	type CandidateFailureReason,
 	ChainExhaustedError,
@@ -54,24 +54,28 @@ import {
 	type HarnessEvent,
 	type RunDeadline,
 	RunTimeoutError,
-} from "../../harness/src/harness/supervisor.ts";
-import { runDoctorIdentities } from "../../harness/src/identities/index.ts";
-import { LimitLedger } from "../../harness/src/limits/ledger.ts";
-import { QuotaEngine } from "../../harness/src/limits/quota-engine.ts";
-import { buildQuotaReport } from "../../harness/src/limits/quota-report.ts";
-import { sweepQuotaResumes } from "../../harness/src/limits/resume-sweep.ts";
-import { estimateTask } from "../../harness/src/limits/routing.ts";
-import { type CatalogResult, isRunnableCatalogModel, ModelCatalog } from "../../harness/src/models/catalog.ts";
-import { ModelPoller } from "../../harness/src/models/poller.ts";
-import { RUNNER_COMMANDS, type RunnerCommand, runnerMain } from "../../harness/src/pipeline/main.ts";
-import { ProviderRegistry } from "../../harness/src/providers/runtime.ts";
-import { loadProviderConfig } from "../../harness/src/providers/schema.ts";
-import { classifyFailure } from "../../harness/src/quota.ts";
-import { redactErrorMessage } from "../../harness/src/redaction.ts";
-import { buildRouterCatalog } from "../../harness/src/router/catalog.ts";
-import { OutcomeStore } from "../../harness/src/router/outcomes.ts";
-import { routeTask } from "../../harness/src/router/router.ts";
-import { type CapabilityEscalationPolicy, candidateTierKey } from "../../harness/src/router/tiers.ts";
+} from "../../../plugins/harness/src/harness/supervisor.ts";
+import { runDoctorIdentities } from "../../../plugins/harness/src/identities/index.ts";
+import { LimitLedger } from "../../../plugins/harness/src/limits/ledger.ts";
+import { QuotaEngine } from "../../../plugins/harness/src/limits/quota-engine.ts";
+import { buildQuotaReport } from "../../../plugins/harness/src/limits/quota-report.ts";
+import { sweepQuotaResumes } from "../../../plugins/harness/src/limits/resume-sweep.ts";
+import { estimateTask } from "../../../plugins/harness/src/limits/routing.ts";
+import {
+	type CatalogResult,
+	isRunnableCatalogModel,
+	ModelCatalog,
+} from "../../../plugins/harness/src/models/catalog.ts";
+import { ModelPoller } from "../../../plugins/harness/src/models/poller.ts";
+import { RUNNER_COMMANDS, type RunnerCommand, runnerMain } from "../../../plugins/harness/src/pipeline/main.ts";
+import { ProviderRegistry } from "../../../plugins/harness/src/providers/runtime.ts";
+import { loadProviderConfig } from "../../../plugins/harness/src/providers/schema.ts";
+import { classifyFailure } from "../../../plugins/harness/src/quota.ts";
+import { redactErrorMessage } from "../../../plugins/harness/src/redaction.ts";
+import { buildRouterCatalog } from "../../../plugins/harness/src/router/catalog.ts";
+import { OutcomeStore } from "../../../plugins/harness/src/router/outcomes.ts";
+import { routeTask } from "../../../plugins/harness/src/router/router.ts";
+import { type CapabilityEscalationPolicy, candidateTierKey } from "../../../plugins/harness/src/router/tiers.ts";
 import type {
 	Difficulty,
 	ModelCapability,
@@ -80,14 +84,14 @@ import type {
 	TaskSize as RouterTaskSize,
 	TaskKind,
 	TaskNeed,
-} from "../../harness/src/router/types.ts";
-import { secretsCommand } from "../../harness/src/secrets/cli.ts";
-import { runWorkspaceCli } from "../../harness/src/workspace/cli.ts";
+} from "../../../plugins/harness/src/router/types.ts";
+import { secretsCommand } from "../../../plugins/harness/src/secrets/cli.ts";
+import { runWorkspaceCli } from "../../../plugins/harness/src/workspace/cli.ts";
 import {
 	describeSubmoduleMovement,
 	pinSubmoduleBranches,
 	updateSubmodules,
-} from "../../harness/src/workspace/submodules.ts";
+} from "../../../plugins/harness/src/workspace/submodules.ts";
 
 function usage(): string {
 	return [
@@ -1625,7 +1629,7 @@ async function graphCommand(args: string[]): Promise<void> {
 		return;
 	}
 	if (subcommand === "dispatch") {
-		const { dispatch } = await import("../../harness/src/graph/dispatch.ts");
+		const { dispatch } = await import("../../../plugins/harness/src/graph/dispatch.ts");
 		await dispatch(args.slice(1));
 		return;
 	}
