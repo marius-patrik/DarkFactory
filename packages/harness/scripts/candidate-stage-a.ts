@@ -51,7 +51,12 @@ async function files(directory: string): Promise<string[]> {
 }
 async function asset(directory: string, name: string, bundle: string): Promise<EvidenceAsset> {
 	const bytes = await readFile(join(directory, name));
-	requireValue(bytes.length > 0, `Empty asset: ${name}`);
+	// An empty pin-findings receipt is evidence of zero floating release actions.
+	// Every executable, archive, manifest and other verification receipt stays nonempty.
+	requireValue(
+		bytes.length > 0 || (bundle === "candidate-extra" && name === "unpinned-actions.txt"),
+		`Empty asset: ${name}`,
+	);
 	return { name, sha256: sha256(bytes), bundle };
 }
 async function verifiedJobs(runId: number, attempt: number, sourceSha: string, token: string): Promise<EvidenceRun[]> {
