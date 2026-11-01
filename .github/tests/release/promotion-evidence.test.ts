@@ -1,109 +1,104 @@
 import { describe, expect, test } from "bun:test";
 import { createHash } from "node:crypto";
-import { releaseAssetNames } from "../../../packages/harness/scripts/release-targets.ts";
+import { readFileSync } from "node:fs";
+import { RELEASE_TARGETS, releaseAssetNames } from "../../../packages/harness/scripts/release-targets.ts";
 import {
-	assertArtifactBytes,
-	assertPromotionEvidence,
+ assertArtifactBytes, assertPromotionEvidence, assertTechnicalCandidate, type PromotionEvidence,
 } from "../../../packages/harness/src/release/promotion-evidence.ts";
+import { assertRemoteDraft } from "../../../packages/harness/src/release/promotion-assets.ts";
 
-const digest = (s: string) => createHash("sha256").update(s).digest("hex");
-const sha = (c: string) => c.repeat(40);
-const targets = releaseAssetNames().map((name) => name.replace(/^df-/u, "").replace(/\.exe$/u, ""));
-const fileNames = releaseAssetNames().flatMap((name) => [name, name + ".tar.gz"]);
-
-function evidence() {
-	return {
-		schema: 1,
-		repository: "marius-patrik/DarkFactory",
-		candidate_id: "df17-candidate-001",
-		version: "1.0.0",
-		capability_abi: "1",
-		source: {
-			reviewed_sha: sha("a"),
-			reviewed_tree: sha("c"),
-			final_sha: sha("b"),
-			final_tree: sha("c"),
-			lock_sha256: "d".repeat(64),
-			pull_request: 2709,
-		},
-		candidate: { run_id: 404, head_sha: sha("a"), conclusion: "success" },
-		targets: [...targets],
-		artifacts: fileNames.map((name) => ({ name, sha256: digest(name) })),
-		acceptance: ["source-free", "security", "fleet", "web-ux", "supply-chain", "governed-e2e"].map((name, i) => ({
-			name,
-			run_id: i + 405,
-			head_sha: sha("a"),
-			conclusion: "success",
-		})),
-		independent_review: { reviewer: "independent-reviewer", reviewed_sha: sha("a"), state: "APPROVED" },
-		publication_authorization: { state: "pending", actor: null as string | null },
-	};
+export const sha = (c: string) => c.repeat(40);
+export const digest = (s: string | Uint8Array) => createHash("sha256").update(s).digest("hex");
+export function technical() {
+ const names = releaseAssetNames();
+ return {
+  schema: 2, kind: "technical-candidate", repository: "marius-patrik/DarkFactory",
+  candidate_id: "df17-premerge-001", version: "1.0.0", capability_abi: "1",
+  source: { sha: sha("a"), tree: sha("c"), lock_sha256: digest(readFileSync("bun.lock")) },
+  build: { run_id: 401, run_attempt: 1, workflow: ".github/workflows/candidate-release.yml" },
+  targets: RELEASE_TARGETS.map((t) => t.name),
+  artifacts: names.flatMap((name, i) => [name, name + ".tar.gz"].map((asset) =>
+   ({ name: asset, sha256: digest(asset), bundle: "candidate-" + RELEASE_TARGETS[i]!.name }))),
+  acceptance: ["source-free", "security", "fleet", "web-ux", "supply-chain", "governed-e2e"].map((name, i) =>
+   ({ name, run_id: i === 0 ? 401 : 500 + i, head_sha: sha("a") })),
+  provenance: { provider: "github-actions", repository: "marius-patrik/DarkFactory", source_sha: sha("a") },
+ };
 }
-
-describe("DF-16 fail-closed release candidate evidence", () => {
-	test("accepts complete pending candidate but not pending publication", () => {
-		const e = evidence();
-		expect(assertPromotionEvidence(e, "candidate").version).toBe("1.0.0");
-		expect(() => assertPromotionEvidence(e, "publish")).toThrow("human authorization pending");
-		// The candidate cannot foresee final human approval. Only a live GitHub
-		// environment readback (not the manifest) may authorize the transition.
-		expect(assertPromotionEvidence(e, "publish", true).version).toBe("1.0.0");
-		e.publication_authorization = { state: "approved", actor: "marius-patrik" };
-		expect(assertPromotionEvidence(e, "publish").version).toBe("1.0.0");
-	});
-	test("rejects missing mandatory security/fleet and skipped acceptance", () => {
-		const e = evidence();
-		e.acceptance = e.acceptance.filter((r) => r.name !== "fleet");
-		expect(() => assertPromotionEvidence(e, "candidate")).toThrow("fleet");
-		e.acceptance = evidence().acceptance;
-		e.acceptance[1]!.conclusion = "skipped";
-		expect(() => assertPromotionEvidence(e, "candidate")).toThrow("skipped");
-	});
-	test("rejects stale approval or mismatched reviewed SHA", () => {
-		const e = evidence();
-		e.independent_review.reviewed_sha = sha("f");
-		expect(() => assertPromotionEvidence(e, "candidate")).toThrow("stale reviewer");
-		e.independent_review.reviewed_sha = sha("a");
-		e.source.final_tree = sha("b");
-		expect(() => assertPromotionEvidence(e, "candidate")).toThrow("trees differ");
-	});
-	test("rejects unsupported ABI and nonstable production versions", () => {
-		const e = evidence();
-		e.capability_abi = "2";
-		expect(() => assertPromotionEvidence(e, "candidate")).toThrow("ABI");
-		e.capability_abi = "1";
-		for (const v of ["0.292.5", "1.0.0-rc.1", "01.0.0", "1.0", "latest"]) {
-			e.version = v;
-			expect(() => assertPromotionEvidence(e, "candidate")).toThrow();
-		}
-	});
-	test("rejects unknown targets, missing binary, duplicate or malformed digests", () => {
-		const e = evidence();
-		e.targets.splice(0, 1);
-		expect(() => assertPromotionEvidence(e, "candidate")).toThrow("target");
-		e.targets = [...targets];
-		e.artifacts.pop();
-		expect(() => assertPromotionEvidence(e, "candidate")).toThrow("archive");
-		e.artifacts = evidence().artifacts;
-		e.artifacts[0]!.sha256 = "invalid";
-		expect(() => assertPromotionEvidence(e, "candidate")).toThrow("digest");
-	});
-	test("rejects changed bytes, unreviewed extras and partial uploads", () => {
-		const e = assertPromotionEvidence(evidence(), "candidate");
-		const files = fileNames.map((name) => ({ name, bytes: Buffer.from(name) }));
-		expect(() => assertArtifactBytes(e, files)).not.toThrow();
-		const altered = [...files];
-		altered[0] = { name: files[0]!.name, bytes: Buffer.from("corrupted") };
-		expect(() => assertArtifactBytes(e, altered)).toThrow("digest mismatch");
-		expect(() => assertArtifactBytes(e, files.slice(1))).toThrow("partial publication");
-		expect(() => assertArtifactBytes(e, [...files, { name: "malicious", bytes: Buffer.from("x") }])).toThrow();
-	});
-	test("rejects duplicate candidate asset names and stale source-free CI", () => {
-		const e = evidence();
-		e.artifacts[1]!.name = e.artifacts[0]!.name;
-		expect(() => assertPromotionEvidence(e, "candidate")).toThrow("duplicate artifact");
-		e.artifacts = evidence().artifacts;
-		e.candidate.head_sha = sha("e");
-		expect(() => assertPromotionEvidence(e, "candidate")).toThrow("candidate not successful");
-	});
+export function sealed(a = assertTechnicalCandidate(technical())): PromotionEvidence {
+ return {
+  schema: 2, kind: "promotion-evidence", repository: "marius-patrik/DarkFactory",
+  candidate_id: a.candidate_id, technical_sha256: "d".repeat(64),
+  source: { reviewed_sha: a.source.sha, reviewed_tree: a.source.tree,
+   final_sha: sha("b"), final_tree: a.source.tree, pull_request: 77 },
+  review: { id: 90, reviewer: "human-reviewer", commit_sha: a.source.sha },
+  final_checks: ["quality", "verify-bound-issue", "candidate"],
+  authorization: { run_id: 701, approver: "external-approver", environment: "production-release" },
+ };
+}
+describe("DF-19 immutable Stage A / postmerge Stage B contract", () => {
+ test("a valid candidate is possible before final commit, PR or human review exists", () => {
+  const a = assertTechnicalCandidate(technical());
+  expect(a.source.sha).toBe(sha("a"));
+  expect("final_sha" in a.source).toBe(false);
+  expect("publication_authorization" in a).toBe(false);
+  expect("independent_review" in a).toBe(false);
+ });
+ test("no seal or replaced candidate cannot authorize publication", () => {
+  const a = assertTechnicalCandidate(technical());
+  expect(() => assertPromotionEvidence(undefined, a, "d".repeat(64))).toThrow("missing sealing");
+  const b = sealed(a);
+  expect(assertPromotionEvidence(b, a, "d".repeat(64))).toEqual(b);
+  expect(() => assertPromotionEvidence(b, a, "e".repeat(64))).toThrow("replaced");
+  b.source.final_tree = sha("f");
+  expect(() => assertPromotionEvidence(b, a, "d".repeat(64))).toThrow("tree");
+ });
+ test("rejects missing native, unknown targets, wrong bundles and stale/failed or incomplete acceptance", () => {
+  const fixture = technical();
+  fixture.artifacts.pop();
+  expect(() => assertTechnicalCandidate(fixture)).toThrow("binary/archive");
+  fixture.artifacts = technical().artifacts;
+  fixture.artifacts[0]!.bundle = "candidate-extra";
+  expect(() => assertTechnicalCandidate(fixture)).toThrow("unauthorized bundle");
+  fixture.artifacts = technical().artifacts;
+  fixture.targets.pop();
+  expect(() => assertTechnicalCandidate(fixture)).toThrow("target");
+  fixture.targets = technical().targets;
+  fixture.acceptance[0]!.head_sha = sha("f");
+  expect(() => assertTechnicalCandidate(fixture)).toThrow("technical acceptance");
+ });
+ test("rejects changed lockfile identity, unsupported ABI and malformed version", () => {
+  const fixture = technical();
+  fixture.source.lock_sha256 = "bad";
+  expect(() => assertTechnicalCandidate(fixture)).toThrow("lock");
+  fixture.source = technical().source;
+  fixture.capability_abi = "999";
+  expect(() => assertTechnicalCandidate(fixture)).toThrow("ABI");
+  fixture.capability_abi = "1";
+  fixture.version = "1.0.0-rc1";
+  expect(() => assertTechnicalCandidate(fixture)).toThrow("SemVer");
+ });
+ test("detects mutated bytes, duplicate local assets, missing or additional assets", () => {
+  const a = assertTechnicalCandidate(technical());
+  const files = a.artifacts.map((asset) => ({ name: asset.name, bytes: Buffer.from(asset.name) }));
+  expect(() => assertArtifactBytes(a, files)).not.toThrow();
+  expect(() => assertArtifactBytes(a, files.slice(1))).toThrow("partial");
+  expect(() => assertArtifactBytes(a, [...files, files[0]!])).toThrow();
+  expect(() => assertArtifactBytes(a, [...files.slice(1), { name: files[0]!.name, bytes: Buffer.from("tampered") }])).toThrow("digest");
+  expect(() => assertArtifactBytes(a, [...files, { name: "unapproved", bytes: Buffer.from("x") }])).toThrow();
+ });
+ test("checks GitHub's uploaded remote asset digest, identity, cardinality and state", () => {
+  const a = assertTechnicalCandidate(technical());
+  const b = sealed(a);
+  const release = { draft: true, tag_name: "v1.0.0", target_commitish: sha("b") };
+  const assets = a.artifacts.map((asset, i) => ({ id: i + 1, name: asset.name,
+   state: "uploaded", size: 100, digest: "sha256:" + asset.sha256 }));
+  expect(() => assertRemoteDraft(a, b, release, assets)).not.toThrow();
+  expect(() => assertRemoteDraft(a, b, release, assets.slice(1))).toThrow("partial");
+  const changed = structuredClone(assets);
+  changed[0]!.digest = "sha256:" + "f".repeat(64);
+  expect(() => assertRemoteDraft(a, b, release, changed)).toThrow("checksum");
+  changed[0] = { ...assets[0]!, name: "evil" };
+  expect(() => assertRemoteDraft(a, b, release, changed)).toThrow("unreviewed");
+  expect(() => assertRemoteDraft(a, b, { ...release, draft: false }, assets)).toThrow("draft");
+ });
 });

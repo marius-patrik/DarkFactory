@@ -25,11 +25,11 @@ on:
         required: true
         type: string
       candidate_run_id:
-        description: "Successful DF-17 candidate run that uploaded promotion-evidence"
+        description: "Successful DF-17 Stage A technical candidate producing run"
         required: true
         type: string
       evidence_sha256:
-        description: "SHA-256 of promotion-evidence.json independently verified by the operator"
+        description: "Independent SHA-256 of immutable technical-candidate.json"
         required: true
         type: string
 
@@ -113,11 +113,11 @@ jobs:
           [[ "$DF_EVIDENCE_SHA256" =~ ^[a-f0-9]{64}$ ]] || { echo "::error::Evidence SHA-256 required"; exit 1; }
           mkdir -p "$RUNNER_TEMP/df-promotion"
           gh run download "$DF_CANDIDATE_RUN" -R "$GITHUB_REPOSITORY" \
-            -n promotion-evidence -D "$RUNNER_TEMP/df-promotion"
-          test -s "$RUNNER_TEMP/df-promotion/promotion-evidence.json"
-          echo "$DF_EVIDENCE_SHA256  $RUNNER_TEMP/df-promotion/promotion-evidence.json" | sha256sum -c -
+            -n technical-candidate -D "$RUNNER_TEMP/df-promotion"
+          test -s "$RUNNER_TEMP/df-promotion/technical-candidate.json"
+          echo "$DF_EVIDENCE_SHA256  $RUNNER_TEMP/df-promotion/technical-candidate.json" | sha256sum -c -
 
-      - name: Verify candidate, security, review, fleet, protected final SHA and release environment
+      - name: Verify Stage A against live GitHub source, PR and checks
         if: github.repository == 'marius-patrik/DarkFactory'
         env:
           GITHUB_TOKEN: ${{ github.token }}
@@ -127,16 +127,16 @@ jobs:
         run: |
           set -euo pipefail
           bun packages/harness/src/release/promotion-preflight.ts \
-            --phase=candidate \
-            --evidence="$RUNNER_TEMP/df-promotion/promotion-evidence.json" \
+            --phase=resolve \
+            --technical="$RUNNER_TEMP/df-promotion/technical-candidate.json" \
             --digest="$DF_EVIDENCE_SHA256"
 
-      - name: Retain verified candidate evidence for guarded publication
+      - name: Retain immutable technical candidate for guarded publication
         if: github.repository == 'marius-patrik/DarkFactory'
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
-          name: verified-promotion-evidence
-          path: ${{ runner.temp }}/df-promotion/promotion-evidence.json
+          name: verified-technical-candidate
+          path: ${{ runner.temp }}/df-promotion/technical-candidate.json
           if-no-files-found: error
           retention-days: 3
 
@@ -275,7 +275,7 @@ jobs:
           bun --version
 
       - name: Build release assets
-        if: steps.version.outputs.warranted == 'true'
+        if: steps.version.outputs.warranted == 'true' && github.repository != 'marius-patrik/DarkFactory'
         run: |
           # `@sh` is the quoting the generated script depends on: a cwd with a space in it would
           # otherwise split the line into two commands. Both `steps` and each step's `cwd` are
@@ -306,7 +306,7 @@ jobs:
           fi
 
       - name: Collect release assets
-        if: steps.version.outputs.warranted == 'true'
+        if: steps.version.outputs.warranted == 'true' && github.repository != 'marius-patrik/DarkFactory'
         id: assets
         # `collectAssets` is the port of `release.collect_assets`; it resolves the artifact globs the
         # build steps declare. The list is written twice because the publish job needs it as a file
@@ -324,7 +324,7 @@ jobs:
           ' >> "$GITHUB_OUTPUT"
 
       - name: Stage the collected release assets
-        if: steps.version.outputs.warranted == 'true' && steps.assets.outputs.has == 'true'
+        if: steps.version.outputs.warranted == 'true' && steps.assets.outputs.has == 'true' && github.repository != 'marius-patrik/DarkFactory'
         run: |
           mkdir -p "$RUNNER_TEMP/release-assets"
           while IFS= read -r asset; do
@@ -335,7 +335,7 @@ jobs:
           find "$RUNNER_TEMP/release-assets" -type f
 
       - name: Upload the collected release assets
-        if: steps.version.outputs.warranted == 'true' && steps.assets.outputs.has == 'true'
+        if: steps.version.outputs.warranted == 'true' && steps.assets.outputs.has == 'true' && github.repository != 'marius-patrik/DarkFactory'
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: release-assets
@@ -362,7 +362,7 @@ jobs:
   build:
     name: build ${{ matrix.target }}
     needs: resolve
-    if: needs.resolve.outputs.warranted == 'true'
+    if: needs.resolve.outputs.warranted == 'true' && github.repository != 'marius-patrik/DarkFactory'
     strategy:
       fail-fast: false
       matrix: ${{ fromJSON(needs.resolve.outputs.matrix) }}
@@ -400,7 +400,7 @@ jobs:
   publish:
     name: publish
     needs: [resolve, build]
-    if: needs.resolve.outputs.warranted == 'true'
+    if: always() && needs.resolve.result == 'success' && needs.resolve.outputs.warranted == 'true' && (github.repository == 'marius-patrik/DarkFactory' || needs.build.result == 'success')
     runs-on: ubuntu-latest
     # No environment configuration is assumed: preflight reads back protection
     # settings, and the producer requires an external reviewer for this exact run.
@@ -432,14 +432,14 @@ jobs:
       - name: Set up Bun
         uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
 
-      - name: Download immutable, independently reviewed candidate evidence
+      - name: Download immutable technical candidate
         if: github.repository == 'marius-patrik/DarkFactory'
         uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
         with:
-          name: verified-promotion-evidence
+          name: verified-technical-candidate
           path: approved
 
-      - name: Verify independent environment approval and live final SHA before write credentials
+      - name: Seal Stage B from protected environment and reverify authoritative GitHub evidence
         if: github.repository == 'marius-patrik/DarkFactory'
         env:
           GITHUB_TOKEN: ${{ github.token }}
@@ -449,8 +449,11 @@ jobs:
         run: |
           set -euo pipefail
           bun packages/harness/src/release/promotion-preflight.ts \
-            --phase=publish --evidence=approved/promotion-evidence.json \
-            --digest="$DF_EVIDENCE_SHA256"
+            --phase=seal --technical=approved/technical-candidate.json \
+            --digest="$DF_EVIDENCE_SHA256" --out=approved/promotion-evidence.json
+          bun packages/harness/src/release/promotion-preflight.ts \
+            --phase=publish --technical=approved/technical-candidate.json \
+            --digest="$DF_EVIDENCE_SHA256" --sealed=approved/promotion-evidence.json
 
       - name: Mint an installation token for the App
         # `GITHUB_TOKEN` cannot open a pull request: GitHub deliberately withholds
@@ -506,6 +509,7 @@ jobs:
           path: notes
 
       - name: Download every built df artifact
+        if: github.repository != 'marius-patrik/DarkFactory'
         uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
         with:
           pattern: df-*
@@ -513,7 +517,7 @@ jobs:
           merge-multiple: true
 
       - name: Download the collected release assets
-        if: needs.resolve.outputs.has-assets == 'true'
+        if: github.repository != 'marius-patrik/DarkFactory' && needs.resolve.outputs.has-assets == 'true'
         uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
         with:
           name: release-assets
@@ -523,7 +527,23 @@ jobs:
       # it. This is the only place the published bytes and the built bytes are compared, so a
       # corrupted upload fails the release instead of being checksummed as if it were correct.
       - name: Re-verify every df artifact and write the release checksums
+        if: github.repository != 'marius-patrik/DarkFactory'
         run: bun packages/harness/scripts/release-checksums.ts dist
+
+      - name: Download exact native bytes from the original premerge candidate run
+        if: github.repository == 'marius-patrik/DarkFactory'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          DF_CANDIDATE_RUN: ${{ inputs.candidate_run_id }}
+        run: |
+          set -euo pipefail
+          mkdir -p dist
+          mapfile -t BUNDLES < <(jq -r '[.artifacts[].bundle] | unique | .[]' approved/technical-candidate.json)
+          for bundle in "${BUNDLES[@]}"; do
+            [[ "$bundle" =~ ^candidate-[a-z0-9-]+$ ]] || exit 1
+            gh run download "$DF_CANDIDATE_RUN" -R "$GITHUB_REPOSITORY" -n "$bundle" -D dist
+          done
+          test "${#BUNDLES[@]}" -ge 5
 
       - name: Re-hash the complete candidate-bound inventory before any publication
         if: github.repository == 'marius-patrik/DarkFactory'
@@ -531,7 +551,7 @@ jobs:
           DF_EVIDENCE_SHA256: ${{ inputs.evidence_sha256 }}
         run: |
           bun packages/harness/src/release/promotion-assets.ts \
-            approved/promotion-evidence.json "$DF_EVIDENCE_SHA256" dist release-assets
+            approved/technical-candidate.json "$DF_EVIDENCE_SHA256" dist
 
       - name: List the assets to attach
         id: assets
@@ -540,7 +560,7 @@ jobs:
           # assets. `checksums.txt` supersedes them, so attaching them would publish two answers
           # to the same question.
           mapfile -t ASSETS < <(find dist -type f ! -name '*.sha256' | sort)
-          if [ "${{ needs.resolve.outputs.has-assets }}" = "true" ]; then
+          if [ "$GITHUB_REPOSITORY" != "marius-patrik/DarkFactory" ] && [ "${{ needs.resolve.outputs.has-assets }}" = "true" ]; then
             mapfile -t PROJECT < <(find release-assets -type f | sort)
             ASSETS+=("${PROJECT[@]}")
           fi
@@ -553,7 +573,7 @@ jobs:
 
       - name: Create a complete DRAFT release, verify remote asset digests, then explicitly promote
         env:
-          GH_TOKEN: ${{ steps.app-token.outputs.token || secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ steps.app-token.outputs.token || github.token }}
           TAG: ${{ needs.resolve.outputs.tag }}
           DF_COMMIT: ${{ github.sha }}
           DF_EVIDENCE_SHA256: ${{ inputs.evidence_sha256 }}
@@ -580,14 +600,29 @@ jobs:
             # GitHub hashes the uploaded bytes independently. Require exact name
             # inventory, digest inventory, draft state and bound target commit.
             gh api "repos/$GITHUB_REPOSITORY/releases/tags/$TAG" > "$RUNNER_TEMP/draft.json"
+            DRAFT_ID=$(jq -r '.id' "$RUNNER_TEMP/draft.json")
+            gh api --paginate "repos/$GITHUB_REPOSITORY/releases/$DRAFT_ID/assets?per_page=100" --jq '.[]' | jq -s '.' > "$RUNNER_TEMP/draft-assets.json"
             bun packages/harness/src/release/promotion-assets.ts \
-              approved/promotion-evidence.json "$DF_EVIDENCE_SHA256" \
-              --remote="$RUNNER_TEMP/draft.json"
+              approved/technical-candidate.json "$DF_EVIDENCE_SHA256" \
+              --remote="$RUNNER_TEMP/draft.json" \
+              --assets="$RUNNER_TEMP/draft-assets.json" \
+              --sealed=approved/promotion-evidence.json
             bun packages/harness/src/release/promotion-preflight.ts \
-              --phase=finalize --evidence=approved/promotion-evidence.json \
-              --digest="$DF_EVIDENCE_SHA256"
+              --phase=finalize --technical=approved/technical-candidate.json \
+              --digest="$DF_EVIDENCE_SHA256" --sealed=approved/promotion-evidence.json
           fi
           gh release edit "$TAG" --draft=false
+          if [ "$GITHUB_REPOSITORY" = "marius-patrik/DarkFactory" ]; then
+            gh api "repos/$GITHUB_REPOSITORY/releases/tags/$TAG" > "$RUNNER_TEMP/published.json"
+            jq -e --arg sha "$DF_COMMIT" --arg tag "$TAG" '.draft == false and .tag_name == $tag and .target_commitish == $sha' "$RUNNER_TEMP/published.json"
+            PUBLISHED_ID=$(jq -r '.id' "$RUNNER_TEMP/published.json")
+            gh api --paginate "repos/$GITHUB_REPOSITORY/releases/$PUBLISHED_ID/assets?per_page=100" --jq '.[]' | jq -s '.' > "$RUNNER_TEMP/published-assets.json"
+            bun packages/harness/src/release/promotion-assets.ts \
+              approved/technical-candidate.json "$DF_EVIDENCE_SHA256" \
+              --remote="$RUNNER_TEMP/published.json" \
+              --assets="$RUNNER_TEMP/published-assets.json" \
+              --sealed=approved/promotion-evidence.json --published
+          fi
           {
             echo "## Released \`$TAG\`"
             printf '%s\n' "${ASSETS[@]}"
@@ -597,7 +632,7 @@ jobs:
         env:
           # The App first: only its installation token may open a pull request. `GITHUB_TOKEN` is the
           # fallback for a repository with no App key.
-          GH_TOKEN: ${{ steps.app-token.outputs.token || secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ steps.app-token.outputs.token || github.token }}
           VERSION: ${{ needs.resolve.outputs.version }}
           TAG: ${{ needs.resolve.outputs.tag }}
         run: |
