@@ -352,7 +352,7 @@ jobs:
             grep -q 'photon_rs_bg.wasm' "$RUNNER_TEMP/df22-archive-contents.txt"
             grep -q 'plugins/' "$RUNNER_TEMP/df22-archive-contents.txt"
           done
-          sha256sum df-* > ../native-readback.sha256
+          sha256sum df-* > ../native-readback.txt
       - name: Construct npm distribution from downloaded native bytes
         shell: bash
         run: |
@@ -360,7 +360,7 @@ jobs:
           mkdir -p candidate/extra
           bun packages/harness/scripts/candidate-npm.ts --native candidate/native --out candidate/npm
           cp candidate/npm/*.tgz candidate/extra/
-          cp candidate/native-readback.sha256 candidate/extra/native-readback.sha256
+          cp candidate/native-readback.txt candidate/extra/native-readback.txt
       - name: Rebuild and package verified integrated Web and Docs distribution
         env:
           DF_WEB_BASE_PATH: /DarkFactory/

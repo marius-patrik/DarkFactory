@@ -39,6 +39,11 @@
     "react-dom": "^18.2.0",
     "typedoc": "0.28.20",
     "wouter": "^3.3.5",
-    "zod": "4.1.5"
+    "zod": "4.6.6"
+  },
+  "overrides": {
+    "undici": "8.12.2",
+    "markdown-it": "14.3.3",
+    "minimatch": "11.0.1"
   }
 }
