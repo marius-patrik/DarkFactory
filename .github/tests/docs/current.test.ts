@@ -126,7 +126,6 @@ describe("current documentation truth", () => {
 				".darkfactory/adr",
 				".agents/adr",
 				"harness/README.md",
-
 			];
 			for (const path of paths) {
 				const absolute = join(root, path);

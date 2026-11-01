@@ -57,6 +57,8 @@ function configDocumentPaths(): ReadonlySet<string> {
 function isDocumentationFile(path: string): boolean {
 	return (
 		path === "README.md" ||
+		path.startsWith(".agents/notes/guides/") ||
+		path.startsWith(".agents/notes/migration/") ||
 		configDocumentPaths().has(path) ||
 		path.startsWith(`${RULES_PLUGIN}/skills/`) ||
 		path === adrDocumentSource()
