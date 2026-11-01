@@ -28,7 +28,8 @@ try {
 		const asset = releaseAssetName(target.name);
 		const dest = join(runtime, target.name);
 		await mkdir(dest, { recursive: true });
-		const process = Bun.spawn(["tar", "-xzf", join(source, `${asset}.tar.gz`), "-C", dest], {
+		const process = Bun.spawn(["tar", "-xzf", `${asset}.tar.gz`, "-C", dest], {
+			cwd: source,
 			stdout: "pipe",
 			stderr: "pipe",
 		});

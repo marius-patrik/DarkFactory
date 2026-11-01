@@ -111,7 +111,11 @@ await tarCommand(["-czf", bundle, ...contents], dist);
 // relative lookups and archive layout problems before publishing the release.
 const standalone = await mkdtemp(join(tmpdir(), "df-standalone-"));
 try {
-	await tarCommand(["-xzf", join(dist, bundle), "-C", standalone], standalone);
+	// Git for Windows tar interprets a drive-prefixed -f path as remote host syntax.
+	// Extract the archive by a local filename; the package is still run from this unrelated temp root.
+	await copyFile(join(dist, bundle), join(standalone, bundle));
+	await tarCommand(["-xzf", bundle, "-C", standalone], standalone);
+	await rm(join(standalone, bundle));
 	const installed = join(standalone, asset);
 	if ((await readdir(standalone)).includes("packages") || (await readdir(standalone)).includes("node_modules"))
 		throw new Error("Source-free archive incorrectly includes a development checkout");
