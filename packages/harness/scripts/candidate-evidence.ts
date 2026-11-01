@@ -28,7 +28,9 @@ function sha256(bytes: Uint8Array): string {
 async function inventory(directory: string): Promise<{ path: string; bytes: number; sha256: string }[]> {
 	const result: { path: string; bytes: number; sha256: string }[] = [];
 	async function walk(path: string): Promise<void> {
-		for (const entry of (await readdir(join(directory, path), { withFileTypes: true })).sort((a, b) => a.name.localeCompare(b.name))) {
+		for (const entry of (await readdir(join(directory, path), { withFileTypes: true })).sort((a, b) =>
+			a.name.localeCompare(b.name),
+		)) {
 			const rel = join(path, entry.name);
 			if (entry.isSymbolicLink()) throw new Error(`Candidate contains symlink: ${rel}`);
 			if (entry.isDirectory()) await walk(rel);
@@ -99,7 +101,9 @@ async function platform(): Promise<void> {
 	for (const required of ["assets/graph.darkfactory.json", "photon_rs_bg.wasm"])
 		if (!assets.some((a) => a.path === required)) throw new Error(`Missing source-free resource: ${required}`);
 	await writeJson(output, {
-		...(await base()), target: target.name, runner: target.runner,
+		...(await base()),
+		target: target.name,
+		runner: target.runner,
 		buildCommand: `bun run build --target=${name}`,
 		verificationCommand: `bun packages/harness/scripts/verify-target.ts --target ${name}`,
 		nativeExecution: "Runner invokes verification before this manifest is generated; see retained verification log",
@@ -140,16 +144,28 @@ async function sbom(): Promise<void> {
 		if (!license) missingLicenses.push(name);
 		const hash = entry[3];
 		components.push({
-			type: "library", name, version, "bom-ref": `pkg:npm/${encodeURIComponent(name)}@${version}#${encodeURIComponent(lockKey)}`,
-			...(hash?.startsWith("sha512-") ? { hashes: [{ alg: "SHA-512", content: Buffer.from(hash.slice(7), "base64").toString("hex") }] } : {}),
+			type: "library",
+			name,
+			version,
+			"bom-ref": `pkg:npm/${encodeURIComponent(name)}@${version}#${encodeURIComponent(lockKey)}`,
+			...(hash?.startsWith("sha512-")
+				? { hashes: [{ alg: "SHA-512", content: Buffer.from(hash.slice(7), "base64").toString("hex") }] }
+				: {}),
 			...(license ? { licenses: [{ license: { name: license } }] } : {}),
 		});
 	}
 	const source = await base();
 	await writeJson(output, {
-		bomFormat: "CycloneDX", specVersion: "1.5", version: 1,
-		metadata: { component: { type: "application", name: "DarkFactory", version: source.version },
-			properties: [{ name: "darkfactory:source-sha", value: source.source.commit }, { name: "darkfactory:lock-sha256", value: source.source.lockSha256 }] },
+		bomFormat: "CycloneDX",
+		specVersion: "1.5",
+		version: 1,
+		metadata: {
+			component: { type: "application", name: "DarkFactory", version: source.version },
+			properties: [
+				{ name: "darkfactory:source-sha", value: source.source.commit },
+				{ name: "darkfactory:lock-sha256", value: source.source.lockSha256 },
+			],
+		},
 		components,
 	});
 	const report = { packages: components.length, licenseUnknown: missingLicenses.length, missingLicenses };
@@ -158,8 +174,15 @@ async function sbom(): Promise<void> {
 	if (!components.length) throw new Error("Cannot produce an empty SBOM");
 }
 switch (process.argv[2]) {
-	case "platform": await platform(); break;
-	case "snapshot": await snapshot(); break;
-	case "sbom": await sbom(); break;
-	default: throw new Error("Usage: candidate-evidence.ts <platform|snapshot|sbom> [--target N] [--directory DIR] --out FILE");
+	case "platform":
+		await platform();
+		break;
+	case "snapshot":
+		await snapshot();
+		break;
+	case "sbom":
+		await sbom();
+		break;
+	default:
+		throw new Error("Usage: candidate-evidence.ts <platform|snapshot|sbom> [--target N] [--directory DIR] --out FILE");
 }
