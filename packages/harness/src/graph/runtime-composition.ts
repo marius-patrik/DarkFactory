@@ -2,6 +2,7 @@ import { createHash } from "node:crypto";
 import { contextFingerprint } from "./review-loop.ts";
 import { join } from "node:path";
 import type { GitHubRepository } from "../../../github/src/repository.ts";
+import { createGovernedGitHubMergeBoundary } from "../../../github/src/governed-merge-boundary.ts";
 import type { ConflictResolver } from "../workspace/conflict-repair.ts";
 import type { RunGraphOptions } from "./executor.ts";
 import type { DispatchRuntime, DispatchRuntimeInput } from "./dispatch.ts";
@@ -21,8 +22,8 @@ type ExternalAction = Exclude<PlanAction, { type: "run" } | { type: "none" }>;
 export interface ProductionRuntimeFactoryOptions {
 	repoDir: string;
 	repository: GitHubRepository;
-	/** Conditional PR merger provided by packages/github; graph never issues REST directly. */
-	mergeBoundary: GitHubMergeBoundary;
+	/** Optional override for testing; production defaults to the governed GitHub API adapter. */
+	mergeBoundary?: GitHubMergeBoundary;
 	model: ProductionGraphHandlerOptions["model"];
 	loadPlanningContext: ProductionGraphHandlerOptions["loadPlanningContext"];
 	automation?: ProductionGraphHandlerOptions["automation"];
@@ -67,7 +68,7 @@ export function createProductionRuntimeFactory(options: ProductionRuntimeFactory
 			throw new Error("Production Request execution requires a fenced distributed lease or explicit localOnly mode");
 		const github = createGitHubProductionEffects(options.repository, {
 			requiredChecks: graph.checks.filter((check) => check.required).map((check) => check.name),
-			mergeBoundary: options.mergeBoundary,
+			mergeBoundary: options.mergeBoundary ?? createGovernedGitHubMergeBoundary(options.repository),
 		});
 		const effects = new FileProductionEffectJournal(join(runDir, "effects"));
 		const handlers = createProductionGraphHandlers({
