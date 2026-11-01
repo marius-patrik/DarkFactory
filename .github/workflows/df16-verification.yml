@@ -22,5 +22,5 @@ jobs:
       - run: bun run typecheck
       - run: bun run format:check
       - run: bun run lint
-      - run: bun test .github/tests/release
+      - run: bun test .github/tests/release/promotion-evidence.test.ts .github/tests/release/version-transitions.test.ts
       - run: bun run test
