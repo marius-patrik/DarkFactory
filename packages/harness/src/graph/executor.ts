@@ -204,7 +204,11 @@ async function invoke(handlers: NodeHandlers, node: GraphNode, ctx: NodeContext)
 	} catch (error) {
 		// Ambiguous/stale mutations must NOT be consumed by the graph's
 		// ordinary repair edges, which would risk replay under a new effect ID.
-		if (error instanceof IndeterminateEffectError || error instanceof StaleEffectError) throw error;
+		if (
+			error instanceof IndeterminateEffectError ||
+			error instanceof StaleEffectError ||
+			error instanceof FencedGraphLeaseError
+		) throw error;
 		return { outcome: "failure", outputs: { error: error instanceof Error ? error.message : String(error) } };
 	}
 }
