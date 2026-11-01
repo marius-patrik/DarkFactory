@@ -60,7 +60,7 @@ function mockLive(a = candidate(), change: Override = {}, published = false): st
 		const path =
 			new URL(String(input)).pathname.replace("/repos/marius-patrik/DarkFactory/", "") + new URL(String(input)).search;
 		visited.push(path);
-		const release = { id: 33, tag_name: "v1.0.0", draft: !published, target_commitish: sha("b") };
+		const release = { id: 33, tag_name: "v1.0.0", draft: true, target_commitish: sha("b") };
 		const pr = {
 			number: 77,
 			merged: true,
