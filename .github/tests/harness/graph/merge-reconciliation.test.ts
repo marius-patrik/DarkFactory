@@ -124,6 +124,17 @@ describe("merge completion includes observed Request reconciliation", () => {
 		expect(f.counts()).toEqual({ mergeWrites: 0, closeWrites: 0, boardWrites: 0 });
 	});
 
+	test("unlinked issue closure is rejected before any external merge or board mutation", async () => {
+		const f = fixture(true);
+		f.ctx.outputs.closing_issues = [9999];
+		const approval = f.ctx.outputs.merge_authorization as { fingerprint: string };
+		approval.fingerprint = mergeProposalFingerprint(f.ctx.outputs);
+		await expect(
+			f.handlers.automation({ id: "merge", kind: "automation", script: "pr-merge" }, f.ctx),
+		).rejects.toThrow("authoritative same-repository PR linkage");
+		expect(f.counts()).toEqual({ mergeWrites: 0, closeWrites: 0, boardWrites: 0 });
+	});
+
 	test("conditional merge, bound issue closure and board synchronization are all observed", async () => {
 		const f = fixture(true);
 		const result = await f.handlers.automation({ id: "merge", kind: "automation", script: "pr-merge" }, f.ctx);
