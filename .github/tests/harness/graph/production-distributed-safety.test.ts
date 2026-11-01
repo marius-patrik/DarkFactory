@@ -15,9 +15,9 @@ describe("DF-21 production multi-runner safety gate", () => {
 			},
 		});
 		const graph: WorkflowGraph = { version: 1, checks: [], nodes: [], edges: [] };
-		await expect(
-			runtime({ subject: "2699", runDir: "/nonshared-run", graph }),
-		).rejects.toThrow("PostgreSQL lease ownership alone cannot fence in-flight GitHub mutations");
+		await expect(runtime({ subject: "2699", runDir: "/nonshared-run", graph })).rejects.toThrow(
+			"PostgreSQL lease ownership alone cannot fence in-flight GitHub mutations",
+		);
 	});
 
 	test("unconfigured multi-runner dispatch rejects silent local-only fallback", async () => {
@@ -28,8 +28,8 @@ describe("DF-21 production multi-runner safety gate", () => {
 			loadPlanningContext: async () => ({}),
 		});
 		const graph: WorkflowGraph = { version: 1, checks: [], nodes: [], edges: [] };
-		await expect(
-			runtime({ subject: "2699", runDir: "/nonshared-run", graph }),
-		).rejects.toThrow("explicit localOnly mode");
+		await expect(runtime({ subject: "2699", runDir: "/nonshared-run", graph })).rejects.toThrow(
+			"explicit localOnly mode",
+		);
 	});
 });
