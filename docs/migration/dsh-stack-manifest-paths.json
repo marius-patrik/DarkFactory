@@ -1,0 +1,526 @@
+{
+  "sourceRepository": "marius-patrik/dsh-stack",
+  "sourceRevision": "8752dad1514cd10966db6859c449f0cba941b57f",
+  "sourceLicense": "MIT",
+  "status": "path-level inventory only; per-package manifest, dependencies, tests and behavioral ownership pending review",
+  "policy": "Migrate selectively into DarkFactory as native DSH plugins before any DSH fork or filesystem architecture shift; do not delete dsh-stack until all unique content and consumers are preserved and approved.",
+  "count": 86,
+  "entries": [
+    {
+      "path": "packages/stack/agents/agent-actions/package.json",
+      "proposedFamily": "harness",
+      "decision": "review-required",
+      "imported": false
+    },
+    {
+      "path": "packages/stack/agents/agent-preset-coding/package.json",
+      "proposedFamily": "harness",
+      "decision": "review-required",
+      "imported": false
+    },
+    {
+      "path": "packages/stack/agents/agent-preset-default/package.json",
+      "proposedFamily": "harness",
+      "decision": "review-required",
+      "imported": false
+    },
+    {
+      "path": "packages/stack/agents/agent-preset-manager/package.json",
+      "proposedFamily": "harness",
+      "decision": "review-required",
+      "imported": false
+    },
+    {
+      "path": "packages/stack/agents/agents/package.json",
+      "proposedFamily": "harness",
+      "decision": "review-required",
+      "imported": false
+    },
+    {
+      "path": "packages/stack/agents/automations/package.json",
+      "proposedFamily": "harness",
+      "decision": "review-required",
+      "imported": false
+    },
+    {
+      "path": "packages/stack/agents/commands/package.json",
+      "proposedFamily": "harness",
+      "decision": "review-required",
+      "imported": false
+    },
+    {
+      "path": "packages/stack/agents/loops/package.json",
+      "proposedFamily": "harness",
+      "decision": "review-required",
+      "imported": false
+    },
+    {
+      "path": "packages/stack/agents/package.json",
+      "proposedFamily": "harness",
+      "decision": "review-required",
+      "imported": false
+    },
+    {
+      "path": "packages/stack/agents/personas/package.json",
+      "proposedFamily": "harness",
+      "decision": "review-required",
+      "imported": false
+    },
+    {
+      "path": "packages/stack/agents/skills/package.json",
+      "proposedFamily": "harness",
+      "decision": "review-required",
+      "imported": false
+    },
+    {
+      "path": "packages/stack/agents/tools/package.json",
+      "proposedFamily": "harness",
+      "decision": "review-required",
+      "imported": false
+    },
+    {
+      "path": "packages/stack/ai/package.json",
+      "proposedFamily": "gateway",
+      "decision": "review-required",
+      "imported": false
+    },
+    {
+      "path": "packages/stack/ai/providers/credential-vault/package.json",
+      "proposedFamily": "keychain",
+      "decision": "review-required",
+      "imported": false
+    },
+    {
+      "path": "packages/stack/ai/providers/dialect-antigravity/package.json",
+      "proposedFamily": "gateway",
+      "decision": "review-required",
+      "imported": false
+    },
+    {
+      "path": "packages/stack/ai/providers/dialect-claude/package.json",
+      "proposedFamily": "gateway",
+      "decision": "review-required",
+      "imported": false
+    },
+    {
+      "path": "packages/stack/ai/providers/dialect-code-assist/package.json",
+      "proposedFamily": "gateway",
+      "decision": "review-required",
+      "imported": false
+    },
+    {
+      "path": "packages/stack/ai/providers/dialect-gemini/package.json",
+      "proposedFamily": "gateway",
+      "decision": "review-required",
+      "imported": false
+    },
+    {
+      "path": "packages/stack/ai/providers/dialect-openai/package.json",
+      "proposedFamily": "gateway",
+      "decision": "review-required",
+      "imported": false
+    },
+    {
+      "path": "packages/stack/ai/providers/dialects/package.json",
+      "proposedFamily": "gateway",
+      "decision": "review-required",
+      "imported": false
+    },
+    {
+      "path": "packages/stack/ai/providers/package.json",
+      "proposedFamily": "gateway",
+      "decision": "review-required",
+      "imported": false
+    },
+    {
+      "path": "packages/stack/ai/providers/provider-anthropic-api/package.json",
+      "proposedFamily": "gateway",
+      "decision": "review-required",
+      "imported": false
+    },
+    {
+      "path": "packages/stack/ai/providers/provider-antigravity-sub/package.json",
+      "proposedFamily": "gateway",
+      "decision": "review-required",
+      "imported": false
+    },
+    {
+      "path": "packages/stack/ai/providers/provider-cerebras-api/package.json",
+      "proposedFamily": "gateway",
+      "decision": "review-required",
+      "imported": false
+    },
+    {
+      "path": "packages/stack/ai/providers/provider-claude-sub/package.json",
+      "proposedFamily": "gateway",
+      "decision": "review-required",
+      "imported": false
+    },
+    {
+      "path": "packages/stack/ai/providers/provider-deepseek-api/package.json",
+      "proposedFamily": "gateway",
+      "decision": "review-required",
+      "imported": false
+    },
+    {
+      "path": "packages/stack/ai/providers/provider-gemini-api/package.json",
+      "proposedFamily": "gateway",
+      "decision": "review-required",
+      "imported": false
+    },
+    {
+      "path": "packages/stack/ai/providers/provider-gemini-sub/package.json",
+      "proposedFamily": "gateway",
+      "decision": "review-required",
+      "imported": false
+    },
+    {
+      "path": "packages/stack/ai/providers/provider-grok-api/package.json",
+      "proposedFamily": "gateway",
+      "decision": "review-required",
+      "imported": false
+    },
+    {
+      "path": "packages/stack/ai/providers/provider-grok-sub/package.json",
+      "proposedFamily": "gateway",
+      "decision": "review-required",
+      "imported": false
+    },
+    {
+      "path": "packages/stack/ai/providers/provider-groq-api/package.json",
+      "proposedFamily": "gateway",
+      "decision": "review-required",
+      "imported": false
+    },
+    {
+      "path": "packages/stack/ai/providers/provider-kimi-code/package.json",
+      "proposedFamily": "gateway",
+      "decision": "review-required",
+      "imported": false
+    },
+    {
+      "path": "packages/stack/ai/providers/provider-kimi-sub/package.json",
+      "proposedFamily": "gateway",
+      "decision": "review-required",
+      "imported": false
+    },
+    {
+      "path": "packages/stack/ai/providers/provider-llamacpp/package.json",
+      "proposedFamily": "gateway",
+      "decision": "review-required",
+      "imported": false
+    },
+    {
+      "path": "packages/stack/ai/providers/provider-mistral-api/package.json",
+      "proposedFamily": "gateway",
+      "decision": "review-required",
+      "imported": false
+    },
+    {
+      "path": "packages/stack/ai/providers/provider-ollama/package.json",
+      "proposedFamily": "gateway",
+      "decision": "review-required",
+      "imported": false
+    },
+    {
+      "path": "packages/stack/ai/providers/provider-openai-api/package.json",
+      "proposedFamily": "gateway",
+      "decision": "review-required",
+      "imported": false
+    },
+    {
+      "path": "packages/stack/ai/providers/provider-openrouter-api/package.json",
+      "proposedFamily": "gateway",
+      "decision": "review-required",
+      "imported": false
+    },
+    {
+      "path": "packages/stack/ai/providers/provider-rotation/package.json",
+      "proposedFamily": "gateway",
+      "decision": "review-required",
+      "imported": false
+    },
+    {
+      "path": "packages/stack/ai/providers/provider-vllm/package.json",
+      "proposedFamily": "gateway",
+      "decision": "review-required",
+      "imported": false
+    },
+    {
+      "path": "packages/stack/ai/providers/provider-zai-api/package.json",
+      "proposedFamily": "gateway",
+      "decision": "review-required",
+      "imported": false
+    },
+    {
+      "path": "packages/stack/ai/providers/provider-zen/package.json",
+      "proposedFamily": "gateway",
+      "decision": "review-required",
+      "imported": false
+    },
+    {
+      "path": "packages/stack/ai/providers/providers/package.json",
+      "proposedFamily": "gateway",
+      "decision": "review-required",
+      "imported": false
+    },
+    {
+      "path": "packages/stack/ai/providers/tweaks/package.json",
+      "proposedFamily": "gateway",
+      "decision": "review-required",
+      "imported": false
+    },
+    {
+      "path": "packages/stack/integrations/directory-picker-fix/package.json",
+      "proposedFamily": "workspace/integrations",
+      "decision": "review-required",
+      "imported": false
+    },
+    {
+      "path": "packages/stack/integrations/formatters/formatters/package.json",
+      "proposedFamily": "workspace/integrations",
+      "decision": "review-required",
+      "imported": false
+    },
+    {
+      "path": "packages/stack/integrations/formatters/package.json",
+      "proposedFamily": "workspace/integrations",
+      "decision": "review-required",
+      "imported": false
+    },
+    {
+      "path": "packages/stack/integrations/hosts/hosts/package.json",
+      "proposedFamily": "hosts",
+      "decision": "review-required",
+      "imported": false
+    },
+    {
+      "path": "packages/stack/integrations/hosts/package.json",
+      "proposedFamily": "hosts",
+      "decision": "review-required",
+      "imported": false
+    },
+    {
+      "path": "packages/stack/integrations/lsp/lsp/package.json",
+      "proposedFamily": "workspace/integrations",
+      "decision": "review-required",
+      "imported": false
+    },
+    {
+      "path": "packages/stack/integrations/lsp/package.json",
+      "proposedFamily": "workspace/integrations",
+      "decision": "review-required",
+      "imported": false
+    },
+    {
+      "path": "packages/stack/integrations/package.json",
+      "proposedFamily": "workspace/integrations",
+      "decision": "review-required",
+      "imported": false
+    },
+    {
+      "path": "packages/stack/integrations/repos/package.json",
+      "proposedFamily": "workspace/integrations",
+      "decision": "review-required",
+      "imported": false
+    },
+    {
+      "path": "packages/stack/integrations/trading-backtest/package.json",
+      "proposedFamily": "excluded/finance",
+      "decision": "review-required",
+      "imported": false
+    },
+    {
+      "path": "packages/stack/integrations/trading-market-data/package.json",
+      "proposedFamily": "excluded/finance",
+      "decision": "review-required",
+      "imported": false
+    },
+    {
+      "path": "packages/stack/integrations/trading-optimizer/package.json",
+      "proposedFamily": "excluded/finance",
+      "decision": "review-required",
+      "imported": false
+    },
+    {
+      "path": "packages/stack/integrations/trading-research/package.json",
+      "proposedFamily": "excluded/finance",
+      "decision": "review-required",
+      "imported": false
+    },
+    {
+      "path": "packages/stack/integrations/workspace-files/package.json",
+      "proposedFamily": "workspace/integrations",
+      "decision": "review-required",
+      "imported": false
+    },
+    {
+      "path": "packages/stack/package.json",
+      "proposedFamily": "composition",
+      "decision": "review-required",
+      "imported": false
+    },
+    {
+      "path": "packages/stack/plugin-kit/package.json",
+      "proposedFamily": "plugin authoring",
+      "decision": "review-required",
+      "imported": false
+    },
+    {
+      "path": "packages/stack/ux/package.json",
+      "proposedFamily": "ui",
+      "decision": "review-required",
+      "imported": false
+    },
+    {
+      "path": "packages/stack/ux/settings-panel/package.json",
+      "proposedFamily": "ui",
+      "decision": "review-required",
+      "imported": false
+    },
+    {
+      "path": "packages/stack/ux/sidebar-preferences/package.json",
+      "proposedFamily": "ui",
+      "decision": "review-required",
+      "imported": false
+    },
+    {
+      "path": "packages/stack/ux/sidebar-settings/package.json",
+      "proposedFamily": "ui",
+      "decision": "review-required",
+      "imported": false
+    },
+    {
+      "path": "packages/stack/ux/sidebar-shell/package.json",
+      "proposedFamily": "ui",
+      "decision": "review-required",
+      "imported": false
+    },
+    {
+      "path": "packages/stack/ux/themes/icon-engine/package.json",
+      "proposedFamily": "ui",
+      "decision": "review-required",
+      "imported": false
+    },
+    {
+      "path": "packages/stack/ux/themes/lucide-animated/package.json",
+      "proposedFamily": "ui",
+      "decision": "review-required",
+      "imported": false
+    },
+    {
+      "path": "packages/stack/ux/themes/package.json",
+      "proposedFamily": "ui",
+      "decision": "review-required",
+      "imported": false
+    },
+    {
+      "path": "packages/stack/ux/themes/skin-claude/package.json",
+      "proposedFamily": "ui",
+      "decision": "review-required",
+      "imported": false
+    },
+    {
+      "path": "packages/stack/ux/themes/skin-codex/package.json",
+      "proposedFamily": "ui",
+      "decision": "review-required",
+      "imported": false
+    },
+    {
+      "path": "packages/stack/ux/themes/skin-deepseek/package.json",
+      "proposedFamily": "ui",
+      "decision": "review-required",
+      "imported": false
+    },
+    {
+      "path": "packages/stack/ux/themes/skin-host/package.json",
+      "proposedFamily": "ui",
+      "decision": "review-required",
+      "imported": false
+    },
+    {
+      "path": "packages/stack/ux/themes/skin-runtime/package.json",
+      "proposedFamily": "ui",
+      "decision": "review-required",
+      "imported": false
+    },
+    {
+      "path": "packages/stack/ux/themes/skin-settings/package.json",
+      "proposedFamily": "ui",
+      "decision": "review-required",
+      "imported": false
+    },
+    {
+      "path": "packages/stack/ux/themes/themes/package.json",
+      "proposedFamily": "ui",
+      "decision": "review-required",
+      "imported": false
+    },
+    {
+      "path": "packages/stack/ux/translator/package.json",
+      "proposedFamily": "ui",
+      "decision": "review-required",
+      "imported": false
+    },
+    {
+      "path": "packages/stack/ux/tweaks/package.json",
+      "proposedFamily": "ui",
+      "decision": "review-required",
+      "imported": false
+    },
+    {
+      "path": "packages/stack/ux/tweaks/tweak-drag-drop/package.json",
+      "proposedFamily": "ui",
+      "decision": "review-required",
+      "imported": false
+    },
+    {
+      "path": "packages/stack/ux/tweaks/tweak-fork-undo/package.json",
+      "proposedFamily": "ui",
+      "decision": "review-required",
+      "imported": false
+    },
+    {
+      "path": "packages/stack/ux/tweaks/tweak-keybinds/package.json",
+      "proposedFamily": "ui",
+      "decision": "review-required",
+      "imported": false
+    },
+    {
+      "path": "packages/stack/ux/tweaks/tweak-plan-toggle/package.json",
+      "proposedFamily": "ui",
+      "decision": "review-required",
+      "imported": false
+    },
+    {
+      "path": "packages/stack/ux/tweaks/tweak-share-links/package.json",
+      "proposedFamily": "ui",
+      "decision": "review-required",
+      "imported": false
+    },
+    {
+      "path": "packages/stack/ux/tweaks/tweak-slash-commands/package.json",
+      "proposedFamily": "ui",
+      "decision": "review-required",
+      "imported": false
+    },
+    {
+      "path": "packages/stack/ux/tweaks/tweak-stats/package.json",
+      "proposedFamily": "ui",
+      "decision": "review-required",
+      "imported": false
+    },
+    {
+      "path": "packages/stack/ux/voice/package.json",
+      "proposedFamily": "ui",
+      "decision": "review-required",
+      "imported": false
+    },
+    {
+      "path": "packages/stack/ux/voice/voice/package.json",
+      "proposedFamily": "ui",
+      "decision": "review-required",
+      "imported": false
+    }
+  ]
+}
