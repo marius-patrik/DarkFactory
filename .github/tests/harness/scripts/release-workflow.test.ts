@@ -34,7 +34,11 @@ interface WorkflowJob {
 	strategy?: { matrix: unknown; failFast?: boolean };
 	steps: WorkflowStep[];
 }
-const workflow = Bun.YAML.parse(source) as { permissions: Record<string, string>; jobs: Record<string, WorkflowJob> };
+const workflow = Bun.YAML.parse(source) as {
+	permissions: Record<string, string>;
+	concurrency: { group: string; "cancel-in-progress": boolean };
+	jobs: Record<string, WorkflowJob>;
+};
 
 /** One `uses: owner/repo@ref # version` reference, split into its parts. */
 const ACTION_REFERENCE = /uses:\s*(?<action>[\w.-]+\/[\w.-]+)@(?<ref>\S+)/gu;
@@ -50,6 +54,7 @@ function actionReferences(text: string): { action: string; ref: string }[] {
 describe("release workflow", () => {
 	test("parses as YAML and keeps its write permission and its single concurrency group", () => {
 		expect(Object.keys(workflow.jobs).sort()).toEqual(["build", "publish", "resolve"]);
+		expect(workflow.concurrency).toEqual({ group: "release", "cancel-in-progress": false });
 		expect(workflow.permissions).toEqual({
 			contents: "read",
 			actions: "read",
@@ -147,11 +152,32 @@ describe("release workflow", () => {
 		expect(upload).toBeGreaterThan(verify);
 	});
 
-	test("gates every publishing job on a release being warranted", () => {
-		for (const job of ["build", "publish"]) {
-			expect(workflow.jobs[job]?.if).toBe("needs.resolve.outputs.warranted == 'true'");
-		}
+	test("skips producer rebuild, gates publication on verified resolve and consumer builds", () => {
+		expect(workflow.jobs.build?.if).toBe(
+			"needs.resolve.outputs.warranted == 'true' && github.repository != 'marius-patrik/DarkFactory'",
+		);
+		expect(workflow.jobs.publish?.if).toContain("needs.resolve.result == 'success'");
+		expect(workflow.jobs.publish?.if).toContain("needs.build.result == 'success'");
+		expect(workflow.jobs.publish?.if).toContain("github.repository == 'marius-patrik/DarkFactory'");
 		expect(workflow.jobs.publish?.needs).toEqual(["resolve", "build"]);
+	});
+
+	test("keeps Stage A immutable and seals Stage B only after protected approval", () => {
+		const resolve = workflow.jobs.resolve?.steps ?? [];
+		const publish = workflow.jobs.publish?.steps ?? [];
+		expect(resolve.find((step) => step.name?.includes("Retrieve immutable DF-17"))?.run).toContain(
+			"-n technical-candidate",
+		);
+		expect(resolve.some((step) => step.run?.includes("--phase=resolve"))).toBe(true);
+		const seal = publish.findIndex((step) => step.run?.includes("--phase=seal"));
+		const immutableDownload = publish.findIndex((step) => step.run?.includes('gh run download "$DF_CANDIDATE_RUN"'));
+		const draft = publish.findIndex((step) => step.run?.includes("gh release create"));
+		expect(seal).toBeGreaterThan(-1);
+		expect(immutableDownload).toBeGreaterThan(seal);
+		expect(draft).toBeGreaterThan(immutableDownload);
+		expect(publish[seal]?.run).toContain("--phase=publish");
+		expect(publish[draft]?.run).toContain("--phase=finalize");
+		expect(publish[draft]?.run).toContain("--published");
 	});
 
 	// One `gh release create` with every asset, so the tag and the complete asset set become public

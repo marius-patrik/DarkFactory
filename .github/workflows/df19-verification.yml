@@ -1,0 +1,36 @@
+name: DF-19 Nonpublishing Release Evidence Acceptance
+on:
+  push:
+    branches: [agent/2708-evidence-lifecycle-df19]
+  workflow_dispatch:
+  workflow_call:
+permissions:
+  contents: read
+concurrency:
+  group: df19-verification-${{ github.sha }}
+  cancel-in-progress: false
+jobs:
+  release-lifecycle:
+    name: DF-19 evidence lifecycle verification
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+      - run: bun install --frozen-lockfile
+      - run: bun run typecheck
+      - run: bun run format:check
+      - run: bun run lint
+      - run: bun test ./.github/tests/release/promotion-evidence.test.ts ./.github/tests/release/promotion-preflight.test.ts ./.github/tests/harness/scripts/release-workflow.test.ts
+      - run: bun run test
+      - name: Emit Biome-formatted DF-19 source for isolated-branch repair
+        if: always()
+        run: |
+          bunx biome format --write packages/harness/src/release/promotion-evidence.ts packages/harness/src/release/promotion-preflight.ts packages/harness/src/release/promotion-assets.ts .github/tests/release/promotion-evidence.test.ts .github/tests/release/promotion-preflight.test.ts .github/tests/harness/scripts/release-workflow.test.ts
+          for path in packages/harness/src/release/promotion-evidence.ts packages/harness/src/release/promotion-preflight.ts packages/harness/src/release/promotion-assets.ts .github/tests/release/promotion-evidence.test.ts .github/tests/release/promotion-preflight.test.ts .github/tests/harness/scripts/release-workflow.test.ts; do
+            printf 'DF19_START:%s\n' "$path"
+            base64 -w76 "$path"
+            printf 'DF19_END\n'
+          done

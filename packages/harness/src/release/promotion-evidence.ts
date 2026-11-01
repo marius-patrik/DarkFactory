@@ -1,193 +1,241 @@
 import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
 import { CAPABILITY_ABI_VERSION } from "../../../capability/src/abi.ts";
-import { releaseAssetNames } from "../../scripts/release-targets.ts";
+import { RELEASE_TARGETS, releaseAssetNames } from "../../scripts/release-targets.ts";
 
-/**
- * DF-16/DF-17 immutable handoff. A producer may state evidence, but the release
- * gate independently checks GitHub's authoritative runs, reviews and branch head.
- */
+/** DF-19: Stage A is immutable pre-merge technical evidence. Stage B is a separate post-merge seal. */
+export const REQUIRED_ACCEPTANCE = [
+	"source-free",
+	"security",
+	"fleet",
+	"web-ux",
+	"supply-chain",
+	"governed-e2e",
+] as const;
+export const REQUIRED_FINAL_CHECKS = ["quality", "verify-bound-issue", "candidate"] as const;
+export const REPOSITORY = "marius-patrik/DarkFactory";
 const SHA = /^[0-9a-f]{40}$/u;
 const DIGEST = /^[0-9a-f]{64}$/u;
-const STABLE = /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$/u;
-const REQUIRED = ["source-free", "security", "fleet", "web-ux", "supply-chain", "governed-e2e"] as const;
+const STABLE = /^[1-9]\d*\.(0|[1-9]\d*)\.(0|[1-9]\d*)$/u;
+const SAFE_NAME = /^[a-zA-Z0-9][a-zA-Z0-9._-]{0,180}$/u;
 
-interface EvidenceRun {
+export interface EvidenceRun {
 	name: string;
 	run_id: number;
 	head_sha: string;
-	conclusion: string;
+	conclusion: "success";
 }
-
-interface EvidenceAsset {
+export interface EvidenceAsset {
 	name: string;
 	sha256: string;
+	bundle: string;
 }
-
-export interface PromotionEvidence {
-	schema: 1;
+export interface TechnicalCandidate {
+	schema: 2;
+	kind: "technical-candidate";
 	repository: string;
 	candidate_id: string;
 	version: string;
 	capability_abi: string;
+	source: { sha: string; tree: string; lock_sha256: string };
+	build: { run_id: number; run_attempt: number; workflow: string };
+	targets: string[];
+	artifacts: EvidenceAsset[];
+	acceptance: EvidenceRun[];
+	provenance: { provider: "github-actions"; repository: string; source_sha: string };
+}
+export interface PromotionEvidence {
+	schema: 2;
+	kind: "promotion-evidence";
+	repository: string;
+	candidate_id: string;
+	technical_sha256: string;
 	source: {
 		reviewed_sha: string;
 		reviewed_tree: string;
 		final_sha: string;
 		final_tree: string;
-		lock_sha256: string;
 		pull_request: number;
 	};
-	candidate: {
-		run_id: number;
-		head_sha: string;
-		conclusion: string;
-	};
-	targets: string[];
-	artifacts: EvidenceAsset[];
-	acceptance: EvidenceRun[];
-	independent_review: {
-		reviewer: string;
-		reviewed_sha: string;
-		state: string;
-	};
-	publication_authorization: { state: "pending" | "approved"; actor: string | null };
+	review: { id: number; reviewer: string; commit_sha: string };
+	final_checks: string[];
+	authorization: { run_id: number; approver: string; environment: "production-release" };
 }
 
-function requireCondition(ok: unknown, message: string): asserts ok {
-	if (!ok) throw new Error("Release promotion blocked: " + message);
+export function requireCondition(condition: unknown, message: string): asserts condition {
+	if (!condition) throw new Error("Release promotion blocked: " + message);
 }
-
-function isRecord(data: unknown): data is Record<string, unknown> {
-	return data !== null && typeof data === "object" && !Array.isArray(data);
+function record(value: unknown): value is Record<string, unknown> {
+	return typeof value === "object" && value !== null && !Array.isArray(value);
 }
-
-function sha(value: unknown): value is string {
+export function sha(value: unknown): value is string {
 	return typeof value === "string" && SHA.test(value);
 }
-
-function runId(value: unknown): value is number {
+export function runId(value: unknown): value is number {
 	return typeof value === "number" && Number.isSafeInteger(value) && value > 0;
 }
-
-function safeAsset(name: unknown): name is string {
-	return typeof name === "string" && /^[a-zA-Z0-9][a-zA-Z0-9._-]{0,180}$/u.test(name);
+export function digestOf(bytes: Uint8Array): string {
+	return createHash("sha256").update(bytes).digest("hex");
 }
-
-/** Validates all non-forgeable structural constraints before contacting GitHub. */
-export function assertPromotionEvidence(
-	value: unknown,
-	phase: "candidate" | "publish",
-	externallyAuthorized = false,
-): PromotionEvidence {
-	requireCondition(isRecord(value) && value.schema === 1, "unsupported evidence schema");
-	const e = value as unknown as PromotionEvidence;
-	requireCondition(e.repository === "marius-patrik/DarkFactory", "wrong repository");
+export function fileDigest(path: string): string {
+	return digestOf(readFileSync(path));
+}
+export function releaseAssetBundles(e: TechnicalCandidate): string[] {
+	return [...new Set(e.artifacts.map((asset) => asset.bundle))].sort();
+}
+/** A may be written while its own build run is still in progress. Conclusions are checked live later. */
+export function assertTechnicalCandidate(value: unknown): TechnicalCandidate {
+	requireCondition(
+		record(value) && value.schema === 2 && value.kind === "technical-candidate",
+		"invalid technical candidate schema",
+	);
+	const e = value as unknown as TechnicalCandidate;
+	requireCondition(e.repository === REPOSITORY, "wrong repository");
 	requireCondition(
 		typeof e.candidate_id === "string" && /^[a-zA-Z0-9._-]{8,128}$/u.test(e.candidate_id),
-		"invalid candidate identity",
+		"invalid candidate ID",
 	);
 	requireCondition(typeof e.version === "string" && STABLE.test(e.version), "invalid stable SemVer");
-	requireCondition(e.version !== "0.0.0" && !e.version.startsWith("0."), "production must be stable SemVer");
 	requireCondition(e.capability_abi === CAPABILITY_ABI_VERSION, "unsupported capability ABI");
-	requireCondition(isRecord(e.source), "missing source identity");
-	requireCondition(sha(e.source.reviewed_sha) && sha(e.source.reviewed_tree), "missing reviewed source/tree");
-	requireCondition(sha(e.source.final_sha) && sha(e.source.final_tree), "missing final protected source/tree");
-	requireCondition(
-		e.source.reviewed_tree === e.source.final_tree,
-		"reviewed and final trees differ; no content-equivalence proof",
-	);
+	requireCondition(record(e.source) && sha(e.source.sha) && sha(e.source.tree), "missing source SHA/tree");
 	requireCondition(
 		typeof e.source.lock_sha256 === "string" && DIGEST.test(e.source.lock_sha256),
-		"missing lockfile digest",
-	);
-	requireCondition(runId(e.source.pull_request), "missing reviewed PR");
-	requireCondition(isRecord(e.candidate) && runId(e.candidate.run_id), "missing candidate run");
-	requireCondition(
-		e.candidate.head_sha === e.source.reviewed_sha && e.candidate.conclusion === "success",
-		"candidate not successful on reviewed SHA",
+		"invalid dependency lock digest",
 	);
 	requireCondition(
-		isRecord(e.independent_review) && e.independent_review.state === "APPROVED",
-		"independent review missing",
+		record(e.build) &&
+			runId(e.build.run_id) &&
+			runId(e.build.run_attempt) &&
+			e.build.workflow === ".github/workflows/candidate-release.yml",
+		"invalid candidate build identity",
 	);
-	requireCondition(e.independent_review.reviewed_sha === e.source.reviewed_sha, "stale reviewer identity");
 	requireCondition(
-		typeof e.independent_review.reviewer === "string" && !e.independent_review.reviewer.endsWith("[bot]"),
-		"reviewer must be human",
+		record(e.provenance) &&
+			e.provenance.provider === "github-actions" &&
+			e.provenance.repository === REPOSITORY &&
+			e.provenance.source_sha === e.source.sha,
+		"invalid candidate provenance",
 	);
-	requireCondition(isRecord(e.publication_authorization), "missing authorization record");
-	requireCondition(["pending", "approved"].includes(e.publication_authorization.state), "invalid authorization state");
-	if (phase === "publish") {
+	const targets = RELEASE_TARGETS.map((target) => target.name);
+	requireCondition(
+		Array.isArray(e.targets) &&
+			e.targets.length === targets.length &&
+			new Set(e.targets).size === targets.length &&
+			targets.every((target) => e.targets.includes(target)),
+		"missing or unsupported release target",
+	);
+	requireCondition(
+		Array.isArray(e.acceptance) && e.acceptance.length === REQUIRED_ACCEPTANCE.length,
+		"missing technical acceptance outcomes",
+	);
+	for (const name of REQUIRED_ACCEPTANCE) {
+		const matching = e.acceptance.filter((r) => r?.name === name);
 		requireCondition(
-			e.publication_authorization.state === "approved" || externallyAuthorized,
-			"human authorization pending",
-		);
-		if (e.publication_authorization.state === "approved") {
-			requireCondition(
-				typeof e.publication_authorization.actor === "string" && !e.publication_authorization.actor.endsWith("[bot]"),
-				"unauthorized actor",
-			);
-		}
-	}
-	requireCondition(Array.isArray(e.acceptance), "missing acceptance records");
-	for (const name of REQUIRED) {
-		const matches = e.acceptance.filter((run) => run?.name === name);
-		requireCondition(matches.length === 1, "missing/duplicated acceptance: " + name);
-		const run = matches[0]!;
-		requireCondition(
-			runId(run.run_id) && run.conclusion === "success" && run.head_sha === e.source.reviewed_sha,
-			"failed, skipped or stale acceptance: " + name,
+			matching.length === 1 &&
+				runId(matching[0]?.run_id) &&
+				matching[0]?.head_sha === e.source.sha &&
+				matching[0]?.conclusion === "success" &&
+				(name !== "source-free" || matching[0]?.run_id === e.build.run_id),
+			"missing/stale technical acceptance: " + name,
 		);
 	}
-	requireCondition(e.acceptance.length === REQUIRED.length, "unknown acceptance run");
-	const names = releaseAssetNames();
-	const targets = names.map((name) => name.replace(/^df-/u, "").replace(/\.exe$/u, ""));
-	requireCondition(
-		Array.isArray(e.targets) && e.targets.length === targets.length && new Set(e.targets).size === targets.length,
-		"invalid official target set",
-	);
-	requireCondition(
-		targets.every((target) => e.targets.includes(target)),
-		"missing official release target",
-	);
-	requireCondition(Array.isArray(e.artifacts), "missing artifact digest inventory");
-	const got = new Set<string>();
+	requireCondition(Array.isArray(e.artifacts), "missing candidate artifact inventory");
+	const seen = new Set<string>();
 	for (const item of e.artifacts) {
 		requireCondition(
-			item && safeAsset(item.name) && typeof item.sha256 === "string" && DIGEST.test(item.sha256),
-			"invalid artifact name/digest",
+			item &&
+				typeof item.name === "string" &&
+				SAFE_NAME.test(item.name) &&
+				typeof item.sha256 === "string" &&
+				DIGEST.test(item.sha256),
+			"invalid asset name/digest",
 		);
-		requireCondition(!got.has(item.name), "duplicate artifact: " + item.name);
-		got.add(item.name);
+		requireCondition(!seen.has(item.name), "duplicate asset identity: " + item.name);
+		seen.add(item.name);
+		const expectedTarget = RELEASE_TARGETS.find(
+			(t) =>
+				item.name === releaseAssetNames()[targets.indexOf(t.name)] ||
+				item.name === releaseAssetNames()[targets.indexOf(t.name)] + ".tar.gz",
+		);
+		requireCondition(
+			item.bundle === (expectedTarget ? "candidate-" + expectedTarget.name : "candidate-extra"),
+			"asset assigned to unauthorized bundle: " + item.name,
+		);
 	}
-	for (const name of names) {
-		requireCondition(got.has(name) && got.has(name + ".tar.gz"), "missing native artifact or archive: " + name);
+	for (const name of releaseAssetNames()) {
+		requireCondition(seen.has(name) && seen.has(name + ".tar.gz"), "missing mandatory binary/archive: " + name);
 	}
 	return e;
 }
-
-/** Compare every prepared distribution byte with the reviewed candidate inventory. */
-export function assertArtifactBytes(e: PromotionEvidence, files: readonly { name: string; bytes: Uint8Array }[]): void {
-	const recorded = new Map(e.artifacts.map((asset) => [asset.name, asset.sha256]));
-	requireCondition(files.length === recorded.size, "partial publication or extra unreviewed asset");
+/** B cannot change A. A's exact SHA-256 and verified GitHub events are the promotion inputs. */
+export function assertPromotionEvidence(
+	value: unknown,
+	a: TechnicalCandidate,
+	technicalDigest: string,
+): PromotionEvidence {
+	requireCondition(
+		record(value) && value.schema === 2 && value.kind === "promotion-evidence",
+		"missing sealing evidence",
+	);
+	const b = value as unknown as PromotionEvidence;
+	requireCondition(
+		b.repository === REPOSITORY &&
+			b.candidate_id === a.candidate_id &&
+			DIGEST.test(technicalDigest) &&
+			b.technical_sha256 === technicalDigest,
+		"replaced technical candidate",
+	);
+	requireCondition(
+		record(b.source) &&
+			b.source.reviewed_sha === a.source.sha &&
+			b.source.reviewed_tree === a.source.tree &&
+			sha(b.source.final_sha) &&
+			sha(b.source.final_tree) &&
+			b.source.reviewed_tree === b.source.final_tree &&
+			runId(b.source.pull_request),
+		"reviewed/final tree identity mismatch",
+	);
+	requireCondition(
+		record(b.review) &&
+			runId(b.review.id) &&
+			b.review.commit_sha === a.source.sha &&
+			typeof b.review.reviewer === "string" &&
+			b.review.reviewer.length > 0 &&
+			!b.review.reviewer.endsWith("[bot]"),
+		"missing/stale independent reviewer",
+	);
+	requireCondition(
+		Array.isArray(b.final_checks) &&
+			b.final_checks.length === REQUIRED_FINAL_CHECKS.length &&
+			REQUIRED_FINAL_CHECKS.every((name) => b.final_checks.includes(name)),
+		"missing final-head checks",
+	);
+	requireCondition(
+		record(b.authorization) &&
+			runId(b.authorization.run_id) &&
+			b.authorization.environment === "production-release" &&
+			typeof b.authorization.approver === "string" &&
+			b.authorization.approver.length > 0 &&
+			!b.authorization.approver.endsWith("[bot]"),
+		"invalid publication authorization seal",
+	);
+	return b;
+}
+export function assertArtifactBytes(
+	a: TechnicalCandidate,
+	files: readonly { name: string; bytes: Uint8Array }[],
+): void {
+	const expected = new Map(a.artifacts.map((asset) => [asset.name, asset.sha256]));
+	requireCondition(files.length === expected.size, "partial publication or unreviewed assets");
 	const seen = new Set<string>();
 	for (const file of files) {
-		requireCondition(!seen.has(file.name), "duplicate upload: " + file.name);
+		requireCondition(!seen.has(file.name), "duplicate asset upload");
 		seen.add(file.name);
-		const expected = recorded.get(file.name);
-		requireCondition(expected, "unreviewed upload asset: " + file.name);
-		requireCondition(
-			createHash("sha256").update(file.bytes).digest("hex") === expected,
-			"artifact digest mismatch: " + file.name,
-		);
+		requireCondition(expected.has(file.name), "unreviewed additional asset: " + file.name);
+		requireCondition(digestOf(file.bytes) === expected.get(file.name), "artifact digest mismatch: " + file.name);
 	}
 }
-
-/** Validate a saved artifact without executing any scripts from its producer. */
-export function readPromotionEvidence(path: string, digest: string): PromotionEvidence {
-	requireCondition(DIGEST.test(digest), "missing/invalid evidence SHA-256");
-	const bytes = readFileSync(path);
-	requireCondition(createHash("sha256").update(bytes).digest("hex") === digest, "evidence digest mismatch");
-	return assertPromotionEvidence(JSON.parse(bytes.toString("utf8")), "candidate");
+export function readTechnicalCandidate(path: string, digest: string): TechnicalCandidate {
+	requireCondition(DIGEST.test(digest) && fileDigest(path) === digest, "technical candidate digest mismatch");
+	return assertTechnicalCandidate(JSON.parse(readFileSync(path, "utf8")));
 }
