@@ -129,9 +129,9 @@ describe("merge completion includes observed Request reconciliation", () => {
 		f.ctx.outputs.closing_issues = [9999];
 		const approval = f.ctx.outputs.merge_authorization as { fingerprint: string };
 		approval.fingerprint = mergeProposalFingerprint(f.ctx.outputs);
-		await expect(
-			f.handlers.automation({ id: "merge", kind: "automation", script: "pr-merge" }, f.ctx),
-		).rejects.toThrow("authoritative same-repository PR linkage");
+		await expect(f.handlers.automation({ id: "merge", kind: "automation", script: "pr-merge" }, f.ctx)).rejects.toThrow(
+			"authoritative same-repository PR linkage",
+		);
 		expect(f.counts()).toEqual({ mergeWrites: 0, closeWrites: 0, boardWrites: 0 });
 	});
 
