@@ -1,6 +1,6 @@
 # Reference index
 
-The generated [CLI command index](../../../packages/cli/src/cli.ts) comes from the current CLI `usage()`. The generated [configuration field index](../../../repo.dfconfig) emits key paths and JSON value types, never config values. When TypeDoc extraction is configured, the docs compiler emits API symbols from actual public entry points.
+The generated [CLI command index](../../../../packages/cli/src/cli.ts) comes from the current CLI `usage()`. The generated [configuration field index](../../../../repo.dfconfig) emits key paths and JSON value types, never config values. When TypeDoc extraction is configured, the docs compiler emits API symbols from actual public entry points.
 
 The content graph also carries workflow job names, repository detection evidence and capability manifest metadata derived from the current source tree. A reference may be absent if the required source or declaration was not discovered; absence is not proof of support.
 

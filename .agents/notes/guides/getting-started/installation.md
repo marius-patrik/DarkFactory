@@ -8,7 +8,7 @@
 2. Install an appropriate Bun runtime.
 3. In the repository root run `bun install --frozen-lockfile`.
 4. Execute `bun run typecheck`, `bun run lint`, and `bun run test`. Some tests depend on supported local tooling and credentials; a skipped required acceptance action is not a pass.
-5. Read `bun packages/cli/src/cli.ts --help` or the [generated CLI reference](../../../packages/cli/src/cli.ts). Verify actual help in your build.
+5. Read `bun packages/cli/src/cli.ts --help` or the [generated CLI reference](../../../../packages/cli/src/cli.ts). Verify actual help in your build.
 
 ## Native release installation
 
