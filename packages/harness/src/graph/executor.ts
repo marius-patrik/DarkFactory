@@ -89,7 +89,11 @@ export interface RunGraphOptions {
 	 * Receives gate, hint and comment actions (post the comment, move the board card). The run then stops and waits
 	 * for the next external event; a gate is never passed without one.
 	 */
-	onAction?(action: Exclude<PlanAction, { type: "run" } | { type: "none" }>, state: RunState): void | Promise<void>;
+	onAction?(
+		action: Exclude<PlanAction, { type: "run" } | { type: "none" }>,
+		state: RunState,
+		assertOwned: () => Promise<void>,
+	): void | Promise<void>;
 	/** Clock for `blocked_since`; defaults to `new Date()`. */
 	now?: () => Date;
 	/** Upper bound on node runs per call, guarding against an undeclared infinite loop; default 1000. */
@@ -105,7 +109,11 @@ export interface RunGraphOptions {
 	/** Re-observes immutable Request, dependencies and base before authorization or mutation. */
 	verifyPlanningContext?(state: RunState): Promise<boolean>;
 	/** Required to safely reconcile an interrupted external gate/comment action. */
-	reconcileAction?(action: Exclude<PlanAction, { type: "run" } | { type: "none" }>, state: RunState): Promise<void>;
+	reconcileAction?(
+		action: Exclude<PlanAction, { type: "run" } | { type: "none" }>,
+		state: RunState,
+		assertOwned: () => Promise<void>,
+	): Promise<void>;
 	/** Only trusted, journal-only production automations can replay a pending node. */
 	recoverableAutomations?: readonly string[];
 }
@@ -406,7 +414,9 @@ async function runGraphUnlocked(
 	if (state.pending_action) {
 		await options.verifyLeaseOwnership?.();
 		if (!options.reconcileAction) throw new Error("Interrupted external graph action requires explicit reconciliation");
-		await options.reconcileAction(state.pending_action, state);
+		await options.reconcileAction(state.pending_action, state, async () => {
+			await options.verifyLeaseOwnership?.();
+		});
 		delete state.pending_action;
 		delete state.recovery_event;
 		delete state.active_event_id;
@@ -532,7 +542,9 @@ async function runGraphUnlocked(
 			state.pending_action = action;
 			await save();
 			await options.verifyLeaseOwnership?.();
-			await options.onAction?.(action, state);
+			await options.onAction?.(action, state, async () => {
+				await options.verifyLeaseOwnership?.();
+			});
 			delete state.pending_action;
 			return finishIngress();
 		}
@@ -649,6 +661,7 @@ async function runGraphUnlocked(
 			refreshReviewContexts(graph, state);
 			current = { type: "node.completed", node: node.id, outcome: result.outcome, outputs: result.outputs };
 		}
+		await options.verifyLeaseOwnership?.();
 		// Persist the completed transition before clearing the in-flight node.
 		// Recovery can adopt this snapshot without rerunning an ambiguous effect.
 		const completedState = { ...state, pending_node: undefined, recovery_event: current };
