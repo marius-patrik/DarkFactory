@@ -38,7 +38,7 @@ function digest(file: string): string {
  */
 export async function verifyLivePromotion(
 	e: PromotionEvidence,
-	context: { token: string; sourceSha: string; actor: string; event: string; version: string; runId: number; phase: "candidate" | "publish" },
+	context: { token: string; sourceSha: string; actor: string; event: string; version: string; runId: number; phase: "candidate" | "publish" | "finalize" },
 ): Promise<void> {
 	if (context.event !== "workflow_dispatch") block("no automatic/workflow_call publication");
 	if (context.actor !== "marius-patrik") block("only repository owner may request producer publication");
@@ -67,8 +67,13 @@ export async function verifyLivePromotion(
 	if (!env.prevent_self_review || !env.protection_rules?.some((r: any) => r.type === "required_reviewers" && r.reviewers?.length > 0)) {
 		block("production-release environment lacks external human approval protection");
 	}
-	if (!(await missing("git/ref/tags/v" + e.version, context.token))) block("duplicate immutable tag");
-	if (!(await missing("releases/tags/v" + e.version, context.token))) block("duplicate immutable release");
+	if (context.phase !== "finalize") {
+		if (!(await missing("git/ref/tags/v" + e.version, context.token))) block("duplicate immutable tag");
+		if (!(await missing("releases/tags/v" + e.version, context.token))) block("duplicate immutable release");
+	} else {
+		const draft = await api("releases/tags/v" + e.version, context.token);
+		if (!draft.draft || draft.target_commitish !== context.sourceSha) block("draft changed before promotion");
+	}
 	const pr = await api("pulls/" + e.source.pull_request, context.token);
 	if (!pr.merged || pr.base?.ref !== "main" || pr.head?.sha !== e.source.reviewed_sha) block("candidate has no merged protected PR");
 	const reviews = await api("pulls/" + e.source.pull_request + "/reviews?per_page=100", context.token);
@@ -93,7 +98,7 @@ export async function verifyLivePromotion(
 			block("missing exact-final-head check: " + name);
 		}
 	}
-	if (context.phase === "publish") {
+	if ((context.phase === "publish" || context.phase === "finalize")) {
 		assertPromotionEvidence(e, "publish");
 		const approvals = await api("actions/runs/" + context.runId + "/approvals", context.token);
 		if (!Array.isArray(approvals) || !approvals.some((a: any) =>
@@ -109,14 +114,15 @@ if (import.meta.main) {
 		const [key, ...value] = arg.split("=");
 		return [key, value.join("=")];
 	}));
-	const phase = args.get("--phase") === "publish" ? "publish" : "candidate";
+	const phase = args.get("--phase") === "publish" ? "publish" : args.get("--phase") === "finalize" ? "finalize" : "candidate";
 	const file = args.get("--evidence") ?? "";
 	const hash = args.get("--digest") ?? "";
 	try {
 		const bytes = readFileSync(file);
 		if (!/^[0-9a-f]{64}$/u.test(hash) || digest(file) !== hash) block("evidence digest changed");
 		const input: unknown = JSON.parse(bytes.toString("utf8"));
-		const evidence = assertPromotionEvidence(input, phase);
+		if (String((input as { candidate?: { run_id?: number } }).candidate?.run_id) !== process.env.EXPECTED_CANDIDATE_RUN) block("wrong requested candidate run");
+		const evidence = assertPromotionEvidence(input, phase === "candidate" ? "candidate" : "publish");
 		await verifyLivePromotion(evidence, {
 			token: process.env.GITHUB_TOKEN ?? "",
 			sourceSha: process.env.GITHUB_SHA ?? "",
