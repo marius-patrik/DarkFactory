@@ -93,7 +93,7 @@ const bundle = `${asset}.tar.gz`;
 const contents = (await readdir(dist))
 	.filter((entry) => entry !== bundle && !entry.endsWith(RECORD_SUFFIX) && entry !== "checksums.txt")
 	.sort();
-for (const required of [asset, "assets", "plugins", "photon_rs_bg.wasm"]) {
+for (const required of [asset, "assets", "plugins", "schemas", "photon_rs_bg.wasm"]) {
 	if (!contents.includes(required)) throw new Error(`df bundle is missing ${required}`);
 }
 async function tarCommand(args: string[], cwd: string): Promise<void> {
