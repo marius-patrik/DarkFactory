@@ -48,7 +48,7 @@ jobs:
           bun -e 'import { SQL } from "bun"; const db = new SQL(process.env.DF21_TEST_DATABASE_URL!); try { await db.file("packages/harness/sql/graph-leases.sql"); } finally { await db.close(); }'
       - name: Independent-process fencing and GitHub boundary acceptance
         if: always()
-        run: bun test .github/tests/harness/graph/postgres-lease.test.ts .github/tests/github/governed-merge-boundary.test.ts .github/tests/github/governance.test.ts .github/tests/harness/graph/distributed-lease.test.ts .github/tests/harness/graph/merge-reconciliation.test.ts .github/tests/harness/graph/production-recovery.test.ts
+        run: bun test ./.github/tests/harness/graph/postgres-lease.test.ts ./.github/tests/github/governed-merge-boundary.test.ts ./.github/tests/github/governance.test.ts ./.github/tests/harness/graph/distributed-lease.test.ts ./.github/tests/harness/graph/merge-reconciliation.test.ts ./.github/tests/harness/graph/production-recovery.test.ts
       - run: bun run test
         if: always()
       - name: Emit formatted DF-21 source for isolated-branch correction
