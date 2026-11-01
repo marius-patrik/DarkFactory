@@ -36,7 +36,7 @@ for (const original of tracked) {
     if (spec.includes("$" + "{")) return match;
     const originalTarget = path.posix.normalize(path.posix.join(path.posix.dirname(original), spec));
     const currentTarget = relocate(originalTarget);
-    if (originalTarget === currentTarget) return match;
+    if (originalTarget === currentTarget && original === current) return match;
     let rewritten = path.posix.relative(path.posix.dirname(current), currentTarget);
     if (!rewritten.startsWith(".")) rewritten = "./" + rewritten;
     if (spec.endsWith("/") && !rewritten.endsWith("/")) rewritten += "/";
