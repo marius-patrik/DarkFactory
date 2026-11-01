@@ -1,0 +1,47 @@
+# Isolated, nonpublishing DF-23 exact-head authentication verification.
+name: DF-23 Auth Session Security
+on:
+  push:
+    branches:
+      - agent/2700-acceptance-security-df23
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: df23-auth-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  auth:
+    name: Auth and keychain security negative tests
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+      - run: bun install --frozen-lockfile
+      - run: bun run typecheck
+      - run: bun test ./.github/tests/auth ./.github/tests/keychain
+      - run: bun test --test-name-pattern 'SEC-AUTH-01' ./.github/tests/acceptance/security-boundaries.test.ts
+  static:
+    name: Repository formatting and lint
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+      - run: bun install --frozen-lockfile
+      - run: bun run format:check
+      - if: success() || failure()
+        run: bun run lint
+  full:
+    name: Complete integrated tests (unrelated failures preserved)
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+      - run: bun install --frozen-lockfile
+      - run: bun run test
