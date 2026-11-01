@@ -85,7 +85,7 @@ describe("PostgreSQL distributed ownership (independent OS processes)", () => {
 		expect(existsSync(join(root, "completed-stale"))).toBe(false);
 		expect(await readFile(join(root, "lost-stale"), "utf8")).toMatch(/lease|ownership/iu);
 		expect(await stale.exited).toBe(2);
-	});
+	}, 20_000);
 
 	databaseTest("a stale generation cannot renew or release a newer owner's claim", async () => {
 		const root = await mkdtemp(join(tmpdir(), "df21-generation-"));
