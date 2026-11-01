@@ -60,11 +60,14 @@ export async function verifyLivePromotion(
 	const config = JSON.parse(readFileSync("repo.dfconfig", "utf8"));
 	const root = JSON.parse(readFileSync("package.json", "utf8"));
 	const plugins = JSON.parse(readFileSync("packages/plugins/package.json", "utf8"));
-	if (readFileSync("VERSION", "utf8").trim() !== e.version ||
-		root.version !== e.version || plugins.version !== e.version ||
+	if (
+		readFileSync("VERSION", "utf8").trim() !== e.version ||
+		root.version !== e.version ||
+		plugins.version !== e.version ||
 		config.repo?.versioning?.mode !== "semver" ||
 		config.repo?.versioning?.tag_prefix !== "v" ||
-		config.repo?.versioning?.initial !== "1.0.0") {
+		config.repo?.versioning?.initial !== "1.0.0"
+	) {
 		block("VERSION, root/package metadata or declared stable SemVer authority drifted");
 	}
 	if (digest("bun.lock") !== e.source.lock_sha256) block("dependency lock digest mismatch");
@@ -97,8 +100,13 @@ export async function verifyLivePromotion(
 		const rules = await api("rulesets/" + item.id, context.token);
 		const patterns = rules.conditions?.ref_name?.include ?? [];
 		const types = new Set((rules.rules ?? []).map((r: any) => r.type));
-		if (patterns.includes("refs/tags/v*") && types.has("update") && types.has("deletion") &&
-			!rules.bypass_actors?.length) immutableTags = true;
+		if (
+			patterns.includes("refs/tags/v*") &&
+			types.has("update") &&
+			types.has("deletion") &&
+			!rules.bypass_actors?.length
+		)
+			immutableTags = true;
 	}
 	if (!immutableTags) block("no enforced immutable public v* tag ruleset");
 	const env = await api("environments/production-release", context.token);
@@ -121,8 +129,14 @@ export async function verifyLivePromotion(
 	const reviews = await api("pulls/" + e.source.pull_request + "/reviews?per_page=100", context.token);
 	const byReviewer = reviews.filter((r: any) => r.user?.login === e.independent_review.reviewer);
 	const last = byReviewer.at(-1);
-	if (!last || last.state !== "APPROVED" || last.commit_id !== e.source.reviewed_sha ||
-		last.user?.type !== "User" || last.user.login === pr.user?.login || last.user.login === context.actor) {
+	if (
+		!last ||
+		last.state !== "APPROVED" ||
+		last.commit_id !== e.source.reviewed_sha ||
+		last.user?.type !== "User" ||
+		last.user.login === pr.user?.login ||
+		last.user.login === context.actor
+	) {
 		block("no current independent approved review on candidate SHA");
 	}
 	const runs = [e.candidate, ...e.acceptance];
@@ -135,7 +149,9 @@ export async function verifyLivePromotion(
 		}
 		const expectedJob = "name" in run ? run.name : "candidate";
 		const jobs = await api("actions/runs/" + id + "/jobs?per_page=100", context.token);
-		if (!jobs.jobs?.some((job: any) => job.name === expectedJob && job.conclusion === "success" && job.head_sha === sha)) {
+		if (
+			!jobs.jobs?.some((job: any) => job.name === expectedJob && job.conclusion === "success" && job.head_sha === sha)
+		) {
 			block("successful run lacks exact accepted job: " + expectedJob);
 		}
 	}
