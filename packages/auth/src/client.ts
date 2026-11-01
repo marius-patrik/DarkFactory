@@ -41,8 +41,13 @@ function callbackParams(input: string | URLSearchParams): URLSearchParams {
 
 /** Initiates GitHub App user authorization using PKCE and a one-time CSRF state value. */
 export async function initiateAuth(clientId: string, redirectUri: string, scope: string): Promise<string> {
+	const redirect = new URL(redirectUri);
+	if (redirect.protocol !== "https:" || redirect.username || redirect.password || redirect.hash)
+		throw new Error("OAuth redirect must be an HTTPS URL without credentials or fragments");
+	if (!clientId.trim()) throw new Error("OAuth client ID is missing");
 	const verifier = randomVerifier();
 	const state = crypto.randomUUID();
+	const challenge = await codeChallenge(verifier);
 	sessionStorage.setItem(VERIFIER_KEY, verifier);
 	sessionStorage.setItem(STATE_KEY, state);
 
@@ -52,7 +57,7 @@ export async function initiateAuth(clientId: string, redirectUri: string, scope:
 		scope,
 		state,
 		response_type: "code",
-		code_challenge: await codeChallenge(verifier),
+		code_challenge: challenge,
 		code_challenge_method: "S256",
 	});
 	return `https://github.com/login/oauth/authorize?${params.toString()}`;
@@ -72,6 +77,9 @@ export function completeAuthCallback(input: string | URLSearchParams): AuthCallb
 
 	const state = params.get("state");
 	const code = params.get("code");
+	if (params.has("error")) throw new Error("Authentication was denied by the identity provider");
+	if (params.getAll("state").length !== 1 || params.getAll("code").length !== 1)
+		throw new Error("Authentication callback is ambiguous");
 	if (!expectedState || !verifier) throw new Error("No pending authentication flow");
 	if (!state || state !== expectedState) throw new Error("Authentication state mismatch");
 	if (!code) throw new Error("Authentication callback is missing code");

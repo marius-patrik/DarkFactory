@@ -14,6 +14,7 @@ import {
 	type Vault,
 	type VaultEntry,
 	type VaultMeta,
+	type VaultTombstone,
 	vaultToMeta,
 } from "./vault.ts";
 import { decryptVault, encryptVault } from "./vault-crypto.ts";
@@ -113,6 +114,7 @@ export async function vaultSet(
 		};
 		if (existing >= 0) vault.entries[existing] = entry;
 		else vault.entries.push(entry);
+		if (vault.tombstones) vault.tombstones = vault.tombstones.filter((t) => t.name !== name);
 		await saveVault(opts.dataRepoPath, vault, keyBase64);
 		return entry;
 	});
@@ -137,38 +139,64 @@ export async function vaultRm(opts: VaultStoreOptions, keyBase64: string, name: 
 		const index = vault.entries.findIndex((e) => e.name === name);
 		if (index < 0) return false;
 		vault.entries.splice(index, 1);
+		const removed = stamp();
+		vault.tombstones = [...(vault.tombstones ?? []).filter((t) => t.name !== name), { name, removed }];
 		await saveVault(opts.dataRepoPath, vault, keyBase64);
 		return true;
 	});
 }
 
-/** Merge remote vault into local vault. Last writer wins per entry by updated.at. */
+/**
+ * Merge remote vault into local vault, retaining deletion tombstones.
+ *
+ * Last writer wins by timestamp. Exact ties prefer deletion (fail-closed).
+ * Replicas must replicate tombstones, not only live entries, to avoid resurrection.
+ */
 export function mergeVaults(local: Vault, remote: Vault): { merged: Vault; conflicts: string[] } {
-	const byName = new Map<string, VaultEntry>();
+	const live = new Map<string, VaultEntry>();
+	const deleted = new Map<string, VaultTombstone>();
 	const conflicts: string[] = [];
-	for (const entry of local.entries) byName.set(entry.name, entry);
+	for (const entry of local.entries) live.set(entry.name, entry);
+	for (const tombstone of local.tombstones ?? []) {
+		live.delete(tombstone.name);
+		deleted.set(tombstone.name, tombstone);
+	}
 	for (const entry of remote.entries) {
-		const existing = byName.get(entry.name);
-		if (!existing) {
-			byName.set(entry.name, entry);
-		} else if (existing.updated.at !== entry.updated.at) {
-			// Last writer wins
-			const localTime = new Date(existing.updated.at).getTime();
-			const remoteTime = new Date(entry.updated.at).getTime();
-			if (remoteTime > localTime) {
-				byName.set(entry.name, entry);
-				conflicts.push(
-					`${entry.name}: remote (${entry.updated.by}@${entry.updated.at}) wins over local (${existing.updated.by}@${existing.updated.at})`,
-				);
-			} else if (remoteTime < localTime) {
-				conflicts.push(
-					`${entry.name}: local (${existing.updated.by}@${existing.updated.at}) wins over remote (${entry.updated.by}@${entry.updated.at})`,
-				);
-			}
+		const oldEntry = live.get(entry.name);
+		const oldTombstone = deleted.get(entry.name);
+		const oldTimestamp = oldEntry?.updated.at ?? oldTombstone?.removed.at;
+		const incomingTime = Date.parse(entry.updated.at);
+		const oldTime = oldTimestamp === undefined ? Number.NEGATIVE_INFINITY : Date.parse(oldTimestamp);
+		if (incomingTime > oldTime) {
+			live.set(entry.name, entry);
+			deleted.delete(entry.name);
+			if (oldTimestamp !== undefined && oldTimestamp !== entry.updated.at)
+				conflicts.push(`${entry.name}: remote update wins over local revision`);
+		} else if (oldTimestamp !== undefined && oldTimestamp !== entry.updated.at && incomingTime < oldTime) {
+			conflicts.push(`${entry.name}: local revision wins over remote update`);
+		}
+	}
+	for (const tombstone of remote.tombstones ?? []) {
+		const oldEntry = live.get(tombstone.name);
+		const oldTombstone = deleted.get(tombstone.name);
+		const oldTimestamp = oldEntry?.updated.at ?? oldTombstone?.removed.at;
+		const incomingTime = Date.parse(tombstone.removed.at);
+		const oldTime = oldTimestamp === undefined ? Number.NEGATIVE_INFINITY : Date.parse(oldTimestamp);
+		if (incomingTime >= oldTime) {
+			live.delete(tombstone.name);
+			deleted.set(tombstone.name, tombstone);
+			if (oldTimestamp !== undefined && oldTimestamp !== tombstone.removed.at)
+				conflicts.push(`${tombstone.name}: remote deletion wins over local revision`);
+		} else if (oldTimestamp !== undefined && incomingTime < oldTime) {
+			conflicts.push(`${tombstone.name}: local revision wins over remote deletion`);
 		}
 	}
 	return {
-		merged: { version: 1, entries: [...byName.values()] },
+		merged: {
+			version: 1,
+			entries: [...live.values()],
+			...(deleted.size > 0 ? { tombstones: [...deleted.values()] } : {}),
+		},
 		conflicts,
 	};
 }
