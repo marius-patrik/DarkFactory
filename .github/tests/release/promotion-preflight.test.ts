@@ -60,7 +60,9 @@ describe("DF-16 live GitHub release promotion negative paths", () => {
 	test("automatic execution and non-owner actor cannot promote before network access", async () => {
 		const e = evidence();
 		await expect(verifyLivePromotion(e, { ...context, event: "push" })).rejects.toThrow("no automatic");
-		await expect(verifyLivePromotion(e, { ...context, actor: "github-actions[bot]" })).rejects.toThrow("repository owner");
+		await expect(verifyLivePromotion(e, { ...context, actor: "github-actions[bot]" })).rejects.toThrow(
+			"repository owner",
+		);
 		await expect(verifyLivePromotion(e, { ...context, sourceSha: sha("f") })).rejects.toThrow("protected final SHA");
 	});
 
@@ -96,7 +98,9 @@ describe("DF-16 live GitHub release promotion negative paths", () => {
 							{
 								type: "required_status_checks",
 								parameters: {
-									required_status_checks: ["quality", "verify-bound-issue", "candidate"].map((context) => ({ context })),
+									required_status_checks: ["quality", "verify-bound-issue", "candidate"].map((context) => ({
+									context,
+								})),
 								},
 							},
 						],
