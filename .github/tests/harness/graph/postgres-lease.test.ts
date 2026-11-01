@@ -58,7 +58,7 @@ describe("PostgreSQL distributed ownership (independent OS processes)", () => {
 		expect(await contender.exited).toBe(0);
 		const sql = new SQL(connectionString!);
 		try {
-			const records = await sql<{ generation: string }[]> `
+			const records = await sql<{ generation: string }[]>`
 				SELECT generation::text AS generation FROM darkfactory_graph_leases
 				WHERE run_key = ${namespace + ":shared-request"}
 			`;
@@ -101,14 +101,14 @@ describe("PostgreSQL distributed ownership (independent OS processes)", () => {
 		await lease.withLease(join(root, "first"), async (claim) => claim.assertOwned());
 		const sql = new SQL(connectionString!);
 		try {
-			const rows = await sql<{ generation: string }[]> `
+			const rows = await sql<{ generation: string }[]>`
 				SELECT generation::text AS generation FROM darkfactory_graph_leases
 				WHERE run_key = ${namespace + ":subject"}
 			`;
 			const oldGeneration = rows[0]?.generation;
 			expect(oldGeneration).toBe("1");
 			await lease.withLease(join(root, "other-host"), async (claim) => claim.assertOwned());
-			const staleMutation = await sql<{ generation: string }[]> `
+			const staleMutation = await sql<{ generation: string }[]>`
 				UPDATE darkfactory_graph_leases SET expires_at = clock_timestamp()
 				WHERE run_key = ${namespace + ":subject"} AND generation = ${oldGeneration}
 				RETURNING generation::text AS generation
@@ -120,15 +120,19 @@ describe("PostgreSQL distributed ownership (independent OS processes)", () => {
 	});
 
 	test("rejects local databases, unstable key identities and unsafe expiry settings", async () => {
-		expect(() => new PostgresGraphLease({ connectionString: "sqlite://test", namespace: "repo", runKey: () => "7" }))
-			.toThrow("requires PostgreSQL");
-		expect(() => new PostgresGraphLease({
-			connectionString: "postgres://example.invalid/test",
-			namespace: "repo",
-			runKey: () => "7",
-			ttlMs: 1000,
-			renewMs: 500,
-		})).toThrow("expiry");
+		expect(
+			() => new PostgresGraphLease({ connectionString: "sqlite://test", namespace: "repo", runKey: () => "7" }),
+		).toThrow("requires PostgreSQL");
+		expect(
+			() =>
+				new PostgresGraphLease({
+					connectionString: "postgres://example.invalid/test",
+					namespace: "repo",
+					runKey: () => "7",
+					ttlMs: 1000,
+					renewMs: 500,
+				}),
+		).toThrow("expiry");
 		const lease = new PostgresGraphLease({
 			connectionString: "postgres://example.invalid/test",
 			namespace: "repo",
