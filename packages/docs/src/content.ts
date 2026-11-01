@@ -1,6 +1,5 @@
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { basename, join, relative } from "node:path";
-import { darkFactoryDirectory } from "../../protocol/src/config-document.ts";
 import type { DocsConfig } from "./config.ts";
 import { loadDocsConfig } from "./config.ts";
 import { GUIDE_SECTIONS, guidePath } from "./guides.ts";
@@ -116,7 +115,7 @@ function titleFromMarkdown(markdown: string, fallback: string): string {
 
 /** Source path of the single document holding every accepted architecture decision. */
 export function adrDocumentSource(): string {
-	return `${darkFactoryDirectory()}/ADRs.md`;
+	return ".agents/notes/ADRs.md";
 }
 
 interface AdrSection {

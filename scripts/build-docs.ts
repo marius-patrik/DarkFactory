@@ -121,8 +121,6 @@ try {
 	}
 	await rm(outputDir, { recursive: true, force: true });
 	await rename(stage, outputDir);
-	await mkdir(join(repoRoot, ".darkfactory", "generated"), { recursive: true });
-	await writeFile(join(repoRoot, ".darkfactory", "generated", "docs.json"), `${JSON.stringify(graph, null, 2)}\n`);
 	console.log(
 		(docsOnly ? "Built nonpublishable documentation preview" : "Packaged unpublished Web + Docs candidate") +
 			" with " +

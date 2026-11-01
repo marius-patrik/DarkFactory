@@ -154,5 +154,5 @@ export const GUIDE_SECTIONS: readonly GuideSection[] = [
 ] as const;
 
 export function guidePath(section: string, slug: string): string {
-	return `docs/guides/${section}/${slug}.md`;
+	return `.agents/notes/guides/${section}/${slug}.md`;
 }
