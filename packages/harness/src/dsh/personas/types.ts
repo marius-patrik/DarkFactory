@@ -14,44 +14,44 @@
 
 /** A session log event as the controller folds it. */
 export interface HostSessionEvent {
-  type: string;
-  data?: Record<string, unknown>;
+	type: string;
+	data?: Record<string, unknown>;
 }
 
 /** The `persona/selected` event payload. */
 export interface PersonaSelectedData {
-  personaId: string;
+	personaId: string;
 }
 
 /** The narrow session face: the log, the composed preset id, and append. */
 export interface HostSession {
-  readonly events: readonly HostSessionEvent[];
-  readonly header?: { readonly agentPreset?: string };
-  append(type: string, data: unknown): unknown;
+	readonly events: readonly HostSessionEvent[];
+	readonly header?: { readonly agentPreset?: string };
+	append(type: string, data: unknown): unknown;
 }
 
 /** The narrow agent face the controller and section receive. */
 export interface HostAgent {
-  readonly session: HostSession;
+	readonly session: HostSession;
 }
 
 /** The pre-step waterfall decision the controller observes. */
 export interface PreStepDecision {
-  readonly kind: string;
+	readonly kind: string;
 }
 
 /** Controller state: the persona in force, plus any queued selection. */
 export interface PersonaState {
-  /** The committed persona id, or `''` before the first selection. */
-  personaId: string;
-  /** A selection awaiting the next accepted in-turn pre-step, when any. */
-  pending?: string;
+	/** The committed persona id, or `''` before the first selection. */
+	personaId: string;
+	/** A selection awaiting the next accepted in-turn pre-step, when any. */
+	pending?: string;
 }
 
 /** The client wire value of the `persona` session projection. */
 export interface PersonaProjection {
-  /** The persona id in force; `''` when the session has none. */
-  personaId: string;
-  /** True while a `/persona` selection awaits its `persona/selected` commit. */
-  pending: boolean;
+	/** The persona id in force; `''` when the session has none. */
+	personaId: string;
+	/** True while a `/persona` selection awaits its `persona/selected` commit. */
+	pending: boolean;
 }

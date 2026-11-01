@@ -17,13 +17,13 @@ export const name = "darkfactory-workflow";
 export const inject: string[] = [];
 
 export interface NativeWorkflowService {
-  /** Reuse the exact graph executor; pass the caller's authorized handlers. */
-  execute: typeof runGraph;
+	/** Reuse the exact graph executor; pass the caller's authorized handlers. */
+	execute: typeof runGraph;
 }
 
 /** Minimal slice of the native Cordis Context.provide contract. */
 export interface CordisServiceContext {
-  provide(name: "dfWorkflow", service: NativeWorkflowService): unknown;
+	provide(name: "dfWorkflow", service: NativeWorkflowService): unknown;
 }
 
 /**
@@ -34,5 +34,5 @@ export interface CordisServiceContext {
  * a graph event and their own durable run directory.
  */
 export function apply(ctx: CordisServiceContext): void {
-  ctx.provide("dfWorkflow", { execute: runGraph });
+	ctx.provide("dfWorkflow", { execute: runGraph });
 }
