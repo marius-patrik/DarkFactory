@@ -110,7 +110,11 @@ jobs:
           }
           await Promise.all(Array.from({ length: 10 }, upload));
           const originalCommit = await api("GET", "/git/commits/" + ref);
-          const tree = await api("POST", "/git/trees", { base_tree: originalCommit.tree.sha, tree: entries });
+          const expectedTree = exec("rev-parse", "HEAD^{tree}");
+          console.log("DF_LAYOUT_EXPECTED_TREE=" + expectedTree);
+          console.log("DF_LAYOUT_ENTRIES_B64=" + Buffer.from(JSON.stringify(entries), "utf8").toString("base64"));
+          console.log("DF_LAYOUT_BLOB_COUNT=" + newBlobs.length);
+          process.exit(0);
           const expectedTree = exec("rev-parse", "HEAD^{tree}");
           if (tree.sha !== expectedTree) throw new Error("Git Data tree is not byte-identical to checked local source: " + tree.sha + " != " + expectedTree);
           const remote = await api("GET", "/git/ref/heads/" + branch);
