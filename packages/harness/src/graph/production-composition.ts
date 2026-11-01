@@ -354,6 +354,9 @@ export function createGitHubProductionEffects(
 			const checked = await repository.requiredCheckStatus(headSha, [...options.requiredChecks]);
 			return checked.state === "success" && checked.missing.length === 0 && checked.failing.length === 0;
 		},
+		scopedClosingIssues(number) {
+			return repository.scopedLinkedClosingIssues(number);
+		},
 		mergePullRequest(input) {
 			const observe = async () => {
 				const pr = await getPR(input.number, input.expectedHeadSha, input.baseBranch);
