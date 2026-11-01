@@ -1,0 +1,56 @@
+# Nonpublishing independent source convergence proof; intentional red tests remain blockers.
+name: DF-11 DF-13 DF-14 Convergence Verification
+on:
+  push:
+    branches: [integration/v1-convergence-2026-11-01]
+  workflow_dispatch:
+  workflow_call:
+permissions:
+  contents: read
+concurrency:
+  group: df-convergence-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  static:
+    name: Auth CLI security static checks
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+      - run: bun install --frozen-lockfile
+      - run: git diff --check && bun run typecheck && bun run format:check && bun run lint
+  full:
+    name: Full integrated Bun suite including adversarial regressions
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+      - run: bun install --frozen-lockfile
+      - run: bun run test
+  acceptance:
+    name: Independent DF-14 red-team probes
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+      - run: bun install --frozen-lockfile
+      - run: bun test ./.github/tests/acceptance
+  cli:
+    name: DF-13 native CLI and operator contracts
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+      - run: bun install --frozen-lockfile
+      - run: bun test ./.github/tests/cli
+      - run: bun run build --target=linux-x64
+      - run: bun packages/harness/scripts/verify-target.ts --target linux-x64
