@@ -114,6 +114,8 @@ function translateCheckSuite(p: Record<string, unknown>): TranslatedEvent {
 	if (action === "completed") {
 		const pullRequests = Array.isArray(checkSuite.pull_requests) ? checkSuite.pull_requests : [];
 		if (pullRequests.length === 0) return { kind: "skip", reason: "check_suite has no pull requests" };
+		// One translated event can bind only one PR. Never silently discard additional PR subjects.
+		if (pullRequests.length !== 1) return { kind: "skip", reason: "check_suite has ambiguous multiple pull requests" };
 		const pr = asRecord(pullRequests[0]);
 		if (!pr) return { kind: "skip", reason: "check_suite has no pull requests" };
 		const ref = commitSha(checkSuite.head_sha);
