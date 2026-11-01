@@ -175,6 +175,7 @@ jobs:
           if [ "$result" -ne 0 ]; then
             echo "::error::Bun advisory scanner failed or found vulnerabilities. Review raw retained results."
             cat candidate/security/audit-stderr.txt
+            cat candidate/security/audit.json
             exit "$result"
           fi
 

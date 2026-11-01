@@ -28,8 +28,11 @@ try {
 		const asset = releaseAssetName(target.name);
 		const dest = join(runtime, target.name);
 		await mkdir(dest, { recursive: true });
-		const process = Bun.spawn(["tar", "-xzf", `${asset}.tar.gz`, "-C", dest], {
-			cwd: source,
+		// GNU tar on Git for Windows cannot resolve a native drive-prefixed -C argument.
+		// Copy the archive to its isolated destination and use relative arguments throughout.
+		await copyFile(join(source, `${asset}.tar.gz`), join(dest, `${asset}.tar.gz`));
+		const process = Bun.spawn(["tar", "-xzf", `${asset}.tar.gz`], {
+			cwd: dest,
 			stdout: "pipe",
 			stderr: "pipe",
 		});
@@ -39,6 +42,7 @@ try {
 			new Response(process.stderr).text(),
 		]);
 		if (exit !== 0) throw new Error(`Failed to unpack ${target.name}: ${err || out}`);
+		await rm(join(dest, `${asset}.tar.gz`));
 		const actual = createHash("sha256")
 			.update(await readFile(join(dest, asset)))
 			.digest("hex");
