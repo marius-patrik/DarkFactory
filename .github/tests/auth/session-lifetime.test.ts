@@ -172,6 +172,109 @@ try {
 		}
 	});
 
+	test("a refresh finishing during concurrent revocation cannot resurrect the session", async () => {
+		let markStarted!: () => void;
+		const started = new Promise<void>((resolve) => {
+			markStarted = resolve;
+		});
+		let releaseRefresh!: () => void;
+		const holdRefresh = new Promise<void>((resolve) => {
+			releaseRefresh = resolve;
+		});
+		const revokedTokens: string[] = [];
+		globalThis.fetch = (async (input: string | URL | Request, init?: RequestInit) => {
+			const url = String(input);
+			if (url.includes("/login/oauth/access_token")) {
+				const params = new URLSearchParams(String(init?.body));
+				if (params.get("grant_type") === "refresh_token") {
+					markStarted();
+					await holdRefresh;
+				}
+				return Response.json({
+					access_token: params.get("grant_type") === "refresh_token" ? "rotated-access" : "original-access",
+					refresh_token: params.get("grant_type") === "refresh_token" ? "rotated-refresh" : "original-refresh",
+					token_type: "bearer",
+					expires_in: 3600,
+					refresh_token_expires_in: 7200,
+				});
+			}
+			if (url.includes("/applications/")) {
+				const body = JSON.parse(String(init?.body)) as { access_token: string };
+				revokedTokens.push(body.access_token);
+				return new Response(null, { status: 204 });
+			}
+			throw new Error("Unexpected confidential OAuth endpoint");
+		}) as unknown as typeof fetch;
+		const store = new MemoryAuthTokenStore();
+		await createBrokerSession(config, callback, store, { sessionId: "revoke-race", now: 10_000 });
+		const refreshing = refreshBrokerSession(config, "revoke-race", store, 10_500);
+		await started;
+		const revoking = revokeBrokerSession(config, "revoke-race", store);
+		releaseRefresh();
+		await refreshing;
+		await revoking;
+		expect(revokedTokens).toEqual(["rotated-access"]);
+		expect(await store.get("revoke-race")).toBeUndefined();
+		await expect(refreshBrokerSession(config, "revoke-race", store, 10_600)).rejects.toThrow("Unknown");
+	});
+
+	test("concurrent cross-process SQLite refreshes rotate the durable token only once each", async () => {
+		mockRotatingOAuth();
+		const root = await mkdtemp(join(tmpdir(), "df23-concurrent-"));
+		directories.push(root);
+		const path = join(root, "broker.sqlite.df");
+		const first = new SqliteAuthTokenStore({ path, keyBase64: key });
+		try {
+			await createBrokerSession(config, callback, first, { sessionId: "cross-process", now: 10_000 });
+		} finally {
+			first.close();
+		}
+		const childCode = `
+import { SqliteAuthTokenStore } from ${JSON.stringify(new URL("../../../packages/auth/src/sqlite.ts", import.meta.url).href)};
+import { refreshBrokerSession } from ${JSON.stringify(new URL("../../../packages/auth/src/broker.ts", import.meta.url).href)};
+const store = new SqliteAuthTokenStore({ path: ${JSON.stringify(path)}, keyBase64: ${JSON.stringify(key)} });
+let used = "";
+globalThis.fetch = async (_input, init) => {
+	used = new URLSearchParams(String(init?.body)).get("refresh_token") ?? "";
+	await Bun.sleep(20);
+	return Response.json({
+		access_token: "access-" + used, refresh_token: used + ".rotated", token_type: "bearer",
+		expires_in: 3600, refresh_token_expires_in: 7200
+	});
+};
+try {
+	const session = await refreshBrokerSession(
+		{ clientId: "test-app", clientSecret: "test-only", sessionTtlMs: 900000 },
+		"cross-process", store, 10500
+	);
+	console.log(JSON.stringify({ used, expiresAt: session.expiresAt }));
+} finally {
+	store.close();
+}
+`;
+		const children = Array.from({ length: 2 }, () =>
+			Bun.spawn([process.execPath, "-e", childCode], { stdout: "pipe", stderr: "pipe" }),
+		);
+		const outcomes = await Promise.all(
+			children.map(async (child) => {
+				const output = await new Response(child.stdout).text();
+				const errors = await new Response(child.stderr).text();
+				const exitCode = await child.exited;
+				if (exitCode !== 0) throw new Error(`Cross-process refresh failed: ${errors}`);
+				return JSON.parse(output) as { used: string; expiresAt: number };
+			}),
+		);
+		expect(outcomes.map((result) => result.used).sort()).toEqual(["refresh-1", "refresh-1.rotated"].sort());
+		expect(outcomes.map((result) => result.expiresAt)).toEqual([11_000, 11_000]);
+		const reloaded = new SqliteAuthTokenStore({ path, keyBase64: key });
+		try {
+			expect((await reloaded.get("cross-process"))?.sessionExpiresAt).toBe(11_000);
+			expect((await reloaded.get("cross-process"))?.token.refresh_token).toBe("refresh-1.rotated.rotated");
+		} finally {
+			reloaded.close();
+		}
+	});
+
 	test("malformed PKCE and unapproved redirects are rejected before the token endpoint", async () => {
 		let contacted = false;
 		globalThis.fetch = (async () => {
