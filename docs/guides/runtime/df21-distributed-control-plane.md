@@ -35,7 +35,10 @@ const runtime = createProductionRuntimeFactory({
   distributedLease,
   localOnly: false,
 });
-// dispatch(argv, { runtime, deliveryId }) uses the existing executor.
+// This is the eventual DF-13 composition contract, NOT enabled today.
+// The production factory deliberately rejects distributedLease until all
+// external effects are fenced and the run/effect journal is shared safely.
+// dispatch(argv, { runtime, deliveryId }) must not bypass that blocker.
 ```
 
 The example deliberately leaves `canonicalRequestKeyForRun`, the GitHub App installation client, and the model/board adapters to DF-13. Their implementations must be based on the actual user's configured repository and authorization. Never derive the key from an absolute host-local path. The mapping must be stable across machines and must be scoped to the exact repository and Request.
