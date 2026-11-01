@@ -153,9 +153,7 @@ describe("production governed GitHub merge adapter", () => {
 		for (const status of [403, 409, 422, 429, 503]) {
 			const f = fixture();
 			f.setMutationStatus(status);
-			await expect(
-				f.boundary.mergeIfHead(7, head, { approvedBy: "maintainer", baseBranch: "main" }),
-			).rejects.toThrow();
+			await expect(f.boundary.mergeIfHead(7, head, { approvedBy: "maintainer", baseBranch: "main" })).rejects.toThrow();
 			expect(f.writes()).toBe(1);
 			expect(await f.boundary.read(7, head, "main")).toMatchObject({ merged: false });
 			expect(f.writes()).toBe(1);
@@ -165,9 +163,7 @@ describe("production governed GitHub merge adapter", () => {
 	test("HTTP 404 missing PR denies merge without any mutation", async () => {
 		const f = fixture();
 		f.setMissingPullRequest();
-		await expect(
-			f.boundary.mergeIfHead(7, head, { approvedBy: "maintainer", baseBranch: "main" }),
-		).rejects.toThrow();
+		await expect(f.boundary.mergeIfHead(7, head, { approvedBy: "maintainer", baseBranch: "main" })).rejects.toThrow();
 		expect(f.writes()).toBe(0);
 	});
 
