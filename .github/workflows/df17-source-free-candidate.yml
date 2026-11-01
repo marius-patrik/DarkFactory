@@ -342,11 +342,14 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          bun packages/harness/scripts/candidate-evidence.ts verify-downloaded --directory candidate/evidence --out candidate/native-validation.json
           bun packages/harness/scripts/candidate-evidence.ts snapshot --directory candidate/evidence --out candidate/technical-candidate.json
           test "$(find candidate/evidence -name 'candidate-*.json' | wc -l)" -ge 5
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: df17-technical-candidate-inventory
-          path: candidate/technical-candidate.json
+          path: |
+            candidate/technical-candidate.json
+            candidate/native-validation.json
           if-no-files-found: error
           retention-days: 14
