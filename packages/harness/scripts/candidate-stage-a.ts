@@ -86,13 +86,7 @@ async function verifiedJobs(runId: number, attempt: number, sourceSha: string, t
 		requireValue(matching.length === 1, `Missing/nonunique CI job: ${jobName}`);
 		const job = matching[0]!;
 		requireValue(job.run_attempt === undefined || job.run_attempt === attempt, `Wrong attempt: ${jobName}`);
-		if (name === "source-free") {
-			// This job can produce A only while running. DF-19 independently requires its
-			// actual completed-success outcome on the immutable run before promotion.
-			requireValue(job.status === "in_progress" && job.conclusion === null, "Source-free producer not running");
-		} else {
-			requireValue(job.status === "completed" && job.conclusion === "success", `Failed CI job: ${jobName}`);
-		}
+		requireValue(job.status === "completed" && job.conclusion === "success", `Failed CI job: ${jobName}`);
 		return { name, run_id: runId, head_sha: sourceSha, conclusion: "success" as const };
 	});
 }
