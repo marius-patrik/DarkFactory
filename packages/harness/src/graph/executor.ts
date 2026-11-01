@@ -13,6 +13,7 @@ import {
 	type ObservedEffect,
 } from "./durable-effects.ts";
 import { amendmentProposalFingerprint, mergeProposalFingerprint } from "./approval-evidence.ts";
+import { FencedGraphLeaseError } from "./postgres-lease.ts";
 import { plan } from "./planner.ts";
 import { planningReviewAdapter } from "./planning.ts";
 import {
