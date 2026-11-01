@@ -23,6 +23,7 @@ export interface EvidenceRun {
 	name: string;
 	run_id: number;
 	head_sha: string;
+	conclusion: "success";
 }
 export interface EvidenceAsset {
 	name: string;
@@ -130,7 +131,10 @@ export function assertTechnicalCandidate(value: unknown): TechnicalCandidate {
 	for (const name of REQUIRED_ACCEPTANCE) {
 		const matching = e.acceptance.filter((r) => r?.name === name);
 		requireCondition(
-			matching.length === 1 && runId(matching[0]?.run_id) && matching[0]?.head_sha === e.source.sha,
+			matching.length === 1 &&
+				runId(matching[0]?.run_id) &&
+				matching[0]?.head_sha === e.source.sha &&
+				matching[0]?.conclusion === "success",
 			"missing/stale technical acceptance: " + name,
 		);
 	}

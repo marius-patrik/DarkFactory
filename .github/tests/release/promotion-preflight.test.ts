@@ -38,6 +38,7 @@ function candidate() {
 			name,
 			run_id: i === 0 ? 401 : i + 500,
 			head_sha: sha("a"),
+			conclusion: "success",
 		})),
 		provenance: { provider: "github-actions", repository: "marius-patrik/DarkFactory", source_sha: sha("a") },
 	});

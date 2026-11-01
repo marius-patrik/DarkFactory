@@ -62,12 +62,12 @@ GitHub Actions producer artifact: **`technical-candidate`**, containing exactly 
       "bundle": "candidate-linux-x64" }
   ],
   "acceptance": [
-    { "name": "source-free", "run_id": 123, "head_sha": "<reviewed source SHA>" },
-    { "name": "security", "run_id": 124, "head_sha": "<reviewed source SHA>" },
-    { "name": "fleet", "run_id": 125, "head_sha": "<reviewed source SHA>" },
-    { "name": "web-ux", "run_id": 126, "head_sha": "<reviewed source SHA>" },
-    { "name": "supply-chain", "run_id": 127, "head_sha": "<reviewed source SHA>" },
-    { "name": "governed-e2e", "run_id": 128, "head_sha": "<reviewed source SHA>" }
+    { "name": "source-free", "run_id": 123, "head_sha": "<reviewed source SHA>", "conclusion": "success" },
+    { "name": "security", "run_id": 124, "head_sha": "<reviewed source SHA>", "conclusion": "success" },
+    { "name": "fleet", "run_id": 125, "head_sha": "<reviewed source SHA>", "conclusion": "success" },
+    { "name": "web-ux", "run_id": 126, "head_sha": "<reviewed source SHA>", "conclusion": "success" },
+    { "name": "supply-chain", "run_id": 127, "head_sha": "<reviewed source SHA>", "conclusion": "success" },
+    { "name": "governed-e2e", "run_id": 128, "head_sha": "<reviewed source SHA>", "conclusion": "success" }
   ],
   "provenance": { "provider": "github-actions", "repository": "marius-patrik/DarkFactory",
     "source_sha": "<reviewed source SHA>" }
@@ -76,7 +76,7 @@ GitHub Actions producer artifact: **`technical-candidate`**, containing exactly 
 
 Example inventory shows only **two of ten mandatory binaries/archives**; it is deliberately incomplete and **not a valid manifest to upload**. The producing workflow must include all ten assets for all five targets (Windows binary: `df-win32-x64.exe`). Additional published assets (checksums.txt, SBOM, docs, installers, npm bundle) **must** be built and hashed premerge and included with `bundle: "candidate-extra"`; upload them under `candidate-extra`. Nothing may be derived or appended after stage A and silently treated as approved.
 
-The five native artifact bundles use names `candidate-darwin-arm64`, `candidate-darwin-x64`, `candidate-linux-arm64`, `candidate-linux-x64`, `candidate-win32-x64`. Only these, optionally `candidate-extra`, and `technical-candidate` may exist in the candidate run. The producer must upload exact files flat under the bundle (per-target `.sha256` build receipts are allowed but are not release assets). Each candidate bundle is downloaded **from Stage A's original GitHub run ID**, never the sealing/publishing run. Upload-artifact V4 run artifact objects are unique and cannot silently be replaced within a completed run. Runner/asset build execution must conclude successfully before publication; the manifest can be uploaded while the run itself is executing and therefore must not claim its own final conclusion.
+The five native artifact bundles use names `candidate-darwin-arm64`, `candidate-darwin-x64`, `candidate-linux-arm64`, `candidate-linux-x64`, `candidate-win32-x64`. Only these, optionally `candidate-extra`, and `technical-candidate` may exist in the candidate run. The producer must finish the source-free aggregate job and verify all six acceptance outcomes before writing its manifest; the producing workflow itself may still be running. The `acceptance[].conclusion` values must all be `success` and are independently re-queried after the run completes. The producer must upload exact files flat under the bundle (per-target `.sha256` build receipts are allowed but are not release assets). Each candidate bundle is downloaded **from Stage A's original GitHub run ID**, never the sealing/publishing run. Upload-artifact V4 run artifact objects are unique and cannot silently be replaced within a completed run. Runner/asset build execution must conclude successfully before publication; the manifest can be uploaded while the run itself is executing and therefore must not claim its own final conclusion.
 
 Use `sha256sum technical-candidate.json` independently to capture `evidence_sha256`. The operator supplies this hash, plus producing `candidate_run_id`, in explicit `workflow_dispatch` on protected `main`. The exact digest must match the downloaded manifest; rerun/replaced artifacts require a new independently pinned digest and fresh verification. The semantic product version authority remains `repo.dfconfig.repo.versioning`, `VERSION`, package metadata and release versioning resolver; ABI comes from `CAPABILITY_ABI_VERSION`, not a duplicated version policy.
 
