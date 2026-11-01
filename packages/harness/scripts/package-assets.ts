@@ -1,5 +1,5 @@
 import { existsSync } from "node:fs";
-import { copyFile, cp, mkdir, readdir } from "node:fs/promises";
+import { copyFile, cp, mkdir, readFile, readdir, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 
 export interface NativeAssetCandidate {
@@ -54,6 +54,15 @@ export async function packageAssets(
 		join(dist, "photon_rs_bg.wasm"),
 	);
 	await cp(join(source, "assets"), join(dist, "assets"), { recursive: true });
+	// The canonical graph's JSON Schema must resolve within the installed bundle,
+	// never to the original packages/harness/src tree.
+	const schemaDist = join(dist, "schemas");
+	await mkdir(schemaDist, { recursive: true });
+	await copyFile(join(harnessRoot, "src", "graph", "graph.schema.json"), join(schemaDist, "graph.schema.json"));
+	const graphFile = join(dist, "assets", "graph.darkfactory.json");
+	const graph = JSON.parse(await readFile(graphFile, "utf8")) as { $schema?: string };
+	graph.$schema = "../schemas/graph.schema.json";
+	await writeFile(graphFile, JSON.stringify(graph, null, 2) + "\n");
 
 	// The official plugins are TypeScript modules importing internal source paths. Copying those
 	// files is not a source-free installation: the imports would reference packages/ absent from
