@@ -70,7 +70,9 @@ export function createProductionRuntimeFactory(options: ProductionRuntimeFactory
 			);
 		}
 		if (!options.localOnly)
-			throw new Error("Production Request execution requires verified distributed mutation fencing or explicit localOnly mode");
+			throw new Error(
+				"Production Request execution requires verified distributed mutation fencing or explicit localOnly mode",
+			);
 		const github = createGitHubProductionEffects(options.repository, {
 			requiredChecks: graph.checks.filter((check) => check.required).map((check) => check.name),
 			mergeBoundary: options.mergeBoundary ?? createGovernedGitHubMergeBoundary(options.repository),
