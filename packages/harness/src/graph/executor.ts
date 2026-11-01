@@ -208,7 +208,8 @@ async function invoke(handlers: NodeHandlers, node: GraphNode, ctx: NodeContext)
 			error instanceof IndeterminateEffectError ||
 			error instanceof StaleEffectError ||
 			error instanceof FencedGraphLeaseError
-		) throw error;
+		)
+			throw error;
 		return { outcome: "failure", outputs: { error: error instanceof Error ? error.message : String(error) } };
 	}
 }
