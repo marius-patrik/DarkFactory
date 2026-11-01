@@ -19,8 +19,8 @@ describe("canonical production agent image", () => {
 		const nix = read("plugins/hosts/containers/nix/agent.nix");
 		expect(nix).toContain('rel == ".github/scripts"');
 		expect(nix).toContain('lib.hasPrefix ".github/scripts/" rel');
-		expect(nix).toContain('cp ${../../../../package.json}');
-		expect(nix).toContain('cp ${../../../../bun.lock}');
+		expect(nix).toContain("cp ${../../../../package.json}");
+		expect(nix).toContain("cp ${../../../../bun.lock}");
 		expect(nix).toContain('tag = "nix"');
 		expect(nix).toContain('User = "1001:1001"');
 	});
@@ -53,12 +53,12 @@ describe("canonical production agent image", () => {
 			"__packaging-smoke",
 			'test "$(id -u)" = 1001',
 			'test "$(id -g)" = 1001',
-			'od -An -tx1 -N4',
-			'photon_rs_bg.wasm',
-			'test ! -e /src',
-			'command -v gh',
-			'command -v secret-tool',
-			'command -v dbus-run-session',
+			"od -An -tx1 -N4",
+			"photon_rs_bg.wasm",
+			"test ! -e /src",
+			"command -v gh",
+			"command -v secret-tool",
+			"command -v dbus-run-session",
 		]) {
 			expect(contract).toContain(assertion);
 		}
