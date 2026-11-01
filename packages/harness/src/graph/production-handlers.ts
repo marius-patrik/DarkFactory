@@ -54,6 +54,8 @@ export interface ProductionGitHubEffects {
 	mergePullRequest(input: {
 		number: number;
 		expectedHeadSha: string;
+		approvedBy: string;
+		baseBranch: string;
 	}): ExternalMutation<{ number: number; mergeSha: string }>;
 	closeIssue(input: { number: number }): ExternalMutation<{ number: number }>;
 	/** Persisted marker prevents repeat gate, reminder, or comment publication. */
@@ -269,6 +271,7 @@ export function createProductionGraphHandlers(options: ProductionGraphHandlerOpt
 					if (!reconcile) throw new Error("Merge requires a durable board reconciliation adapter");
 					const approval = assertMergeAuthorization(ctx.outputs);
 					if (!github) throw new Error("Merge requires GitHub effects");
+					const trustedBase = await repository.observeBase();
 					// Re-read the mutable external head and checks AFTER final human authorization.
 					if ((await github.currentPullRequestHead(approval.prNumber)) !== approval.headSha)
 						throw new Error("PR head changed since final merge authorization");
@@ -280,6 +283,8 @@ export function createProductionGraphHandlers(options: ProductionGraphHandlerOpt
 						github.mergePullRequest({
 							number: approval.prNumber,
 							expectedHeadSha: approval.headSha,
+							approvedBy: approval.actor,
+							baseBranch: trustedBase.defaultBranch,
 						}),
 					);
 					if (!/^[a-f0-9]{40}$/iu.test(merge.value.mergeSha) || merge.value.number !== approval.prNumber)
