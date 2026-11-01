@@ -112,7 +112,12 @@ jobs:
           const originalCommit = await api("GET", "/git/commits/" + ref);
           const localExpectedTree = exec("rev-parse", "HEAD^{tree}");
           console.log("DF_LAYOUT_EXPECTED_TREE=" + localExpectedTree);
-          console.log("DF_LAYOUT_ENTRIES_B64=" + Buffer.from(JSON.stringify(entries), "utf8").toString("base64"));
+          const encodedEntries = Buffer.from(JSON.stringify(entries), "utf8").toString("base64");
+          const chunkSize = 6000;
+          for (let i = 0; i < encodedEntries.length; i += chunkSize) {
+            console.log("DF_LAYOUT_CHUNK_" + (i / chunkSize) + "=" + encodedEntries.slice(i, i + chunkSize));
+          }
+          console.log("DF_LAYOUT_CHUNK_COUNT=" + Math.ceil(encodedEntries.length / chunkSize));
           console.log("DF_LAYOUT_BLOB_COUNT=" + newBlobs.length);
           process.exit(0);
           const expectedTree = exec("rev-parse", "HEAD^{tree}");
