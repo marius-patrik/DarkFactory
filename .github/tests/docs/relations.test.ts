@@ -43,7 +43,6 @@ Test.
 }
 
 function adr(id: string, related: string): DocsPage {
-	const number = id.slice(-4);
 	return {
 		id: id.toLowerCase(),
 		kind: "adr",
