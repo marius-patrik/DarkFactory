@@ -1,0 +1,47 @@
+name: DF-21 Nonpublishing Distributed Control Plane Acceptance
+on:
+  push:
+    branches: [agent/2699-distributed-lease-df21]
+  workflow_dispatch:
+  workflow_call:
+permissions:
+  contents: read
+concurrency:
+  group: df21-verification-${{ github.sha }}
+  cancel-in-progress: false
+jobs:
+  distributed-ownership:
+    name: PostgreSQL multi-process fencing and governed GitHub transport
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: df21
+          POSTGRES_PASSWORD: df21
+          POSTGRES_DB: df21
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U df21 -d df21"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      DF21_TEST_DATABASE_URL: postgresql://df21:df21@127.0.0.1:5432/df21
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+      - run: bun install --frozen-lockfile
+      - run: bun run typecheck
+      - run: bun run format:check
+      - run: bun run lint
+      - name: Apply actual PostgreSQL lease schema
+        run: |
+          bun -e 'import { SQL } from "bun"; const db = new SQL(process.env.DF21_TEST_DATABASE_URL!); try { await db.file("packages/harness/sql/graph-leases.sql"); } finally { await db.close(); }'
+      - name: Independent-process fencing and GitHub boundary acceptance
+        run: bun test .github/tests/harness/graph/postgres-lease.test.ts .github/tests/github/governed-merge-boundary.test.ts .github/tests/github/governance.test.ts .github/tests/harness/graph/distributed-lease.test.ts .github/tests/harness/graph/merge-reconciliation.test.ts .github/tests/harness/graph/production-recovery.test.ts
+      - run: bun run test
