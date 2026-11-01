@@ -1,0 +1,60 @@
+name: One-time package to plugin directory migration
+on:
+  push:
+    branches: [refactor/package-plugin-layout-20261102]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: one-time-package-layout-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  migrate-and-verify:
+    if: github.repository == 'marius-patrik/DarkFactory'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - name: Checkout exact isolated ref
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: true
+          fetch-depth: 1
+      - name: Refuse all branches except the exact migration branch
+        env:
+          REF: ${{ github.ref }}
+        run: test "$REF" = refs/heads/refactor/package-plugin-layout-20261102
+      - name: Install Bun
+        uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6
+      - name: Relocate packages and rewrite source imports/paths
+        run: node .github/scripts/one-time-layout-migrate.mjs
+      - name: Frozen dependency install
+        run: bun install --frozen-lockfile
+      - name: Format updated TypeScript config
+        run: bunx biome format --write tsconfig.json
+      - name: TypeScript
+        run: bun run typecheck
+      - name: Lint
+        run: bun run lint
+      - name: Format
+        run: bun run format:check
+      - name: Tests
+        run: bun test --timeout=30000
+      - name: Native compilation
+        run: bun run build
+      - name: Strict documentation build
+        run: bun run docs
+      - name: Remove one-time self-writing migration automation
+        run: |
+          git rm .github/workflows/one-time-package-layout.yml .github/scripts/one-time-layout-migrate.mjs
+          git diff --check
+      - name: Commit and push only to the isolated branch
+        run: |
+          git config user.name 'darkfactory-layout-bot'
+          git config user.email 'darkfactory-layout-bot@users.noreply.github.com'
+          git add -A
+          git diff --cached --check
+          git commit -m 'refactor(layout): relocate non-interface packages to root plugins'
+          test "$(git branch --show-current)" = 'refactor/package-plugin-layout-20261102'
+          git push origin HEAD:refs/heads/refactor/package-plugin-layout-20261102
