@@ -1,0 +1,351 @@
+# DF-17: no publish, tag, deployment, package registry write, or repository write token.
+name: DF-17 Source-Free Release Candidate
+
+on:
+  push:
+    branches:
+      - agent/2709-source-free-candidate-df17
+  workflow_dispatch:
+  workflow_call:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: df17-candidate-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  matrix:
+    name: Official release target authority
+    runs-on: ubuntu-24.04
+    outputs:
+      targets: ${{ steps.targets.outputs.targets }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+      - name: Derive all five declared targets from source
+        id: targets
+        shell: bash
+        run: |
+          set -euo pipefail
+          matrix=$(bun packages/harness/scripts/release-targets.ts)
+          test "$(jq -r '.include | length' <<< "$matrix")" = 5
+          echo "targets=$matrix" >> "$GITHUB_OUTPUT"
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+
+  quality:
+    name: Frozen-source quality
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+      - run: bun install --frozen-lockfile
+      - name: Verify checkout and committed source
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          test "$(cat VERSION)" = 1.0.0
+          git diff --check
+      - run: bun run typecheck
+      - run: bun run format:check
+      - run: bun run lint
+      - run: bun run test
+
+  native:
+    name: Native executable - ${{ matrix.target }}
+    needs: matrix
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJSON(needs.matrix.outputs.targets) }}
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+      - run: bun install --frozen-lockfile
+      - name: Build actual native target on its own OS and architecture
+        shell: bash
+        run: |
+          set -euo pipefail
+          bun run build --target="${{ matrix.target }}"
+      - name: Execute extracted runtime, plugins, graph, negative paths, and checksum its bytes
+        shell: bash
+        run: |
+          set -euo pipefail
+          bun packages/harness/scripts/verify-target.ts --target "${{ matrix.target }}" 2>&1 | tee "packages/harness/dist/verification-${{ matrix.target }}.log"
+      - name: Record source tree, compiler, ABI, lock and every packaged resource digest
+        shell: bash
+        run: |
+          set -euo pipefail
+          bun packages/harness/scripts/candidate-evidence.ts platform --target "${{ matrix.target }}" --out "packages/harness/dist/candidate-${{ matrix.target }}.json"
+      - name: Rebuild Linux x64 a second time and record actual reproducibility
+        if: matrix.target == 'linux-x64'
+        shell: bash
+        run: |
+          set -euo pipefail
+          cp packages/harness/dist/df-linux-x64 "$RUNNER_TEMP/first-binary"
+          bun run build --target=linux-x64
+          if cmp -s "$RUNNER_TEMP/first-binary" packages/harness/dist/df-linux-x64; then
+            printf 'binary byte-for-byte identical on immediate rebuild\n' > packages/harness/dist/reproducibility-linux-x64.txt
+          else
+            printf 'REPRODUCIBILITY FINDING: executable differs on immediate rebuild\n' > packages/harness/dist/reproducibility-linux-x64.txt
+            echo "::error::Linux x64 build is not byte-for-byte reproducible"
+            exit 1
+          fi
+      - name: Retain complete native distribution and execution evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: candidate-native-${{ matrix.target }}
+          path: packages/harness/dist/
+          if-no-files-found: error
+          retention-days: 14
+
+  web-docs:
+    name: Unified Web and integrated documentation candidate
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+      - run: bun install --frozen-lockfile
+      - run: bun run docs
+      - name: Build one integrated operator Web + Docs application
+        env:
+          DF_WEB_BASE_PATH: /DarkFactory/
+          DF_WEB_REPOSITORY: marius-patrik/DarkFactory
+        shell: bash
+        run: |
+          set -euo pipefail
+          bun packages/web/scripts/build.ts packages/web/dist
+          bun scripts/build-docs.ts --repo-root . --out "$RUNNER_TEMP/df17-site" --web-dist packages/web/dist --base-path /DarkFactory/
+          bun scripts/build-docs.ts --verify-artifact "$RUNNER_TEMP/df17-site" --base-path /DarkFactory/
+          mkdir -p candidate/web
+          tar -czf candidate/web/unified-web-docs.tar.gz -C "$RUNNER_TEMP/df17-site" .
+          cp packages/web/dist/darkfactory-web-manifest.json candidate/web/
+          sha256sum candidate/web/unified-web-docs.tar.gz candidate/web/darkfactory-web-manifest.json > candidate/web/checksums.txt
+          bun packages/harness/scripts/candidate-evidence.ts snapshot --directory candidate/web --out candidate/web-manifest.json
+      - if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: candidate-web-docs
+          path: candidate/
+          if-no-files-found: error
+          retention-days: 14
+
+  container:
+    name: Non-root Docker candidate and image identity
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Build existing production Docker distribution without publishing
+        shell: bash
+        run: docker build --progress=plain -f docker/Dockerfile.agent -t darkfactory-agent:df17 .
+      - name: Execute as non-root without source checkout, reject invalid graph, verify read-only mode
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p candidate/docker
+          test "$(docker run --rm --entrypoint id darkfactory-agent:df17 -u)" = 1001
+          docker run --rm darkfactory-agent:df17 --version | tee candidate/docker/version.txt
+          grep -q 'df v1.0.0' candidate/docker/version.txt
+          docker run --rm darkfactory-agent:df17 --help | grep -q graph
+          docker run --rm darkfactory-agent:df17 graph validate
+          docker run --rm --read-only --tmpfs /tmp darkfactory-agent:df17 --version
+          if docker run --rm darkfactory-agent:df17 graph validate /workspace/invalid.json; then
+            echo "::error::Missing config accepted in Docker"; exit 1
+          fi
+          docker run --rm --entrypoint /bin/sh darkfactory-agent:df17 -ec 'test ! -e /src && test ! -e /opt/darkfactory/packages && ! command -v bun'
+          docker image inspect --format '{{.Id}}' darkfactory-agent:df17 > candidate/docker/image-id.txt
+          sha256sum docker/Dockerfile.agent > candidate/docker/dockerfile-sha256.txt
+          docker save darkfactory-agent:df17 | gzip -n > candidate/docker/darkfactory-agent-df17.tar.gz
+          sha256sum candidate/docker/darkfactory-agent-df17.tar.gz > candidate/docker/docker-archive-sha256.txt
+          bun --version >/dev/null 2>&1 || echo 'No host Bun required to execute container' > candidate/docker/runner-note.txt
+      - if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: candidate-docker
+          path: candidate/docker/
+          if-no-files-found: error
+          retention-days: 14
+
+  npm-package:
+    name: Assemble verified, unpublished Node/npm package
+    needs: native
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: "24"
+      - run: bun install --frozen-lockfile
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          pattern: candidate-native-*
+          path: candidate/native
+          merge-multiple: true
+      - name: Verify uploaded digests and construct Node launcher with every native runtime
+        shell: bash
+        run: |
+          set -euo pipefail
+          bun packages/harness/scripts/candidate-npm.ts --native candidate/native --out candidate/npm
+          bun packages/harness/scripts/candidate-evidence.ts snapshot --directory candidate/npm --out candidate/npm-manifest.json
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: candidate-npm
+          path: |
+            candidate/npm/
+            candidate/npm-manifest.json
+          if-no-files-found: error
+          retention-days: 14
+
+  npm-install:
+    name: Native Node/npm install - ${{ matrix.target }}
+    needs: [matrix, npm-package]
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJSON(needs.matrix.outputs.targets) }}
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 15
+    steps:
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: candidate-npm
+          path: candidate
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: "24"
+      - name: Install from packed bytes without source checkout or an existing DarkFactory CLI
+        shell: bash
+        run: |
+          set -euo pipefail
+          prefix=$(mktemp -d)
+          npm install --prefix "$prefix" --ignore-scripts --no-audit --no-fund ./candidate/npm/*.tgz
+          test -f "$prefix/node_modules/@darkfactory/cli/bin/df.cjs"
+          cd "$prefix"
+          ./node_modules/.bin/df --version | tee "$RUNNER_TEMP/df17-npm-result.txt"
+          grep -q 'df v1.0.0' "$RUNNER_TEMP/df17-npm-result.txt"
+          ./node_modules/.bin/df --help | grep -q graph
+          ./node_modules/.bin/df graph validate
+          if ./node_modules/.bin/df graph validate missing.json; then
+            echo "::error::Invalid installed configuration accepted"; exit 1
+          fi
+      - if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: candidate-npm-install-${{ matrix.target }}
+          path: ${{ runner.temp }}/df17-npm-result.txt
+          if-no-files-found: warn
+          retention-days: 14
+
+  supply-chain:
+    name: SBOM, licenses, dependency advisories and pinned-action review
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+      - run: bun install --frozen-lockfile
+      - name: Generate lockfile-derived CycloneDX inventory and explicit unknown licenses
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p candidate/security
+          bun packages/harness/scripts/candidate-evidence.ts sbom --out candidate/security/sbom.cdx.json
+          git grep -nE 'uses: [^#]+@(v[0-9]+|main|master)' -- '.github/workflows/*' > candidate/security/unpinned-actions.txt || true
+          if test -s candidate/security/unpinned-actions.txt; then
+            echo "::error::Floating action references found (see retained security findings)"
+            cat candidate/security/unpinned-actions.txt
+            exit 1
+          fi
+      - name: Run actual Bun vulnerability advisory scanner; never report unknown as clean
+        shell: bash
+        run: |
+          set +e
+          bun audit --json > candidate/security/audit.json 2> candidate/security/audit-stderr.txt
+          result=$?
+          printf '%s\n' "$result" > candidate/security/audit-exit-code.txt
+          if [ "$result" -ne 0 ]; then
+            echo "::error::Bun advisory scanner failed or found vulnerabilities. Review raw retained results."
+            cat candidate/security/audit-stderr.txt
+            exit "$result"
+          fi
+      - if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: candidate-supply-chain
+          path: candidate/security/
+          if-no-files-found: warn
+          retention-days: 14
+
+  candidate:
+    name: Immutable technical candidate inventory (NOT production promotion)
+    if: always()
+    needs: [quality, native, web-docs, container, npm-package, npm-install, supply-chain]
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+      - name: Require every technical job to succeed; skipped or unknown is a blocker
+        env:
+          DF_QUALITY: ${{ needs.quality.result }}
+          DF_NATIVE: ${{ needs.native.result }}
+          DF_WEB: ${{ needs.web-docs.result }}
+          DF_DOCKER: ${{ needs.container.result }}
+          DF_NPM: ${{ needs.npm-package.result }}
+          DF_NPM_INSTALL: ${{ needs.npm-install.result }}
+          DF_SUPPLY_CHAIN: ${{ needs.supply-chain.result }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          for job in DF_QUALITY DF_NATIVE DF_WEB DF_DOCKER DF_NPM DF_NPM_INSTALL DF_SUPPLY_CHAIN; do
+            echo "$job=${!job}"
+            test "${!job}" = success || { echo "::error::$job did not succeed"; exit 1; }
+          done
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          pattern: candidate-*
+          path: candidate/evidence
+          merge-multiple: false
+      - name: Re-verify independently downloaded bytes and preserve exact source/lock identity
+        shell: bash
+        run: |
+          set -euo pipefail
+          bun packages/harness/scripts/candidate-evidence.ts snapshot --directory candidate/evidence --out candidate/technical-candidate.json
+          test "$(find candidate/evidence -name 'candidate-*.json' | wc -l)" -ge 5
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: df17-technical-candidate-inventory
+          path: candidate/technical-candidate.json
+          if-no-files-found: error
+          retention-days: 14
