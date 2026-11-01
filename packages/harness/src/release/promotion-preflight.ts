@@ -78,8 +78,9 @@ async function governance(token: string): Promise<void> {
 	requireCondition(tagsImmutable, "no immutable v* tag ruleset");
 	const env = await github("environments/production-release", token);
 	requireCondition(
-		env.prevent_self_review === true &&
-			env.protection_rules?.some((r: any) => r.type === "required_reviewers" && r.reviewers?.length > 0),
+		env.protection_rules?.some((r: any) =>
+			r.type === "required_reviewers" && r.prevent_self_review === true && r.reviewers?.length > 0,
+		),
 		"missing protected publication environment",
 	);
 }
