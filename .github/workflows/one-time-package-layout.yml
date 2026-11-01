@@ -49,7 +49,9 @@ jobs:
         run: bun run build
       - name: Strict documentation build
         run: bun run docs
-      - name: Commit and push only to the isolated branch
+      - name: Publish verified tree with Git Data API (workflow-scope-safe, no git push)
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           git config user.name 'darkfactory-layout-bot'
           git config user.email 'darkfactory-layout-bot@users.noreply.github.com'
@@ -57,4 +59,70 @@ jobs:
           git diff --cached --check
           git commit -m 'refactor(layout): relocate non-interface packages to root plugins'
           test "$(git branch --show-current)" = 'refactor/package-plugin-layout-20261102'
-          git push origin HEAD:refs/heads/refactor/package-plugin-layout-20261102
+          node --input-type=module <<'NODE'
+          import { execFileSync } from "node:child_process";
+          const exec = (...a) => execFileSync("git", a, { encoding: "utf8" }).trim();
+          const repo = process.env.GITHUB_REPOSITORY;
+          const ref = process.env.GITHUB_SHA;
+          const branch = "refactor/package-plugin-layout-20261102";
+          if (repo !== "marius-patrik/DarkFactory") throw new Error("Unexpected repository");
+          const api = async (method, endpoint, data) => {
+            const result = await fetch("https://api.github.com/repos/" + repo + endpoint, {
+              method,
+              headers: {
+                Accept: "application/vnd.github+json",
+                Authorization: "Bearer " + process.env.GH_TOKEN,
+                "X-GitHub-Api-Version": "2022-11-28",
+                ...(data ? { "Content-Type": "application/json" } : {})
+              },
+              ...(data ? { body: JSON.stringify(data) } : {})
+            });
+            const text = await result.text();
+            if (!result.ok) throw new Error("GitHub API " + method + " " + endpoint + ": " + result.status + " " + text.slice(0, 700));
+            return JSON.parse(text);
+          };
+          const ls = (rev) => new Map(exec("ls-tree", "-rz", rev).split("\0").filter(Boolean).map(row => {
+            const m = /^(100644|100755|120000|160000) (blob|commit) ([0-9a-f]{40})\t(.+)$/.exec(row);
+            if (!m) throw new Error("Invalid git tree row: " + row.slice(0, 100));
+            return [m[4], { mode: m[1], type: m[2], sha: m[3] }];
+          }));
+          const before = ls(ref), after = ls("HEAD");
+          const existing = new Set([...before.values()].map(x => x.sha));
+          const paths = [...new Set([...before.keys(), ...after.keys()])].sort();
+          const entries = [];
+          const newBlobs = [];
+          for (const p of paths) {
+            const old = before.get(p), now = after.get(p);
+            if (old?.sha === now?.sha && old?.mode === now?.mode) continue;
+            if (!now) { entries.push({ path: p, mode: old.mode, type: old.type, sha: null }); continue; }
+            const entry = { path: p, mode: now.mode, type: now.type, sha: now.sha };
+            entries.push(entry);
+            if (!existing.has(now.sha)) newBlobs.push({ entry, path: p, expected: now.sha });
+          }
+          let cursor = 0;
+          async function upload() {
+            while (cursor < newBlobs.length) {
+              const x = newBlobs[cursor++];
+              const content = execFileSync("git", ["show", "HEAD:" + x.path]).toString("base64");
+              const blob = await api("POST", "/git/blobs", { content, encoding: "base64" });
+              if (blob.sha !== x.expected) throw new Error("Blob mismatch: " + x.path);
+            }
+          }
+          await Promise.all(Array.from({ length: 10 }, upload));
+          const originalCommit = await api("GET", "/git/commits/" + ref);
+          const tree = await api("POST", "/git/trees", { base_tree: originalCommit.tree.sha, tree: entries });
+          const expectedTree = exec("rev-parse", "HEAD^{tree}");
+          if (tree.sha !== expectedTree) throw new Error("Git Data tree is not byte-identical to checked local source: " + tree.sha + " != " + expectedTree);
+          const remote = await api("GET", "/git/ref/heads/" + branch);
+          if (remote.object.sha !== ref) throw new Error("Remote branch advanced: refusing to overwrite");
+          const commit = await api("POST", "/git/commits", {
+            message: "refactor(layout): relocate non-interface packages to root plugins",
+            tree: tree.sha,
+            parents: [ref]
+          });
+          await api("PATCH", "/git/refs/heads/" + branch, { sha: commit.sha, force: false });
+          const verified = await api("GET", "/git/ref/heads/" + branch);
+          if (verified.object.sha !== commit.sha) throw new Error("Remote readback mismatch");
+          console.log("Verified exact source tree " + tree.sha + " committed at " + commit.sha +
+                      " (" + entries.length + " tree changes, " + newBlobs.length + " newly uploaded blobs)");
+          NODE
