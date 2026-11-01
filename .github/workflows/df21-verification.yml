@@ -45,3 +45,12 @@ jobs:
       - name: Independent-process fencing and GitHub boundary acceptance
         run: bun test .github/tests/harness/graph/postgres-lease.test.ts .github/tests/github/governed-merge-boundary.test.ts .github/tests/github/governance.test.ts .github/tests/harness/graph/distributed-lease.test.ts .github/tests/harness/graph/merge-reconciliation.test.ts .github/tests/harness/graph/production-recovery.test.ts
       - run: bun run test
+      - name: Emit formatted DF-21 source for isolated-branch correction
+        if: always()
+        run: |
+          bunx biome format --write packages/github/src/governed-merge-boundary.ts packages/harness/src/graph/postgres-lease.ts packages/harness/src/graph/production-composition.ts packages/harness/src/graph/production-handlers.ts packages/harness/src/graph/runtime-composition.ts packages/harness/src/graph/executor.ts packages/harness/src/graph/index.ts .github/tests/github/governed-merge-boundary.test.ts .github/tests/harness/graph/postgres-lease.test.ts .github/tests/harness/graph/fixtures/pg-lease-worker.ts
+          for path in packages/github/src/governed-merge-boundary.ts packages/harness/src/graph/postgres-lease.ts packages/harness/src/graph/production-composition.ts packages/harness/src/graph/production-handlers.ts packages/harness/src/graph/runtime-composition.ts packages/harness/src/graph/executor.ts packages/harness/src/graph/index.ts .github/tests/github/governed-merge-boundary.test.ts .github/tests/harness/graph/postgres-lease.test.ts .github/tests/harness/graph/fixtures/pg-lease-worker.ts; do
+            printf 'DF21_START:%s\n' "$path"
+            base64 -w76 "$path"
+            printf 'DF21_END\n'
+          done
