@@ -127,12 +127,15 @@ try {
 		eventPath,
 		JSON.stringify({ type: "node.completed", node: "request-intake", outcome: "success", outputs: {} }),
 	);
-	await writeFile(statePath, JSON.stringify({
-		run_id: "df17-local-transition",
-		current_node: "request-intake",
-		outputs: {},
-		hints: [],
-	}));
+	await writeFile(
+		statePath,
+		JSON.stringify({
+			run_id: "df17-local-transition",
+			current_node: "request-intake",
+			outputs: {},
+			hints: [],
+		}),
+	);
 	const lifecycle = Bun.spawn([installed, "graph", "plan", "--event", eventPath, "--state", statePath], {
 		cwd: standalone,
 		stdout: "pipe",
@@ -151,12 +154,15 @@ try {
 		eventPath,
 		JSON.stringify({ type: "node.completed", node: "planning", outcome: "quota_exhausted", outputs: {} }),
 	);
-	await writeFile(statePath, JSON.stringify({
-		run_id: "df17-local-transition",
-		current_node: "planning",
-		outputs: {},
-		hints: [],
-	}));
+	await writeFile(
+		statePath,
+		JSON.stringify({
+			run_id: "df17-local-transition",
+			current_node: "planning",
+			outputs: {},
+			hints: [],
+		}),
+	);
 	const blocked = Bun.spawn([installed, "graph", "plan", "--event", eventPath, "--state", statePath], {
 		cwd: standalone,
 		stdout: "pipe",
