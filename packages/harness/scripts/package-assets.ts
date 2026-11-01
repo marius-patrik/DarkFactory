@@ -66,6 +66,14 @@ export async function packageAssets(
 			if (!existsSync(input)) continue;
 			const pluginDist = join(dist, "plugins", entry.name);
 			await mkdir(pluginDist, { recursive: true });
+			// The compiled capability alone is not an installed agent plugin: host adapters,
+			// manifests, skills, hooks and declarative resources are part of the contract.
+			// Never ship source TypeScript (its relative monorepo imports cannot run in an
+			// extracted candidate); Bun compiles the capability entrypoint below.
+			await cp(join(pluginRoot, entry.name), pluginDist, {
+				recursive: true,
+				filter: (path) => !path.endsWith(".ts") && !path.endsWith(".tsx"),
+			});
 			const child = Bun.spawn(
 				["bun", "build", input, "--target=bun", "--outfile", join(pluginDist, "capability.mjs")],
 				{ cwd: root, stdout: "pipe", stderr: "pipe" },
