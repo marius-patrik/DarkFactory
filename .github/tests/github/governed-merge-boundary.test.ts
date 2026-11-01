@@ -17,10 +17,11 @@ function fixture() {
 	let mutationLost = false;
 	let divergent = false;
 	let writes = 0;
-	const response = (body: unknown, status = 200) => new Response(JSON.stringify(body), {
-		status,
-		headers: { "content-type": "application/json" },
-	});
+	const response = (body: unknown, status = 200) =>
+		new Response(JSON.stringify(body), {
+			status,
+			headers: { "content-type": "application/json" },
+		});
 	const fetch = async (input: string | URL | Request, init?: RequestInit) => {
 		const url = String(input);
 		const method = init?.method ?? "GET";
@@ -44,13 +45,15 @@ function fixture() {
 			});
 		}
 		if (url === api + "/pulls/7/reviews?per_page=100") {
-			return response([{
-				id: 1,
-				state: approved ? "APPROVED" : "DISMISSED",
-				commit_id: head,
-				author_association: authorizedReview ? "OWNER" : "NONE",
-				user: { login: "maintainer", type: "User" },
-			}]);
+			return response([
+				{
+					id: 1,
+					state: approved ? "APPROVED" : "DISMISSED",
+					commit_id: head,
+					author_association: authorizedReview ? "OWNER" : "NONE",
+					user: { login: "maintainer", type: "User" },
+				},
+			]);
 		}
 		if (url.startsWith(api + "/pulls?")) return response([]);
 		if (url === api + "/commits/" + head + "/check-runs?per_page=100") {
@@ -71,13 +74,27 @@ function fixture() {
 	const repo = new GitHubRepository(new GitHubClient({ token: "test", fetch, maxRetries: 0 }), "o", "r");
 	return {
 		boundary: createGovernedGitHubMergeBoundary(repo),
-		setMerged: () => { merged = true; },
-		setChangedHead: () => { changedHead = true; },
-		setChangedBase: () => { changedBase = true; },
-		setApproved: () => { approved = false; },
-		setUnauthorizedReview: () => { authorizedReview = false; },
-		setMutationLost: () => { mutationLost = true; },
-		setDivergent: () => { divergent = true; },
+		setMerged: () => {
+			merged = true;
+		},
+		setChangedHead: () => {
+			changedHead = true;
+		},
+		setChangedBase: () => {
+			changedBase = true;
+		},
+		setApproved: () => {
+			approved = false;
+		},
+		setUnauthorizedReview: () => {
+			authorizedReview = false;
+		},
+		setMutationLost: () => {
+			mutationLost = true;
+		},
+		setDivergent: () => {
+			divergent = true;
+		},
 		writes: () => writes,
 	};
 }
@@ -98,31 +115,36 @@ describe("production governed GitHub merge adapter", () => {
 	test("head/base changes and stale or unauthorized approval never mutate", async () => {
 		const g = fixture();
 		g.setChangedHead();
-		await expect(g.boundary.mergeIfHead(7, head, { approvedBy: "maintainer", baseBranch: "main" }))
-			.rejects.toThrow("head changed");
+		await expect(g.boundary.mergeIfHead(7, head, { approvedBy: "maintainer", baseBranch: "main" })).rejects.toThrow(
+			"head changed",
+		);
 		expect(g.writes()).toBe(0);
 		const h = fixture();
 		h.setChangedBase();
-		await expect(h.boundary.mergeIfHead(7, head, { approvedBy: "maintainer", baseBranch: "main" }))
-			.rejects.toThrow("base changed");
+		await expect(h.boundary.mergeIfHead(7, head, { approvedBy: "maintainer", baseBranch: "main" })).rejects.toThrow(
+			"base changed",
+		);
 		expect(h.writes()).toBe(0);
 		const i = fixture();
 		i.setApproved();
-		await expect(i.boundary.mergeIfHead(7, head, { approvedBy: "maintainer", baseBranch: "main" }))
-			.rejects.toThrow("human approval");
+		await expect(i.boundary.mergeIfHead(7, head, { approvedBy: "maintainer", baseBranch: "main" })).rejects.toThrow(
+			"human approval",
+		);
 		expect(i.writes()).toBe(0);
 		const j = fixture();
 		j.setUnauthorizedReview();
-		await expect(j.boundary.mergeIfHead(7, head, { approvedBy: "maintainer", baseBranch: "main" }))
-			.rejects.toThrow("human approval");
+		await expect(j.boundary.mergeIfHead(7, head, { approvedBy: "maintainer", baseBranch: "main" })).rejects.toThrow(
+			"human approval",
+		);
 		expect(j.writes()).toBe(0);
 	});
 
 	test("ambiguous mutation cannot be retried by adapter; readback is separately reconciled", async () => {
 		const f = fixture();
 		f.setMutationLost();
-		await expect(f.boundary.mergeIfHead(7, head, { approvedBy: "maintainer", baseBranch: "main" }))
-			.rejects.toThrow("connection lost");
+		await expect(f.boundary.mergeIfHead(7, head, { approvedBy: "maintainer", baseBranch: "main" })).rejects.toThrow(
+			"connection lost",
+		);
 		expect(f.writes()).toBe(1);
 		f.setMerged();
 		expect(await f.boundary.read(7, head, "main")).toMatchObject({ merged: true, mergeSha: merge });
