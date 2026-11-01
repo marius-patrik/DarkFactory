@@ -303,7 +303,6 @@ export class GitHubRepository {
 		return [...new Set(nodes.map((node) => node.number))].sort((a, b) => a - b);
 	}
 
-
 	/**
 	 * Only issues linked by GitHub's authoritative closingIssuesReferences in
 	 * this exact repository are eligible for production post-merge closure.
