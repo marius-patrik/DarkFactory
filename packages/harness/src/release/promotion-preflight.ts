@@ -123,7 +123,11 @@ export async function verifyLivePromotion(
 		const draft = await api("releases/tags/v" + e.version, context.token);
 		if (!draft.draft || draft.target_commitish !== context.sourceSha) block("draft changed before promotion");
 		const tag = await api("git/ref/tags/v" + e.version, context.token);
-		if (tag.ref !== "refs/tags/v" + e.version || tag.object?.type !== "commit" || tag.object?.sha !== context.sourceSha) {
+		if (
+			tag.ref !== "refs/tags/v" + e.version ||
+			tag.object?.type !== "commit" ||
+			tag.object?.sha !== context.sourceSha
+		) {
 			block("public tag does not resolve to authorized final commit");
 		}
 	}
