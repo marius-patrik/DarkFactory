@@ -25,3 +25,12 @@ jobs:
       - run: bun run lint
       - run: bun test ./.github/tests/release/promotion-evidence.test.ts ./.github/tests/release/promotion-preflight.test.ts ./.github/tests/harness/scripts/release-workflow.test.ts
       - run: bun run test
+      - name: Emit Biome-formatted DF-19 source for isolated-branch repair
+        if: always()
+        run: |
+          bunx biome format --write packages/harness/src/release/promotion-evidence.ts packages/harness/src/release/promotion-preflight.ts packages/harness/src/release/promotion-assets.ts .github/tests/release/promotion-evidence.test.ts .github/tests/release/promotion-preflight.test.ts .github/tests/harness/scripts/release-workflow.test.ts
+          for path in packages/harness/src/release/promotion-evidence.ts packages/harness/src/release/promotion-preflight.ts packages/harness/src/release/promotion-assets.ts .github/tests/release/promotion-evidence.test.ts .github/tests/release/promotion-preflight.test.ts .github/tests/harness/scripts/release-workflow.test.ts; do
+            printf 'DF19_START:%s\n' "$path"
+            base64 -w76 "$path"
+            printf 'DF19_END\n'
+          done
