@@ -1,4 +1,4 @@
-# DarkFactory Nix agent image
+# DarkFactory production agent image (Nix)
 
 The production agent container is a reproducible Nix image from `flake.nix`.
 The resolved Bun dependencies come from the root `bun.lock`, and there is
@@ -32,3 +32,22 @@ D-Bus session, and the Nix-managed Git, GitHub CLI and keychain dependencies.
 Update the committed `flake.lock` only through a reviewed toolchain change.
 Never resolve Bun dependencies at container startup. Only a successful image
 build plus executable `df dispatch` verification counts as validation.
+
+## Canonical image authority and Dockerfile retirement
+
+This Nix derivation is the **production image definition**. Root `flake.nix`
+and `flake.lock` are required discovery and reproducibility entrypoints.
+Docker remains the execution runtime; the standalone `docker/Dockerfile.agent`
+was a second image recipe for candidate/integration validation, not the
+production `agent.yml` image.
+
+`.github/scripts/verify-agent-image.sh` validates source-free execution,
+non-root identity, bundled assets and required CLI/keychain tools against the
+Nix-built image. `.github/scripts/verify-nix-agent.sh` additionally exercises
+the actual dispatch pipeline through an isolated fake provider and validates
+a malformed event fails safely.
+
+The Nix source filter admits only `.github/scripts/` beneath `.github/`,
+allowing build scripts to migrate there without bundling workflows or test
+fixtures. Nix source relocation requires both architecture builds and a real
+agent dispatch acceptance test.

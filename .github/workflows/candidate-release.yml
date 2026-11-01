@@ -53,23 +53,22 @@ jobs:
 
 
   docker-agent-smoke:
-    name: Build and run the unprivileged agent container
+    name: Verify canonical Nix-built agent container
     runs-on: ubuntu-24.04
     timeout-minutes: 25
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:
           ref: ${{ github.event.pull_request.head.sha || github.sha }}
-      - name: Build the actual agent Dockerfile
-        run: docker build --progress=plain -f docker/Dockerfile.agent -t darkfactory-agent:candidate .
-      - name: Execute published CLI contract as an unprivileged user
+      - name: Install pinned Nix
+        uses: cachix/install-nix-action@v31
+      - name: Build and load the canonical production agent image
         run: |
           set -euo pipefail
-          docker run --rm darkfactory-agent:candidate --help > "$RUNNER_TEMP/df-container-help.txt"
-          grep -q 'providers' "$RUNNER_TEMP/df-container-help.txt"
-          docker run --rm darkfactory-agent:candidate providers > "$RUNNER_TEMP/df-container-providers.txt"
-          test -s "$RUNNER_TEMP/df-container-providers.txt"
-          test "$(docker run --rm --entrypoint id darkfactory-agent:candidate -u)" = "1001"
+          nix build .#agentImage --no-write-lock-file -L -o "$RUNNER_TEMP/agent-image"
+          docker load -i "$RUNNER_TEMP/agent-image"
+      - name: Execute independent source-free, CLI, and non-root image contract
+        run: bash .github/scripts/verify-agent-image.sh darkfactory-agent:nix
 
   candidate:
     name: candidate
@@ -81,9 +80,9 @@ jobs:
         env:
           DF_TARGETS_RESULT: ${{ needs.targets.result }}
           DF_BUILD_RESULT: ${{ needs.build.result }}
-          DF_DOCKER_RESULT: ${{ needs.docker-agent-smoke.result }}
+          DF_IMAGE_RESULT: ${{ needs.docker-agent-smoke.result }}
         run: |
           set -euo pipefail
           test "$DF_TARGETS_RESULT" = "success"
           test "$DF_BUILD_RESULT" = "success"
-          test "$DF_DOCKER_RESULT" = "success"
+          test "$DF_IMAGE_RESULT" = "success"

@@ -11,6 +11,9 @@ nix build .#agentImage -L --show-trace
 docker load -i result
 docker image inspect darkfactory-agent:nix > /dev/null
 
+# Shared source-free and non-root contract for the production image.
+bash .github/scripts/verify-agent-image.sh darkfactory-agent:nix
+
 docker run --rm darkfactory-agent:nix --help
 docker run --rm darkfactory-agent:nix --version
 docker run --rm darkfactory-agent:nix providers

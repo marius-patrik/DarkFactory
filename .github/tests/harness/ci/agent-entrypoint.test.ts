@@ -15,13 +15,15 @@ describe("production agent image", () => {
 	});
 
 	test("the Nix image compiles the release binary rather than interpreting TypeScript sources", () => {
-		const agent = readFileSync(join(repoRoot, "nix/agent.nix"), "utf8");
+		const agent = readFileSync(join(repoRoot, "plugins/hosts/containers/nix/agent.nix"), "utf8");
 		expect(agent).toContain("bun packages/harness/scripts/build.ts --target");
 		expect(agent).toContain('"$out/bin/df" __packaging-smoke');
 		expect(agent).not.toContain("exec ${pkgs.bun}/bin/bun");
 		expect(agent).not.toContain("DF_SOURCE=");
 		const smoke = readFileSync(join(repoRoot, ".github/scripts/verify-nix-agent.sh"), "utf8");
-		expect(smoke).toContain("7f454c46");
+		expect(smoke).toContain("verify-agent-image.sh");
+		const imageContract = readFileSync(join(repoRoot, ".github/scripts/verify-agent-image.sh"), "utf8");
+		expect(imageContract).toContain("7f454c46");
 		expect(smoke).toContain("darkfactory-agent:nix __packaging-smoke");
 		expect(agent).toContain("dbus-run-session");
 		expect(agent).toContain('User = "1001:1001"');
