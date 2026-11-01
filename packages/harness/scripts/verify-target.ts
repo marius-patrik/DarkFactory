@@ -93,7 +93,7 @@ const bundle = `${asset}.tar.gz`;
 const contents = (await readdir(dist))
 	.filter((entry) => entry !== bundle && !entry.endsWith(RECORD_SUFFIX) && entry !== "checksums.txt")
 	.sort();
-for (const required of [asset, "assets", "plugins", "photon_rs_bg.wasm"]) {
+for (const required of [asset, "assets", "plugins", "schemas", "photon_rs_bg.wasm"]) {
 	if (!contents.includes(required)) throw new Error(`df bundle is missing ${required}`);
 }
 async function tarCommand(args: string[], cwd: string): Promise<void> {
@@ -112,7 +112,88 @@ await tarCommand(["-czf", bundle, ...contents], dist);
 const standalone = await mkdtemp(join(tmpdir(), "df-standalone-"));
 try {
 	await tarCommand(["-xzf", join(dist, bundle), "-C", standalone], standalone);
-	await run([join(standalone, asset), "__packaging-smoke"], "standalone packaging smoke", true, standalone);
+	const installed = join(standalone, asset);
+	if ((await readdir(standalone)).includes("packages") || (await readdir(standalone)).includes("node_modules"))
+		throw new Error("Source-free archive incorrectly includes a development checkout");
+	await run([installed, "__packaging-smoke"], "standalone packaging smoke", true, standalone);
+	await run([installed, "--help"], "standalone help", true, standalone);
+	await run([installed, "providers"], "standalone provider discovery", true, standalone);
+	await run([installed, "graph", "validate"], "standalone canonical graph", true, standalone);
+	await run([installed, "plugin", "list", "--json"], "standalone official plugin discovery", true, standalone);
+	// A bounded graph transition must be executable without a GitHub token or source checkout.
+	const eventPath = join(standalone, "graph-event.json");
+	const statePath = join(standalone, "graph-state.json");
+	await writeFile(
+		eventPath,
+		JSON.stringify({ type: "node.completed", node: "request-intake", outcome: "success", outputs: {} }),
+	);
+	await writeFile(
+		statePath,
+		JSON.stringify({
+			run_id: "df17-local-transition",
+			current_node: "request-intake",
+			outputs: {},
+			hints: [],
+		}),
+	);
+	const lifecycle = Bun.spawn([installed, "graph", "plan", "--event", eventPath, "--state", statePath], {
+		cwd: standalone,
+		stdout: "pipe",
+		stderr: "pipe",
+	});
+	const [planExit, planStdout, planStderr] = await Promise.all([
+		lifecycle.exited,
+		new Response(lifecycle.stdout).text(),
+		new Response(lifecycle.stderr).text(),
+	]);
+	if (planExit !== 0) throw new Error(`Standalone graph plan failed: ${planStderr || planStdout}`);
+	const next = JSON.parse(planStdout) as { type?: string; nodes?: string[] };
+	if (next.type !== "run" || !next.nodes?.includes("planning"))
+		throw new Error(`Standalone graph did not advance request-intake to planning: ${planStdout}`);
+	await writeFile(
+		eventPath,
+		JSON.stringify({ type: "node.completed", node: "planning", outcome: "quota_exhausted", outputs: {} }),
+	);
+	await writeFile(
+		statePath,
+		JSON.stringify({
+			run_id: "df17-local-transition",
+			current_node: "planning",
+			outputs: {},
+			hints: [],
+		}),
+	);
+	const blocked = Bun.spawn([installed, "graph", "plan", "--event", eventPath, "--state", statePath], {
+		cwd: standalone,
+		stdout: "pipe",
+		stderr: "pipe",
+	});
+	const [blockedExit, blockedOutput, blockedError] = await Promise.all([
+		blocked.exited,
+		new Response(blocked.stdout).text(),
+		new Response(blocked.stderr).text(),
+	]);
+	if (blockedExit !== 0) throw new Error(`Quota-blocked graph plan failed: ${blockedError}`);
+	const quota = JSON.parse(blockedOutput) as { type?: string; status?: string };
+	if (quota.type !== "comment" || quota.status !== "Blocked")
+		throw new Error(`Quota exhaustion was not checkpoint-blocked: ${blockedOutput}`);
+	process.stdout.write("standalone graph: request-to-planning transition and quota block validated\\n");
+	// Negative acceptance is executable: invalid input must fail rather than producing a false pass.
+	const invalidGraph = join(standalone, "invalid-graph.json");
+	await writeFile(invalidGraph, "{not json");
+	const invalid = Bun.spawn([installed, "graph", "validate", invalidGraph], {
+		cwd: standalone,
+		stdout: "pipe",
+		stderr: "pipe",
+	});
+	const [invalidExit, invalidStdout, invalidStderr] = await Promise.all([
+		invalid.exited,
+		new Response(invalid.stdout).text(),
+		new Response(invalid.stderr).text(),
+	]);
+	if (invalidExit === 0)
+		throw new Error(`Invalid graph was accepted by extracted binary: ${invalidStdout} ${invalidStderr}`);
+	process.stdout.write("standalone invalid graph: rejected as required\\n");
 	const child = Bun.spawn([join(standalone, asset), "--version"], { cwd: standalone, stdout: "pipe", stderr: "pipe" });
 	const [exit, output, diagnostics] = await Promise.all([
 		child.exited,
@@ -143,7 +224,6 @@ try {
 	};
 	await writeFile(join(consumer, "package.json"), JSON.stringify(manifest));
 	await run(["bun", "install"], "fixture dependency resolution", true, consumer);
-	const installed = join(standalone, asset);
 	await run([installed, "ci", "matrix", "--repo", consumer], "standalone capability discovery", true, consumer);
 
 	async function qualitySummary(): Promise<{

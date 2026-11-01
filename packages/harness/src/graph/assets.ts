@@ -1,7 +1,10 @@
+import { existsSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
-/** Source/install-relative path to DarkFactory's bundled canonical workflow graph. */
+/** Resolve the canonical graph from an extracted native bundle before source paths. */
 export function bundledGraphPath(): string {
+	const installed = join(dirname(process.execPath), "assets", "graph.darkfactory.json");
+	if (existsSync(installed)) return installed;
 	return join(dirname(fileURLToPath(import.meta.url)), "..", "..", "assets", "graph.darkfactory.json");
 }
