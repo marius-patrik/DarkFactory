@@ -75,7 +75,11 @@ function safeAsset(name: unknown): name is string {
 }
 
 /** Validates all non-forgeable structural constraints before contacting GitHub. */
-export function assertPromotionEvidence(value: unknown, phase: "candidate" | "publish"): PromotionEvidence {
+export function assertPromotionEvidence(
+	value: unknown,
+	phase: "candidate" | "publish",
+	externallyAuthorized = false,
+): PromotionEvidence {
 	requireCondition(isRecord(value) && value.schema === 1, "unsupported evidence schema");
 	const e = value as unknown as PromotionEvidence;
 	requireCondition(e.repository === "marius-patrik/DarkFactory", "wrong repository");
@@ -115,11 +119,16 @@ export function assertPromotionEvidence(value: unknown, phase: "candidate" | "pu
 	requireCondition(isRecord(e.publication_authorization), "missing authorization record");
 	requireCondition(["pending", "approved"].includes(e.publication_authorization.state), "invalid authorization state");
 	if (phase === "publish") {
-		requireCondition(e.publication_authorization.state === "approved", "human authorization pending");
 		requireCondition(
-			typeof e.publication_authorization.actor === "string" && !e.publication_authorization.actor.endsWith("[bot]"),
-			"unauthorized actor",
+			e.publication_authorization.state === "approved" || externallyAuthorized,
+			"human authorization pending",
 		);
+		if (e.publication_authorization.state === "approved") {
+			requireCondition(
+				typeof e.publication_authorization.actor === "string" && !e.publication_authorization.actor.endsWith("[bot]"),
+				"unauthorized actor",
+			);
+		}
 	}
 	requireCondition(Array.isArray(e.acceptance), "missing acceptance records");
 	for (const name of REQUIRED) {

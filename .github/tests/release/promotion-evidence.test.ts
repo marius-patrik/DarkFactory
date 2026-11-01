@@ -45,6 +45,9 @@ describe("DF-16 fail-closed release candidate evidence", () => {
 		const e = evidence();
 		expect(assertPromotionEvidence(e, "candidate").version).toBe("1.0.0");
 		expect(() => assertPromotionEvidence(e, "publish")).toThrow("human authorization pending");
+		// The candidate cannot foresee final human approval. Only a live GitHub
+		// environment readback (not the manifest) may authorize the transition.
+		expect(assertPromotionEvidence(e, "publish", true).version).toBe("1.0.0");
 		e.publication_authorization = { state: "approved", actor: "marius-patrik" };
 		expect(assertPromotionEvidence(e, "publish").version).toBe("1.0.0");
 	});

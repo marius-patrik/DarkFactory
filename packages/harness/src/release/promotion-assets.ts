@@ -21,7 +21,7 @@ try {
 	if (!path || !hash || !/^[a-f0-9]{64}$/u.test(hash)) throw new Error("Missing immutable evidence identity");
 	const bytes = readFileSync(path);
 	if (createHash("sha256").update(bytes).digest("hex") !== hash) throw new Error("Evidence digest mismatch");
-	const evidence = assertPromotionEvidence(JSON.parse(bytes.toString("utf8")), "publish");
+	const evidence = assertPromotionEvidence(JSON.parse(bytes.toString("utf8")), "candidate");
 	if (roots.length === 1 && roots[0]?.startsWith("--remote=")) {
 		const release = JSON.parse(readFileSync(roots[0].slice("--remote=".length), "utf8"));
 		if (

@@ -166,7 +166,6 @@ export async function verifyLivePromotion(
 		}
 	}
 	if (context.phase === "publish" || context.phase === "finalize") {
-		assertPromotionEvidence(e, "publish");
 		const approvals = await api("actions/runs/" + context.runId + "/approvals", context.token);
 		if (
 			!Array.isArray(approvals) ||
@@ -179,6 +178,7 @@ export async function verifyLivePromotion(
 			)
 		)
 			block("no independently approved environment deployment for this exact run");
+		assertPromotionEvidence(e, "publish", true);
 	}
 }
 
@@ -200,7 +200,7 @@ if (import.meta.main) {
 		const input: unknown = JSON.parse(bytes.toString("utf8"));
 		if (String((input as { candidate?: { run_id?: number } }).candidate?.run_id) !== process.env.EXPECTED_CANDIDATE_RUN)
 			block("wrong requested candidate run");
-		const evidence = assertPromotionEvidence(input, phase === "candidate" ? "candidate" : "publish");
+		const evidence = assertPromotionEvidence(input, "candidate");
 		await verifyLivePromotion(evidence, {
 			token: process.env.GITHUB_TOKEN ?? "",
 			sourceSha: process.env.GITHUB_SHA ?? "",

@@ -21,7 +21,7 @@ Schema `1`, with fields:
 - `artifacts`: unique `{name, sha256}` objects, each with SHA-256 digest of actual immutable bytes. At minimum all five `df-<target>` executables (Windows `.exe`), all five `.tar.gz` archives; include **every** additional published package, site bundle, plugin, docs, installer, checksums file, SBOM or manifest used for the final release. The candidate builder must preserve byte identity; the gate re-hashes uploaded files and compares GitHub's server-side SHA-256 records before switching draft to public.
 - `acceptance`: **exactly one** each of `source-free`, `security`, `fleet`, `web-ux`, `supply-chain`, `governed-e2e`, each as `{name,run_id,head_sha,conclusion}`, with real successful workflow + named job evidence bound to the reviewed SHA. Failed/skipped/pending/absent is a hard block. The release gate does **not** create evidence.
 - `independent_review`: `{reviewer, reviewed_sha, state:"APPROVED"}`, with GitHub readback proving a current independent human review of exactly the PR candidate SHA.
-- `publication_authorization`: `{state:"pending"|"approved",actor:null|string}`; dispatch must be independently authorized before promotion, and environment protection must actually enforce an external human approval.
+- `publication_authorization`: `{state:"pending"|"approved",actor:null|string}`; The frozen candidate may remain `pending`; only actual GitHub environment approval for this exact dispatch may authorize publication (never synthesize an `approved` candidate record). Environment protection must enforce a distinct external human reviewer.
 
 ## Required GitHub governance
 
