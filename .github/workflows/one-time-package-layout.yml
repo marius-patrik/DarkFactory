@@ -110,8 +110,8 @@ jobs:
           }
           await Promise.all(Array.from({ length: 10 }, upload));
           const originalCommit = await api("GET", "/git/commits/" + ref);
-          const expectedTree = exec("rev-parse", "HEAD^{tree}");
-          console.log("DF_LAYOUT_EXPECTED_TREE=" + expectedTree);
+          const localExpectedTree = exec("rev-parse", "HEAD^{tree}");
+          console.log("DF_LAYOUT_EXPECTED_TREE=" + localExpectedTree);
           console.log("DF_LAYOUT_ENTRIES_B64=" + Buffer.from(JSON.stringify(entries), "utf8").toString("base64"));
           console.log("DF_LAYOUT_BLOB_COUNT=" + newBlobs.length);
           process.exit(0);
