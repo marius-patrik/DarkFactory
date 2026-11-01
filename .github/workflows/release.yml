@@ -186,6 +186,15 @@ jobs:
             --notes-out "$RUNNER_TEMP/notes.md" > "$RUNNER_TEMP/release.json"
           cat "$RUNNER_TEMP/release.json"
 
+      - name: Assert one exact resolution for manifest, notes, build and publication
+        if: github.repository == 'marius-patrik/DarkFactory' && steps.version.outputs.warranted == 'true'
+        env:
+          DF_REQUESTED_VERSION: ${{ inputs.bump }}
+        run: |
+          set -euo pipefail
+          jq -e --arg v "$DF_REQUESTED_VERSION"             '.next == $v and .tag == ("v" + $v) and .mode == "semver"'             "$RUNNER_TEMP/version.json"
+          jq -e --arg v "$DF_REQUESTED_VERSION"             '.version == $v and .tag == ("v" + $v) and .mode == "semver"'             "$RUNNER_TEMP/release.json"
+
       - name: Verify package metadata agrees with the release
         if: steps.version.outputs.warranted == 'true'
         # `repository-governance.test.ts` asserts this step fails on `metadata_problems`, and the

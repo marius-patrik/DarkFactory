@@ -57,6 +57,17 @@ export async function verifyLivePromotion(
 	if (!HEX.test(context.sourceSha) || context.sourceSha !== e.source.final_sha)
 		block("not the reviewed protected final SHA");
 	if (context.version !== e.version) block("requested and evidenced versions differ");
+	const config = JSON.parse(readFileSync("repo.dfconfig", "utf8"));
+	const root = JSON.parse(readFileSync("package.json", "utf8"));
+	const plugins = JSON.parse(readFileSync("packages/plugins/package.json", "utf8"));
+	if (readFileSync("VERSION", "utf8").trim() !== e.version ||
+		root.version !== e.version || plugins.version !== e.version ||
+		config.repo?.versioning?.mode !== "semver" ||
+		config.repo?.versioning?.tag_prefix !== "v" ||
+		config.repo?.versioning?.initial !== "1.0.0") {
+		block("VERSION, root/package metadata or declared stable SemVer authority drifted");
+	}
+	if (digest("bun.lock") !== e.source.lock_sha256) block("dependency lock digest mismatch");
 	if (e.capability_abi !== CAPABILITY_ABI_VERSION) block("unsupported ABI");
 	const branch = await api("branches/main", context.token);
 	if (!branch.protected || branch.commit?.sha !== context.sourceSha) block("protected main moved or is unprotected");
@@ -80,6 +91,16 @@ export async function verifyLivePromotion(
 			governed = true;
 	}
 	if (!governed) block("protected main must enforce one fresh reviewer and all final checks");
+	let immutableTags = false;
+	for (const item of rulesets) {
+		if (item.enforcement !== "active" || item.target !== "tag") continue;
+		const rules = await api("rulesets/" + item.id, context.token);
+		const patterns = rules.conditions?.ref_name?.include ?? [];
+		const types = new Set((rules.rules ?? []).map((r: any) => r.type));
+		if (patterns.includes("refs/tags/v*") && types.has("update") && types.has("deletion") &&
+			!rules.bypass_actors?.length) immutableTags = true;
+	}
+	if (!immutableTags) block("no enforced immutable public v* tag ruleset");
 	const env = await api("environments/production-release", context.token);
 	if (
 		!env.prevent_self_review ||
@@ -98,15 +119,12 @@ export async function verifyLivePromotion(
 	if (!pr.merged || pr.base?.ref !== "main" || pr.head?.sha !== e.source.reviewed_sha)
 		block("candidate has no merged protected PR");
 	const reviews = await api("pulls/" + e.source.pull_request + "/reviews?per_page=100", context.token);
-	const independent = reviews.filter(
-		(r: any) =>
-			r.user?.login === e.independent_review.reviewer &&
-			r.state === "APPROVED" &&
-			r.commit_id === e.source.reviewed_sha &&
-			r.user.login !== pr.user?.login &&
-			r.user.login !== context.actor,
-	);
-	if (independent.length === 0) block("no current independent approved review on candidate SHA");
+	const byReviewer = reviews.filter((r: any) => r.user?.login === e.independent_review.reviewer);
+	const last = byReviewer.at(-1);
+	if (!last || last.state !== "APPROVED" || last.commit_id !== e.source.reviewed_sha ||
+		last.user?.type !== "User" || last.user.login === pr.user?.login || last.user.login === context.actor) {
+		block("no current independent approved review on candidate SHA");
+	}
 	const runs = [e.candidate, ...e.acceptance];
 	for (const run of runs) {
 		const id = run.run_id;
@@ -114,6 +132,11 @@ export async function verifyLivePromotion(
 		const sha = "head_sha" in run ? run.head_sha : "";
 		if (record.conclusion !== "success" || record.head_sha !== sha || record.repository?.full_name !== REPO) {
 			block("stale/failed evidence run " + id);
+		}
+		const expectedJob = "name" in run ? run.name : "candidate";
+		const jobs = await api("actions/runs/" + id + "/jobs?per_page=100", context.token);
+		if (!jobs.jobs?.some((job: any) => job.name === expectedJob && job.conclusion === "success" && job.head_sha === sha)) {
+			block("successful run lacks exact accepted job: " + expectedJob);
 		}
 	}
 	const checks = await api("commits/" + context.sourceSha + "/check-runs?per_page=100", context.token);
