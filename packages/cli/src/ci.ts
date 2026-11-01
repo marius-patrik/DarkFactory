@@ -197,7 +197,12 @@ export async function runCiCli(args: string[], context: CiCliContext = {}): Prom
 
 			if (prNumber) {
 				try {
-					ref = await repo.getPullRequestHeadSha(Number(prNumber));
+					const pr = Number(prNumber);
+					if (!Number.isSafeInteger(pr) || pr <= 0) {
+						error("--pr must be a positive integer.");
+						return 2;
+					}
+					ref = await repo.getPullRequestHeadSha(pr);
 				} catch (cause) {
 					error(`Error: ${cause instanceof Error ? cause.message : String(cause)}`);
 					return 1;
@@ -239,6 +244,10 @@ export async function runCiCli(args: string[], context: CiCliContext = {}): Prom
 			const workflow = getOption(args, "--workflow");
 			const limitStr = getOption(args, "--limit");
 			const limit = limitStr ? Number(limitStr) : 20;
+			if (!Number.isSafeInteger(limit) || limit < 1 || limit > 100) {
+				error("--limit must be an integer between 1 and 100.");
+				return 2;
+			}
 
 			const runs = await getWorkflowRuns(repo, { workflow, limit });
 
@@ -261,6 +270,10 @@ export async function runCiCli(args: string[], context: CiCliContext = {}): Prom
 				return 1;
 			}
 			const runId = Number(runIdStr);
+			if (!Number.isSafeInteger(runId) || runId <= 0) {
+				error("Run ID must be a positive integer.");
+				return 2;
+			}
 
 			const repo = resolveRepoClient(repoPath, context.repo);
 			if (!repo) {
@@ -294,6 +307,10 @@ export async function runCiCli(args: string[], context: CiCliContext = {}): Prom
 				return 1;
 			}
 			const runId = Number(runIdStr);
+			if (!Number.isSafeInteger(runId) || runId <= 0) {
+				error("Run ID must be a positive integer.");
+				return 2;
+			}
 
 			const repo = resolveRepoClient(repoPath, context.repo);
 			if (!repo) {
@@ -388,6 +405,10 @@ export async function runCiCli(args: string[], context: CiCliContext = {}): Prom
 			return report.ok ? 0 : 1;
 		}
 		default:
+			if (subcommand && subcommand !== "help" && subcommand !== "--help" && subcommand !== "-h") {
+				error(`Unknown df ci command: ${subcommand}`);
+				return 2;
+			}
 			log(`df ci commands:
   df ci native-config [--repo <path>] [--write]
   df ci matrix  [--repo <path>] [--capabilities-root <path>]

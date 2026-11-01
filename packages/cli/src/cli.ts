@@ -10,6 +10,7 @@ import { createInterface } from "node:readline/promises";
 import type { AuthEvent, AuthPrompt, Provider } from "@earendil-works/pi-ai";
 import { fauxAssistantMessage, fauxProvider } from "@earendil-works/pi-ai";
 import { formatCaptureSchema } from "./capture-schema.ts";
+import { OperatorCliError, runOperatorCli, runOperatorTui } from "./operator.ts";
 import { importAntigravityAccount, OsKeyringAdapter } from "../../keychain/src/import/antigravity.ts";
 import { importClaudeAccount } from "../../keychain/src/import/claude.ts";
 import { importCodexAccount } from "../../keychain/src/import/codex.ts";
@@ -58,7 +59,7 @@ import {
 import { runDoctorIdentities } from "../../harness/src/identities/index.ts";
 import { LimitLedger } from "../../harness/src/limits/ledger.ts";
 import { QuotaEngine } from "../../harness/src/limits/quota-engine.ts";
-import { buildQuotaReport } from "../../harness/src/limits/quota-report.ts";
+import { buildQuotaReport, operatorQuotaSnapshot } from "../../harness/src/limits/quota-report.ts";
 import { sweepQuotaResumes } from "../../harness/src/limits/resume-sweep.ts";
 import { estimateTask } from "../../harness/src/limits/routing.ts";
 import { type CatalogResult, isRunnableCatalogModel, ModelCatalog } from "../../harness/src/models/catalog.ts";
@@ -123,6 +124,9 @@ function usage(): string {
 		"  df secrets init|import-key|export-key|list|rm|sync|doctor [--insecure-file-key]",
 		"  df secrets set NAME [--from-stdin] | get NAME [--reveal] | push <owner/repo> [--only NAME] [--dry-run]",
 		"  df workspace <status|diff|log|fetch|continue|abort> [options]",
+		"  df operator <list|inspect|checks> [--runs DIR] [--json]    # read-only; lifecycle mutations blocked",
+		"  df tui [--runs DIR]                 # interactive read-only production Request dashboard",
+		"  df dispatch|interpret|plan|implement|self-review|self-review-fix|plan-alignment|respond|token-refresh [options]",
 	].join("\n");
 }
 
@@ -1049,7 +1053,7 @@ export function executableChainFor(route: Pick<RouteResult, "chain" | "ranked">)
  */
 export function redactToolInput(value: unknown, key?: string): unknown {
 	if (key && SECRET_KEY.test(key)) return "[REDACTED]";
-	if (typeof value === "string") return BEARER_VALUE.test(value) ? "[REDACTED]" : value;
+	if (typeof value === "string") return BEARER_VALUE.test(value) ? "[REDACTED]" : redactErrorMessage(value);
 	if (Array.isArray(value)) return value.map((entry) => redactToolInput(entry));
 	if (!value || typeof value !== "object") return value;
 	return Object.fromEntries(
@@ -1060,7 +1064,7 @@ export function redactToolInput(value: unknown, key?: string): unknown {
 function renderEvent(event: HarnessEvent, json: boolean): void {
 	if (json) {
 		console.log(
-			JSON.stringify(event.type === "tool_start" ? { ...event, input: redactToolInput(event.input) } : event),
+			JSON.stringify(redactToolInput(event)),
 		);
 		return;
 	}
@@ -1073,11 +1077,11 @@ function renderEvent(event: HarnessEvent, json: boolean): void {
 		);
 	else if (event.type === "failover")
 		console.error(
-			`\n[failover] ${event.from.provider}/${event.from.account}/${event.from.model} -> ${event.to.provider}/${event.to.account}/${event.to.model} (${event.reason}: ${event.errorMessage})`,
+			`\n[failover] ${event.from.provider}/${event.from.account}/${event.from.model} -> ${event.to.provider}/${event.to.account}/${event.to.model} (${event.reason}: ${redactErrorMessage(event.errorMessage)})`,
 		);
 	else if (event.type === "candidate_unavailable")
 		console.error(
-			`[unavailable] ${event.candidate.provider}/${event.candidate.account}/${event.candidate.model} (${event.message})`,
+			`[unavailable] ${event.candidate.provider}/${event.candidate.account}/${event.candidate.model} (${redactErrorMessage(event.message)})`,
 		);
 	else if (event.type === "candidate_skipped")
 		console.error(
@@ -1097,7 +1101,7 @@ function renderEvent(event: HarnessEvent, json: boolean): void {
 		);
 	else if (event.type === "step" && event.errorKind)
 		console.error(
-			`\n[step] ${event.provider}/${event.account}/${event.model}: ${event.errorKind}: ${event.errorMessage}`,
+			`\n[step] ${event.provider}/${event.account}/${event.model}: ${event.errorKind}: ${redactErrorMessage(event.errorMessage)}`,
 		);
 }
 
@@ -1491,13 +1495,13 @@ async function licenseCommand(args: string[]): Promise<void> {
 	if (process.env.GITHUB_OUTPUT) appendFileSync(process.env.GITHUB_OUTPUT, `spdx=${written ?? ""}\n`);
 }
 
-async function quotaCommand(
+async function quotaReport(
 	registry: ProviderRegistry,
 	store: FileCredentialStore,
 	ledger: LimitLedger,
 	config: DfConfig,
-	args: string[],
-): Promise<void> {
+	provider?: string,
+) {
 	const home = defaultDfHome();
 	const engine = new QuotaEngine(home, ledger, new Map(registry.entries.map((entry) => [entry.id, entry])));
 	const chains = [config.defaultChain, config.hardReasoningChain, config.sensitiveChain].flatMap((chain) =>
@@ -1514,13 +1518,23 @@ async function quotaCommand(
 		if (await store.readCredential(candidate.provider, candidate.account).catch(() => undefined))
 			accounts.push({ provider: candidate.provider, label: candidate.account });
 	}
-	const report = await buildQuotaReport({
+	return buildQuotaReport({
 		providers: registry.entries,
 		accounts,
 		chains,
 		engine,
-		provider: option(args, "--provider"),
+		provider,
 	});
+}
+
+async function quotaCommand(
+	registry: ProviderRegistry,
+	store: FileCredentialStore,
+	ledger: LimitLedger,
+	config: DfConfig,
+	args: string[],
+): Promise<void> {
+	const report = await quotaReport(registry, store, ledger, config, option(args, "--provider"));
 	if (args.includes("--json")) {
 		console.log(JSON.stringify(report, null, 2));
 		return;
@@ -1682,6 +1696,18 @@ async function secretsCli(home: string, args: string[]): Promise<void> {
  */
 
 export async function main(args = process.argv.slice(2)): Promise<void> {
+	// Global inspection must not require configured provider credentials or a writable home.
+	if (["help", "--help", "-h"].includes(args[0] ?? "")) {
+		console.log(usage());
+		return;
+	}
+	if (args[0] === "operator") {
+		const status = await runOperatorCli(args.slice(1));
+		if (status !== 0) process.exitCode = status;
+		return;
+	}
+	if (args[0] === "tui" && (!stdin.isTTY || !stdout.isTTY))
+		throw new OperatorCliError("Interactive TUI requires an attached input and output TTY", 3);
 	if (args[0] === "--version" || args[0] === "version") {
 		console.log(`df ${executableReleaseVersion() ?? "development/unmanaged"}`);
 		return;
@@ -1753,6 +1779,8 @@ export async function main(args = process.argv.slice(2)): Promise<void> {
 			return licenseCommand(args.slice(1));
 		case "quota":
 			return quotaCommand(registry, store, ledger, config, args.slice(1));
+		case "tui":
+			return runOperatorTui(args.slice(1), async () => operatorQuotaSnapshot(await quotaReport(registry, store, ledger, config)));
 		case "route":
 			return routeCommand(registry, store, config, args.slice(1));
 		case "account":
@@ -1806,6 +1834,7 @@ export async function main(args = process.argv.slice(2)): Promise<void> {
  * @returns The process exit code
  */
 export function exitCodeFor(error: unknown): number {
+	if (error instanceof OperatorCliError) return error.exitCode;
 	if (error instanceof ChainExhaustedError) return error.exitCode;
 	if (error instanceof RunTimeoutError) return error.exitCode;
 	return 1;
@@ -1821,7 +1850,7 @@ if (import.meta.main) {
 					type: "error",
 					message,
 					exitCode,
-					...(error instanceof ChainExhaustedError ? { reasons: error.reasons, limits: error.limits } : {}),
+					...(error instanceof ChainExhaustedError ? { reasons: redactToolInput(error.reasons), limits: redactToolInput(error.limits) } : {}),
 					...(error instanceof RunTimeoutError
 						? {
 								kind: "timeout",

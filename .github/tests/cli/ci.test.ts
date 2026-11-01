@@ -8,6 +8,19 @@ import { GitHubRepository } from "../../../packages/github/src/repository.ts";
 import { json, scripted } from "../harness/github/helpers.ts";
 
 describe("df ci CLI commands", () => {
+	it("never treats invalid subcommands or run identities as successful help", async () => {
+		const errors: string[] = [];
+		const log: string[] = [];
+		const context = { log: (line: string) => log.push(line), error: (line: string) => errors.push(line) };
+		expect(await runCiCli(["unsupported"], context)).toBe(2);
+		expect(await runCiCli(["logs", "nan"], context)).toBe(2);
+		expect(await runCiCli(["rerun", "0"], context)).toBe(2);
+		expect(await runCiCli(["rerun", "9007199254740992"], context)).toBe(2);
+		expect(errors.join("\n")).toContain("Unknown df ci command");
+		expect(errors.join("\n")).toContain("positive integer");
+		expect(log).toEqual([]);
+	});
+
 	it("advertises the native configuration command exposed by the CLI", async () => {
 		const lines: string[] = [];
 		const exit = await runCiCli(["help"], { log: (line) => lines.push(line) });
