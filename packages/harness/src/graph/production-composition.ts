@@ -294,8 +294,16 @@ function effectMarker(id: string): string {
  * GitHub package owner. The graph must never issue raw REST requests itself.
  */
 export interface GitHubMergeBoundary {
-	read(number: number): Promise<{ number: number; headSha: string; merged: boolean; mergeSha?: string }>;
-	mergeIfHead(number: number, expectedHeadSha: string): Promise<{ merged: boolean; mergeSha?: string }>;
+	read(
+		number: number,
+		expectedHeadSha: string,
+		baseBranch: string,
+	): Promise<{ number: number; headSha: string; merged: boolean; mergeSha?: string }>;
+	mergeIfHead(
+		number: number,
+		expectedHeadSha: string,
+		authorization: { approvedBy: string; baseBranch: string },
+	): Promise<{ merged: boolean; mergeSha?: string }>;
 }
 
 /** GitHub transaction policy stays in the graph; REST/GraphQL stays in @darkfactory/github. */
@@ -348,7 +356,7 @@ export function createGitHubProductionEffects(
 		},
 		mergePullRequest(input) {
 			const observe = async () => {
-				const pr = await getPR(input.number);
+				const pr = await getPR(input.number, input.expectedHeadSha, input.baseBranch);
 				if (!pr.merged || !pr.mergeSha) return undefined;
 				if (pr.headSha !== input.expectedHeadSha) throw new Error("Merged PR head differs from approved commit");
 				if (!SHA.test(pr.mergeSha)) throw new Error("Merged PR has invalid merge SHA");
@@ -360,9 +368,15 @@ export function createGitHubProductionEffects(
 			return {
 				observe: async () => observe(),
 				execute: async () => {
-					if ((await getPR(input.number)).headSha !== input.expectedHeadSha)
+					if (!input.approvedBy || !input.baseBranch) {
+						throw new Error("Merge lacks independent reviewer or trusted target branch");
+					}
+					if ((await getPR(input.number, input.expectedHeadSha, input.baseBranch)).headSha !== input.expectedHeadSha)
 						throw new Error("PR head changed before conditional merge");
-					const merged = await options.mergeBoundary.mergeIfHead(input.number, input.expectedHeadSha);
+					const merged = await options.mergeBoundary.mergeIfHead(input.number, input.expectedHeadSha, {
+						approvedBy: input.approvedBy,
+						baseBranch: input.baseBranch,
+					});
 					if (!merged.merged || !merged.mergeSha) throw new Error("Conditional GitHub merge not confirmed");
 					const confirmed = await observe();
 					if (!confirmed || confirmed.value.mergeSha !== merged.mergeSha)
