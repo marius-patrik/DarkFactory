@@ -124,15 +124,12 @@ function recordFromToken(token: GitHubTokenResponse, now: number, userId?: strin
 	};
 }
 
-function sessionFromRecord(
-	sessionId: string,
-	record: BrokerTokenRecord,
-	config: AuthBrokerConfig,
-	now: number,
-): BrowserSession {
-	const configuredExpiry = record.sessionExpiresAt ?? now + (config.sessionTtlMs ?? 8 * 60 * 60 * 1_000);
-	const expiresAt =
-		record.accessExpiresAt === undefined ? configuredExpiry : Math.min(configuredExpiry, record.accessExpiresAt);
+function sessionFromRecord(sessionId: string, record: BrokerTokenRecord): BrowserSession {
+	// A missing boundary is never repaired by calculating a new lifetime at read time.
+	const maximum = record.sessionExpiresAt;
+	if (maximum === undefined || !Number.isSafeInteger(maximum))
+		throw new Error("Authentication session lifetime unavailable");
+	const expiresAt = record.accessExpiresAt === undefined ? maximum : Math.min(maximum, record.accessExpiresAt);
 	return { id: sessionId, expiresAt, ...(record.userId ? { userId: record.userId } : {}) };
 }
 
@@ -191,8 +188,12 @@ export async function createBrokerSession(
 		sessionExpiresAt: now + (config.sessionTtlMs ?? 8 * 60 * 60 * 1_000),
 	};
 	const sessionId = options.sessionId ?? crypto.randomUUID();
-	await store.set(sessionId, record);
-	return sessionFromRecord(sessionId, record, config, now);
+	await withSessionLock(store, sessionId, async () => {
+		// A fixed test identifier or an accidental UUID collision may not reset an existing lifetime.
+		if (await store.get(sessionId)) throw new Error("Authentication session identifier already exists");
+		await store.set(sessionId, record);
+	});
+	return sessionFromRecord(sessionId, record);
 }
 
 /** Refreshes one broker-owned session and returns an updated opaque browser descriptor. */
@@ -211,13 +212,18 @@ export async function refreshBrokerSession(
 			throw new Error("Authentication session has expired");
 		if (current.refreshExpiresAt !== undefined && current.refreshExpiresAt <= now)
 			throw new Error("Authentication refresh token has expired");
+		const startedAt = performance.now();
 		const token = await refreshAccessToken(config, current.token.refresh_token);
+		// An upstream refresh can complete after the absolute session deadline.
+		// Use elapsed monotonic time so an injected test clock and real requests agree.
+		const completedAt = now + Math.max(0, performance.now() - startedAt);
+		if (current.sessionExpiresAt <= completedAt) throw new Error("Authentication session has expired");
 		const record = {
 			...recordFromToken(token, now, current.userId),
 			sessionExpiresAt: current.sessionExpiresAt,
 		};
 		await store.set(sessionId, record);
-		return sessionFromRecord(sessionId, record, config, now);
+		return sessionFromRecord(sessionId, record);
 	});
 }
 
