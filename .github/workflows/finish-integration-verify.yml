@@ -115,16 +115,11 @@ jobs:
     timeout-minutes: 25
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
-      - run: docker build --progress=plain -f docker/Dockerfile.agent -t darkfactory-agent:integration .
-      - name: Exercise published entrypoints without root
-        shell: bash
+      - uses: cachix/install-nix-action@v31
+      - name: Build and load the production Nix agent image
         run: |
           set -euo pipefail
-          docker run --rm darkfactory-agent:integration --help | grep -q 'providers'
-          docker run --rm darkfactory-agent:integration providers > "$RUNNER_TEMP/df-providers.txt"
-          test -s "$RUNNER_TEMP/df-providers.txt"
-          test "$(docker run --rm --entrypoint id darkfactory-agent:integration -u)" = "1001"
-      - name: Prove runtime image contains compiled df rather than source or Bun
-        run: |
-          docker run --rm --entrypoint /bin/sh darkfactory-agent:integration -ec \
-            'test -x /opt/darkfactory/df-linux-x64 && test ! -e /src && test ! -e /opt/darkfactory/packages && ! command -v bun'
+          nix build .#agentImage --no-write-lock-file -L -o "$RUNNER_TEMP/agent-image"
+          docker load -i "$RUNNER_TEMP/agent-image"
+      - name: Verify the production source-free runtime and non-root entrypoints
+        run: bash .github/scripts/verify-agent-image.sh darkfactory-agent:nix
