@@ -73,6 +73,7 @@ describe("documentation source-backed truth", () => {
 		expect(() => assertStrictDocumentation(graph)).not.toThrow();
 		expect(graph.pages.filter((page) => page.kind === "guide").length).toBeGreaterThanOrEqual(18);
 		expect(graph.pages.some((page) => page.id === "guide-reference-coverage")).toBe(true);
+		expect(graph.pages.some((page) => page.id === "darkfactory-adrs-md-adr-0006-the-pipeline-runs-only-df")).toBe(true);
 	});
 
 	test("broken links, anchors, injection and missing navigation fail", () => {

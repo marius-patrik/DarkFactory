@@ -199,7 +199,8 @@ function adrPages(repoRoot: string): DocsPage[] {
 		// The heading is the title and the body is what the checks read, so the section is rendered
 		// as it would be as a page of its own.
 		return {
-			id: idFromSource(`${source}#${heading}`),
+			// Preserve already-published ADR routes after relocating the canonical Markdown source.
+			id: `darkfactory-adrs-md-${idFromSource(heading)}`,
 			kind: "adr" as const,
 			title: heading,
 			source: source.replaceAll("\\", "/"),
