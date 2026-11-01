@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, test } from "bun:test";
-import { mkdir, mkdtemp, readFile, rm, symlink, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import {
@@ -17,7 +17,7 @@ async function fixture(withApi = false): Promise<string> {
 	const root = await mkdtemp(join(tmpdir(), "darkfactory-docs-"));
 	roots.push(root);
 	await mkdir(join(root, ".darkfactory", "plugins", "df-rules", "skills", "001-test"), { recursive: true });
-	await mkdir(join(root, ".darkfactory"), { recursive: true });
+	await mkdir(join(root, ".agents", "notes"), { recursive: true });
 	await mkdir(join(root, ".github", "workflows"), { recursive: true });
 	const config: any = { version: 1, site: { name: "Fixture", description: "Fixture docs" }, home: "README.md" };
 	if (withApi) {
@@ -42,12 +42,11 @@ async function fixture(withApi = false): Promise<string> {
 		join(root, ".darkfactory", "plugins", "df-rules", "skills", "001-test", "SKILL.md"),
 		"---\nname: 001-test\ndescription: Use when a change must satisfy DF-RULE-001, Fixture rule.\nid: DF-RULE-001\ntitle: Fixture rule\nstatus: normative\napplies_to: [agents]\nactivation: always\nowners: [docs]\n---\n# Rule 1 — Fixture rule\n\n## Requirement\n\nFixture requirement.\n\n## Rationale\n\nFixture rationale.\n\n## Enforcement\n\nFixture enforcement.\n\n## Exceptions\n\nNone.\n\n## Change control\n\nDeliberate.\n",
 	);
-	// One document of decisions, split into records by heading, symlinked at the root.
+	// One canonical ADR document, split into published records with stable route identities.
 	await writeFile(
-		join(root, ".darkfactory", "ADRs.md"),
+		join(root, ".agents", "notes", "ADRs.md"),
 		"# Architecture decision records\n\n## ADR-0001 — Test\n\n**Status**: Accepted\n\n**Related rules**: `DF-RULE-001`\n\n### Decision\n\nFixture decision.\n\n### Consequences\n\nFixture consequence.\n",
 	);
-	await symlink(join(".darkfactory", "ADRs.md"), join(root, "ADRs.md"));
 	await writeFile(
 		join(root, ".github", "workflows", "ci.yml"),
 		"name: CI\n\njobs:\n  test:\n    runs-on: ubuntu-latest\n",
@@ -102,7 +101,7 @@ describe("@darkfactory/docs", () => {
 	test("rejects non-current ADRs", async () => {
 		const root = await fixture();
 		await writeFile(
-			join(root, ".darkfactory", "ADRs.md"),
+			join(root, ".agents", "notes", "ADRs.md"),
 			"# Architecture decision records\n\n## ADR-0002 — Not current\n\n**Status**: Proposed\n",
 		);
 		expect(() => compileDocsContentGraph(root)).toThrow("ADR must have Status: Accepted");
