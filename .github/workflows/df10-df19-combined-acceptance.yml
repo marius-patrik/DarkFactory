@@ -1,0 +1,163 @@
+# Nonpublishing combined verification of exact DF-15+DF-16 integration source.
+name: DF-10 DF-19 Combined Runtime Release Acceptance
+on:
+  push:
+    branches:
+      - integration/v1-df10-df19-review-2026-11-01
+  workflow_dispatch:
+  workflow_call:
+permissions:
+  contents: read
+concurrency:
+  group: df10-df19-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  static:
+    name: Committed source, typecheck, formatting, lint
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+      - run: bun install --frozen-lockfile
+      - name: Verify exact SHA and uncorrupted committed graph source
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          git fsck --full --no-reflogs
+          git diff --check
+          ! grep -R -F '¶»§q«^' packages/harness/src/graph .github/tests/harness/graph
+          test "$(find .github/tests/harness/graph -name '*.test.ts' | wc -l)" -gt 0
+      - run: bun run typecheck
+      - run: bun run format:check
+      - run: bun run lint
+
+  runtime:
+    name: Production graph acceptance
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+      - run: bun install --frozen-lockfile
+      - run: bun test ./.github/tests/harness/graph
+
+  full-suite:
+    name: Complete canonical Bun suite
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+      - run: bun install --frozen-lockfile
+      - run: bun run test
+
+  cross-package:
+    name: GitHub, CLI and Web contract tests and browser packaging
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+      - run: bun install --frozen-lockfile
+      - run: bun test ./.github/tests/github ./.github/tests/cli ./.github/tests/web
+      - name: Build actual browser bundle
+        env:
+          DF_WEB_BASE_PATH: /DarkFactory/
+          DF_WEB_REPOSITORY: marius-patrik/DarkFactory
+        run: bun packages/web/scripts/build.ts packages/web/dist
+      - name: Verify source SHA and every generated browser asset digest
+        run: |
+          bun -e '
+            const m = await Bun.file("packages/web/dist/darkfactory-web-manifest.json").json();
+            if(m.sourceSha!==process.env.GITHUB_SHA || m.kind!=="darkfactory-operator" ||
+               m.routeMode!=="hash" || m.assets.length<3) process.exit(1);
+            for(const a of m.assets){
+              const buf=await Bun.file("packages/web/dist/"+a.path).arrayBuffer();
+              const hex=Buffer.from(await crypto.subtle.digest("SHA-256",buf)).toString("hex");
+              if(hex!==a.sha256) process.exit(1);
+            }'
+
+  documentation:
+    name: Strict documentation build and validation
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+      - run: bun install --frozen-lockfile
+      - run: bun run docs
+      - run: bun scripts/build-docs.ts --repo-root . --check
+
+  native:
+    name: Real Linux source-free native build and executable verification
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+      - run: bun install --frozen-lockfile
+      - run: bun run build --target=linux-x64
+      - run: bun packages/harness/scripts/verify-target.ts --target linux-x64
+
+  container:
+    name: Non-root Docker production entrypoints
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+      - run: docker build --progress=plain -f docker/Dockerfile.agent -t darkfactory-agent:df15 .
+      - name: Verify native source-free container and real CLI
+        shell: bash
+        run: |
+          set -euo pipefail
+          docker run --rm darkfactory-agent:df15 --help | grep -q providers
+          docker run --rm darkfactory-agent:df15 providers > "$RUNNER_TEMP/df15-providers.txt"
+          test -s "$RUNNER_TEMP/df15-providers.txt"
+          test "$(docker run --rm --entrypoint id darkfactory-agent:df15 -u)" = 1001
+          docker run --rm --entrypoint /bin/sh darkfactory-agent:df15 -ec 'test -x /opt/darkfactory/df-linux-x64 && test ! -e /src && test ! -e /opt/darkfactory/packages && ! command -v bun'
+
+  capability:
+    name: Real capability quality execution
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+      - run: bun install --frozen-lockfile
+      - run: bun packages/cli/src/bin.ts ci quality --repo . --capabilities-root .darkfactory/plugins --workers 4
+
+  release-policy:
+    name: DF-16 release-governance evidence and negative-path tests
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+      - run: bun install --frozen-lockfile
+      - run: bun test ./.github/tests/release/promotion-evidence.test.ts ./.github/tests/release/promotion-preflight.test.ts ./.github/tests/release/version-transitions.test.ts
+
+  transport:
+    name: DF-10 GitHub transport, governance and approval tests
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+      - run: bun install --frozen-lockfile
+      - run: bun test ./.github/tests/github ./.github/tests/harness/github ./.github/tests/harness/release/pr-approval.test.ts
