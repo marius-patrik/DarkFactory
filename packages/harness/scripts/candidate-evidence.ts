@@ -124,10 +124,13 @@ async function sbom(): Promise<void> {
 	const parsed = JSON.parse(lock) as { packages: Record<string, [string, string, Record<string, unknown>, string?]> };
 	const components = [];
 	const missingLicenses: string[] = [];
-	for (const [name, entry] of Object.entries(parsed.packages).sort(([a], [b]) => a.localeCompare(b))) {
+	for (const [lockKey, entry] of Object.entries(parsed.packages).sort(([a], [b]) => a.localeCompare(b))) {
+		// Nested Bun lock keys describe installation paths, not the actual npm identity.
 		const resolved = entry[0];
-		if (!resolved.startsWith(`${name}@`)) throw new Error(`Ambiguous package identity in bun.lock: ${name}`);
-		const version = resolved.slice(name.length + 1);
+		const separator = resolved.lastIndexOf("@");
+		if (separator <= 0) throw new Error(`Invalid resolved package identity: ${resolved}`);
+		const name = resolved.slice(0, separator);
+		const version = resolved.slice(separator + 1);
 		const metadata = join(root, "node_modules", ...name.split("/"), "package.json");
 		let license: string | undefined;
 		if (existsSync(metadata)) {
@@ -137,7 +140,7 @@ async function sbom(): Promise<void> {
 		if (!license) missingLicenses.push(name);
 		const hash = entry[3];
 		components.push({
-			type: "library", name, version, "bom-ref": `pkg:npm/${encodeURIComponent(name)}@${version}`,
+			type: "library", name, version, "bom-ref": `pkg:npm/${encodeURIComponent(name)}@${version}#${encodeURIComponent(lockKey)}`,
 			...(hash?.startsWith("sha512-") ? { hashes: [{ alg: "SHA-512", content: Buffer.from(hash.slice(7), "base64").toString("hex") }] } : {}),
 			...(license ? { licenses: [{ license: { name: license } }] } : {}),
 		});
