@@ -142,10 +142,11 @@ jobs:
           cd candidate/native
           for record in df-*.sha256; do sha256sum -c "$record"; done
           for archive in df-*.tar.gz; do
-            tar -tzf "$archive" | grep -q 'assets/graph.darkfactory.json'
-            tar -tzf "$archive" | grep -q 'schemas/graph.schema.json'
-            tar -tzf "$archive" | grep -q 'photon_rs_bg.wasm'
-            tar -tzf "$archive" | grep -q 'plugins/'
+            tar -tzf "$archive" > "$RUNNER_TEMP/df22-archive-contents.txt"
+            grep -q 'assets/graph.darkfactory.json' "$RUNNER_TEMP/df22-archive-contents.txt"
+            grep -q 'schemas/graph.schema.json' "$RUNNER_TEMP/df22-archive-contents.txt"
+            grep -q 'photon_rs_bg.wasm' "$RUNNER_TEMP/df22-archive-contents.txt"
+            grep -q 'plugins/' "$RUNNER_TEMP/df22-archive-contents.txt"
           done
           sha256sum df-* > ../native-readback.sha256
       - name: Construct npm distribution from downloaded native bytes
@@ -216,6 +217,7 @@ jobs:
 
   df22-matrix:
     name: DF22 target matrix
+    if: github.event_name == 'push' && github.ref == 'refs/heads/agent/2709-candidate-verification-df22'
     runs-on: ubuntu-24.04
     outputs:
       targets: ${{ steps.targets.outputs.targets }}
@@ -237,6 +239,7 @@ jobs:
 
   df22-quality:
     name: Frozen-source quality
+    if: github.event_name == 'push' && github.ref == 'refs/heads/agent/2709-candidate-verification-df22'
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     steps:
@@ -260,6 +263,7 @@ jobs:
 
   df22-native:
     name: Native executable - ${{ matrix.target }}
+    if: github.event_name == 'push' && github.ref == 'refs/heads/agent/2709-candidate-verification-df22'
     needs: df22-matrix
     strategy:
       fail-fast: false
@@ -317,6 +321,7 @@ jobs:
 
   df22-web-docs:
     name: Unified Web and integrated documentation candidate
+    if: github.event_name == 'push' && github.ref == 'refs/heads/agent/2709-candidate-verification-df22'
     runs-on: ubuntu-24.04
     timeout-minutes: 25
     steps:
@@ -340,6 +345,7 @@ jobs:
 
   df22-container:
     name: Non-root Docker candidate and image identity
+    if: github.event_name == 'push' && github.ref == 'refs/heads/agent/2709-candidate-verification-df22'
     runs-on: ubuntu-24.04
     timeout-minutes: 45
     steps:
@@ -371,6 +377,7 @@ jobs:
 
   df22-supply-chain:
     name: supply-chain
+    if: github.event_name == 'push' && github.ref == 'refs/heads/agent/2709-candidate-verification-df22'
     runs-on: ubuntu-24.04
     timeout-minutes: 25
     steps:
