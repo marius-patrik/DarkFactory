@@ -91,7 +91,7 @@ describe("rule/note relationships", () => {
 			".darkfactory/plugins/df-rules/skills/001-test/SKILL.md: canonical rule is missing non-empty Enforcement section",
 		);
 		expect(findings).toContain(
-			".agents/adr/0001-test.md#ADR-0001: accepted ADR is missing non-empty Consequences section",
+			".agents/notes/ADRs.md#ADR-0001: accepted ADR is missing non-empty Consequences section",
 		);
 	});
 
