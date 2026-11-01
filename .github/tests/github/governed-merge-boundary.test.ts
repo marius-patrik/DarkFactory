@@ -15,6 +15,8 @@ function fixture() {
 	let approved = true;
 	let authorizedReview = true;
 	let mutationLost = false;
+	let mutationStatus: number | undefined;
+	let missingPullRequest = false;
 	let divergent = false;
 	let writes = 0;
 	const response = (body: unknown, status = 200) =>
@@ -26,6 +28,7 @@ function fixture() {
 		const url = String(input);
 		const method = init?.method ?? "GET";
 		if (url === api + "/pulls/7" && method === "GET") {
+			if (missingPullRequest) return response({ message: "Not Found" }, 404);
 			return response({
 				number: 7,
 				state: merged ? "closed" : "open",
@@ -63,6 +66,7 @@ function fixture() {
 		if (url === api + "/pulls/7/merge-async" && method === "PUT") {
 			writes++;
 			if (mutationLost) throw new Error("connection lost after merge request");
+			if (mutationStatus) return response({ message: "GitHub rejected merge attempt" }, mutationStatus);
 			return response({ status: "enqueued" }, 202);
 		}
 		if (url === api + "/git/ref/heads/main") return response({ object: { sha: base } });
@@ -91,6 +95,12 @@ function fixture() {
 		},
 		setMutationLost: () => {
 			mutationLost = true;
+		},
+		setMutationStatus: (status: number) => {
+			mutationStatus = status;
+		},
+		setMissingPullRequest: () => {
+			missingPullRequest = true;
 		},
 		setDivergent: () => {
 			divergent = true;
@@ -137,6 +147,28 @@ describe("production governed GitHub merge adapter", () => {
 			"human approval",
 		);
 		expect(j.writes()).toBe(0);
+	});
+
+	test("HTTP 403/409/422/429/503 on conditional mutation never causes an implicit replay", async () => {
+		for (const status of [403, 409, 422, 429, 503]) {
+			const f = fixture();
+			f.setMutationStatus(status);
+			await expect(
+				f.boundary.mergeIfHead(7, head, { approvedBy: "maintainer", baseBranch: "main" }),
+			).rejects.toThrow();
+			expect(f.writes()).toBe(1);
+			expect(await f.boundary.read(7, head, "main")).toMatchObject({ merged: false });
+			expect(f.writes()).toBe(1);
+		}
+	});
+
+	test("HTTP 404 missing PR denies merge without any mutation", async () => {
+		const f = fixture();
+		f.setMissingPullRequest();
+		await expect(
+			f.boundary.mergeIfHead(7, head, { approvedBy: "maintainer", baseBranch: "main" }),
+		).rejects.toThrow();
+		expect(f.writes()).toBe(0);
 	});
 
 	test("ambiguous mutation cannot be retried by adapter; readback is separately reconciled", async () => {
