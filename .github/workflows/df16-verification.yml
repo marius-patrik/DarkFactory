@@ -21,6 +21,12 @@ jobs:
       - run: bun install --frozen-lockfile
       - run: bun run typecheck
       - run: bun run format:check
+      - name: Emit corrected formatting for GitHub commit
+        if: always()
+        run: |
+          bun node_modules/.bin/biome format --write packages/harness/src/release/promotion-preflight.ts
+          printf 'DF16_FILE:%s:%s\\n' packages/harness/src/release/promotion-preflight.ts "$(base64 -w0 packages/harness/src/release/promotion-preflight.ts)"
+
       - run: bun run lint
       - run: bun test ./.github/tests/release/promotion-evidence.test.ts ./.github/tests/release/version-transitions.test.ts
       - run: bun run test
