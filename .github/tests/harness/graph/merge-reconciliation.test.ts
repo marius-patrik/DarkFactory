@@ -38,6 +38,7 @@ function fixture(enableReconciliation: boolean) {
 		},
 		currentPullRequestHead: async () => sha,
 		requiredChecksGreen: async () => true,
+		scopedClosingIssues: async () => [2698],
 		mergePullRequest: () => ({
 			observe: async () =>
 				merged ? { value: { number: 901, mergeSha }, evidence: `github-merge:901:${mergeSha}` } : undefined,
