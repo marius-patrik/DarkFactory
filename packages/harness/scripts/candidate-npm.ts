@@ -1,6 +1,6 @@
 /** Assemble the existing Node/npm distribution from all five verified native bundles. No publication. */
 import { createHash } from "node:crypto";
-import { chmod, mkdir, mkdtemp, readFile, readdir, rm, stat, writeFile } from "node:fs/promises";
+import { chmod, copyFile, mkdir, mkdtemp, readFile, readdir, rm, stat, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { RELEASE_TARGETS, releaseAssetName } from "./release-targets.ts";
@@ -22,6 +22,7 @@ const stage = await mkdtemp(join(tmpdir(), "df-npm-candidate-"));
 try {
 	const bin = join(stage, "bin");
 	await mkdir(bin, { recursive: true });
+	await copyFile(resolve("LICENSE"), join(stage, "LICENSE"));
 	const runtime = join(stage, "runtime");
 	for (const target of RELEASE_TARGETS) {
 		const asset = releaseAssetName(target.name);
