@@ -123,7 +123,10 @@ try {
 	// A bounded graph transition must be executable without a GitHub token or source checkout.
 	const eventPath = join(standalone, "graph-event.json");
 	const statePath = join(standalone, "graph-state.json");
-	await writeFile(eventPath, JSON.stringify({ type: "node.completed", node: "request-intake", outcome: "success", outputs: {} }));
+	await writeFile(
+		eventPath,
+		JSON.stringify({ type: "node.completed", node: "request-intake", outcome: "success", outputs: {} }),
+	);
 	await writeFile(statePath, JSON.stringify({
 		run_id: "df17-local-transition",
 		current_node: "request-intake",
@@ -144,7 +147,10 @@ try {
 	const next = JSON.parse(planStdout) as { type?: string; nodes?: string[] };
 	if (next.type !== "run" || !next.nodes?.includes("planning"))
 		throw new Error(`Standalone graph did not advance request-intake to planning: ${planStdout}`);
-	await writeFile(eventPath, JSON.stringify({ type: "node.completed", node: "planning", outcome: "quota_exhausted", outputs: {} }));
+	await writeFile(
+		eventPath,
+		JSON.stringify({ type: "node.completed", node: "planning", outcome: "quota_exhausted", outputs: {} }),
+	);
 	await writeFile(statePath, JSON.stringify({
 		run_id: "df17-local-transition",
 		current_node: "planning",
