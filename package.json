@@ -43,7 +43,6 @@
   },
   "overrides": {
     "undici": "8.12.2",
-    "markdown-it": "14.3.3",
-    "minimatch": "11.0.1"
+    "markdown-it": "14.3.3"
   }
 }

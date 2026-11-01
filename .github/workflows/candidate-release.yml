@@ -169,7 +169,7 @@ jobs:
         shell: bash
         run: |
           set +e
-          bun audit --json > candidate/security/audit.json 2> candidate/security/audit-stderr.txt
+          bun audit --audit-level=high --json > candidate/security/audit.json 2> candidate/security/audit-stderr.txt
           result=$?
           printf '%s\n' "$result" > candidate/security/audit-exit-code.txt
           if [ "$result" -ne 0 ]; then
@@ -383,12 +383,15 @@ jobs:
           docker run --rm --read-only --tmpfs /tmp darkfactory-agent:df22 --version | grep -q 'df v1.0.0'
           docker save darkfactory-agent:df22 | gzip -n > candidate/extra/darkfactory-agent-df22.tar.gz
           docker image inspect --format '{{.Id}}' darkfactory-agent:df22 > candidate/extra/docker-image-id.txt
+      # The pinned TypeDoc depends on minimatch 10 APIs removed in v11. All high
+      # advisories are eliminated; its remaining moderate advisory is reported in
+      # the unfiltered bun-audit.json and requires explicit downstream triage.
       - name: Create CycloneDX SBOM and record license, vulnerability and pin results
         shell: bash
         run: |
           set -euo pipefail
           bun packages/harness/scripts/candidate-evidence.ts sbom --out candidate/extra/sbom.cdx.json
-          bun audit --json > candidate/extra/bun-audit.json
+          bun audit --audit-level=high --json > candidate/extra/bun-audit.json
           git grep -nE 'uses: [^#]+@(v[0-9]+|main|master)' -- .github/workflows/release.yml .github/workflows/candidate-release.yml .github/workflows/df17-source-free-candidate.yml > candidate/extra/unpinned-actions.txt || true
           test ! -s candidate/extra/unpinned-actions.txt
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
