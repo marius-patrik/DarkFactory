@@ -210,7 +210,7 @@ describe("source-free candidate gate", () => {
 		expect(doc.on.merge_group).toBeDefined();
 	});
 
-	test("provides one fail-closed aggregate candidate check for every native target and Docker", async () => {
+	test("provides one fail-closed aggregate candidate check for every native target and the canonical container image", async () => {
 		const doc = Bun.YAML.parse(await readFile(candidatePath, "utf8")) as {
 			jobs: Record<string, { name?: string; needs?: string[]; if?: string; steps?: WorkflowStep[] }>;
 		};
@@ -219,7 +219,7 @@ describe("source-free candidate gate", () => {
 		expect(gate?.needs).toEqual(["targets", "build", "docker-agent-smoke"]);
 		expect(gate?.if).toBe("always()");
 		const checks = gate?.steps?.[0]?.run ?? "";
-		for (const value of ["DF_TARGETS_RESULT", "DF_BUILD_RESULT", "DF_DOCKER_RESULT"]) {
+		for (const value of ["DF_TARGETS_RESULT", "DF_BUILD_RESULT", "DF_IMAGE_RESULT"]) {
 			expect(checks).toContain(`test "$${value}" = "success"`);
 		}
 	});
