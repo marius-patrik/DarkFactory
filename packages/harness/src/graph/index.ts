@@ -11,6 +11,7 @@ export * from "./production-composition.ts";
 export * from "./production-model.ts";
 export * from "./runtime-composition.ts";
 export * from "./planning.ts";
+export * from "./postgres-lease.ts";
 export * from "./review-loop.ts";
 export * from "./types.ts";
 export * from "./validator.ts";

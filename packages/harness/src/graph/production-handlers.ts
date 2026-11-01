@@ -50,10 +50,14 @@ export interface ProductionGitHubEffects {
 	currentPullRequestHead(number: number): Promise<string>;
 	/** Required external checks must be green for this exact SHA at mutation time. */
 	requiredChecksGreen(headSha: string): Promise<boolean>;
+	/** Authoritative same-repository GitHub closing-issue references. */
+	scopedClosingIssues(prNumber: number): Promise<number[]>;
 	/** Merge must be conditional on expectedHeadSha, observing merged status on recovery. */
 	mergePullRequest(input: {
 		number: number;
 		expectedHeadSha: string;
+		approvedBy: string;
+		baseBranch: string;
 	}): ExternalMutation<{ number: number; mergeSha: string }>;
 	closeIssue(input: { number: number }): ExternalMutation<{ number: number }>;
 	/** Persisted marker prevents repeat gate, reminder, or comment publication. */
@@ -269,6 +273,16 @@ export function createProductionGraphHandlers(options: ProductionGraphHandlerOpt
 					if (!reconcile) throw new Error("Merge requires a durable board reconciliation adapter");
 					const approval = assertMergeAuthorization(ctx.outputs);
 					if (!github) throw new Error("Merge requires GitHub effects");
+					const trustedBase = await repository.observeBase();
+					const requestedClosures = asNumbers(ctx.outputs.closing_issues);
+					if (
+						Array.isArray(ctx.outputs.closing_issues) &&
+						requestedClosures.length !== ctx.outputs.closing_issues.length
+					)
+						throw new Error("Malformed closing-issue authorization");
+					const scopedClosures = await github.scopedClosingIssues(approval.prNumber);
+					if (requestedClosures.some((issue) => !scopedClosures.includes(issue)))
+						throw new Error("Requested issue closure lacks authoritative same-repository PR linkage");
 					// Re-read the mutable external head and checks AFTER final human authorization.
 					if ((await github.currentPullRequestHead(approval.prNumber)) !== approval.headSha)
 						throw new Error("PR head changed since final merge authorization");
@@ -280,11 +294,13 @@ export function createProductionGraphHandlers(options: ProductionGraphHandlerOpt
 						github.mergePullRequest({
 							number: approval.prNumber,
 							expectedHeadSha: approval.headSha,
+							approvedBy: approval.actor,
+							baseBranch: trustedBase.defaultBranch,
 						}),
 					);
 					if (!/^[a-f0-9]{40}$/iu.test(merge.value.mergeSha) || merge.value.number !== approval.prNumber)
 						throw new Error("Merge lacks observed PR number and commit evidence");
-					for (const number of asNumbers(ctx.outputs.closing_issues)) {
+					for (const number of requestedClosures) {
 						await observed(ctx, "github.issue.close", github.closeIssue({ number }), String(number));
 					}
 					const reconciled = await observed(ctx, "board-sync", reconcile(ctx.runId));

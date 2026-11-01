@@ -124,7 +124,17 @@ async function reclaimOrphanCleanupLock(directory: string, cleanupPath: string):
 		throw error;
 	}
 	try {
-		const owner = await readOptionalJson<Partial<GraphLockOwner>>(cleanupPath);
+		let owner: Partial<GraphLockOwner> | undefined;
+		try {
+			owner = await readOptionalJson<Partial<GraphLockOwner>>(cleanupPath);
+		} catch (error) {
+			// Another contender has created the exclusive cleanup file but has
+			// not yet finished writing its owner identity. Never reclaim it.
+			if (!(error instanceof SyntaxError)) throw error;
+			const age = Date.now() - (await stat(cleanupPath)).mtimeMs;
+			if (age < 5_000) return;
+			throw new Error(`Unidentifiable graph cleanup lock ${cleanupPath} requires operator reconciliation`);
+		}
 		if (!owner) return;
 		if (!confirmedDeadLocalOwner(owner)) {
 			const age = Date.now() - (await stat(cleanupPath)).mtimeMs;

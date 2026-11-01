@@ -2,6 +2,7 @@ import { createHash } from "node:crypto";
 import { contextFingerprint } from "./review-loop.ts";
 import { join } from "node:path";
 import type { GitHubRepository } from "../../../github/src/repository.ts";
+import { createGovernedGitHubMergeBoundary } from "../../../github/src/governed-merge-boundary.ts";
 import type { ConflictResolver } from "../workspace/conflict-repair.ts";
 import type { RunGraphOptions } from "./executor.ts";
 import type { DispatchRuntime, DispatchRuntimeInput } from "./dispatch.ts";
@@ -21,8 +22,8 @@ type ExternalAction = Exclude<PlanAction, { type: "run" } | { type: "none" }>;
 export interface ProductionRuntimeFactoryOptions {
 	repoDir: string;
 	repository: GitHubRepository;
-	/** Conditional PR merger provided by packages/github; graph never issues REST directly. */
-	mergeBoundary: GitHubMergeBoundary;
+	/** Optional override for testing; production defaults to the governed GitHub API adapter. */
+	mergeBoundary?: GitHubMergeBoundary;
 	model: ProductionGraphHandlerOptions["model"];
 	loadPlanningContext: ProductionGraphHandlerOptions["loadPlanningContext"];
 	automation?: ProductionGraphHandlerOptions["automation"];
@@ -63,11 +64,18 @@ export function createProductionRuntimeFactory(options: ProductionRuntimeFactory
 		...(options.resolveConflict ? { resolveConflict: options.resolveConflict } : {}),
 	});
 	return async ({ subject, runDir, graph }: DispatchRuntimeInput): Promise<DispatchRuntime> => {
-		if (!options.distributedLease && !options.localOnly)
-			throw new Error("Production Request execution requires a fenced distributed lease or explicit localOnly mode");
+		if (options.distributedLease) {
+			throw new Error(
+				"Distributed production execution is blocked: PostgreSQL lease ownership alone cannot fence in-flight GitHub mutations, and a shared durable run/effect journal is not installed",
+			);
+		}
+		if (!options.localOnly)
+			throw new Error(
+				"Production Request execution requires verified distributed mutation fencing or explicit localOnly mode",
+			);
 		const github = createGitHubProductionEffects(options.repository, {
 			requiredChecks: graph.checks.filter((check) => check.required).map((check) => check.name),
-			mergeBoundary: options.mergeBoundary,
+			mergeBoundary: options.mergeBoundary ?? createGovernedGitHubMergeBoundary(options.repository),
 		});
 		const effects = new FileProductionEffectJournal(join(runDir, "effects"));
 		const handlers = createProductionGraphHandlers({
@@ -80,7 +88,7 @@ export function createProductionRuntimeFactory(options: ProductionRuntimeFactory
 		});
 		const target = Number(subject);
 		const issueNumber = Number.isSafeInteger(target) && target > 0 ? target : undefined;
-		const performAction = async (action: ExternalAction, state: RunState) => {
+		const performAction = async (action: ExternalAction, state: RunState, assertOwned: () => Promise<void>) => {
 			if (!issueNumber) {
 				throw new Error("Production graph action requires an attributable positive GitHub subject");
 			}
@@ -90,18 +98,27 @@ export function createProductionRuntimeFactory(options: ProductionRuntimeFactory
 				body: actionMessage(action),
 			});
 			await runObservedProductionEffect(effects, id, "github.comment", {
-				observe: () => mutation.observe(id),
-				execute: () => mutation.execute(id),
+				observe: async () => {
+					await assertOwned();
+					return mutation.observe(id);
+				},
+				execute: async () => {
+					await assertOwned();
+					return mutation.execute(id);
+				},
 			});
 		};
-		const reconcileAction = async (action: ExternalAction, state: RunState) => {
+		const reconcileAction = async (action: ExternalAction, state: RunState, assertOwned: () => Promise<void>) => {
 			if (!issueNumber) throw new Error("Cannot reconcile action without GitHub subject");
 			const id = actionIdentity(state, action);
 			const mutation = github.createComment({ issueNumber, body: actionMessage(action) });
 			// An interruption MAY have succeeded remotely, so replay only
 			// observed evidence. It cannot publish another copy.
 			await runObservedProductionEffect(effects, id, "github.comment", {
-				observe: () => mutation.observe(id),
+				observe: async () => {
+					await assertOwned();
+					return mutation.observe(id);
+				},
 				execute: async () => {
 					throw new Error("Interrupted action has no observed external evidence");
 				},

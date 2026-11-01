@@ -303,6 +303,51 @@ export class GitHubRepository {
 		return [...new Set(nodes.map((node) => node.number))].sort((a, b) => a - b);
 	}
 
+	/**
+	 * Only issues linked by GitHub's authoritative closingIssuesReferences in
+	 * this exact repository are eligible for production post-merge closure.
+	 * A same-number issue in another repository is never an authorization.
+	 */
+	async scopedLinkedClosingIssues(number: number): Promise<number[]> {
+		if (!Number.isSafeInteger(number) || number <= 0) throw new Error("Invalid scoped PR identity");
+		const query =
+			"query($owner:String!,$repo:String!,$number:Int!,$cursor:String){repository(owner:$owner,name:$repo){pullRequest(number:$number){closingIssuesReferences(first:100,after:$cursor){nodes{number repository{nameWithOwner}} pageInfo{hasNextPage endCursor}}}} rateLimit{cost remaining resetAt}}";
+		type Linked = { number: number; repository?: { nameWithOwner?: string } | null };
+		type Payload = {
+			repository?: {
+				pullRequest?: {
+					closingIssuesReferences?: {
+						nodes: Linked[];
+						pageInfo: { hasNextPage: boolean; endCursor: string | null };
+					};
+				};
+			};
+		};
+		const nodes = await this.#client.collectGraphQL<Linked>(
+			query,
+			{ owner: this.#owner, repo: this.#repo, number },
+			(data) => {
+				const value = (data as Payload).repository?.pullRequest?.closingIssuesReferences;
+				if (!value) throw new Error("GitHub omitted scoped closing-issue references");
+				return value;
+			},
+			101,
+		);
+		if (nodes.length > 100) throw new Error("Too many linked issues for safe reconciliation");
+		return [
+			...new Set(
+				nodes
+					.filter(
+						(issue) =>
+							Number.isSafeInteger(issue.number) &&
+							issue.number > 0 &&
+							issue.repository?.nameWithOwner?.toLowerCase() === this.slug.toLowerCase(),
+					)
+					.map((issue) => issue.number),
+			),
+		].sort((a, b) => a - b);
+	}
+
 	async getDefaultBranchHeadSha(): Promise<string> {
 		const repoInfo = await this.#client.rest<{ default_branch?: string }>("GET", this.#path(""));
 		const defaultBranch = repoInfo.default_branch ?? "main";

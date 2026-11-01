@@ -38,6 +38,7 @@ function fixture(enableReconciliation: boolean) {
 		},
 		currentPullRequestHead: async () => sha,
 		requiredChecksGreen: async () => true,
+		scopedClosingIssues: async () => [2698],
 		mergePullRequest: () => ({
 			observe: async () =>
 				merged ? { value: { number: 901, mergeSha }, evidence: `github-merge:901:${mergeSha}` } : undefined,
@@ -119,6 +120,17 @@ describe("merge completion includes observed Request reconciliation", () => {
 		const f = fixture(false);
 		await expect(f.handlers.automation({ id: "merge", kind: "automation", script: "pr-merge" }, f.ctx)).rejects.toThrow(
 			"Merge requires a durable board reconciliation adapter",
+		);
+		expect(f.counts()).toEqual({ mergeWrites: 0, closeWrites: 0, boardWrites: 0 });
+	});
+
+	test("unlinked issue closure is rejected before any external merge or board mutation", async () => {
+		const f = fixture(true);
+		f.ctx.outputs.closing_issues = [9999];
+		const approval = f.ctx.outputs.merge_authorization as { fingerprint: string };
+		approval.fingerprint = mergeProposalFingerprint(f.ctx.outputs);
+		await expect(f.handlers.automation({ id: "merge", kind: "automation", script: "pr-merge" }, f.ctx)).rejects.toThrow(
+			"authoritative same-repository PR linkage",
 		);
 		expect(f.counts()).toEqual({ mergeWrites: 0, closeWrites: 0, boardWrites: 0 });
 	});

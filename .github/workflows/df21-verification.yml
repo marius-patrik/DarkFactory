@@ -1,0 +1,62 @@
+name: DF-21 Nonpublishing Distributed Control Plane Acceptance
+on:
+  push:
+    branches: [agent/2699-distributed-lease-df21]
+  workflow_dispatch:
+  workflow_call:
+permissions:
+  contents: read
+concurrency:
+  group: df21-verification-${{ github.sha }}
+  cancel-in-progress: false
+jobs:
+  distributed-ownership:
+    name: PostgreSQL multi-process fencing and governed GitHub transport
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: df21
+          POSTGRES_PASSWORD: df21
+          POSTGRES_DB: df21
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U df21 -d df21"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      DF21_TEST_DATABASE_URL: postgresql://df21:df21@127.0.0.1:5432/df21
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+      - run: bun install --frozen-lockfile
+      - run: bun run typecheck
+      - run: bun run format:check
+      - run: bun run lint
+      - name: Targeted DF-21 Biome lint
+        if: always()
+        run: bunx biome lint packages/github/src/governed-merge-boundary.ts packages/harness/src/graph/postgres-lease.ts packages/harness/src/graph/production-composition.ts packages/harness/src/graph/production-handlers.ts packages/harness/src/graph/runtime-composition.ts packages/harness/src/graph/executor.ts .github/tests/github/governed-merge-boundary.test.ts .github/tests/harness/graph/postgres-lease.test.ts .github/tests/harness/graph/fixtures/pg-lease-worker.ts
+      - name: Apply actual PostgreSQL lease schema
+        if: always()
+        run: |
+          bun -e 'import { SQL } from "bun"; const db = new SQL(process.env.DF21_TEST_DATABASE_URL!); try { await db.file("packages/harness/sql/graph-leases.sql"); } finally { await db.close(); }'
+      - name: Independent-process fencing and GitHub boundary acceptance
+        if: always()
+        run: bun test ./.github/tests/harness/graph/postgres-lease.test.ts ./.github/tests/github/governed-merge-boundary.test.ts ./.github/tests/github/governance.test.ts ./.github/tests/harness/graph/distributed-lease.test.ts ./.github/tests/harness/graph/merge-reconciliation.test.ts ./.github/tests/harness/graph/production-recovery.test.ts
+      - run: bun run test
+        if: always()
+      - name: Emit formatted DF-21 source for isolated-branch correction
+        if: always()
+        run: |
+          bunx biome format --write packages/github/src/governed-merge-boundary.ts packages/harness/src/graph/postgres-lease.ts packages/harness/src/graph/production-composition.ts packages/harness/src/graph/production-handlers.ts packages/harness/src/graph/runtime-composition.ts packages/harness/src/graph/executor.ts packages/harness/src/graph/durable-effects.ts packages/harness/src/graph/index.ts packages/github/src/repository.ts .github/tests/harness/graph/merge-reconciliation.test.ts .github/tests/github/governed-merge-boundary.test.ts .github/tests/harness/graph/postgres-lease.test.ts .github/tests/harness/graph/fixtures/pg-lease-worker.ts
+          for path in packages/github/src/governed-merge-boundary.ts packages/harness/src/graph/postgres-lease.ts packages/harness/src/graph/production-composition.ts packages/harness/src/graph/production-handlers.ts packages/harness/src/graph/runtime-composition.ts packages/harness/src/graph/executor.ts packages/harness/src/graph/durable-effects.ts packages/harness/src/graph/index.ts packages/github/src/repository.ts .github/tests/harness/graph/merge-reconciliation.test.ts .github/tests/github/governed-merge-boundary.test.ts .github/tests/harness/graph/postgres-lease.test.ts .github/tests/harness/graph/fixtures/pg-lease-worker.ts; do
+            printf 'DF21_START:%s\n' "$path"
+            base64 -w76 "$path"
+            printf 'DF21_END\n'
+          done
