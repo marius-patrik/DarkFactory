@@ -455,6 +455,15 @@ jobs:
             --phase=publish --technical=approved/technical-candidate.json \
             --digest="$DF_EVIDENCE_SHA256" --sealed=approved/promotion-evidence.json
 
+      - name: Archive the verified postmerge Stage B authorization attestation
+        if: github.repository == 'marius-patrik/DarkFactory'
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: sealed-promotion-evidence
+          path: approved/promotion-evidence.json
+          if-no-files-found: error
+          retention-days: 90
+
       - name: Mint an installation token for the App
         # `GITHUB_TOKEN` cannot open a pull request: GitHub deliberately withholds
         # `pull_requests: write` from the token a workflow gets for itself, so
@@ -594,8 +603,20 @@ jobs:
           # The draft is not public. If upload fails, leave the failed draft for
           # investigation; never claim public success or overwrite its assets.
           mapfile -t ASSETS < "$RUNNER_TEMP/asset-list.txt"
-          gh release create "$TAG" --draft --target "$DF_COMMIT" \
-            --title "$TAG" --notes-file notes/notes.md "${ASSETS[@]}"
+          if ! gh release create "$TAG" --draft --target "$DF_COMMIT" \
+            --title "$TAG" --notes-file notes/notes.md "${ASSETS[@]}"; then
+            # The create request may have succeeded remotely despite a failed client response.
+            # Read back both effects, never retry an ambiguous or partially created release.
+            if gh api "repos/$GITHUB_REPOSITORY/releases/tags/$TAG" > "$RUNNER_TEMP/uncertain-draft.json" 2>/dev/null; then
+              echo "::error::Draft exists after uncertain create; manual reconciliation required." >&2
+            else
+              echo "::error::Release state cannot be established after create failure." >&2
+            fi
+            if gh api "repos/$GITHUB_REPOSITORY/git/ref/tags/$TAG" > "$RUNNER_TEMP/uncertain-tag.json" 2>/dev/null; then
+              echo "::error::Tag exists after uncertain create; manual reconciliation required." >&2
+            fi
+            exit 1
+          fi
           if [ "$GITHUB_REPOSITORY" = "marius-patrik/DarkFactory" ]; then
             # GitHub hashes the uploaded bytes independently. Require exact name
             # inventory, digest inventory, draft state and bound target commit.
@@ -611,7 +632,15 @@ jobs:
               --phase=finalize --technical=approved/technical-candidate.json \
               --digest="$DF_EVIDENCE_SHA256" --sealed=approved/promotion-evidence.json
           fi
-          gh release edit "$TAG" --draft=false
+          if ! gh release edit "$TAG" --draft=false; then
+            # Never label an ambiguous publication as a successful release.
+            if gh api "repos/$GITHUB_REPOSITORY/releases/tags/$TAG" > "$RUNNER_TEMP/uncertain-promotion.json" 2>/dev/null; then
+              echo "::error::Publication response uncertain; remote state read back for investigation." >&2
+            else
+              echo "::error::Publication state not observable after failed promotion." >&2
+            fi
+            exit 1
+          fi
           if [ "$GITHUB_REPOSITORY" = "marius-patrik/DarkFactory" ]; then
             gh api "repos/$GITHUB_REPOSITORY/releases/tags/$TAG" > "$RUNNER_TEMP/published.json"
             jq -e --arg sha "$DF_COMMIT" --arg tag "$TAG" '.draft == false and .tag_name == $tag and .target_commitish == $sha' "$RUNNER_TEMP/published.json"
