@@ -41,11 +41,13 @@ async function github(path: string, token: string): Promise<any> {
 	return response.json();
 }
 async function files(directory: string): Promise<string[]> {
-	return (await readdir(directory, { withFileTypes: true })).map((entry) => {
-		requireValue(entry.isFile(), `Extra bundle must contain flat regular files: ${entry.name}`);
-		requireValue(/^[a-zA-Z0-9][a-zA-Z0-9._-]{0,180}$/u.test(entry.name), "Unsafe release asset name");
-		return entry.name;
-	}).sort();
+	return (await readdir(directory, { withFileTypes: true }))
+		.map((entry) => {
+			requireValue(entry.isFile(), `Extra bundle must contain flat regular files: ${entry.name}`);
+			requireValue(/^[a-zA-Z0-9][a-zA-Z0-9._-]{0,180}$/u.test(entry.name), "Unsafe release asset name");
+			return entry.name;
+		})
+		.sort();
 }
 async function asset(directory: string, name: string, bundle: string): Promise<EvidenceAsset> {
 	const bytes = await readFile(join(directory, name));
@@ -122,7 +124,10 @@ async function main(): Promise<void> {
 		}
 	}
 	const extraNames = await files(extraDirectory);
-	requireValue(extraNames.some((name) => name.endsWith(".tgz")), "Missing npm package");
+	requireValue(
+		extraNames.some((name) => name.endsWith(".tgz")),
+		"Missing npm package",
+	);
 	for (const name of ["unified-web-docs.tar.gz", "darkfactory-agent-df22.tar.gz", "sbom.cdx.json"]) {
 		requireValue(extraNames.includes(name), `Missing audited distribution: ${name}`);
 	}
