@@ -98,7 +98,7 @@ async function platform(): Promise<void> {
 		throw new Error("Native build-time checksum record differs from produced bytes");
 	if (!assets.some((a) => a.path.startsWith("plugins/") && a.path.endsWith("capability.mjs")))
 		throw new Error("Candidate contains no bundled official capability");
-	for (const required of ["assets/graph.darkfactory.json", "photon_rs_bg.wasm"])
+	for (const required of ["assets/graph.darkfactory.json", "schemas/graph.schema.json", "photon_rs_bg.wasm"])
 		if (!assets.some((a) => a.path === required)) throw new Error(`Missing source-free resource: ${required}`);
 	await writeJson(output, {
 		...(await base()),
