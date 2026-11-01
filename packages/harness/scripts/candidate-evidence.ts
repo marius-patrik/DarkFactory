@@ -173,6 +173,62 @@ async function sbom(): Promise<void> {
 	console.log(JSON.stringify({ packages: report.packages, licenseUnknown: report.licenseUnknown }));
 	if (!components.length) throw new Error("Cannot produce an empty SBOM");
 }
+async function verifyDownloaded(): Promise<void> {
+	const directory = resolve(option("--directory") ?? "candidate/evidence");
+	const identity = await base();
+	const statuses: { target: string; files: number; sha256: string }[] = [];
+	for (const target of RELEASE_TARGETS) {
+		const folder = join(directory, `candidate-native-${target.name}`);
+		const file = join(folder, `candidate-${target.name}.json`);
+		const document = JSON.parse(await readFile(file, "utf8")) as {
+			source: { commit: string; tree: string; lockSha256: string };
+			version: string;
+			capabilityAbi: string;
+			target: string;
+			runner: string;
+			artifacts: { path: string; bytes: number; sha256: string }[];
+		};
+		if (
+			document.source.commit !== identity.source.commit ||
+			document.source.tree !== identity.source.tree ||
+			document.source.lockSha256 !== identity.source.lockSha256 ||
+			document.version !== identity.version ||
+			document.capabilityAbi !== identity.capabilityAbi ||
+			document.target !== target.name ||
+			document.runner !== target.runner
+		) {
+			throw new Error(`Native candidate identity mismatch: ${target.name}`);
+		}
+		if (!document.artifacts.length) throw new Error(`Native inventory empty: ${target.name}`);
+		for (const item of document.artifacts) {
+			if (!item.path || item.path.startsWith("/") || item.path.split("/").includes(".."))
+				throw new Error(`Unsafe candidate artifact path: ${item.path}`);
+			const bytes = await readFile(join(folder, item.path));
+			if (bytes.length !== item.bytes || sha256(bytes) !== item.sha256)
+				throw new Error(`Candidate file changed after native attestation: ${target.name}/${item.path}`);
+		}
+		const executable = target.platform === "win32" ? `df-${target.name}.exe` : `df-${target.name}`;
+		const bin = document.artifacts.find((item) => item.path === executable);
+		const archive = document.artifacts.find((item) => item.path === `${executable}.tar.gz`);
+		if (!bin || !archive) throw new Error(`Missing native release bytes: ${target.name}`);
+		const verificationLog = await readFile(join(folder, `verification-${target.name}.log`), "utf8");
+		for (const checkpoint of ["standalone packaging smoke", "standalone graph", "standalone quality"]) {
+			if (!verificationLog.includes(checkpoint))
+				throw new Error(`Native execution receipt lacks ${checkpoint}: ${target.name}`);
+		}
+		statuses.push({ target: target.name, files: document.artifacts.length, sha256: archive.sha256 });
+	}
+	for (const required of ["candidate-npm", "candidate-web-docs", "candidate-docker", "candidate-supply-chain"]) {
+		if (!existsSync(join(directory, required))) throw new Error(`Missing candidate evidence group: ${required}`);
+	}
+	await writeJson(resolve(option("--out") ?? "candidate/native-validation.json"), {
+		kind: "df17-download-readback",
+		source: identity.source,
+		targets: statuses,
+		allOfficialTargetsMatched: true,
+	});
+	console.log(JSON.stringify({ verified: statuses.length, targets: statuses }));
+}
 switch (process.argv[2]) {
 	case "platform":
 		await platform();
@@ -182,6 +238,9 @@ switch (process.argv[2]) {
 		break;
 	case "sbom":
 		await sbom();
+		break;
+	case "verify-downloaded":
+		await verifyDownloaded();
 		break;
 	default:
 		throw new Error("Usage: candidate-evidence.ts <platform|snapshot|sbom> [--target N] [--directory DIR] --out FILE");
