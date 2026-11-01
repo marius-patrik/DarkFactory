@@ -38,7 +38,7 @@ for (const original of tracked) {
     const currentTarget = relocate(originalTarget);
     if (originalTarget === currentTarget && original === current) return match;
     let rewritten = path.posix.relative(path.posix.dirname(current), currentTarget);
-    if (!rewritten.startsWith(".")) rewritten = "./" + rewritten;
+    if (!/^\.\.?\//u.test(rewritten)) rewritten = "./" + rewritten;
     if (spec.endsWith("/") && !rewritten.endsWith("/")) rewritten += "/";
     return quote + rewritten + quote;
   });
@@ -46,6 +46,18 @@ for (const original of tracked) {
   output = output.replace(segmentsPattern, (_match, quote1, comma, quote2, pkg) =>
     quote1 + "plugins" + quote1 + comma + quote2 + pkg + quote2
   );
+  // Runtime integration tests spawn the CLI from the harness directory (cwd is not test-file location).
+  if (current === "plugins/harness/test/result-capture.test.ts" ||
+      current === "plugins/harness/test/graph/cli.test.ts") {
+    output = output.replaceAll('"../cli/src/cli.ts"', '"../../packages/cli/src/cli.ts"');
+  }
+  // Preserve the exact compiled worker-entry identity assertion after the root move.
+  if (current === "plugins/harness/test/packaging.test.ts") {
+    output = output.replace(
+      'import "../../harness/src/image-resize-worker.ts"',
+      'import "../../../plugins/harness/src/image-resize-worker.ts"'
+    );
+  }
   if (current === "tsconfig.json") {
     const json = JSON.parse(output);
     for (const suffix of ["src", "test", "scripts"]) {
