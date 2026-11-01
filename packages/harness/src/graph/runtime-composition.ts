@@ -81,7 +81,7 @@ export function createProductionRuntimeFactory(options: ProductionRuntimeFactory
 		});
 		const target = Number(subject);
 		const issueNumber = Number.isSafeInteger(target) && target > 0 ? target : undefined;
-		const performAction = async (action: ExternalAction, state: RunState) => {
+		const performAction = async (action: ExternalAction, state: RunState, assertOwned: () => Promise<void>) => {
 			if (!issueNumber) {
 				throw new Error("Production graph action requires an attributable positive GitHub subject");
 			}
@@ -91,18 +91,27 @@ export function createProductionRuntimeFactory(options: ProductionRuntimeFactory
 				body: actionMessage(action),
 			});
 			await runObservedProductionEffect(effects, id, "github.comment", {
-				observe: () => mutation.observe(id),
-				execute: () => mutation.execute(id),
+				observe: async () => {
+					await assertOwned();
+					return mutation.observe(id);
+				},
+				execute: async () => {
+					await assertOwned();
+					return mutation.execute(id);
+				},
 			});
 		};
-		const reconcileAction = async (action: ExternalAction, state: RunState) => {
+		const reconcileAction = async (action: ExternalAction, state: RunState, assertOwned: () => Promise<void>) => {
 			if (!issueNumber) throw new Error("Cannot reconcile action without GitHub subject");
 			const id = actionIdentity(state, action);
 			const mutation = github.createComment({ issueNumber, body: actionMessage(action) });
 			// An interruption MAY have succeeded remotely, so replay only
 			// observed evidence. It cannot publish another copy.
 			await runObservedProductionEffect(effects, id, "github.comment", {
-				observe: () => mutation.observe(id),
+				observe: async () => {
+					await assertOwned();
+					return mutation.observe(id);
+				},
 				execute: async () => {
 					throw new Error("Interrupted action has no observed external evidence");
 				},
