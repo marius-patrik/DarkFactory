@@ -120,7 +120,7 @@ function usage(): string {
 		"  df logout <provider> --account <label>",
 		"  df ask --chain <provider/model[@account]>,... [--json] <prompt>",
 		"  df doctor [identities] [--config <path>] [--manifest <path>] [--repo <path>]",
-		"  df plugin <list|describe|validate> [options]   # agent plugins in .darkfactory/plugins/",
+		"  df plugin <list|describe|validate> [options]   # agent plugins in plugins/",
 		"  df ci <install|update|status|runs|logs|rerun|protect|doctor> [options]",
 		"  df graph validate [path]",
 		"  df graph plan --event <file> --state <file> [--graph <path>]",

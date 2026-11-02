@@ -1,16 +1,5 @@
 {
   "extends": "./tsconfig.base.json",
-  "include": [
-    "packages/*/src",
-    "packages/*/test",
-    "packages/*/scripts",
-    ".darkfactory/plugins/*",
-    "paper",
-    "scripts",
-    "tests",
-    "plugins/*/src",
-    "plugins/*/test",
-    "plugins/*/scripts"
-  ],
+  "include": ["packages/*/src", "plugins/*/src", "plugins/*/*.ts", ".github/scripts", ".github/tests"],
   "exclude": ["node_modules", "**/node_modules", "**/dist"]
 }

@@ -2,7 +2,6 @@ import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { basename, join, relative } from "node:path";
 import type { DocsConfig } from "./config.ts";
 import { loadDocsConfig } from "./config.ts";
-import { darkFactoryDirectory } from "../../protocol/src/config-document.ts";
 
 /** Semantic kind assigned to a documentation page. */
 type DocsPageKind = "home" | "product" | "plan" | "rules" | "rule" | "note" | "adr" | "capability";
@@ -96,7 +95,7 @@ function titleFromMarkdown(markdown: string, fallback: string): string {
 
 /** Source path of the single document holding every accepted architecture decision. */
 export function adrDocumentSource(): string {
-	return `${darkFactoryDirectory()}/ADRs.md`;
+	return ".agents/ARCHITECTURE.md";
 }
 
 interface AdrSection {
@@ -190,7 +189,7 @@ function adrPages(repoRoot: string): DocsPage[] {
 }
 
 /** The plugin holding the binding repository rules, one skill per rule. */
-export const RULES_PLUGIN = ".darkfactory/plugins/df-rules";
+export const RULES_PLUGIN = "plugins/df-rules";
 
 /**
  * Every canonical rule, as a relative source path.

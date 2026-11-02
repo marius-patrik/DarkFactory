@@ -4,17 +4,17 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "test": "bun test --timeout=30000",
+    "test": "bun .github/scripts/run-tests.ts",
     "typecheck": "tsc --noEmit -p tsconfig.json",
-    "build": "bun plugins/harness/scripts/build.ts",
-    "install:df": "bun plugins/harness/scripts/install.ts",
+    "build": "bun .github/scripts/build.ts",
+    "install:df": "bun .github/scripts/install.ts",
     "format": "biome format --write .",
     "format:check": "biome format .",
     "lint": "biome lint .",
     "check": "biome ci .",
-    "docs": "bun scripts/build-docs.ts",
+    "docs": "bun .github/scripts/build-docs.ts",
     "release:version": "bun plugins/harness/src/release/versioning.ts",
-    "release:targets": "bun plugins/harness/scripts/release-targets.ts"
+    "release:targets": "bun .github/scripts/release-targets.ts"
   },
   "devDependencies": {
     "@biomejs/biome": "2.5.13",

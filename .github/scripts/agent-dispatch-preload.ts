@@ -17,7 +17,7 @@ if (process.argv[2] === "run") {
 	record({ kind: "model-runtime", args: process.argv.slice(2) });
 }
 
-globalThis.fetch = async (input: RequestInfo | URL, init?: RequestInit): Promise<Response> => {
+globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit): Promise<Response> => {
 	const url = new URL(typeof input === "string" ? input : input instanceof URL ? input.href : input.url);
 	const method = (init?.method ?? (input instanceof Request ? input.method : "GET")).toUpperCase();
 	const body = init?.body === undefined ? "" : String(init.body);
@@ -41,4 +41,4 @@ globalThis.fetch = async (input: RequestInfo | URL, init?: RequestInit): Promise
 		status: 404,
 		headers: { "content-type": "application/json" },
 	});
-};
+}) as typeof fetch;

@@ -27,7 +27,7 @@ on:
         type: string
 
 # The version comes from `plugins/harness/src/release/versioning.ts` and the `df` build matrix comes from
-# `plugins/harness/scripts/release-targets.ts`. Adding a published platform is therefore a change to
+# `.github/scripts/release-targets.ts`. Adding a published platform is therefore a change to
 # table, not to this file, and there is one place where the two agree on what is being released.
 #
 # Every action is pinned to a full commit id. A floating `@v4` is a tag whoever controls the action
@@ -83,7 +83,7 @@ jobs:
       - name: Derive the df build matrix
         id: targets
         run: |
-          bun plugins/harness/scripts/release-targets.ts > "$RUNNER_TEMP/matrix.json"
+          bun .github/scripts/release-targets.ts > "$RUNNER_TEMP/matrix.json"
           cat "$RUNNER_TEMP/matrix.json"
           echo "matrix=$(jq -c . "$RUNNER_TEMP/matrix.json")" >> "$GITHUB_OUTPUT"
 
@@ -277,7 +277,7 @@ jobs:
   # because the build is verified by running the artifact. A cross-compiled binary cannot be run by
   # the runner that produced it, so a target without a native runner would ship bytes nothing ever
   # executed. The matrix is not written here: it is derived from
-  # plugins/harness/scripts/release-targets.ts.
+  # .github/scripts/release-targets.ts.
   build:
     name: build ${{ matrix.target }}
     needs: resolve
@@ -303,7 +303,7 @@ jobs:
       # targets and still fail on one because a native module is missing or a worker cannot be
       # found. The binary is run here, on its own platform, before it is allowed to become an asset.
       - name: Run the built binary and record its digest
-        run: bun plugins/harness/scripts/verify-target.ts --target ${{ matrix.target }}
+        run: bun .github/scripts/verify-target.ts --target ${{ matrix.target }}
 
       - name: Upload the built binary and its digest
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
@@ -378,7 +378,7 @@ jobs:
       # it. This is the only place the published bytes and the built bytes are compared, so a
       # corrupted upload fails the release instead of being checksummed as if it were correct.
       - name: Re-verify every df artifact and write the release checksums
-        run: bun plugins/harness/scripts/release-checksums.ts dist
+        run: bun .github/scripts/release-checksums.ts dist
 
       - name: List the assets to attach
         id: assets

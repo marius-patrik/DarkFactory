@@ -31,7 +31,7 @@ export async function resolveDetectedQuality(
 		? resolve(capabilitiesRoot)
 		: existsSync(installedPlugins)
 			? installedPlugins
-			: resolve(import.meta.dir, "..", "..", "..", "..", ".darkfactory", "plugins");
+			: resolve(import.meta.dir, "..", "..", "..");
 	const resolution = await resolveDetectedRepositoryActions(evidence, root);
 	return { evidence, resolution, matrix: qualityMatrix(resolution) };
 }

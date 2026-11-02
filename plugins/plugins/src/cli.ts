@@ -13,7 +13,7 @@ const USAGE = `df plugin - discover and check the repository's agent plugins
   df plugin validate [--json] [--strict]
                                      check the rules the four hosts enforce
 
-Plugins are read from .darkfactory/plugins/. Nothing here writes to the tree.`;
+Plugins are read from plugins/. Nothing here writes to the tree.`;
 
 function hasFlag(args: string[], ...names: string[]): boolean {
 	return names.some((name) => args.includes(name));
@@ -66,7 +66,7 @@ function listPlugins(repoDir: string, io: { log: (msg: string) => void; isJson: 
 	}
 
 	if (plugins.length === 0) {
-		io.log("no plugins found under .darkfactory/plugins/");
+		io.log("no plugins found under plugins/");
 		return 1;
 	}
 

@@ -1,10 +1,6 @@
 import { existsSync, readFileSync } from "node:fs";
-import { join, resolve } from "node:path";
-import {
-	darkFactoryDirectory,
-	parseConfigDocument,
-	resolveConfigDocumentPath,
-} from "../../protocol/src/config-document.ts";
+import { resolve } from "node:path";
+import { parseConfigDocument, resolveConfigDocumentPath } from "../../protocol/src/config-document.ts";
 
 /** Manifest locations and the skill directory name, all declared rather than assumed. */
 export interface PluginLayout {
@@ -70,7 +66,7 @@ const DEFAULT_LAYOUT: PluginLayout = {
 export function loadPluginsConfig(repoRoot = process.cwd()): PluginsConfig {
 	const declared = readPluginsBlock(repoRoot);
 	return {
-		roots: declared?.roots ?? [join(darkFactoryDirectory(), "plugins")],
+		roots: declared?.roots ?? ["plugins"],
 		layout: {
 			...DEFAULT_LAYOUT,
 			...declared?.layout,
@@ -93,7 +89,7 @@ function readPluginsBlock(repoRoot: string): PluginsConfig | undefined {
 }
 
 export function pluginRootsFromConfig(config: PluginsConfig, repoRoot: string, execDir: string): string[] {
-	const roots = config.roots?.length ? config.roots : [join(darkFactoryDirectory(), "plugins")];
+	const roots = config.roots?.length ? config.roots : ["plugins"];
 	return [...roots.map((root) => resolve(repoRoot, root)), resolve(execDir, "plugins")].filter((candidate) =>
 		existsSync(candidate),
 	);
