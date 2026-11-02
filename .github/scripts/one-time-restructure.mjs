@@ -143,6 +143,7 @@ patch(".github/tests/plugins/docs/test/current.test.ts",s=>{
  return s;
 });
 patch(".github/tests/plugins/harness/test/docs-package.test.ts",s=>{
+ s=s.replace("readFile, rm, symlink, writeFile", "readFile, rm, writeFile");
  s=s.replaceAll('join(root, ".darkfactory", "ADRs.md")','join(root, ".agents", "ARCHITECTURE.md")');
  s=s.replaceAll('join(root, ".darkfactory")','join(root, ".agents")');
  s=s.replaceAll('join(".darkfactory", "ADRs.md"), join(root, "ADRs.md")','join(".agents", "PRODUCT.md"), join(root, "README.md")');
