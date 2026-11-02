@@ -78,7 +78,6 @@ const CONVERTED: Array<[workflow: string, step: string, expected: string]> = [
 	// Detection reads the tree instead. See repository-governance.test.ts for the ordering proof.
 	["release.yml", "Detect the paper domain", "main.typ"],
 	["release.yml", "Collect release assets", "collectAssets"],
-	["release.yml", "Record the released version", "--record-version"],
 ];
 
 describe("steps that no longer need an interpreter", () => {
