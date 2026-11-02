@@ -138,10 +138,11 @@ describe("release workflow", () => {
 		expect(list?.run ?? "").toContain("! -name '*.sha256'");
 	});
 
-	test("still resolves the notes, the project assets and the version record through the pipeline", () => {
+	test("resolves release notes and assets without recording a version file", () => {
 		expect(source).toContain("--notes-out");
 		expect(source).toContain("collectAssets");
-		expect(source).toContain("--record-version");
+		expect(source).not.toContain("--record-version");
+		expect(source).not.toContain("Record the released version");
 		// All three run through the one release entry point, invoked from the tree rather than from a
 		// script directory that no longer exists.
 		expect(source).toContain("plugins/harness/src/release/cli.ts");
