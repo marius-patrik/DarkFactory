@@ -46,7 +46,7 @@ Write for an agent that has no other context, and assume it is competent and in 
 - Give the rule, then the reason, once. Not the story of how the rule was learned.
 - Prefer an exact command to a description of a command.
 - Put anything long in `references/` and link it. A skill directory may hold `references/` and
-  `scripts/` beside `SKILL.md`; every host loads the body only.
+  a `scripts` subdirectory beside `SKILL.md`; every host loads the body only.
 - Prefer `sh` fences and state the tool when it is not obvious.
 
 ## Separate the rule from the fact

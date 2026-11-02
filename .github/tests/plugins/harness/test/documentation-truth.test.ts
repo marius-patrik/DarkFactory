@@ -8,8 +8,8 @@ const harnessDir = join(import.meta.dir, "..", "..", "..", "..", "..", "plugins"
 const repoDir = join(harnessDir, "..", "..");
 
 /** Directories whose markdown is a canonical source or ships to consumers. */
-// `.agents` is a symlink to `.darkfactory`; a walker does not descend it, so the canonical
-// directories are named on the real path.
+// `.agents` is a physical source directory, and the canonical
+// docs and plugins are walked from their real directories.
 const CANONICAL_DIRECTORIES = [
 	".agents",
 	"plugins/df-rules",
@@ -137,10 +137,10 @@ describe("canonical documentation truth", () => {
 	});
 
 	test("the path scan recognises a path that does not exist", () => {
-		expect(pathClaims("run `bun test` and read `tests/absent_governance.py` now")).toEqual([
-			"tests/absent_governance.py",
+		expect(pathClaims("run `bun test` and read `plugins/absent_governance.py` now")).toEqual([
+			"plugins/absent_governance.py",
 		]);
-		expect(existsSync(join(repoDir, "tests/absent_governance.py"))).toBe(false);
+		expect(existsSync(join(repoDir, "plugins/absent_governance.py"))).toBe(false);
 	});
 
 	test("the path scan ignores globs, placeholders and non-path code spans", () => {
