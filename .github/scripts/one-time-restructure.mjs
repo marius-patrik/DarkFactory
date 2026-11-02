@@ -131,6 +131,17 @@ patch(".github/scripts/package-assets.ts",s=>s.replace('join(root, ".darkfactory
 patch(".github/scripts/verify-target.ts",s=>s.replace("import { dirname, join, resolve } from \"node:path\";", "import { join, resolve } from \"node:path\";").replace('const harnessRoot = dirname(import.meta.dir);','const harnessRoot = resolve(import.meta.dir, "..", "..", "plugins", "harness");').replace('const repositoryRoot = resolve(harnessRoot, "..", "..");','const repositoryRoot = resolve(import.meta.dir, "..", "..");'));
 patch(".github/tests/plugins/harness/test/ci/pipeline-source.ts",s=>s.replace(/export const repoRoot = join\(import\.meta\.dir,[^;]*;/,'export const repoRoot = join(import.meta.dir, "..", "..", "..", "..", "..", "..");'));
 writeFileSync(".github/scripts/run-tests.ts", "import { readdir } from \"node:fs/promises\";\nimport { join, relative } from \"node:path\";\n\nconst repoRoot = join(import.meta.dir, \"..\", \"..\");\nconst testRoot = join(repoRoot, \".github\", \"tests\");\nasync function collect(root: string): Promise<string[]> {\n  const children = await readdir(root, { withFileTypes: true });\n  const nested = await Promise.all(children.map(async (entry) => {\n    const absolute = join(root, entry.name);\n    if (entry.isDirectory()) return collect(absolute);\n    if (!entry.isFile()) return [];\n    return /\\.(?:test|spec)\\.(?:ts|tsx|js|mjs)$/u.test(entry.name) ||\n      entry.name === \"test_action_resolution.ts\" ? [absolute] : [];\n  }));\n  return nested.flat();\n}\nconst files = (await collect(testRoot)).map((file) => \"./\" + relative(repoRoot, file)).sort();\nif (!files.length) throw new Error(\"No tests under .github/tests\");\nconsole.log(\"DarkFactory centralized test files: \" + files.length);\nconst run = Bun.spawnSync([\"bun\", \"test\", ...files, \"--timeout=30000\"], {\n  cwd: repoRoot, stdout: \"inherit\", stderr: \"inherit\"\n});\nprocess.exit(run.exitCode ?? 1);\n");
+patch(".github/tests/plugins/docs/test/current.test.ts",s=>{
+ const begin=s.indexOf("function writeCurrentAliases("),end=s.indexOf("\ndescribe(\"current documentation truth\"",begin);
+ if(begin<0||end<0)throw Error("docs alias fixture missing");
+ const fixture="function writeCurrentAliases(repoRoot: string, omit?: string): void {\n\tmkdirSync(join(repoRoot, \".agents\"), { recursive: true });\n\twriteFileSync(join(repoRoot, \".agents\", \"PRODUCT.md\"), \"# product\\n\");\n\twriteFileSync(join(repoRoot, \".agents\", \"AGENTS.md\"), \"# Contributing\\n\");\n\twriteFileSync(join(repoRoot, \".agents\", \"ARCHITECTURE.md\"), \"# Architecture\\n\");\n\tconst aliases = [[\"README.md\", \".agents/PRODUCT.md\"], [\"CONTRIBUTING.md\", \".agents/AGENTS.md\"]] as const;\n\tfor (const [path, target] of aliases) {\n\t\tif (path === omit) continue;\n\t\tsymlinkSync(target, join(repoRoot, path));\n\t}\n}\n";
+ s=s.slice(0,begin)+fixture+s.slice(end);
+ s=s.replaceAll('writeCurrentAliases(repoRoot, "ADRs.md")','writeCurrentAliases(repoRoot, "README.md")');
+ s=s.replaceAll('path: "ADRs.md"','path: "README.md"');
+ s=s.replace('unlinkSync(join(repoRoot, ".darkfactory", "ADRs.md"))','unlinkSync(join(repoRoot, ".agents", "PRODUCT.md"))');
+ s=s.replaceAll('writeFileSync(join(repoRoot, "ADRs.md"),','writeFileSync(join(repoRoot, "README.md"),');
+ return s;
+});
 git("add","-A");
 const tracked=git("ls-files").split("\n");
 const stray=tracked.filter(p=>p.startsWith("scripts/")||p.startsWith("tests/")||p.startsWith(".darkfactory/plugins/")||(!p.startsWith(".github/tests/")&&(/(^|\/)test\//.test(p)||p.endsWith(".test.ts"))));
