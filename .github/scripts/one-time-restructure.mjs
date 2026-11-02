@@ -121,7 +121,7 @@ patch(".github/scripts/verify-target.ts",s=>s.replace('const harnessRoot = dirna
 patch(".github/tests/plugins/harness/test/ci/pipeline-source.ts",s=>s.replace(/export const repoRoot = join\(import\.meta\.dir,[^;]*;/,'export const repoRoot = join(import.meta.dir, "..", "..", "..", "..", "..", "..");'));
 git("add","-A");
 const tracked=git("ls-files").split("\n");
-const stray=tracked.filter(p=>p.startsWith("scripts/")||p.startsWith("tests/")||p.startsWith(".darkfactory/plugins/")||/(^|\/)test\//.test(p)||p.endsWith(".test.ts")&&!p.startsWith(".github/tests/"));
+const stray=tracked.filter(p=>p.startsWith("scripts/")||p.startsWith("tests/")||p.startsWith(".darkfactory/plugins/")||(!p.startsWith(".github/tests/")&&(/(^|\/)test\//.test(p)||p.endsWith(".test.ts"))));
 if(stray.length)throw Error("Stray test/scripts/plugin paths: "+stray.slice(0,20).join(","));
 console.log("RESTRUCTURE_MOVED="+moves.length);
 console.log("RESTRUCTURE_TESTS="+moves.filter(isTest).length);
