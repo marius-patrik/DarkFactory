@@ -91,7 +91,7 @@ for(const old of original){
   const match=/^([^?#]+)(.*)$/.exec(spec);if(!match)return full;
   const abs=norm(path.posix.join(path.posix.dirname(old),match[1]));
   if(!known(abs))return full;
-  const target=files.has(abs)?relocated(abs):dirMap(abs);
+  const target=files.has(abs)?relocated(abs):files.has(abs+".ts")?relocated(abs+".ts").slice(0,-3):dirMap(abs);
   if(old===now&&abs===target)return full;
   return q+rel(now,target)+(match[1].endsWith("/")?"/":"")+match[2]+q;
  });
@@ -107,6 +107,7 @@ const patch=(p,fn)=>{let s=readFileSync(p,"utf8");let v=fn(s);if(v!==s){writeFil
 patch("package.json",s=>{const j=JSON.parse(s);j.scripts.test="bun test .github/tests --timeout=30000";j.scripts.build="bun .github/scripts/build.ts";j.scripts["install:df"]="bun .github/scripts/install.ts";j.scripts.docs="bun .github/scripts/build-docs.ts";j.scripts["release:targets"]="bun .github/scripts/release-targets.ts";return JSON.stringify(j,null,2)+"\n";});
 patch("tsconfig.json",s=>{const j=JSON.parse(s);j.include=["packages/*/src","plugins/*/src","plugins/*/*.ts",".github/scripts",".github/tests"];return JSON.stringify(j,null,2)+"\n";});
 patch("nix/agent.nix",s=>s.replace('&& !(lib.hasPrefix ".github/" rel || rel == ".github")','&& (rel == ".github" || rel == ".github/scripts" || lib.hasPrefix ".github/scripts/" rel || !(lib.hasPrefix ".github/" rel))'));
+patch(".github/scripts/agent-dispatch-preload.ts",s=>s.replace("globalThis.fetch = async (", "globalThis.fetch = (async (").replace(/\};\s*$/, "}) as typeof fetch;\n"));
 patch("plugins/plugins/src/config.ts",s=>s.replaceAll('[join(darkFactoryDirectory(), "plugins")]','["plugins"]').replace('darkFactoryDirectory,\n\t',''));
 patch("plugins/docs/src/content.ts",s=>s.replace(/return \x60\$\{darkFactoryDirectory\(\)\}\/ADRs\.md\x60;/,'return ".agents/ARCHITECTURE.md";').replace('export const RULES_PLUGIN = ".darkfactory/plugins/df-rules";','export const RULES_PLUGIN = "plugins/df-rules";').replace('import { darkFactoryDirectory } from "../../protocol/src/config-document.ts";\n',''));
 patch("plugins/docs/src/current.ts",s=>{
