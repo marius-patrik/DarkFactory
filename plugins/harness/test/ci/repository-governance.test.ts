@@ -670,7 +670,7 @@ describe("release.yml", () => {
 		// gate, which reported `warranted=true`, and then nothing was resolved, `notes.md` was never
 		// written, and the run failed on `No files were found with the provided path`.
 		//
-		// `manual` mode hid it, because it resolves from `VERSION` and never consults the request.
+		// Manual mode must also honour an explicit version without requiring a VERSION file.
 		// Switching this repository to `zerover` made the request matter and the gap visible.
 		const resolveSteps = steps(release, "resolve").filter((s) => /^Resolve /.test(s.name ?? ""));
 		expect(resolveSteps.length).toBeGreaterThanOrEqual(2);
