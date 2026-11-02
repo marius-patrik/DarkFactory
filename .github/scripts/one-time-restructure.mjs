@@ -178,7 +178,8 @@ patch(".github/tests/plugins/harness/test/wrapper.test.ts",s=>{
 patch(".github/tests/scripts/df-wrapper.test.ts",s=>s.replace('const scripts = import.meta.dir;', 'const scripts = join(import.meta.dir, "..", "..", "scripts");'));
 patch(".github/tests/plugins/harness/test/packaging.test.ts",s=>{
  s=s.replaceAll('import "../../../../../plugins/harness/src/image-resize-worker.ts"','import "../../../plugins/harness/src/image-resize-worker.ts"');
- s=s.replace('const harnessRoot = dirname(import.meta.dir)','const harnessRoot = resolve(import.meta.dir, "..", "..", "plugins", "harness")');
+ s=s.replace('const harnessRoot = dirname(import.meta.dir)', 'const harnessRoot = resolve(import.meta.dir, "..", "..", "plugins", "harness")');
+ s=s.replace('toContain("const harnessRoot = resolve(import.meta.dir, "..", "..", "plugins", "harness")")','toContain(\'const harnessRoot = resolve(import.meta.dir, "..", "..", "plugins", "harness")\')');
  return s;
 });
 patch(".github/tests/plugins/harness/test/documentation-truth.test.ts",s=>{
