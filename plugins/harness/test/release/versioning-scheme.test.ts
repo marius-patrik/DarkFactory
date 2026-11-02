@@ -10,7 +10,6 @@ import {
 	loadConfig,
 	nextVersion,
 	parseVersion,
-	readManualVersion,
 	resolveRelease,
 	type VersioningMode,
 } from "../../src/release/versioning.ts";
@@ -18,8 +17,8 @@ import {
 /**
  * These tests pin the version scheme the owner already decided, so the TypeScript resolver that
  * replaces `.github/scripts/versioning.py` cannot quietly introduce a second one. The two facts
- * that matter and are easy to lose are that the `3a` letter survives a bump, and that a `VERSION`
- * matching the last release advances from that release instead of re-releasing it.
+ * that matter are that the `3a` letter survives a bump and that immutable published tags
+ * prevent accidental re-use even when the configured release target becomes stale.
  */
 const roots: string[] = [];
 
@@ -34,9 +33,8 @@ async function repository(
 	roots.push(root);
 	await writeFile(
 		join(root, "repo.dfconfig"),
-		JSON.stringify({ repo: { versioning: { mode: "manual", tag_prefix: "v", initial: "3a.1.0", ...options.config } } }),
+		JSON.stringify({ repo: { versioning: { mode: "manual", tag_prefix: "v", initial: "3a.1.0", ...(options.version === null ? {} : { next: options.version ?? "3a.2.0" }), ...options.config } } }),
 	);
-	if (options.version !== null) await writeFile(join(root, "VERSION"), `${options.version ?? "3a.2.0"}\n`);
 	git(root, "init", "-q", "--initial-branch=main");
 	git(root, "config", "user.email", "test@example.com");
 	git(root, "config", "user.name", "test");
@@ -86,7 +84,7 @@ describe("release version parsing", () => {
 		expect(isAhead(null, "3a.1.0")).toBe(false);
 	});
 
-	// The comparison is narrowed to the line VERSION names, so a superseded scheme that happens to
+	// The resolver can narrow to the configured release line, so a superseded scheme that happens to
 	// sort higher cannot become `current` and re-release an old number.
 	test("picks the highest tag on the declared release line", () => {
 		expect(latestTag(["v0.81.0", "v3a.1.0", "v3a.2.0", "not-a-tag"], "a")).toBe("v3a.2.0");
@@ -122,8 +120,7 @@ describe("release version parsing", () => {
 describe("release version source", () => {
 	test("reads the mode, tag prefix and initial version from the repository configuration", async () => {
 		const root = await repository();
-		expect(loadConfig(root)).toEqual({ mode: "manual", tagPrefix: "v", initial: "3a.1.0" });
-		expect(readManualVersion(root)).toBe("3a.2.0");
+		expect(loadConfig(root)).toEqual({ mode: "manual", tagPrefix: "v", initial: "3a.1.0", next: "3a.2.0" });
 	});
 
 	test("rejects a mode this resolver does not implement rather than defaulting it", async () => {
@@ -131,13 +128,13 @@ describe("release version source", () => {
 		expect(() => loadConfig(root)).toThrow("unknown versioning mode 'calendaver'");
 	});
 
-	test("requires a VERSION file under manual versioning", async () => {
+	test("requires no separate version file under manual versioning", async () => {
 		const root = await repository({ version: null });
-		expect(() => resolveRelease(root)).toThrow("manual versioning requires a VERSION file at the repository root");
+		expect(resolveRelease(root).next).toBeNull();
+		expect(resolveRelease(root, "3a.9.0").next).toBe("3a.9.0");
 	});
 
-	// The decision a promotion makes when VERSION names something newer than what is released: the
-	// owner's choice wins, and naming a version is a decision no commit log can make.
+	// The declared manual target wins over Conventional Commits, without another repository file.
 	test("releases a declared version that is ahead of the last tag verbatim", async () => {
 		const root = await repository({ version: "3b.0.0" });
 		expect(resolveRelease(root)).toMatchObject({
@@ -148,39 +145,27 @@ describe("release version source", () => {
 		});
 	});
 
-	// PR #1114: a VERSION that merely matches the last release used to be released again, so the
-	// job reported success and cut nothing. The file advancing itself is the fix.
-	test("advances from the last release rather than re-releasing the recorded one", async () => {
+	test("does not automatically bump a manually configured version after it is tagged", async () => {
 		const root = await repository({ version: "3a.2.0" });
 		commit(root, "chore: first");
 		git(root, "tag", "v3a.2.0");
 		git(root, "commit", "-q", "--allow-empty", "-m", "feat(harness): a new capability");
 
-		const decision = resolveRelease(root);
-		expect(decision).toMatchObject({
-			mode: "manual",
-			current: "3a.2.0",
-			current_tag: "v3a.2.0",
-			next: "3a.3.0",
-			tag: "v3a.3.0",
-			bump: "minor",
-		});
+		expect(resolveRelease(root)).toMatchObject({ current: "3a.2.0", next: null, tag: null });
+		expect(resolveRelease(root, "3a.3.0")).toMatchObject({ next: "3a.3.0", tag: "v3a.3.0" });
 	});
 
-	// PR #1118: a stale VERSION is not a choice. Re-releasing it is how the pipeline tried to cut
-	// v3a.1.0 a second time after v3a.2.0 had already shipped.
-	test("treats a VERSION behind the last tag as stale and advances from the last release", async () => {
+	test("rejects a stale manual version without reusing its tag", async () => {
 		const root = await repository({ version: "3a.1.0" });
 		commit(root, "chore: first");
 		git(root, "tag", "v3a.2.0");
 		git(root, "commit", "-q", "--allow-empty", "-m", "fix(harness): a fix");
 
-		const decision = resolveRelease(root);
-		expect(decision.bump).not.toBe("declared");
-		expect(decision).toMatchObject({ current: "3a.2.0", next: "3a.2.1", tag: "v3a.2.1", bump: "patch" });
+		expect(resolveRelease(root)).toMatchObject({ current: "3a.2.0", next: null, tag: null });
+		expect(resolveRelease(root, "3a.2.1")).toMatchObject({ next: "3a.2.1", tag: "v3a.2.1" });
 	});
 
-	test("warrants no release when the recorded version is the last release and nothing landed", async () => {
+	test("warrants no release when the configured version is already tagged", async () => {
 		const root = await repository({ version: "3a.2.0" });
 		commit(root, "chore: first");
 		git(root, "tag", "v3a.2.0");
