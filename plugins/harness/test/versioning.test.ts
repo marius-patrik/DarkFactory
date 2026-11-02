@@ -32,7 +32,10 @@ async function initRepo(mode: string, commits: string[], version?: string): Prom
 	runGit(path, ["init", "-q", "-b", "main", "."]);
 	runGit(path, ["config", "user.email", "t@example.com"]);
 	runGit(path, ["config", "user.name", "T"]);
-	await writeFile(join(path, "repo.dfconfig"), JSON.stringify({ repo: { versioning: { mode, ...(version ? { next: version } : {}) } } }));
+	await writeFile(
+		join(path, "repo.dfconfig"),
+		JSON.stringify({ repo: { versioning: { mode, ...(version ? { next: version } : {}) } } }),
+	);
 	for (const [index, message] of commits.entries()) {
 		await writeFile(join(path, `f${index}.txt`), message);
 		runGit(path, ["add", "-A"]);
@@ -334,7 +337,6 @@ describe("resolving against a real repository", () => {
 		runGit(repo, ["tag", "v3a.1.0"]);
 		expect(resolveRelease(repo).next).toBeNull();
 	});
-
 });
 
 describe("reading the declared configuration", () => {
