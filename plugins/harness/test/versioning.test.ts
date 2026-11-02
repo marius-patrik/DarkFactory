@@ -32,8 +32,10 @@ async function initRepo(mode: string, commits: string[], version?: string): Prom
 	runGit(path, ["init", "-q", "-b", "main", "."]);
 	runGit(path, ["config", "user.email", "t@example.com"]);
 	runGit(path, ["config", "user.name", "T"]);
-	await writeFile(join(path, "repo.dfconfig"), JSON.stringify({ repo: { versioning: { mode } } }));
-	if (version !== undefined) await writeFile(join(path, "VERSION"), `${version}\n`);
+	await writeFile(
+		join(path, "repo.dfconfig"),
+		JSON.stringify({ repo: { versioning: { mode, ...(version ? { next: version } : {}) } } }),
+	);
 	for (const [index, message] of commits.entries()) {
 		await writeFile(join(path, `f${index}.txt`), message);
 		runGit(path, ["add", "-A"]);
@@ -287,36 +289,50 @@ describe("resolving against a real repository", () => {
 		await later(repo, FIX);
 		expect(resolveRelease(repo)).toMatchObject({ current_tag: "v0.3.3", next: "0.3.4" });
 	});
-	test("manual mode requires a version file", async () => {
+	test("manual mode needs no version file and honours exact requests", async () => {
 		const repo = await initRepo("manual", [FEATURE]);
-		expect(() => resolveRelease(repo)).toThrow(VersioningError);
+		expect(resolveRelease(repo).next).toBeNull();
+		expect(resolveRelease(repo, "3.2.1")).toMatchObject({ next: "3.2.1", bump: "explicit" });
 	});
-	test("manual mode reads the version file", async () => {
+
+	test("manual mode reads its optional target from repo.dfconfig", async () => {
 		const repo = await initRepo("manual", [FEATURE], "3a.9.0");
-		expect(resolveRelease(repo).next).toBe("3a.9.0");
+		expect(resolveRelease(repo)).toMatchObject({ next: "3a.9.0", bump: "declared" });
 	});
-	test("manual mode is idempotent once tagged", async () => {
+
+	test("manual mode is idempotent after its tag is published", async () => {
 		const repo = await initRepo("manual", [FEATURE], "7.7.7");
 		runGit(repo, ["tag", "v7.7.7"]);
 		expect(resolveRelease(repo).next).toBeNull();
 	});
-	test("a scheme survives the round trip through a tag", async () => {
+
+	test("manual mode preserves version schemes and accepts explicit advancement", async () => {
 		const repo = await initRepo("manual", [CHORE], "3a.1.0");
 		runGit(repo, ["tag", "v3a.1.0"]);
 		await later(repo, FEATURE);
-		expect(resolveRelease(repo).next).toBe("3a.2.0");
+		expect(resolveRelease(repo).next).toBeNull();
+		expect(resolveRelease(repo, "3a.2.0").next).toBe("3a.2.0");
 	});
-	test("a declared version beats the commit log", async () => {
+
+	test("a declared manual version beats the commit log", async () => {
 		const repo = await initRepo("manual", [FEATURE], "3a.9.0");
 		expect(resolveRelease(repo).bump).toBe("declared");
 	});
-	test("a stale version does not re-release an old number", async () => {
+
+	test("a stale manual version does not re-release or auto-bump", async () => {
 		const repo = await initRepo("manual", [CHORE], "3a.1.0");
 		runGit(repo, ["tag", "v3a.5.0"]);
 		await later(repo, FEATURE);
-		expect(resolveRelease(repo).next).toBe("3a.6.0");
+		expect(resolveRelease(repo).next).toBeNull();
+		expect(resolveRelease(repo, "3a.6.0").next).toBe("3a.6.0");
 	});
-	test("nothing since the release warrants nothing", async () => {
+
+	test("manual mode rejects non-version release requests", async () => {
+		const repo = await initRepo("manual", [CHORE]);
+		expect(() => resolveRelease(repo, "major")).toThrow(VersioningError);
+	});
+
+	test("nothing since a manual release warrants another release", async () => {
 		const repo = await initRepo("manual", [FEATURE], "3a.1.0");
 		runGit(repo, ["tag", "v3a.1.0"]);
 		expect(resolveRelease(repo).next).toBeNull();
@@ -326,7 +342,7 @@ describe("resolving against a real repository", () => {
 describe("reading the declared configuration", () => {
 	test("reads the mode, prefix and initial version", async () => {
 		const repo = await initRepo("semver", [CHORE]);
-		expect(loadConfig(repo)).toEqual({ mode: "semver", tagPrefix: "v", initial: "0.1.0" });
+		expect(loadConfig(repo)).toEqual({ mode: "semver", tagPrefix: "v", initial: "0.1.0", next: null });
 	});
 	test("an unknown mode is rejected", async () => {
 		const repo = await initRepo("heroic", [CHORE]);

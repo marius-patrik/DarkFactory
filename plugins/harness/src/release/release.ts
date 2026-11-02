@@ -16,7 +16,6 @@ import { configBlock, parseConfigDocument, resolveConfigDocumentPath } from "../
 import { configure } from "./environment.ts";
 import {
 	commitsSince,
-	readManualVersion,
 	resolveRelease as resolveVersion,
 	type ReleaseDecision as VersionDecision,
 } from "./versioning.ts";
@@ -38,11 +37,6 @@ const COMMIT_HEADER = /^(?<type>[a-z]+)(?:\((?<scope>[^)]*)\))?(?<bang>!)?:\s*(?
 
 /** A `BREAKING CHANGE:` trailer, on its own line anywhere in the message. */
 const BREAKING_TRAILER = /^BREAKING[ -]CHANGE:/mu;
-
-/** The identity automation-authored commits carry, so a record commit is attributable. */
-const BOT_NAME = "github-actions[bot]";
-const BOT_EMAIL = "41898282+github-actions[bot]@users.noreply.github.com";
-class ReleaseError extends Error {}
 
 /** One bespoke asset the manifest declares, beyond whatever the ecosystems produce. */
 interface DeclaredAsset {
@@ -72,17 +66,6 @@ interface ResolvedRelease {
 	metadataProblems: string[];
 	/** The manifests a `--sync-metadata` run rewrote. */
 	metadataSynced?: string[];
-}
-
-/** What recording a released version did. */
-export interface RecordVersionResult {
-	recorded: boolean;
-	version: string;
-	branch: string | null;
-	base: string;
-	issue: number | null;
-	pullRequest: string | null;
-	reason: string | null;
 }
 
 /**
@@ -308,163 +291,4 @@ export function resolveRelease(root: string, requested?: string | null): Resolve
 		steps: planAssets(root),
 		metadataProblems: checkMetadata(root, version),
 	};
-}
-
-/** Runs one git command in the repository and returns its output. */
-function git(root: string, ...args: string[]): string {
-	const result = Bun.spawnSync(["git", ...args], { cwd: root, stdout: "pipe", stderr: "pipe" });
-	if (result.exitCode !== 0) {
-		throw new ReleaseError(`git ${args.join(" ")} failed: ${result.stderr.toString().trim()}`);
-	}
-	return result.stdout.toString().trim();
-}
-
-/** Runs one GitHub CLI command in a repository and returns its output. */
-export type GhCommand = (root: string, args: readonly string[]) => string;
-
-/** Runs one `gh` command, raising with its error output attached when it fails. */
-const runGh: GhCommand = (root, args) => {
-	const result = Bun.spawnSync(["gh", ...args], { cwd: root, stdout: "pipe", stderr: "pipe" });
-	if (result.exitCode !== 0) {
-		throw new ReleaseError(`gh ${args.join(" ")} failed: ${result.stderr.toString().trim()}`);
-	}
-	return result.stdout.toString().trim();
-};
-
-/** The branch a released version is recorded against: the development lane, or the default one. */
-function developmentBranch(root: string): string {
-	const identity = repoBlock(root).identity;
-	const declared =
-		identity && typeof identity === "object" && !Array.isArray(identity) ? (identity as Record<string, unknown>) : {};
-	const branch = declared.development_branch || declared.default_branch;
-	return String(branch || "main");
-}
-
-/** The issue a record pull request must advance, or `null` when the manifest declares none. */
-function recordIssue(root: string): number | null {
-	const declared = releaseBlock(root).record_issue;
-	return typeof declared === "number" && Number.isFinite(declared) ? declared : null;
-}
-
-/**
- * Records a released version on a delivery branch for the development branch.
- *
- * The `VERSION` file is the owner's control over the next number, which only works while it is also
- * a record of the last one. A file that still names an already-released version reads as an explicit
- * choice of that version, and the next promotion tries to release it again. So the release job
- * writes what it actually released onto its own branch and opens the governed pull request against
- * the development branch; it never pushes to a protected branch itself.
- *
- * Recording the same version twice is a no-op, so a re-run after a completed release neither commits
- * again nor asks for a second review. The pull request binds `release.record_issue`, because every
- * pull request to the trunk has to name a tracking issue to pass `verify-bound-issue`; without one the
- * version is still committed and the omission is reported rather than opening a request that can
- * only sit at `REVIEW_REQUIRED`.
- *
- * @param releasedTag - The tag that was published, quoted in the pull request body.
- * @param ghCommand - How `gh` is reached; injected so the recording path is testable without a
- * live CLI.
- * @throws ReleaseError when the repository declares no development branch, or git fails.
- */
-export function recordVersion(
-	root: string,
-	version: string,
-	releasedTag?: string | null,
-	ghCommand: GhCommand = runGh,
-): RecordVersionResult {
-	const base = developmentBranch(root);
-	const declared = readManualVersion(root);
-	const issue = recordIssue(root);
-	const result: RecordVersionResult = {
-		recorded: false,
-		version,
-		branch: null,
-		base,
-		issue,
-		pullRequest: null,
-		reason: null,
-	};
-	if (declared === version) {
-		result.reason = `VERSION already records ${version}`;
-		return result;
-	}
-
-	const branch = `release/record-${version}`;
-	git(root, "fetch", "origin", base);
-	git(root, "checkout", "-B", branch, `origin/${base}`);
-	writeFileSync(join(root, "VERSION"), `${version}\n`, "utf8");
-	git(root, "add", "VERSION");
-	// The identity is passed on the command rather than configured on the runner: a release job
-	// that inherits nobody's git identity fails at the commit, after the release is already public.
-	git(
-		root,
-		"-c",
-		`user.name=${BOT_NAME}`,
-		"-c",
-		`user.email=${BOT_EMAIL}`,
-		"commit",
-		"-q",
-		"-m",
-		`chore(release): record ${version}`,
-	);
-	git(root, "push", "--force-with-lease", "origin", `${branch}:${branch}`);
-	result.recorded = true;
-	result.branch = branch;
-
-	if (issue === null) {
-		result.reason =
-			"no release.record_issue in the manifest, so no pull request was opened; " +
-			`${version} is committed on ${branch}`;
-		return result;
-	}
-
-	const openPrs = ghCommand(root, [
-		"pr",
-		"list",
-		"--head",
-		branch,
-		"--state",
-		"open",
-		"--json",
-		"number",
-		"--jq",
-		"[.[].number]",
-	]);
-	if (openPrs !== "" && openPrs !== "[]") {
-		result.pullRequest = openPrs;
-		result.reason = `a pull request for ${branch} is already open`;
-		return result;
-	}
-
-	const body = [
-		"## Summary",
-		"",
-		`The release job published \`${releasedTag || version}\` and this records it in \`VERSION\`.`,
-		"",
-		"Without this the file keeps naming an already-released version, which the resolver",
-		"reads as an explicit choice of that version, so the next promotion would try to",
-		"release it again.",
-		"",
-		`- Released: \`${releasedTag || version}\``,
-		`- Base: \`${base}\``,
-		"- One file: `VERSION`",
-		"",
-		"## Bound Request(s)",
-		"",
-		`- Advances #${issue}`,
-		"",
-	].join("\n");
-	result.pullRequest = ghCommand(root, [
-		"pr",
-		"create",
-		"--base",
-		base,
-		"--head",
-		branch,
-		"--title",
-		`chore(release): record ${version}`,
-		"--body",
-		body,
-	]);
-	return result;
 }
