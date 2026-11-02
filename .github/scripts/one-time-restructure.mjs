@@ -108,7 +108,7 @@ patch("package.json",s=>{const j=JSON.parse(s);j.scripts.test="bun test .github/
 patch("tsconfig.json",s=>{const j=JSON.parse(s);j.include=["packages/*/src","plugins/*/src","plugins/*/*.ts",".github/scripts",".github/tests"];return JSON.stringify(j,null,2)+"\n";});
 patch("nix/agent.nix",s=>s.replace('&& !(lib.hasPrefix ".github/" rel || rel == ".github")','&& (rel == ".github" || rel == ".github/scripts" || lib.hasPrefix ".github/scripts/" rel || !(lib.hasPrefix ".github/" rel))'));
 patch(".github/scripts/agent-dispatch-preload.ts",s=>s.replace("globalThis.fetch = async (", "globalThis.fetch = (async (").replace(/\};\s*$/, "}) as typeof fetch;\n"));
-patch("plugins/plugins/src/config.ts",s=>s.replaceAll('[join(darkFactoryDirectory(), "plugins")]','["plugins"]').replace('darkFactoryDirectory,\n\t',''));
+patch("plugins/plugins/src/config.ts",s=>s.replaceAll('[join(darkFactoryDirectory(), "plugins")]','["plugins"]').replace('darkFactoryDirectory,\n\t','').replace('import { join, resolve } from "node:path";','import { resolve } from "node:path";'));
 patch("plugins/docs/src/content.ts",s=>s.replace(/return \x60\$\{darkFactoryDirectory\(\)\}\/ADRs\.md\x60;/,'return ".agents/ARCHITECTURE.md";').replace('export const RULES_PLUGIN = ".darkfactory/plugins/df-rules";','export const RULES_PLUGIN = "plugins/df-rules";').replace('import { darkFactoryDirectory } from "../../protocol/src/config-document.ts";\n',''));
 patch("plugins/docs/src/current.ts",s=>{
  const a=s.indexOf("const CURRENT_ALIASES = ["),b=s.indexOf("] as const;",a);
@@ -118,7 +118,7 @@ patch("plugins/docs/src/current.ts",s=>{
 });
 patch(".github/scripts/build-docs.ts",s=>s.replace(/capabilitiesRoot:\s*resolve\(import\.meta\.dir,[^\n]+\)/,'capabilitiesRoot: resolve(repoRoot, "plugins")'));
 patch(".github/scripts/package-assets.ts",s=>s.replace('join(root, ".darkfactory", "plugins")','join(root, "plugins")'));
-patch(".github/scripts/verify-target.ts",s=>s.replace('const harnessRoot = dirname(import.meta.dir);','const harnessRoot = resolve(import.meta.dir, "..", "..", "plugins", "harness");').replace('const repositoryRoot = resolve(harnessRoot, "..", "..");','const repositoryRoot = resolve(import.meta.dir, "..", "..");'));
+patch(".github/scripts/verify-target.ts",s=>s.replace("import { dirname, join, resolve } from \"node:path\";", "import { join, resolve } from \"node:path\";").replace('const harnessRoot = dirname(import.meta.dir);','const harnessRoot = resolve(import.meta.dir, "..", "..", "plugins", "harness");').replace('const repositoryRoot = resolve(harnessRoot, "..", "..");','const repositoryRoot = resolve(import.meta.dir, "..", "..");'));
 patch(".github/tests/plugins/harness/test/ci/pipeline-source.ts",s=>s.replace(/export const repoRoot = join\(import\.meta\.dir,[^;]*;/,'export const repoRoot = join(import.meta.dir, "..", "..", "..", "..", "..", "..");'));
 git("add","-A");
 const tracked=git("ls-files").split("\n");
