@@ -679,24 +679,19 @@ describe("release.yml", () => {
 		}
 	});
 
-	it("test_the_publish_job_uses_the_App_token: GITHUB_TOKEN cannot open a pull request", () => {
-		// `Record the released version` opens a pull request to record the release. GitHub withholds
-		// `pull_requests: write` from the token a workflow gets for itself, so with `GITHUB_TOKEN` the
-		// step died on every release with `GraphQL: Resource not accessible by integration
-		// (createPullRequest)` — after the tag, the release and every asset were already published.
-		// The App has `Pull requests: Read and write`; its installation token can.
+	it("test_the_publish_job_uses_the_App_token: release publication prefers scoped credentials", () => {
+		// The App credential is used for the tag and release, not an obsolete
+		// post-publication version-record pull request.
 		const publish = steps(release, "publish");
-		const record = publish.find((s) => s.name === "Record the released version");
-		expect(record?.env?.GH_TOKEN, "the App token must be preferred").toContain("steps.app-token.outputs.token");
+		const create = publish.find((step) => step.name === "Create the tag and the release");
+		expect(create?.env?.GH_TOKEN, "the App token must be preferred").toContain("steps.app-token.outputs.token");
+		expect(publish.some((step) => step.name === "Record the released version")).toBe(false);
 
-		// And the step that mints it has to exist in this job, with the key test hoisted so a
-		// step-level `if` can read it.
-		const mint = publish.findIndex((s) => s.uses?.includes("create-github-app-token"));
+		const mint = publish.findIndex((step) => step.uses?.includes("create-github-app-token"));
 		expect(mint, "the publish job must mint an installation token").toBeGreaterThan(-1);
 		expect(release.jobs["publish"]?.env?.HAS_APP_KEY, "HAS_APP_KEY must be readable from a step `if`").toBeDefined();
 		expect(publish[mint]?.if).toContain("HAS_APP_KEY");
-		// Minting must precede the use.
-		expect(mint).toBeLessThan(publish.indexOf(record as never));
+		expect(mint).toBeLessThan(publish.indexOf(create as never));
 	});
 
 	it("test_release_workflow_tolerates_a_repository_with_no_build: a tag and notes, not a failure", () => {
