@@ -191,6 +191,19 @@ patch(".github/tests/plugins/harness/test/documentation-truth.test.ts",s=>{
  '.filter((entry) => entry.isDirectory() && existsSync(join(repoDir, "plugins", entry.name, ".claude-plugin", "plugin.json")))\n\t\t\t.map((entry) => entry.name);');
  return s;
 });
+
+patch(".github/tests/plugins/harness/test/wrapper.test.ts",s=>
+ s.replace(/join\(import\.meta\.dir,[^)]*"df-wrapper\.sh"\)/g,'join(import.meta.dir, "..", "..", "..", "..", "scripts", "df-wrapper.sh")')
+);
+patch(".github/tests/plugins/harness/test/install-df.test.ts",s=>
+ s.replace(/join\(import\.meta\.dir,[^)]*"df-wrapper\.sh"\)/g,'join(import.meta.dir, "..", "..", "..", "..", "scripts", "df-wrapper.sh")')
+);
+patch("plugins/df-rules/skills/final-architecture-dry-and-deletion/SKILL.md",s=>
+ s.replaceAll("plugins/harness/test/ci/repository-governance.test.ts",".github/tests/plugins/harness/test/ci/repository-governance.test.ts")
+);
+patch("plugins/harness/assets/skills/df-operator/SKILL.md",s=>
+ s.replaceAll("plugins/harness/src/cli.ts","packages/cli/src/cli.ts")
+);
 git("add","-A");
 const tracked=git("ls-files").split("\n");
 const stray=tracked.filter(p=>p.startsWith("scripts/")||p.startsWith("tests/")||p.startsWith(".darkfactory/plugins/")||(!p.startsWith(".github/tests/")&&(/(^|\/)test\//.test(p)||p.endsWith(".test.ts"))));
