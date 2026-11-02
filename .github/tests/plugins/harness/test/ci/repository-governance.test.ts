@@ -243,7 +243,7 @@ describe("ci.yml", () => {
 			"DF_ACTION_COMMAND",
 		);
 		expect(workflowSource("ci.yml")).toContain("repo.dfconfig");
-		expect(scripts).toContain('bun "$ROOT/scripts/build-docs.ts"');
+		expect(scripts).toContain('bun "$ROOT/.github/scripts/build-docs.ts"');
 	});
 
 	it("test_ci_is_a_direct_detector_driven_workflow: installed directly, never caller-prefixed", () => {
@@ -282,7 +282,7 @@ describe("ci.yml", () => {
 		expect(scripts).not.toContain('"repo.df"');
 		expect(scripts).not.toContain('"config.df"');
 		expect(scripts).toContain("DF_CONFIG_DIR");
-		expect(scripts).toContain('bun "$ROOT/scripts/build-docs.ts"');
+		expect(scripts).toContain('bun "$ROOT/.github/scripts/build-docs.ts"');
 		expect(scripts).not.toContain("plugins/docs");
 		expect(scripts).not.toContain("packages/web");
 	});
@@ -296,7 +296,7 @@ describe("ci.yml", () => {
 		const scripts = jobScripts(ci, "docs-check");
 		expect(stepsUsing(ci, "oven-sh/setup-bun").length).toBeGreaterThan(0);
 		expect(scripts).toContain("bun install --frozen-lockfile");
-		expect(scripts).toContain('bun "$ROOT/scripts/build-docs.ts"');
+		expect(scripts).toContain('bun "$ROOT/.github/scripts/build-docs.ts"');
 	});
 });
 
