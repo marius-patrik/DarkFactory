@@ -142,6 +142,53 @@ patch(".github/tests/plugins/docs/test/current.test.ts",s=>{
  s=s.replaceAll('writeFileSync(join(repoRoot, "ADRs.md"),','writeFileSync(join(repoRoot, "README.md"),');
  return s;
 });
+patch(".github/tests/plugins/harness/test/docs-package.test.ts",s=>{
+ s=s.replaceAll('join(root, ".darkfactory", "ADRs.md")','join(root, ".agents", "ARCHITECTURE.md")');
+ s=s.replaceAll('join(root, ".darkfactory")','join(root, ".agents")');
+ s=s.replaceAll('join(".darkfactory", "ADRs.md"), join(root, "ADRs.md")','join(".agents", "PRODUCT.md"), join(root, "README.md")');
+ s=s.replaceAll('await symlink(join(".agents", "PRODUCT.md"), join(root, "README.md"));','');
+ s=s.replaceAll('"darkfactory-plugins-df-rules-skills-001-test"','"plugins-df-rules-skills-001-test"');
+ s=s.replaceAll('"darkfactory-adrs-md-adr-0001-test"','"agents-architecture-md-adr-0001-test"');
+ s=s.replaceAll("darkfactory-plugins-df-rules-skills-001-test/","plugins-df-rules-skills-001-test/");
+ return s;
+});
+patch(".github/tests/plugins/plugins/test/plugins.test.ts",s=>{
+ s=s.replaceAll('join(root, ".darkfactory", "plugins")','join(root, "plugins")');
+ const begin=s.indexOf('test("DF_CONFIG_DIR moves the plugin root');
+ const end=s.indexOf('\n});\n\ndescribe("plugin validation"',begin);
+ if(begin<0||end<0)throw Error("plugin discovery contract");
+ const old=s.slice(begin,end);
+ const fresh=old.replace('expect(discoverPlugins(root)).toEqual([]);','expect(discoverPlugins(root).map((plugin) => plugin.name)).toEqual(["alpha"]);')
+   .replace('renameSync(join(root, ".darkfactory", "plugins"), join(root, "configuration", "plugins"));','renameSync(join(root, "plugins"), join(root, "configuration", "plugins"));')
+   .replace('mkdirSync(join(root, "configuration"), { recursive: true });',
+    'mkdirSync(join(root, "configuration"), { recursive: true });\n\t\t\twriteFileSync(join(root, "configuration", "repo.dfconfig"), JSON.stringify({ plugins: { roots: ["configuration/plugins"] } }));');
+ s=s.slice(0,begin)+fresh+s.slice(end);
+ return s;
+});
+patch(".github/tests/plugins/harness/test/install-df.test.ts",s=>{
+ s=s.replaceAll('join(root, "scripts")','join(root, ".github", "scripts")');
+ s=s.replaceAll('join(root, "scripts", "df-wrapper.sh")','join(root, ".github", "scripts", "df-wrapper.sh")');
+ return s;
+});
+patch(".github/tests/plugins/harness/test/wrapper.test.ts",s=>{
+ s=s.replaceAll('join(import.meta.dir, "..", "..", "..", "scripts", "df-wrapper.sh")','join(import.meta.dir, "..", "..", "..", "..", "scripts", "df-wrapper.sh")');
+ s=s.replaceAll('join(import.meta.dir, "..", "..", "..", ".github", "scripts", "df-wrapper.sh")','join(import.meta.dir, "..", "..", "..", "..", "scripts", "df-wrapper.sh")');
+ return s;
+});
+patch(".github/tests/scripts/df-wrapper.test.ts",s=>s.replace('const scripts = import.meta.dir;', 'const scripts = join(import.meta.dir, "..", "..", "scripts");'));
+patch(".github/tests/plugins/harness/test/packaging.test.ts",s=>{
+ s=s.replaceAll('import "../../../../../plugins/harness/src/image-resize-worker.ts"','import "../../../plugins/harness/src/image-resize-worker.ts"');
+ s=s.replace('const harnessRoot = dirname(import.meta.dir)','const harnessRoot = resolve(import.meta.dir, "..", "..", "plugins", "harness")');
+ return s;
+});
+patch(".github/tests/plugins/harness/test/documentation-truth.test.ts",s=>{
+ s=s.replace(/const CANONICAL_DIRECTORIES = \[[^;]*;/,'const CANONICAL_DIRECTORIES = [".agents", "plugins/df-rules", "plugins/df-operations", "plugins/plugin-builder", "plugins/harness/assets/skills"];');
+ s=s.replaceAll('.darkfactory/plugins/df-rules/', 'plugins/df-rules/').replaceAll('.darkfactory/plugins/df-operations/', 'plugins/df-operations/');
+ s=s.replace('readdirSync(join(repoDir, ".darkfactory", "plugins"), { withFileTypes: true })','readdirSync(join(repoDir, "plugins"), { withFileTypes: true })');
+ s=s.replace('.filter((entry) => entry.isDirectory())\n\t\t\t.map((entry) => entry.name);',
+ '.filter((entry) => entry.isDirectory() && existsSync(join(repoDir, "plugins", entry.name, ".claude-plugin", "plugin.json")))\n\t\t\t.map((entry) => entry.name);');
+ return s;
+});
 git("add","-A");
 const tracked=git("ls-files").split("\n");
 const stray=tracked.filter(p=>p.startsWith("scripts/")||p.startsWith("tests/")||p.startsWith(".darkfactory/plugins/")||(!p.startsWith(".github/tests/")&&(/(^|\/)test\//.test(p)||p.endsWith(".test.ts"))));
