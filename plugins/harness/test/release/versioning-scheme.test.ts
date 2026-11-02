@@ -33,7 +33,17 @@ async function repository(
 	roots.push(root);
 	await writeFile(
 		join(root, "repo.dfconfig"),
-		JSON.stringify({ repo: { versioning: { mode: "manual", tag_prefix: "v", initial: "3a.1.0", ...(options.version === null ? {} : { next: options.version ?? "3a.2.0" }), ...options.config } } }),
+		JSON.stringify({
+			repo: {
+				versioning: {
+					mode: "manual",
+					tag_prefix: "v",
+					initial: "3a.1.0",
+					...(options.version === null ? {} : { next: options.version ?? "3a.2.0" }),
+					...options.config,
+				},
+			},
+		}),
 	);
 	git(root, "init", "-q", "--initial-branch=main");
 	git(root, "config", "user.email", "test@example.com");
