@@ -1,7 +1,4 @@
-import { existsSync, readFileSync } from "node:fs";
-// Aliased deliberately: this module exports a `resolve` of its own, which would otherwise shadow
-// the path helper for the whole file and make every internal `resolve(root, "VERSION")` recursive.
-import { resolve as resolvePath } from "node:path";
+import { readFileSync } from "node:fs";
 import { configBlock, parseConfigDocument, resolveConfigDocumentPath } from "../../../protocol/src/config-document.ts";
 import { runGit } from "../workspace/git.ts";
 
@@ -54,6 +51,8 @@ interface VersioningConfig {
 	tagPrefix: string;
 	/** First version, used when nothing has been released yet. */
 	initial: string;
+	/** Optional manual release target declared in repo.dfconfig. */
+	next: string | null;
 }
 
 /**
@@ -72,10 +71,15 @@ export function loadConfig(repoRoot: string): VersioningConfig {
 	if (!(MODES as readonly string[]).includes(mode)) {
 		throw new VersioningError(`unknown versioning mode '${mode}'; expected one of ${MODES.join(", ")}`);
 	}
+	const next = block.next;
+	if (next !== undefined && next !== null && (typeof next !== "string" || !parseVersion(next))) {
+		throw new VersioningError("repo.versioning.next must be a valid release version");
+	}
 	return {
 		mode: mode as VersioningMode,
 		tagPrefix: String(block.tag_prefix ?? "v"),
 		initial: String(block.initial ?? "0.1.0"),
+		next: typeof next === "string" ? next.replace(/^v/u, "") : null,
 	};
 }
 
@@ -136,7 +140,7 @@ function renderVersion(scheme: string, major: number, minor: number, patch: numb
  *
  * A repository that versions itself `3a.1.0` gets `3a.2.0` and not `3.2.0`: the letter is part of
  * the version and nothing here decides what it means. A major bump moves the number and keeps the
- * letter, because a genuinely new scheme is a decision the `VERSION` file exists to record.
+ * letter, because a genuinely new scheme is a release-policy decision.
  *
  * @param current Version being bumped.
  * @param bump Bump size; `null` warrants no release.
@@ -262,21 +266,6 @@ export function nextVersion(mode: VersioningMode, current: string | null, bump: 
 	return `${major}.${minor}.${patch + 1}`;
 }
 
-/**
- * Reads the version the `VERSION` file declares.
- *
- * Under `manual` mode this file is the owner's control: nothing else may decide a version.
- *
- * @param repoRoot Repository root.
- * @returns The declared version, or `null` when the file is absent or empty.
- */
-export function readManualVersion(repoRoot: string): string | null {
-	const path = resolvePath(repoRoot, "VERSION");
-	if (!existsSync(path)) return null;
-	const content = readFileSync(path, "utf8").trim();
-	return content.length > 0 ? content : null;
-}
-
 /** Lists the repository's tags, or an empty list when git cannot answer. */
 function gitTags(repoRoot: string): string[] {
 	try {
@@ -314,7 +303,7 @@ export interface ReleaseDecision {
 	next: string | null;
 	/** The tag `next` would carry, or `null`. */
 	tag: string | null;
-	/** Where the bump came from: the log, an explicit request, the `VERSION` file, or nothing. */
+	/** Where the bump came from: the log, an explicit request, config, or nothing. */
 	bump: string | null;
 }
 
@@ -324,13 +313,12 @@ export interface ReleaseDecision {
  * @param repoRoot Repository root.
  * @param requested An explicit bump or exact version a human asked for, overriding the log.
  * @returns The decision; `next` is `null` when no release is warranted.
- * @throws {VersioningError} When `manual` is selected but no `VERSION` file exists.
  */
 export function resolveRelease(repoRoot: string, requested?: string | null): ReleaseDecision {
 	const config = loadConfig(repoRoot);
 	const prefix = config.tagPrefix;
 
-	const declared = readManualVersion(repoRoot);
+	const declared = config.next;
 	const prefer = declared === null ? null : (parseVersion(declared)?.scheme ?? null);
 	// ZeroVer is a distinct release line. Historical 3a.* tags carry a different numbering
 	// scheme, and treating one as the latest ZeroVer release caused v0.4.0 to be chosen
@@ -348,33 +336,20 @@ export function resolveRelease(repoRoot: string, requested?: string | null): Rel
 		currentTag === null ? null : currentTag.startsWith(prefix) ? currentTag.slice(prefix.length) : currentTag;
 
 	if (config.mode === "manual") {
-		if (declared === null) {
-			throw new VersioningError("manual versioning requires a VERSION file at the repository root");
+		// Manual numbers come from workflow input or repo.dfconfig, never a separate file.
+		// Conventional Commits alone do not advance manually selected releases.
+		if (requested && !parseVersion(requested)) {
+			throw new VersioningError("manual versioning requires an exact release version as its bump input");
 		}
-		if (isAhead(declared, current)) {
-			// The file names something newer than what is released: that is the owner's decision,
-			// and it wins over anything the commit log implies.
-			return {
-				mode: config.mode,
-				current,
-				current_tag: currentTag,
-				next: declared,
-				tag: `${prefix}${declared}`,
-				bump: "declared",
-			};
-		}
-		// Either the file already matches the last release, or it names one behind it because a
-		// record never landed. A stale file is not a choice: treating it as one would re-release an
-		// old number, so the pipeline advances from the last release instead.
-		const bump = classifyCommits(commitsSince(repoRoot, currentTag));
-		const upcoming = current === null ? null : bumpVersion(current, bump);
+		const selected = requested ? requested.replace(/^v/u, "") : declared;
+		const upcoming = selected && isAhead(selected, current) ? selected : null;
 		return {
 			mode: config.mode,
 			current,
 			current_tag: currentTag,
 			next: upcoming,
 			tag: upcoming === null ? null : `${prefix}${upcoming}`,
-			bump,
+			bump: upcoming === null ? null : requested ? "explicit" : "declared",
 		};
 	}
 
