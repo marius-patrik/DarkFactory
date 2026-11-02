@@ -95,6 +95,16 @@ for(const old of original){
   if(old===now&&abs===target)return full;
   return q+rel(now,target)+(match[1].endsWith("/")?"/":"")+match[2]+q;
  });
+ // A test or relocated script must still resolve its original repository or asset root.
+ s=s.replace(/\b(join|resolve)\(\s*import\.meta\.dir\s*,\s*((?:(?:"[^"]+"|'[^']+')\s*,?\s*)+)\)/g,(full,fn,args)=>{
+   const parts=[...args.matchAll(/["']([^"']+)["']/g)].map(x=>x[1]);
+   const oldTarget=norm(path.posix.join(path.posix.dirname(old),...parts));
+   if(!known(oldTarget))return full;
+   const newTarget=files.has(oldTarget)?relocated(oldTarget):dirMap(oldTarget);
+   const offset=path.posix.relative(path.posix.dirname(now),newTarget);
+   const bits=(offset==="."?["."]:offset.split("/")).map(x=>JSON.stringify(x));
+   return fn+"(import.meta.dir, "+bits.join(", ")+")";
+ });
  for(const [from,to] of substitutions){
   const escaped=from.replace(/([\\^$.*+?()[\]{}|])/g,"\\$1");
   s=s.replace(new RegExp("(?<![\\w./])"+escaped,"g"),to);
