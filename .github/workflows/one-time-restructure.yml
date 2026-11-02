@@ -32,7 +32,10 @@ jobs:
         run: bun run docs
       - name: Remove temporary migration scripts and commit the verified result
         run: |
-          git rm -f --ignore-unmatch .github/workflows/one-time-restructure.yml .github/scripts/one-time-restructure.mjs
+          git rm -f --ignore-unmatch .github/scripts/one-time-restructure.mjs
+          # GitHub Actions GITHUB_TOKEN cannot alter workflow files. A follow-up
+          # GitHub integration edit will apply verified workflow relocations.
+          git restore --source="$GITHUB_SHA" --staged --worktree .github/workflows
           git add -A
           git diff --cached --check
           git config user.name darkfactory-layout-bot
