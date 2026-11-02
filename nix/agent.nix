@@ -40,7 +40,7 @@ let
         name = baseNameOf path;
       in
         !(builtins.elem name [ ".git" "node_modules" ".worktrees" "dist" "result" ])
-        && !(lib.hasPrefix ".github/" rel || rel == ".github")
+        && (rel == ".github" || rel == ".github/scripts" || lib.hasPrefix ".github/scripts/" rel || !(lib.hasPrefix ".github/" rel))
         && !(lib.hasPrefix "nix/" rel || rel == "nix")
         && !(lib.hasPrefix "docker/" rel || rel == "docker")
         && !(lib.hasSuffix ".pdf" name);
@@ -70,7 +70,7 @@ let
 
     # One compiler for release assets and container images; includes worker,
     # WASM, graph assets and independently bundled official capabilities.
-    bun plugins/harness/scripts/build.ts --target ${target}
+    bun .github/scripts/build.ts --target ${target}
     dist="plugins/harness/dist"
     test -x "$dist/df-${target}"
     test -d "$dist/assets"

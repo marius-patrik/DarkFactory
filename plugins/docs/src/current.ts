@@ -1,6 +1,5 @@
 import { lstatSync, readlinkSync, realpathSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
-import { darkFactoryDirectory } from "../../protocol/src/config-document.ts";
 import type { DocsContentGraph } from "./content.ts";
 import { analyzeRuleNoteRelations } from "./relations.ts";
 
@@ -11,13 +10,13 @@ interface DocumentationTruthFinding {
 }
 
 const CURRENT_ALIASES = [
-	// The ADRs are authored once under the DarkFactory directory and discovered at the root by symlink,
-	// the same arrangement as `.agents` itself. Copied rather than linked would let the two drift.
-	{ path: "ADRs.md", target: join(darkFactoryDirectory(), "ADRs.md") },
+	{ path: "README.md", target: ".agents/PRODUCT.md" },
+	{ path: "CONTRIBUTING.md", target: ".agents/AGENTS.md" },
 ] as const;
 
 const RETIRED_DOCUMENTATION_PATHS = [
 	"AGENTS.md",
+	"ADRs.md",
 	"CLAUDE.md",
 	"PLAN.md",
 	"PRD.md",
@@ -35,9 +34,9 @@ const RETIRED_DOCUMENTATION_PATHS = [
 	// The notes tree is retired. It held a symlink to the README, which is what the root already is,
 	// so a file reintroduced there is content nothing reads.
 	join(".agents", "notes"),
-	join(darkFactoryDirectory(), "notes"),
+	join(".darkfactory", "notes"),
 	// The records live in one document now, so the per-decision directory is a retired surface too.
-	join(darkFactoryDirectory(), "adr"),
+	join(".darkfactory", "adr"),
 	"_notes",
 	"_rules",
 ] as const;
