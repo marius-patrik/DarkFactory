@@ -99,7 +99,7 @@ jobs:
         # reported `warranted=true` — and then nothing was resolved, `notes.md` was never written, and
         # the run died on `No files were found with the provided path: .../notes.md`.
         #
-        # `manual` mode hid this: it resolves from `VERSION` and never consults the request. Any mode
+        # Manual mode also honours an explicit version request. Any mode
         # that does consult it — `zerover` among them — lost the request on the way through.
         env:
           REQUESTED_BUMP: ${{ inputs.bump }}
@@ -326,14 +326,8 @@ jobs:
       HAS_APP_KEY: ${{ secrets.DARKFACTORY_APP_PRIVATE_KEY != '' }}
     steps:
       - name: Mint an installation token for the App
-        # `GITHUB_TOKEN` cannot open a pull request: GitHub deliberately withholds
-        # `pull_requests: write` from the token a workflow gets for itself, so
-        # `Record the released version` died on every release with
-        # `GraphQL: Resource not accessible by integration (createPullRequest)` — after the tag, the
-        # release and every asset had already been published.
-        #
-        # The App has `Pull requests: Read and write`, so its installation token can. `continue-on-error`
-        # keeps a missing key from failing the job before the fallback below is tried.
+        # Prefer the App installation credential for publishing tags and releases.
+        # The repository GITHUB_TOKEN remains a fallback if the App key is unavailable.
         id: app-token
         if: env.HAS_APP_KEY == 'true'
         uses: actions/create-github-app-token@d72941d797fd3113feb6b93fd0dec494b13a2547 # v1.11.0
@@ -406,8 +400,7 @@ jobs:
 
       - name: Create the tag and the release
         env:
-          # The App first, as below: `GITHUB_TOKEN` cannot open the pull request that records the
-          # version, and using one credential for both steps keeps the release attributable.
+          # Prefer an App installation credential for publishing the release.
           GH_TOKEN: ${{ steps.app-token.outputs.token || secrets.GITHUB_TOKEN }}
           TAG: ${{ needs.resolve.outputs.tag }}
         run: |
@@ -434,16 +427,3 @@ jobs:
             echo
             sed 's/^/- /' "$RUNNER_TEMP/asset-list.txt"
           } >> "$GITHUB_STEP_SUMMARY"
-
-      - name: Record the released version
-        env:
-          # The App first: only its installation token may open a pull request. `GITHUB_TOKEN` is the
-          # fallback for a repository with no App key.
-          GH_TOKEN: ${{ steps.app-token.outputs.token || secrets.GITHUB_TOKEN }}
-          VERSION: ${{ needs.resolve.outputs.version }}
-          TAG: ${{ needs.resolve.outputs.tag }}
-        run: |
-          bun plugins/harness/src/release/cli.ts \
-            --repo-root . \
-            --record-version "$VERSION" \
-            --released-tag "$TAG"
