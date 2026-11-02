@@ -38,46 +38,9 @@ jobs:
           git config user.name darkfactory-layout-bot
           git config user.email darkfactory-layout-bot@users.noreply.github.com
           git commit -m 'refactor(layout): unify agents plugins scripts and tests'
-      - name: Upload missing objects and export immutable tree manifest
-        env:
-          GH_TOKEN: ${{ github.token }}
+      - name: Publish validated isolated branch through git
         run: |
-          node --input-type=module <<'NODE'
-          import { execFileSync } from "node:child_process";
-          const g=(...a)=>execFileSync("git",a,{encoding:"utf8"}).trim();
-          const tree=rev=>new Map(g("ls-tree","-rz",rev).split("\0").filter(Boolean).map(line=>{
-            const m=/^(100644|100755|120000|160000) (blob|commit) ([a-f0-9]{40})\t(.+)$/.exec(line);
-            if(!m)throw Error("Invalid tree entry");
-            return[m[4],{mode:m[1],type:m[2],sha:m[3]}];
-          }));
-          const before=tree(process.env.GITHUB_SHA),after=tree("HEAD");
-          const known=new Set([...before.values()].map(x=>x.sha));
-          const paths=[...new Set([...before.keys(),...after.keys()])].sort();
-          const entries=paths.flatMap(path=>{
-            const old=before.get(path),now=after.get(path);
-            return old?.sha===now?.sha&&old?.mode===now?.mode?[]:[{path,mode:(now||old).mode,type:(now||old).type,sha:now?.sha||null}];
-          });
-          const blobs=entries.filter(x=>x.sha!==null&&!known.has(x.sha));
-          let i=0;
-          async function write(){
-            while(i<blobs.length){
-              const item=blobs[i++];
-              const file=execFileSync("git",["show","HEAD:"+item.path]).toString("base64");
-              const resp=await fetch("https://api.github.com/repos/"+process.env.GITHUB_REPOSITORY+"/git/blobs",{
-                method:"POST",
-                headers:{Accept:"application/vnd.github+json",Authorization:"Bearer "+process.env.GH_TOKEN},
-                body:JSON.stringify({content:file,encoding:"base64"})
-              });
-              if(!resp.ok)throw Error("Upload failed "+item.path+" "+resp.status+" "+await resp.text());
-              const result=await resp.json();
-              if(result.sha!==item.sha)throw Error("Blob mismatch "+item.path);
-            }
-          }
-          await Promise.all(Array.from({length:10},write));
-          const manifest=Buffer.from(JSON.stringify(entries)).toString("base64");
-          console.log("DF_MIGRATION_TREE="+g("rev-parse","HEAD^{tree}"));
-          for(let i=0;i<manifest.length;i+=5500)console.log("DF_MIGRATION_CHUNK_"+i/5500+"="+manifest.slice(i,i+5500));
-          console.log("DF_MIGRATION_COUNT="+Math.ceil(manifest.length/5500));
-          console.log("DF_MIGRATION_ENTRIES="+entries.length);
-          console.log("DF_MIGRATION_NEW_BLOBS="+blobs.length);
-          NODE
+          test "$(git rev-parse HEAD^)" = "$GITHUB_SHA"
+          git push origin HEAD:refs/heads/refactor/unify-agents-plugins-scripts-tests-20261102
+          echo "Validated tree: $(git rev-parse HEAD^{tree})"
+          echo "Validated commit: $(git rev-parse HEAD)"
