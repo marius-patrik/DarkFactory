@@ -27,7 +27,7 @@ jobs:
         run: bun install --frozen-lockfile
 
       - name: Validate documentation projections
-        run: bun scripts/build-docs.ts --repo-root "$GITHUB_WORKSPACE" --check
+        run: bun .github/scripts/build-docs.ts --repo-root "$GITHUB_WORKSPACE" --check
 
       - name: Build documentation
-        run: bun scripts/build-docs.ts --repo-root "$GITHUB_WORKSPACE"
+        run: bun .github/scripts/build-docs.ts --repo-root "$GITHUB_WORKSPACE"

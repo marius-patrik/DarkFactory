@@ -45,7 +45,7 @@ jobs:
       - name: Run fleet reconciliation
         env:
           DARKFACTORY_APP_PRIVATE_KEY: ${{ secrets.DARKFACTORY_APP_PRIVATE_KEY }}
-        run: node scripts/fleet-sync.mjs
+        run: node .github/scripts/fleet-sync.mjs
 
   projects:
     if: github.repository == 'marius-patrik/DarkFactory' && !inputs.dry_run
@@ -64,9 +64,9 @@ jobs:
       - name: Inspect managed Projects via REST without consuming GraphQL quota
         env:
           GH_PROJECT_TOKEN: ${{ secrets.GH_PROJECT_TOKEN }}
-        run: node scripts/self-projects-rest.mjs
+        run: node .github/scripts/self-projects-rest.mjs
       - name: Reconcile every managed repository board and the shared Global board
         env:
           DARKFACTORY_APP_PRIVATE_KEY: ${{ secrets.DARKFACTORY_APP_PRIVATE_KEY }}
           GH_PROJECT_TOKEN: ${{ secrets.GH_PROJECT_TOKEN }}
-        run: node scripts/fleet-projects.mjs
+        run: node .github/scripts/fleet-projects.mjs

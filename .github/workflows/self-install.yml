@@ -7,9 +7,9 @@ on:
       - ".darkfactory/installation.json"
       - ".github/workflows/darkfactory-control.yml"
       - ".github/workflows/darkfactory-self.yml"
-      - "scripts/fleet-control.mjs"
-      - "scripts/fleet-sync.mjs"
-      - "scripts/self-install-check.mjs"
+      - ".github/scripts/fleet-control.mjs"
+      - ".github/scripts/fleet-sync.mjs"
+      - ".github/scripts/self-install-check.mjs"
       - ".github/workflows/self-install.yml"
       - ".github/workflows/project-automation.yml"
       - ".github/workflows/fleet-updates.yml"
@@ -29,4 +29,4 @@ jobs:
       - name: Checkout DarkFactory source
         uses: actions/checkout@v4
       - name: Verify source-owned installation on main
-        run: node scripts/self-install-check.mjs .
+        run: node .github/scripts/self-install-check.mjs .
