@@ -21,7 +21,7 @@ jobs:
       - name: Typecheck
         run: bun run typecheck
       - name: Lint
-        run: bun run lint
+        run: bunx biome lint . --diagnostic-level=error --max-diagnostics=1000
       - name: Test
         run: bun run test
       - name: Build
