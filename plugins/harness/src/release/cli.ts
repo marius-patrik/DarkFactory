@@ -1,10 +1,6 @@
 /** Resolves release notes, assets, and metadata without a repository VERSION file. */
 import { writeFileSync } from "node:fs";
-import {
-	checkMetadata,
-	resolveRelease,
-	syncMetadata,
-} from "./release.ts";
+import { checkMetadata, resolveRelease, syncMetadata } from "./release.ts";
 
 /** What the caller asked for on the command line. */
 interface ReleaseCliOptions {
