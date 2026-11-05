@@ -1,0 +1,18 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+  "name": "agentic-specs",
+  "version": "0.1.0",
+  "description": "Reusable agentic planning and product PRD skills.",
+  "author": {
+    "name": "Patrik Marius"
+  },
+  "repository": "https://github.com/marius-patrik/DarkFactory",
+  "license": "GPL-3.0",
+  "keywords": [
+    "planning",
+    "prd",
+    "engineering",
+    "product-design",
+    "codex"
+  ]
+}
